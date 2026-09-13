@@ -1,0 +1,8 @@
+
+/* Waiting V6 — logo en haut, aucun logo/footer en bas */
+.wsv1-footer,.wsv1-screen>.ptb-shared-footer{display:none!important}
+.wsv1-screen{padding-top:max(10px,env(safe-area-inset-top))!important}
+.wsv1-brandbar{display:grid!important;grid-template-columns:1fr 62px 1fr!important;align-items:center!important;min-height:52px!important}
+.wsv1-brandbar .wsv1-exit{margin:0!important;justify-self:start!important}
+.wsv1-brand{width:62px!important;height:52px!important;object-fit:contain!important;justify-self:center!important}
+.wsv1-main{margin:18px 0!important}

@@ -1,0 +1,16 @@
+
+/* Results V-next — trophée plus grand + actions toujours au bas du bloc réponses */
+.results-screen .res-trophy{width:82px!important;height:82px!important}
+.results-screen .res-winner{grid-template-columns:92px minmax(0,1fr) 74px!important}
+.results-screen .res-report{order:90!important;margin-top:7px!important}
+.results-screen .res-legend{order:91!important;margin-top:0!important;padding-bottom:2px!important}
+.results-screen .res-rows{order:50!important}
+.results-screen .res-panel .res-report,
+.results-screen .res-panel .res-legend{flex-shrink:0!important}
+@media(max-width:360px){
+ .results-screen .res-trophy{width:70px!important;height:70px!important}
+ .results-screen .res-winner{grid-template-columns:76px minmax(0,1fr) 58px!important}
+}
+@media(max-height:680px){
+ .results-screen .res-trophy{width:70px!important;height:70px!important}
+}
