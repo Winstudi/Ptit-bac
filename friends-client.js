@@ -509,18 +509,11 @@
             <h1>Amis</h1>
           </div>
 
-        </header>
-
-        <section class="friends-v2-code">
-          <div>
-            <small>Mon code ami</small>
-            <strong>${escapeHtml(profile?.friendCode || "Chargement...")}</strong>
-          </div>
-          <button id="copyFriendCode" ${profile?.friendCode ? "" : "disabled"}>
+          <button id="copyFriendCode" class="friends-header-code" type="button" aria-label="Copier mon code ami" ${profile?.friendCode ? "" : "disabled"}>
+            <span><small>Code ami</small><strong>${escapeHtml(profile?.friendCode || "…")}</strong></span>
             ${copyIcon()}
-            <span>Copier</span>
           </button>
-        </section>
+        </header>
 
         <nav class="friends-v2-tabs">
           <button data-friend-tab="friends" class="${friendsState.activeTab === "friends" ? "active" : ""}">

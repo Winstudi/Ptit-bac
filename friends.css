@@ -1220,3 +1220,11 @@ html .friends-mobile #friendsChatPanel :is(.chat-search,.chat-conversation-list,
 html .friends-mobile #friendsChatPanel .chat-bubble{overflow-wrap:anywhere}
 html .friends-mobile #friendsChatPanel .chat-row-copy{flex:1!important;min-width:0!important}
 html .friends-mobile #friendsChatPanel .chat-row-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+html .friends-mobile .friends-v2-header{grid-template-columns:44px minmax(0,1fr) auto!important;gap:8px!important;margin-bottom:10px!important}
+html .friends-mobile .friends-header-code{justify-self:end;display:flex;align-items:center;gap:7px;min-height:44px;padding:5px 9px;border:1px solid #9b4ff0;border-radius:13px;background:#17204e;color:#fff;cursor:pointer}
+html .friends-mobile .friends-header-code>span{display:flex;flex-direction:column;gap:1px;text-align:left}
+html .friends-mobile .friends-header-code small{font-size:9px;color:#bca2df;line-height:1.1}
+html .friends-mobile .friends-header-code strong{font-size:15px;letter-spacing:1px;line-height:1.2}
+html .friends-mobile .friends-header-code svg{width:18px;height:18px;fill:none;stroke:#c790ff;stroke-width:1.8}
+html .friends-mobile .friends-header-code:disabled{opacity:.5}
