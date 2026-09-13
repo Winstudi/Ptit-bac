@@ -130,6 +130,7 @@
     `;
   }
 
+  let lastDraw = "";
   function renderCategorySelectionV2() {
     if (!session?.state) {
       if (originalRenderCategorySelection) return originalRenderCategorySelection();
@@ -146,12 +147,15 @@
     const host = !!user?.isHost;
     const insufficient = balance < categoryRerollCost;
     const missingCoins = Math.max(0, categoryRerollCost - balance);
+    const drawKey = JSON.stringify([state.code, state.gameSessionId, categories]);
+    const reveal = drawKey !== lastDraw;
+    lastDraw = drawKey;
     const categoryCountClass =
       categories.length >= 9 ? "cat-v2-many" :
       categories.length >= 7 ? "cat-v2-medium" : "cat-v2-normal";
 
     setScreen(`
-      <main class="screen category-pick-screen cat-v2 ${categoryCountClass}">
+      <main class="screen category-pick-screen cat-v2 cat-prototype ${categoryCountClass} ${reveal ? "cat-reveal" : ""}">
         <div class="cat-v2-glow glow-a"></div>
         <div class="cat-v2-glow glow-b"></div>
         ${categoryDecorLetters()}
@@ -163,13 +167,16 @@
               </button>`
             : `<span class="pregame-return-spacer cat-v2-back-spacer"></span>`}
 
+          <img class="cat-brand" src="/ptitbac.logo.png" alt="P’tit Bac" width="62" height="52">
           ${categoryCoinPill(balance, "cat-v2-balance")}
         </header>
 
+        <nav class="cat-steps" aria-label="Étapes de préparation">
+          <span aria-current="step">Catégories</span><i aria-hidden="true">•</i>
+          <span>Lettre</span><i aria-hidden="true">•</i><span>À vous de jouer</span>
+        </nav>
         <section class="category-pick-copy cat-v2-copy">
-          <span class="cat-v2-kicker">SÉLECTION DES CATÉGORIES</span>
-          <h1>Voici votre tirage !</h1>
-          <span class="cat-v2-title-line"></span>
+          <h1>Votre tirage !</h1>
           <p>${categories.length} catégories <b>•</b> Niveau ${difficultyLabel(state.categoryDifficulty)}</p>
         </section>
 
@@ -201,16 +208,14 @@
         ` : `
           <section class="cat-v2-wait">
             <span class="spinner small-spinner"></span>
-            <strong>En attente de l’hôte…</strong>
-            <small>L’hôte choisit quand continuer vers la lettre.</small>
+            <strong>${state.mode === "quick" ? "Préparation de la lettre…" : "En attente de l’hôte…"}</strong>
+            <small>${state.mode === "quick" ? "La partie va continuer." : "L’hôte choisit quand continuer vers la lettre."}</small>
           </section>
         `}
 
         ${categoryExitMenu()}
 
-        <footer class="ptb-shared-footer" aria-hidden="true">
-          <img src="/shared-footer-v1.png" alt="">
-        </footer>
+        <p class="cat-reminder">Ces catégories restent les mêmes toute la partie.</p>
       </main>
     `);
 
