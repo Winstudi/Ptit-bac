@@ -401,7 +401,7 @@ body:has(.home-mobile) .economy-hud {
   left:50%;
   width:56%;
   height:56%;
-  transform:translateX(-50%);
+  transform:translate(-50%,20px);
   display:grid;
   place-items:center;
   z-index:2;
@@ -483,7 +483,7 @@ body:has(.home-mobile) .economy-hud {
   margin-bottom:0;
   display:flex;
   justify-content:center;
-  transform:perspective(280px) rotateX(20deg);
+  transform:translateY(32px) perspective(280px) rotateX(20deg);
   filter:drop-shadow(0 0 15px rgba(180,74,255,.54));
 }
 
@@ -523,7 +523,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-modes {
   position:relative;
   z-index:3;
-  margin-top:92px;
+  margin-top:102px;
   padding:10px 9px 3px;
   border:1.5px solid #9856ff;
   border-radius:22px;
@@ -711,7 +711,7 @@ body:has(.home-mobile) .economy-hud {
   position:relative;
   z-index:3;
   align-self:end;
-  margin:54px 12px 8px;
+  margin:44px 12px 8px;
   display:grid;
   grid-template-columns:minmax(0,2.55fr) minmax(0,1fr);
   gap:8px;
@@ -1147,7 +1147,7 @@ body:has(.home-mobile) .economy-hud {
 
   .hm-bottom {
     grid-template-columns:minmax(0,2.4fr) minmax(0,1fr);
-    margin:46px 7px 6px;
+    margin:36px 7px 6px;
     gap:5px;
   }
 
@@ -1201,7 +1201,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-modes {
-    margin-top:82px;
+    margin-top:92px;
     padding-top:8px;
   }
 
@@ -1225,7 +1225,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-bottom {
-    margin-top:44px;
+    margin-top:34px;
     margin-bottom:6px;
   }
 
@@ -1255,7 +1255,7 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-height:670px) {
   .hm-modes {
-    margin-top:74px;
+    margin-top:84px;
   }
 
   .home-mobile {
@@ -1320,7 +1320,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-bottom {
-    margin-top:36px;
+    margin-top:26px;
   }
 
   .hm-bottom > button {
