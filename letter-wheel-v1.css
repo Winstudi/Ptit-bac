@@ -16,7 +16,7 @@ html .letter-prototype .pbw1-steps{display:flex;align-items:center;justify-conte
 html .letter-prototype .pbw1-steps i{font-style:normal}
 html .letter-prototype .pbw1-steps strong{color:#b768ff;border-bottom:3px solid #a54aff}
 html .letter-prototype .pbw1-title{font-size:clamp(25px,7vw,32px)!important;text-align:center;margin:0!important;line-height:1.2!important}
-html .letter-prototype .pbw1-chooser{width:min(100%,220px)!important;margin:0 auto!important;padding:5px 12px!important;border:1px solid #514995;border-radius:16px;background:linear-gradient(130deg,#152859,#171849);gap:8px!important}
+html .letter-prototype .pbw1-chooser{width:min(100%,176px)!important;margin:0 auto!important;padding:5px 8px!important;border:1px solid #514995;border-radius:16px;background:linear-gradient(130deg,#152859,#171849);gap:6px!important}
 html .letter-prototype .pbw1-lightning{width:34px!important;height:34px!important;flex-basis:34px!important}
 html .letter-prototype .pbw1-chooser-copy{min-width:0}
 html .letter-prototype .pbw1-chooser-copy strong{font-size:19px!important;line-height:1.1!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -509,9 +509,9 @@ html.ptb-admin-infinite-coins .pbw1-wallet strong::after{
 
 /* Bloc "C'est à..." plus compact */
 .pbw1-chooser{
-  width:min(100%,265px) !important;
+  width:min(100%,176px) !important;
   margin:34px auto 15px !important;
-  gap:11px !important;
+  gap:6px !important;
 }
 .pbw1-lightning{
   flex:0 0 58px !important;
