@@ -90,70 +90,65 @@
     const duration = Math.max(0, Number(state.duration || 0));
 
     const categoryCards = categories.map(category => `
-      <div class="pri-category">
-        <span class="pri-category-icon" aria-hidden="true">${categoryEmoji(category)}</span>
+      <div class="recap-category">
+        <span class="recap-category-icon" aria-hidden="true">${categoryEmoji(category)}</span>
         <strong>${escape(category)}</strong>
       </div>
     `).join("");
 
     setScreen(`
-      <main class="pri-screen">
-        <header class="pri-top">
-          <button class="pri-exit" id="priExit" type="button" aria-label="Quitter la partie">
+      <main class="pri-screen recap-screen">
+        <header class="recap-top">
+          <button class="recap-exit" id="priExit" type="button" aria-label="Quitter la partie">
             <img src="/lobby-exit.png" alt="">
           </button>
+          <img class="recap-brand" src="/ptitbac.logo.png" alt="P’tit Bac" width="62" height="52">
+          <span class="recap-round">Manche ${roundNumber}/${Math.max(roundNumber, Number(state.rounds) || 1)}</span>
         </header>
+        <nav class="recap-steps" aria-label="Étapes de la manche">
+          <span>Catégories</span><i>•</i><span>Lettre</span><i>•</i><strong aria-current="step">À vous de jouer</strong>
+        </nav>
 
-        <section class="pri-hero">
-          <div class="pri-flag" aria-hidden="true">
+        <section class="recap-hero">
+          <div class="recap-flag" aria-hidden="true">
             <img src="/round-flag.png" alt="">
           </div>
           <h1>Manche <span>${roundNumber}</span></h1>
-          <p>C’est parti !</p>
+          <p>Prépare-toi !</p>
         </section>
 
-        <section class="pri-stats">
-          <article class="pri-stat-card">
+        <section class="recap-stats" aria-label="Récapitulatif de la manche">
+          <article class="recap-letter-card">
             <small>Lettre</small>
-            <div class="pri-letter">${escape(letter)}</div>
+            <div class="recap-letter">${escape(letter)}</div>
           </article>
 
-          <article class="pri-stat-card">
-            <small>Catégories</small>
-            <div class="pri-stat-icon"><img src="/lobby-categories.png" alt=""></div>
-            <strong>${categories.length}</strong>
-          </article>
-
-          <article class="pri-stat-card pri-stat-time">
-            <small>Temps de réponse</small>
-            <div class="pri-stat-icon"><img src="/lobby-clock.png" alt=""></div>
-            <strong>${duration}s</strong>
-          </article>
+          <div class="recap-facts">
+            <div><img src="/lobby-categories.png" alt=""><strong>${categories.length}</strong><span>catégories</span></div>
+            <div><img src="/lobby-clock.png" alt=""><strong>${duration}</strong><span>secondes</span></div>
+          </div>
         </section>
 
-        <section class="pri-categories-panel">
-          <div class="pri-panel-title">
+        <section class="recap-categories-panel" aria-labelledby="recapCategoriesTitle">
+          <div class="recap-panel-title">
             <i></i>
-            <strong>Catégories de cette partie</strong>
+            <strong id="recapCategoriesTitle">Les catégories de cette manche</strong>
             <i></i>
           </div>
 
-          <div class="pri-categories-grid">
+          <div class="recap-categories-grid">
             ${categoryCards}
           </div>
         </section>
 
-        <section class="pri-countdown-card">
+        <section class="recap-countdown-card">
           <p>La manche commence dans</p>
           <div class="pri-countdown-ring">
             <strong id="priCountdown">5</strong>
           </div>
-          <small>Prépare tes réponses...</small>
+          <small>Trouve un mot en ${escape(letter)} pour chaque catégorie.</small>
         </section>
 
-        <footer class="ptb-shared-footer pri-footer" aria-hidden="true">
-          <img src="/shared-footer-v1.png" alt="">
-        </footer>
       </main>
     `);
 

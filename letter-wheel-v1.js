@@ -39,6 +39,7 @@
 
   function exactTarget(letter, start, direction = 1) {
     const index = Math.max(0, LETTERS.indexOf(letter));
+    // Pointer is at 12 o'clock. Sector centers start at 0deg.
     const desired = -index * SEGMENT;
     if (direction >= 0) {
       let target = desired;
@@ -74,8 +75,12 @@
         return;
       }
       const t = clamp((now - started) / duration, 0, 1);
+      // Garde une rotation visible jusqu'à la toute fin.
+      // L'ancienne courbe quintique donnait l'impression que la roue
+      // était déjà arrêtée avant l'affichage de la lettre.
       const eased = 1 - Math.pow(1 - t, 3);
 
+      // Très léger rebond seulement sur les 3% finaux.
       let value = start + (target - start) * eased;
       if (t > 0.97) {
         const local = (t - 0.97) / 0.03;
@@ -91,6 +96,7 @@
 
       setRotation(target);
 
+      // Affiche la lettre sur la même frame que l'arrêt exact de la roue.
       const center = document.getElementById("pbw1CenterLetter");
       if (center) center.textContent = letter;
 
@@ -103,6 +109,8 @@
 
     runtime.animationFrame = requestAnimationFrame(tick);
   }
+
+
 
   function renderLetterWheelV1() {
     clearInterval(session.timerHandle);
@@ -206,6 +214,7 @@
             </button>
           </section>
         ` : isChooser ? '<section class="pbw1-actions is-visible"><button class="pbw1-confirm" id="pbw1Launch" type="button">Lancer la roue <span>↻</span></button></section>' : `<p class="pbw1-wait" role="status">${selectedLetter ? "La lettre va être validée…" : `En attente de ${escapeHtml(chooserName)}…`}</p>`}
+
       </main>
     `);
 
@@ -332,6 +341,7 @@
     });
   }
 
+  // Nouveau point d'entrée unique pour la phase letter_selection.
   window.renderLetterSelection = renderLetterWheelV1;
   try { renderLetterSelection = renderLetterWheelV1; } catch {}
 })();
