@@ -495,3 +495,50 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
   .ssv1-trophy{width:64px;height:64px;font-size:2.5rem}
   .ssv1-winner-copy strong{font-size:1.48rem}
 }
+
+
+/* =========================================================
+   Résultats V8 — ajustements demandés
+   ========================================================= */
+
+/* Remonte le titre + sous-titre vers le haut */
+.ssv1-heading{
+  margin:8px 0 14px !important;
+}
+
+/* Colonne joueurs réellement fixe pendant le scroll horizontal */
+.ssv1-board-shell{
+  grid-template-columns:104px minmax(0,1fr) !important;
+  overflow:hidden !important;
+}
+
+.ssv1-board-fixed{
+  position:relative !important;
+  z-index:20 !important;
+  background:#081f55 !important;
+}
+
+.ssv1-board-scroll{
+  position:relative !important;
+  z-index:1 !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  margin-left:0 !important;
+  min-width:0 !important;
+  -webkit-overflow-scrolling:touch !important;
+  touch-action:pan-x !important;
+}
+
+/* Empêche tout ancien sticky/translate de déplacer la colonne joueurs */
+.ssv1-player-title,
+.ssv1-player-fixed{
+  position:relative !important;
+  left:auto !important;
+  right:auto !important;
+  transform:none !important;
+}
+
+/* On supprime visuellement tout footer/logo résiduel */
+.ssv1-footer{
+  display:none !important;
+}

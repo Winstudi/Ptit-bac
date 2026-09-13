@@ -251,11 +251,7 @@
             En attente de l’hôte pour continuer
           </div>
         `}
-
-        <footer class="ptb-shared-footer ssv1-footer" aria-hidden="true">
-          <img src="/shared-footer-v1.png" alt="">
-        </footer>
-      </main>
+</main>
     `);
 
     document.getElementById("ssv1Exit")?.addEventListener("click", () => gameExitModal(state, user, "ssv1"));
