@@ -24,12 +24,11 @@ function renderFinishedV2(){
  const difficultyImage=difficulty==="Difficile"?"hard":difficulty==="Moyen"?"normal":"easy";
  const quick=state.mode==="quick";
  const gain=Math.max(0,Number(state.myReward??state.rewardsByPlayerId?.[session.playerId]??0)||0);
- const balance=typeof getCoins==="function"?getCoins():0;
 
- setScreen('<main class="fsv1-screen final-mobile"><header class="fin-top"><img class="fin-brand" src="/ptitbac.logo.png" alt="P’tit Bac"><button id="finWallet" class="fin-wallet" aria-label="Voir mon portefeuille"><img src="/coin.png" alt=""><strong>'+esc(balance)+'</strong><span>＋</span></button></header>'+
+ setScreen('<main class="fsv1-screen final-mobile"><header class="fin-top"><img class="fin-brand" src="/ptitbac.logo.png" alt="P’tit Bac"><span></span></header>'+
  '<section class="fin-heading"><h1>Partie <span>terminée !</span></h1><p>'+esc(title)+'</p></section>'+
  '<section class="fin-podium" aria-label="Podium">'+podium+'</section>'+
- '<section class="fin-ranking"><header><strong>Classement final</strong><span>Points</span></header>'+rows+'</section>'+
+ '<section class="fin-ranking">'+rows+'</section>'+
  '<section class="fin-stats">'+[
  ["/friends.png",ranked.length,"Joueurs"],["/lightning.png",Number(state.rounds)||1,"Manche"+(state.rounds>1?"s":"")],["/lobby-clock.png",(Number(state.duration)||0)+" s","Par manche"],["/difficulty-"+difficultyImage+".png",difficulty,"Niveau"]
  ].map(([img,value,label])=>'<div><img src="'+img+'" alt=""><strong>'+value+'</strong><small>'+label+'</small></div>').join("")+'</section>'+
@@ -38,7 +37,6 @@ function renderFinishedV2(){
 
  const leave=()=>{socket.emit("room:leave",{code:state.code,playerId:session.playerId});clearSession();renderHome();};
  document.getElementById("finHome").onclick=leave;
- document.getElementById("finWallet").onclick=()=>window.openWalletHistory?.();
 
  const replay=document.getElementById("finReplay");
  if(replay)replay.onclick=()=>{if(replay.disabled)return;replay.disabled=true;socket.emit("game:restart",{code:state.code,playerId:session.playerId});};
