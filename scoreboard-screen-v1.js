@@ -214,34 +214,14 @@
         </section>
 
         <section class="ssv1-winner">
-          <div class="ssv1-trophy">🏆</div>
+          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt=""></div>
           <div class="ssv1-winner-copy">
-            <small>👑 ${winnerTitle}</small>
+            <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
             <strong>${winnerNames || "Aucun vainqueur"}</strong>
             <span>${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
           </div>
         </section>
-
-        <section class="ssv1-stats" aria-label="Résumé de la partie">
-          <div class="ssv1-stat">
-            <img src="/friends.png" alt="">
-            <div><strong>${players.length}</strong><small>Joueurs</small></div>
-          </div>
-          <div class="ssv1-stat">
-            <img src="/lightning.png" alt="">
-            <div><strong>${roundNumber}/${roundTotal}</strong><small>Manche</small></div>
-          </div>
-          <div class="ssv1-stat">
-            <img src="/lobby-clock.png" alt="">
-            <div><strong>${minutes} min</strong><small>Durée</small></div>
-          </div>
-          <div class="ssv1-stat">
-            <img src="${difficultyIcon(state.categoryDifficulty)}" alt="">
-            <div><strong>${difficulty}</strong><small>Difficulté</small></div>
-          </div>
-        </section>
-
-        ${user?.isHost ? `
+${user?.isHost ? `
           <button class="ssv1-next" id="ssv1Next" type="button">
             Continuer <span>→</span>
           </button>

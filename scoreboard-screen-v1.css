@@ -542,3 +542,99 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
 .ssv1-footer{
   display:none !important;
 }
+
+
+/* =========================================================
+   Résultats V9 — page remontée + nouveau trophée
+   ========================================================= */
+
+/* Titre vraiment remonté, juste sous le header */
+.ssv1-heading{
+  margin:-2px 0 10px !important;
+  transform:translateY(-4px);
+}
+
+.ssv1-heading h1{
+  line-height:.94 !important;
+}
+
+.ssv1-heading p{
+  margin-top:7px !important;
+}
+
+/* Remonte le tableau et toute la suite */
+.ssv1-board-shell{
+  margin-top:0 !important;
+}
+
+.ssv1-winner{
+  margin-top:10px !important;
+  min-height:112px !important;
+  padding:10px 14px !important;
+  grid-template-columns:98px minmax(0,1fr) !important;
+  gap:12px !important;
+}
+
+/* Nouveau trophée PNG transparent */
+.ssv1-trophy{
+  width:96px !important;
+  height:96px !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:visible !important;
+  filter:none !important;
+}
+
+.ssv1-trophy img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  display:block !important;
+  filter:drop-shadow(0 0 12px rgba(155,66,255,.22)) !important;
+}
+
+/* Couronne du GitHub */
+.ssv1-winner-label{
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+}
+
+.ssv1-winner-label img{
+  width:18px !important;
+  height:18px !important;
+  object-fit:contain !important;
+  flex:0 0 auto !important;
+}
+
+/* Suppression complète des cases Joueurs / Manche / Durée / Difficulté */
+.ssv1-stats{
+  display:none !important;
+}
+
+/* Le bouton remonte après le bloc vainqueur */
+.ssv1-next,
+.ssv1-wait-host{
+  margin-top:10px !important;
+}
+
+/* Un peu moins de vide global en bas */
+.ssv1-screen{
+  padding-bottom:max(34px,env(safe-area-inset-bottom)) !important;
+}
+
+@media(max-width:390px){
+  .ssv1-heading{
+    margin-top:-5px !important;
+  }
+
+  .ssv1-winner{
+    grid-template-columns:84px minmax(0,1fr) !important;
+  }
+
+  .ssv1-trophy{
+    width:82px !important;
+    height:82px !important;
+  }
+}
