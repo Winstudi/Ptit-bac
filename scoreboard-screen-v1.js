@@ -195,6 +195,15 @@
           <p>Voici toutes les réponses et leurs corrections !</p>
         </section>
 
+        <section class="ssv1-winner">
+          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt=""></div>
+          <div class="ssv1-winner-copy">
+            <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
+            <strong>${winnerNames || "Aucun vainqueur"}</strong>
+            <span>${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
+          </div>
+        </section>
+
         <section class="ssv1-board-shell">
           <div class="ssv1-board-hint" aria-hidden="true">
             <span>☝</span> Glisse pour voir les autres catégories <b>→</b>
@@ -213,14 +222,7 @@
           </div>
         </section>
 
-        <section class="ssv1-winner">
-          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt=""></div>
-          <div class="ssv1-winner-copy">
-            <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
-            <strong>${winnerNames || "Aucun vainqueur"}</strong>
-            <span>${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
-          </div>
-        </section>
+
 ${user?.isHost ? `
           <button class="ssv1-next" id="ssv1Next" type="button">
             Continuer <span>→</span>

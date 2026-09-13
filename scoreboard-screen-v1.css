@@ -638,3 +638,125 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
     height:82px !important;
   }
 }
+
+
+/* =========================================================
+   Résultats V10 — vainqueur au-dessus du tableau
+   ========================================================= */
+
+/* Titre et sous-titre remontés */
+.ssv1-heading{
+  margin:-10px 0 8px !important;
+  transform:translateY(-8px) !important;
+}
+
+.ssv1-heading h1{
+  line-height:.94 !important;
+}
+
+.ssv1-heading p{
+  margin-top:6px !important;
+}
+
+/* Bloc vainqueur juste sous le titre */
+.ssv1-winner{
+  margin:0 0 10px !important;
+  min-height:102px !important;
+  padding:8px 12px !important;
+  grid-template-columns:92px minmax(0,1fr) !important;
+  gap:10px !important;
+}
+
+/* Nouveau trophée PNG */
+.ssv1-trophy{
+  width:90px !important;
+  height:90px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  overflow:visible !important;
+  filter:none !important;
+}
+
+.ssv1-trophy img{
+  width:100% !important;
+  height:100% !important;
+  display:block !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  background:transparent !important;
+  border:0 !important;
+  filter:drop-shadow(0 0 10px rgba(159,70,255,.22)) !important;
+}
+
+/* Couronne GitHub */
+.ssv1-winner-label{
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+}
+
+.ssv1-winner-label img{
+  width:20px !important;
+  height:20px !important;
+  object-fit:contain !important;
+  flex:0 0 auto !important;
+}
+
+/* Tableau immédiatement après */
+.ssv1-board-shell{
+  margin-top:0 !important;
+}
+
+/* Bouton toujours après le contenu */
+.ssv1-next,
+.ssv1-wait-host{
+  position:static !important;
+  inset:auto !important;
+  transform:none !important;
+  margin-top:12px !important;
+}
+
+/* Scroll vertical autorisé si nécessaire */
+.ssv1-screen{
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  padding-bottom:max(20px,env(safe-area-inset-bottom)) !important;
+}
+
+/* Colonne joueurs totalement indépendante du scroll */
+.ssv1-board-fixed{
+  position:relative !important;
+  z-index:50 !important;
+  transform:none !important;
+}
+
+.ssv1-board-scroll{
+  position:relative !important;
+  z-index:1 !important;
+  min-width:0 !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+/* Les anciennes stats restent supprimées */
+.ssv1-stats{
+  display:none !important;
+}
+
+@media(max-width:390px){
+  .ssv1-winner{
+    grid-template-columns:78px minmax(0,1fr) !important;
+    min-height:92px !important;
+  }
+
+  .ssv1-trophy{
+    width:76px !important;
+    height:76px !important;
+  }
+
+  .ssv1-winner-copy strong{
+    font-size:1.5rem !important;
+  }
+}
