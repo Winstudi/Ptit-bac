@@ -1,5 +1,5 @@
 /* =========================================================
-   P'tit Bac — Accueil mobile V5
+   P'tit Bac — Accueil mobile V8
    Écran autonome. Les anciennes feuilles .home-plaque-v1
    ne sont plus nécessaires pour cet accueil.
    ========================================================= */
@@ -137,6 +137,7 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-profile {
   position:relative;
+  transform:translateY(5px);
   height:38px;
   overflow:visible;
   min-width:0;
@@ -522,7 +523,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-modes {
   position:relative;
   z-index:3;
-  margin-top:72px;
+  margin-top:92px;
   padding:10px 9px 3px;
   border:1.5px solid #9856ff;
   border-radius:22px;
@@ -858,6 +859,41 @@ body:has(.home-mobile) .economy-hud {
   height:13px;
 }
 
+
+.hm-join b {
+  flex-wrap:nowrap;
+  gap:3px;
+  white-space:nowrap;
+  font-size:.62rem;
+}
+
+.hm-join b .hm-chevron {
+  width:13px;
+  height:13px;
+}
+
+.hm-menu-admin {
+  border-top:1px solid rgba(153,92,255,.22) !important;
+  margin-top:4px !important;
+  color:#f2d8ff !important;
+}
+
+.hm-menu-admin img {
+  filter:drop-shadow(0 0 5px rgba(205,96,255,.4));
+}
+
+@media (max-width:370px) {
+  .hm-join b {
+    font-size:.55rem;
+    gap:2px;
+  }
+
+  .hm-join b .hm-chevron {
+    width:12px;
+    height:12px;
+  }
+}
+
 /* =========================
    DIALOGUES / POPUPS
    ========================= */
@@ -1165,7 +1201,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-modes {
-    margin-top:62px;
+    margin-top:82px;
     padding-top:8px;
   }
 
@@ -1219,7 +1255,7 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-height:670px) {
   .hm-modes {
-    margin-top:54px;
+    margin-top:74px;
   }
 
   .home-mobile {

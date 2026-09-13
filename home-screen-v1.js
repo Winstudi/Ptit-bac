@@ -297,6 +297,59 @@
       </span>`;
   }
 
+  function refreshHomeAdminEntry() {
+    const button = document.getElementById("homeAdminMenu");
+    if (!button) return;
+
+    const walletToken = String(
+      session?.walletToken ||
+      localStorage.getItem("petitbac_walletToken") ||
+      ""
+    );
+
+    socket.emit("admin:status", { walletToken }, response => {
+      if (!button.isConnected) return;
+      button.hidden = response?.admin !== true;
+    });
+  }
+
+  function openHomeAdminMenu() {
+    // admin-v1.js garde volontairement son menu dans une closure.
+    // On crée brièvement sa cible historique pour lui laisser ouvrir
+    // son vrai menu admin, sans dupliquer toute la logique admin ici.
+    document.getElementById("homeAdminBridge")?.remove();
+
+    const bridge = document.createElement("div");
+    bridge.id = "homeAdminBridge";
+    bridge.className = "profile-v2-final";
+    bridge.hidden = true;
+    document.getElementById("app")?.appendChild(bridge);
+
+    let attempts = 0;
+
+    const tryOpen = () => {
+      const crown = bridge.querySelector(".admin-v1-crown-btn");
+
+      if (crown) {
+        crown.click();
+        setTimeout(() => bridge.remove(), 0);
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts < 24) {
+        setTimeout(tryOpen, 25);
+        return;
+      }
+
+      bridge.remove();
+      toast("Menu admin indisponible pour le moment.");
+    };
+
+    tryOpen();
+  }
+
   function renderPlaquetteHome() {
     if (session.state) return render();
 
@@ -375,8 +428,12 @@
 
           <nav id="homeMenu" class="hm-menu" aria-label="Menu" hidden>
             <button id="homeSettings" type="button">${img("settings")}<span>Paramètres</span></button>
-            <button id="homeProfileLink" type="button">${img("profile-icon")}<span>Mon profil</span></button>
-            <button id="homeHistory" type="button">${img("coin")}<span>Historique des pièces</span></button>
+            <button id="homeGameJournal" type="button">${img("task")}<span>Journal de partie</span></button>
+            <button id="homeInbox" type="button">${img("info")}<span>Boîte de réception</span></button>
+            <button id="homeAdminMenu" class="hm-menu-admin" type="button" hidden>
+              ${img("admin-crown")}
+              <span>Menu admin</span>
+            </button>
             <button id="homeMenuClose" class="hm-menu-close" type="button">Fermer</button>
           </nav>
         </header>
@@ -521,6 +578,10 @@
       event.stopPropagation();
       menu.hidden = !menu.hidden;
       trigger.setAttribute("aria-expanded", String(!menu.hidden));
+
+      if (!menu.hidden) {
+        refreshHomeAdminEntry();
+      }
     });
 
     document.getElementById("homeMenuClose")?.addEventListener("click", () => {
@@ -574,12 +635,26 @@
       window.PtitBacFriends?.open?.();
     });
 
-    document.getElementById("homeProfileLink")?.addEventListener("click", renderProfile);
-
-    document.getElementById("homeHistory")?.addEventListener("click", () => {
-      closeMenu();
-      window.openWalletHistory?.();
+    document.getElementById("homeGameJournal")?.addEventListener("click", () => {
+      showDetails(`
+        <h2>Journal de partie</h2>
+        <p>Ton historique de parties apparaîtra ici prochainement.</p>
+      `);
     });
+
+    document.getElementById("homeInbox")?.addEventListener("click", () => {
+      showDetails(`
+        <h2>Boîte de réception</h2>
+        <p>Tes messages, récompenses et notifications apparaîtront ici.</p>
+      `);
+    });
+
+    document.getElementById("homeAdminMenu")?.addEventListener("click", () => {
+      closeMenu();
+      openHomeAdminMenu();
+    });
+
+    refreshHomeAdminEntry();
 
     document.getElementById("homeSettings")?.addEventListener("click", () => {
       showDetails(`
