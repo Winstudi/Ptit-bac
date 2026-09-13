@@ -196,11 +196,18 @@
         </section>
 
         <section class="ssv1-winner">
-          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt="Trophée"></div>
-          <div class="ssv1-winner-copy">
-            <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
-            <strong>${winnerNames || "Aucun vainqueur"}</strong>
-            <span class="ssv1-winner-points">${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
+          <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
+
+          <div class="ssv1-winner-body">
+            <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt="Trophée"></div>
+
+            <div class="ssv1-winner-copy">
+              <div class="ssv1-winner-name-row">
+                ${winner.winners[0] ? `<div class="ssv1-winner-avatar">${playerAvatar(winner.winners[0])}</div>` : ""}
+                <strong>${winnerNames || "Aucun vainqueur"}</strong>
+              </div>
+              <span class="ssv1-winner-points">${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
+            </div>
           </div>
         </section>
 

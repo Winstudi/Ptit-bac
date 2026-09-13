@@ -898,3 +898,161 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
   font-size:clamp(1.65rem, 7vw, 2.45rem) !important;
   letter-spacing:-0.04em !important;
 }
+
+
+/* =========================================================
+   Résultats V14 — titre 1 ligne + vainqueur enrichi
+   ========================================================= */
+
+/* Force "Résultats de la manche" sur UNE seule ligne */
+.ssv1-heading h1{
+  display:block !important;
+  white-space:nowrap !important;
+  font-size:clamp(1.5rem,6.2vw,2.18rem) !important;
+  letter-spacing:-0.045em !important;
+  line-height:1 !important;
+}
+
+.ssv1-heading h1 span{
+  display:inline !important;
+  margin:0 !important;
+}
+
+/* Bloc vainqueur : titre en haut, puis contenu */
+.ssv1-winner{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  min-height:0 !important;
+  padding:10px 14px 12px !important;
+  gap:6px !important;
+}
+
+/* "Vainqueur de la manche" tout en haut du cadre et plus grand */
+.ssv1-winner-label{
+  width:100% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:7px !important;
+  margin:0 !important;
+  color:#b45cff !important;
+  font-size:.86rem !important;
+  font-weight:900 !important;
+  letter-spacing:.02em !important;
+  line-height:1.1 !important;
+}
+
+.ssv1-winner-label img{
+  width:22px !important;
+  height:22px !important;
+  object-fit:contain !important;
+  flex:0 0 auto !important;
+}
+
+/* Corps : trophée + joueur */
+.ssv1-winner-body{
+  display:grid !important;
+  grid-template-columns:108px minmax(0,1fr) !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+
+/* Trophée plus grand */
+.ssv1-trophy{
+  width:104px !important;
+  height:104px !important;
+  display:grid !important;
+  place-items:center !important;
+}
+
+.ssv1-trophy img{
+  width:104px !important;
+  height:104px !important;
+  object-fit:contain !important;
+}
+
+/* Avatar + prénom sur la même ligne */
+.ssv1-winner-name-row{
+  display:flex !important;
+  align-items:center !important;
+  gap:9px !important;
+  min-width:0 !important;
+}
+
+.ssv1-winner-avatar{
+  width:46px !important;
+  height:46px !important;
+  border:2px solid #a347ff !important;
+  border-radius:12px !important;
+  background:#0c2158 !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:hidden !important;
+  flex:0 0 auto !important;
+  box-shadow:0 0 10px rgba(162,71,255,.22) !important;
+}
+
+.ssv1-winner-avatar img,
+.ssv1-winner-avatar span{
+  width:88% !important;
+  height:88% !important;
+  max-width:88% !important;
+  max-height:88% !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  display:grid !important;
+  place-items:center !important;
+  font-size:1.35rem !important;
+}
+
+.ssv1-winner-name-row strong{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+  font-size:1.68rem !important;
+  line-height:.95 !important;
+  font-weight:900 !important;
+}
+
+.ssv1-winner-points{
+  margin-top:7px !important;
+  font-size:1rem !important;
+  font-weight:900 !important;
+}
+
+/* Compact on smaller phones */
+@media(max-width:390px){
+  .ssv1-heading h1{
+    font-size:clamp(1.35rem,5.8vw,1.9rem) !important;
+  }
+
+  .ssv1-winner{
+    padding:9px 11px 10px !important;
+  }
+
+  .ssv1-winner-label{
+    font-size:.78rem !important;
+  }
+
+  .ssv1-winner-body{
+    grid-template-columns:92px minmax(0,1fr) !important;
+    gap:8px !important;
+  }
+
+  .ssv1-trophy,
+  .ssv1-trophy img{
+    width:90px !important;
+    height:90px !important;
+  }
+
+  .ssv1-winner-avatar{
+    width:42px !important;
+    height:42px !important;
+  }
+
+  .ssv1-winner-name-row strong{
+    font-size:1.52rem !important;
+  }
+}
