@@ -1,6 +1,6 @@
-/* P'tit Bac — Salon Partie rapide V2
-   S'applique UNIQUEMENT à .lobby-v5[data-mode="quick"].
-   Les salons privés gardent leur design et leurs fonctions actuelles. */
+/* P'tit Bac — Salon Partie rapide V3
+   Synchronisation serveur de l'état Prêt / En attente.
+   S'applique uniquement aux salons data-mode="quick". */
 
 .lobby-v5[data-mode="quick"].quick-lobby-v1 {
   gap:9px;
@@ -23,7 +23,7 @@
   font-weight:700;
 }
 
-/* PARAMÈTRES */
+/* Paramètres : lecture seule */
 .quick-lobby-v1 .lobby-v5-settings-panel {
   padding:11px;
   border-color:#3158b7;
@@ -60,7 +60,7 @@
   font-size:.78rem;
 }
 
-/* JOUEURS */
+/* Joueurs */
 .quick-lobby-v1 .lobby-v5-players-section h2 {
   margin-top:2px;
   font-size:.95rem;
@@ -139,8 +139,7 @@
   font-size:.45rem;
 }
 
-/* BOUTON PRÊT
-   Colonne dédiée : il reste toujours dans la carte et parfaitement à droite. */
+/* Bouton Prêt : colonne fixe à droite, jamais hors de la carte */
 .quick-ready-btn {
   justify-self:end;
   align-self:center;
@@ -164,7 +163,6 @@
 }
 
 .quick-ready-btn span {
-  min-width:0;
   font-size:.75rem;
   font-weight:900;
   line-height:1;
@@ -185,7 +183,18 @@
     inset 0 0 12px rgba(85,255,198,.12);
 }
 
-/* EMPLACEMENTS VIDES */
+.quick-ready-btn.is-starting,
+.quick-ready-btn:disabled {
+  cursor:default;
+}
+
+.quick-ready-btn.is-starting {
+  border-color:#7c69df;
+  color:#d9d2ff;
+  background:linear-gradient(180deg,#2d3274,#20265f);
+}
+
+/* Emplacements libres */
 .quick-lobby-v1 .quick-empty-player {
   position:relative;
   min-height:43px;
@@ -206,7 +215,7 @@
   letter-spacing:2px;
 }
 
-/* RECHERCHE */
+/* Recherche */
 .quick-search-panel {
   margin-top:auto;
   min-height:116px;
@@ -316,6 +325,7 @@
     transform:scale(.78);
     opacity:.5;
   }
+
   35% {
     transform:scale(1);
     opacity:1;
