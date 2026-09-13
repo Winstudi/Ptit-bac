@@ -1,5 +1,5 @@
 /* =========================================================
-   P'tit Bac — Accueil mobile V3
+   P'tit Bac — Accueil mobile V4
    Écran autonome. Les anciennes feuilles .home-plaque-v1
    ne sont plus nécessaires pour cet accueil.
    ========================================================= */
@@ -44,13 +44,13 @@ body:has(.home-mobile) .economy-hud {
   min-height:100svh;
   margin:0 auto;
   padding:
-    max(9px,env(safe-area-inset-top))
-    10px
+    max(2px,env(safe-area-inset-top))
+    6px
     max(7px,env(safe-area-inset-bottom));
   display:grid;
   grid-template-rows:auto minmax(230px,1fr) auto auto auto;
   align-content:stretch;
-  gap:8px;
+  gap:6px;
   overflow-x:hidden;
   overflow-y:auto;
   scrollbar-width:none;
@@ -126,18 +126,21 @@ body:has(.home-mobile) .economy-hud {
 .hm-header {
   position:relative;
   z-index:20;
+  width:calc(100% + 2px);
+  margin-left:-1px;
+  align-self:start;
   display:grid;
-  grid-template-columns:96px minmax(0,1fr) 36px;
-  align-items:center;
-  gap:4px;
+  grid-template-columns:90px minmax(0,1fr) 34px;
+  align-items:start;
+  gap:3px;
 }
 
 .hm-profile {
-  height:46px;
+  height:42px;
   min-width:0;
-  padding:0 5px 0 2px;
+  padding:0 4px 0 2px;
   border:1.4px solid #6350ee;
-  border-radius:14px;
+  border-radius:13px;
   background:linear-gradient(125deg,#27136d,#0b174a 82%);
   box-shadow:
     inset 0 0 14px rgba(116,68,255,.08),
@@ -149,11 +152,11 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-avatar {
-  width:40px;
-  height:40px;
-  flex:0 0 40px;
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
   border:2px solid #d15eff;
-  border-radius:12px;
+  border-radius:11px;
   background:
     radial-gradient(circle at 50% 35%,rgba(133,72,255,.34),transparent 60%),
     #202064;
@@ -163,7 +166,7 @@ body:has(.home-mobile) .economy-hud {
   display:grid;
   place-items:center;
   overflow:hidden;
-  font-size:1.5rem;
+  font-size:1.36rem;
   line-height:1;
 }
 
@@ -174,46 +177,47 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-profile-copy b {
-  max-width:54px;
+  max-width:50px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-size:.69rem;
+  font-size:.66rem;
   line-height:1;
   font-weight:900;
 }
 
 .hm-profile-copy small {
   color:#bea7e9;
-  font-size:.50rem;
+  font-size:.48rem;
   font-weight:700;
   white-space:nowrap;
 }
 
 .hm-resources {
   min-width:0;
+  padding-top:0;
   display:grid;
-  grid-template-columns:.84fr 1.22fr .84fr;
-  gap:4px;
+  grid-template-columns:.83fr 1.24fr .83fr;
+  gap:3px;
 }
 
 .hm-resources button {
   min-width:0;
-  height:36px;
+  height:33px;
   padding:2px;
   border:1.3px solid #6850ef;
-  border-radius:12px;
+  border-radius:11px;
   background:linear-gradient(180deg,#22165e,#0d1748);
   box-shadow:inset 0 0 12px rgba(102,75,234,.08);
   display:grid;
-  grid-template-columns:18px minmax(0,1fr) 14px;
+  grid-template-columns:17px minmax(0,1fr) 13px;
   align-items:center;
   gap:1px;
 }
 
 .hm-resources img {
-  width:18px;
-  height:21px;
+  width:17px;
+  height:19px;
 }
 
 .hm-resources b {
@@ -222,14 +226,14 @@ body:has(.home-mobile) .economy-hud {
   text-overflow:ellipsis;
   white-space:nowrap;
   text-align:center;
-  font-size:.57rem;
+  font-size:.55rem;
   font-weight:900;
   letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;
 }
 
 #homePlaqueCoinsBtn b {
-  font-size:.54rem;
+  font-size:.52rem;
   letter-spacing:-.04em;
 }
 
@@ -239,23 +243,23 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-resources i {
-  width:14px;
-  height:18px;
+  width:13px;
+  height:16px;
   border-radius:6px;
   background:linear-gradient(180deg,#7d6aff,#681de6);
   box-shadow:0 0 8px rgba(110,72,255,.32);
   display:grid;
   place-items:center;
   font-style:normal;
-  font-size:.76rem;
+  font-size:.70rem;
   font-weight:900;
   line-height:1;
 }
 
 .hm-menu-button {
-  width:36px;
-  height:36px;
-  padding:7px;
+  width:34px;
+  height:34px;
+  padding:7px 6px;
   border:1.4px solid #6953f4;
   border-radius:11px;
   background:linear-gradient(180deg,#17184f,#0d1541);
@@ -276,7 +280,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-menu {
   position:absolute;
   right:0;
-  top:52px;
+  top:46px;
   width:224px;
   padding:9px;
   border:1.2px solid #9b55ff;
@@ -329,7 +333,8 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-hero {
   position:relative;
-  min-height:230px;
+  min-height:242px;
+  padding-bottom:5px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -504,7 +509,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-modes {
   position:relative;
   z-index:3;
-  margin-top:10px;
+  margin-top:22px;
   padding:10px 9px 3px;
   border:1.5px solid #9856ff;
   border-radius:22px;
@@ -543,7 +548,7 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-mode-grid button {
   min-width:0;
-  min-height:105px;
+  min-height:112px;
   padding:7px 4px 8px;
   border:2px solid #a36cff;
   border-radius:17px;
@@ -570,9 +575,9 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-mode-grid img {
-  width:62px;
-  max-width:88%;
-  height:56px;
+  width:74px;
+  max-width:94%;
+  height:66px;
   margin:0 auto;
 }
 
@@ -672,7 +677,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-bottom {
   position:relative;
   z-index:3;
-  margin:12px 8px 0;
+  margin:34px 10px 0;
   display:grid;
   grid-template-columns:minmax(0,2.55fr) minmax(0,1fr);
   gap:8px;
@@ -680,8 +685,8 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-bottom > button {
   min-width:0;
-  min-height:88px;
-  padding:6px;
+  min-height:74px;
+  padding:5px;
   border:1.2px solid #8351fa;
   border-radius:14px;
   background:
@@ -693,34 +698,34 @@ body:has(.home-mobile) .economy-hud {
 .hm-trophies-title {
   min-width:0;
   display:grid;
-  grid-template-columns:23px minmax(0,1fr) 14px;
+  grid-template-columns:20px minmax(0,1fr) 12px;
   align-items:center;
   gap:6px;
   text-align:left;
 }
 
 .hm-trophies-title > img {
-  width:23px;
-  height:23px;
+  width:20px;
+  height:20px;
 }
 
 .hm-trophies-title > span {
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-size:.65rem;
+  font-size:.59rem;
   font-weight:900;
 }
 
 .hm-trophies-title > i {
   font-style:normal;
-  font-size:1.35rem;
+  font-size:1.18rem;
   line-height:1;
 }
 
 .hm-milestones {
   position:relative;
-  margin-top:5px;
+  margin-top:3px;
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
   gap:3px;
@@ -730,7 +735,7 @@ body:has(.home-mobile) .economy-hud {
   position:absolute !important;
   left:9%;
   right:9%;
-  top:29px;
+  top:25px;
   height:4px;
   z-index:0;
   border-radius:999px;
@@ -755,8 +760,8 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-milestone-icon {
-  width:26px;
-  height:24px;
+  width:22px;
+  height:20px;
   border:1px solid #4d47c4;
   border-radius:7px;
   background:#10154f;
@@ -765,14 +770,14 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-milestone-icon img {
-  width:22px;
-  height:20px;
+  width:19px;
+  height:17px;
 }
 
 .hm-milestones > span > i {
-  width:8px;
-  height:8px;
-  margin-top:3px;
+  width:7px;
+  height:7px;
+  margin-top:2px;
   border:1px solid #15173f;
   border-radius:50%;
   background:#7974aa;
@@ -789,7 +794,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-milestones > span > small {
   margin-top:3px;
   color:#b7add9;
-  font-size:.45rem;
+  font-size:.42rem;
   font-weight:700;
 }
 
@@ -802,18 +807,18 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-inventory > img {
-  width:52px;
-  height:49px;
+  width:44px;
+  height:42px;
 }
 
 .hm-inventory b {
-  font-size:.65rem;
+  font-size:.59rem;
   font-weight:900;
 }
 
 .hm-inventory b span {
   padding-left:3px;
-  font-size:.98rem;
+  font-size:.90rem;
 }
 
 /* =========================
@@ -1047,26 +1052,26 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-width:370px) {
   .home-mobile {
-    padding-left:8px;
-    padding-right:8px;
+    padding-left:5px;
+    padding-right:5px;
   }
 
   .hm-header {
-    grid-template-columns:84px minmax(0,1fr) 34px;
+    grid-template-columns:80px minmax(0,1fr) 32px;
     gap:3px;
   }
 
   .hm-profile {
-    height:43px;
-    gap:4px;
+    height:40px;
+    gap:3px;
     padding-right:3px;
   }
 
   .hm-avatar {
-    width:36px;
-    height:36px;
-    flex-basis:36px;
-    font-size:1.35rem;
+    width:34px;
+    height:34px;
+    flex-basis:34px;
+    font-size:1.25rem;
   }
 
   .hm-profile-copy b {
@@ -1083,8 +1088,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources button {
-    height:34px;
-    grid-template-columns:16px minmax(0,1fr) 12px;
+    height:31px;
+    grid-template-columns:15px minmax(0,1fr) 11px;
     padding-inline:2px;
   }
 
@@ -1104,9 +1109,9 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-menu-button {
-    width:34px;
-    height:34px;
-    padding:7px;
+    width:32px;
+    height:32px;
+    padding:6px;
   }
 
   .hm-side button {
@@ -1124,7 +1129,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-mode-grid button {
-    min-height:99px;
+    min-height:106px;
   }
 
   .hm-mode-grid b {
@@ -1141,7 +1146,7 @@ body:has(.home-mobile) .economy-hud {
 
   .hm-bottom {
     grid-template-columns:minmax(0,2.4fr) minmax(0,1fr);
-    margin:10px 4px 0;
+    margin:28px 5px 0;
     gap:6px;
   }
 
@@ -1163,14 +1168,13 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-height:760px) {
   .home-mobile {
-    grid-template-rows:auto minmax(198px,1fr) auto auto auto;
-    gap:6px;
+    grid-template-rows:auto minmax(208px,1fr) auto auto auto;
+    gap:5px;
   }
 
   .hm-header {
-    transform:scale(.97);
-    transform-origin:top center;
-    margin-bottom:-2px;
+    transform:none;
+    margin-bottom:0;
   }
 
   .hm-side {
@@ -1196,6 +1200,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-modes {
+    margin-top:18px;
     padding-top:8px;
   }
 
@@ -1205,11 +1210,12 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-mode-grid button {
-    min-height:91px;
+    min-height:101px;
   }
 
   .hm-mode-grid img {
-    height:47px;
+    width:66px;
+    height:58px;
   }
 
   .hm-ranked {
@@ -1217,27 +1223,31 @@ body:has(.home-mobile) .economy-hud {
     margin-top:7px !important;
   }
 
+  .hm-bottom {
+    margin-top:28px;
+  }
+
   .hm-bottom > button {
-    min-height:80px;
+    min-height:68px;
   }
 
   .hm-inventory > img {
-    width:47px;
-    height:44px;
+    width:40px;
+    height:38px;
   }
 
   .hm-milestone-icon {
-    width:24px;
-    height:22px;
+    width:21px;
+    height:19px;
   }
 
   .hm-milestone-icon img {
-    width:20px;
-    height:18px;
+    width:18px;
+    height:16px;
   }
 
   .hm-trophy-track {
-    top:27px;
+    top:24px;
   }
 
   .hm-footer {
@@ -1248,7 +1258,7 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-height:670px) {
   .home-mobile {
-    grid-template-rows:auto 175px auto auto auto;
+    grid-template-rows:auto 190px auto auto auto;
   }
 
   .hm-side {
@@ -1285,11 +1295,12 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-mode-grid button {
-    min-height:79px;
+    min-height:92px;
   }
 
   .hm-mode-grid img {
-    height:39px;
+    width:58px;
+    height:50px;
   }
 
   .hm-mode-grid b {
@@ -1307,8 +1318,12 @@ body:has(.home-mobile) .economy-hud {
     height:32px;
   }
 
+  .hm-bottom {
+    margin-top:22px;
+  }
+
   .hm-bottom > button {
-    min-height:74px;
+    min-height:62px;
   }
 
   .hm-trophies-title > img {
@@ -1331,8 +1346,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-inventory > img {
-    width:42px;
-    height:39px;
+    width:36px;
+    height:34px;
   }
 }
 
@@ -1354,10 +1369,13 @@ body:has(.home-mobile) .economy-hud {
     height:78px;
   }
 
-  .hm-mode-grid b,
+  .hm-mode-grid b {
+    font-size:.8rem;
+  }
+
   .hm-trophies-title > span,
   .hm-inventory b {
-    font-size:.8rem;
+    font-size:.65rem;
   }
 }
 
