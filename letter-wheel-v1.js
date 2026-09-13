@@ -39,7 +39,6 @@
 
   function exactTarget(letter, start, direction = 1) {
     const index = Math.max(0, LETTERS.indexOf(letter));
-    // Pointer is at 12 o'clock. Sector centers start at 0deg.
     const desired = -index * SEGMENT;
     if (direction >= 0) {
       let target = desired;
@@ -75,12 +74,8 @@
         return;
       }
       const t = clamp((now - started) / duration, 0, 1);
-      // Garde une rotation visible jusqu'à la toute fin.
-      // L'ancienne courbe quintique donnait l'impression que la roue
-      // était déjà arrêtée avant l'affichage de la lettre.
       const eased = 1 - Math.pow(1 - t, 3);
 
-      // Très léger rebond seulement sur les 3% finaux.
       let value = start + (target - start) * eased;
       if (t > 0.97) {
         const local = (t - 0.97) / 0.03;
@@ -96,7 +91,6 @@
 
       setRotation(target);
 
-      // Affiche la lettre sur la même frame que l'arrêt exact de la roue.
       const center = document.getElementById("pbw1CenterLetter");
       if (center) center.textContent = letter;
 
@@ -109,8 +103,6 @@
 
     runtime.animationFrame = requestAnimationFrame(tick);
   }
-
-
 
   function renderLetterWheelV1() {
     clearInterval(session.timerHandle);
@@ -169,7 +161,6 @@
         <nav class="pbw1-steps" aria-label="Étapes de la manche">
           <span>Catégories</span><i>•</i><strong aria-current="step">Lettre</strong><i>•</i><span>À vous de jouer</span>
         </nav>
-        <h1 class="pbw1-title">Tirage de la lettre</h1>
 
         <section class="pbw1-chooser">
           <div class="pbw1-lightning"><img src="/lightning.png" alt=""></div>
@@ -201,7 +192,6 @@
             </div>
           </div>
         </section>
-        <p class="pbw1-caption">Une lettre pour toute la manche</p>
 
         ${isChooser && selectedLetter ? `
           <section class="pbw1-actions ${runtime.lastVersion === version ? "is-visible" : ""}" id="pbw1Actions">
@@ -216,8 +206,6 @@
             </button>
           </section>
         ` : isChooser ? '<section class="pbw1-actions is-visible"><button class="pbw1-confirm" id="pbw1Launch" type="button">Lancer la roue <span>↻</span></button></section>' : `<p class="pbw1-wait" role="status">${selectedLetter ? "La lettre va être validée…" : `En attente de ${escapeHtml(chooserName)}…`}</p>`}
-
-        <p class="pbw1-hint">Trouve ensuite un mot par catégorie.</p>
       </main>
     `);
 
@@ -344,7 +332,6 @@
     });
   }
 
-  // Nouveau point d'entrée unique pour la phase letter_selection.
   window.renderLetterSelection = renderLetterWheelV1;
   try { renderLetterSelection = renderLetterWheelV1; } catch {}
 })();
