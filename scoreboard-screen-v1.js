@@ -196,11 +196,11 @@
         </section>
 
         <section class="ssv1-winner">
-          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt=""></div>
+          <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt="Trophée"></div>
           <div class="ssv1-winner-copy">
             <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
             <strong>${winnerNames || "Aucun vainqueur"}</strong>
-            <span>${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
+            <span class="ssv1-winner-points">${winnerNames ? winnerPoints : "Aucun point marqué."}</span>
           </div>
         </section>
 

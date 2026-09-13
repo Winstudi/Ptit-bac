@@ -760,3 +760,133 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
     font-size:1.5rem !important;
   }
 }
+
+
+/* =========================================================
+   Résultats V11 — trophée fiable + header allégé
+   ========================================================= */
+
+/* Plus de pièces en haut à droite */
+.ssv1-wallet{
+  display:none !important;
+}
+
+/* Le header garde le bouton à gauche et centre le logo */
+.ssv1-game-header{
+  grid-template-columns:1fr 62px 1fr !important;
+}
+
+/* Titre + sous-titre encore plus haut */
+.ssv1-heading{
+  margin:-20px 0 6px !important;
+  transform:translateY(-12px) !important;
+}
+
+.ssv1-heading h1{
+  font-size:clamp(1.95rem,8.2vw,2.7rem) !important;
+  line-height:.92 !important;
+}
+
+.ssv1-heading p{
+  margin-top:5px !important;
+  font-size:.74rem !important;
+}
+
+/* Bloc vainqueur plus compact */
+.ssv1-winner{
+  min-height:86px !important;
+  margin:0 0 8px !important;
+  padding:6px 10px !important;
+  grid-template-columns:76px minmax(0,1fr) !important;
+  gap:9px !important;
+  border-radius:19px !important;
+}
+
+/* Nouveau trophée PNG */
+.ssv1-trophy{
+  width:72px !important;
+  height:72px !important;
+  border:0 !important;
+  background:transparent !important;
+  overflow:visible !important;
+}
+
+.ssv1-trophy img{
+  display:block !important;
+  width:72px !important;
+  height:72px !important;
+  max-width:none !important;
+  max-height:none !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+/* Texte "Vainqueur de la manche" agrandi */
+.ssv1-winner-label{
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+  color:#b45cff !important;
+  font-size:.72rem !important;
+  font-weight:900 !important;
+  letter-spacing:.02em !important;
+  line-height:1.1 !important;
+}
+
+/* Couronne du GitHub */
+.ssv1-winner-label img{
+  width:20px !important;
+  height:20px !important;
+  object-fit:contain !important;
+  flex:0 0 auto !important;
+}
+
+/* Nom du vainqueur légèrement compact pour garder le cadre petit */
+.ssv1-winner-copy strong{
+  margin-top:2px !important;
+  font-size:1.55rem !important;
+  line-height:.95 !important;
+}
+
+/* "avec X points !" agrandi */
+.ssv1-winner-points{
+  margin-top:5px !important;
+  color:#d6c8ec !important;
+  font-size:.95rem !important;
+  font-weight:900 !important;
+  line-height:1.05 !important;
+}
+
+/* Le tableau remonte avec le reste */
+.ssv1-board-shell{
+  margin-top:0 !important;
+}
+
+@media(max-width:390px){
+  .ssv1-heading{
+    margin-top:-22px !important;
+    transform:translateY(-10px) !important;
+  }
+
+  .ssv1-winner{
+    min-height:80px !important;
+    grid-template-columns:68px minmax(0,1fr) !important;
+    padding:5px 9px !important;
+  }
+
+  .ssv1-trophy,
+  .ssv1-trophy img{
+    width:64px !important;
+    height:64px !important;
+  }
+
+  .ssv1-winner-label{
+    font-size:.67rem !important;
+  }
+
+  .ssv1-winner-points{
+    font-size:.88rem !important;
+  }
+}
