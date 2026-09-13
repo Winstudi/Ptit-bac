@@ -225,7 +225,7 @@
 
 ${user?.isHost ? `
           <button class="ssv1-next" id="ssv1Next" type="button">
-            Continuer <span>→</span>
+            ${isLastRound ? "Afficher le classement" : "Prochaine manche"} <span>→</span>
           </button>
         ` : `
           <div class="ssv1-wait-host">
