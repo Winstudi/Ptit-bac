@@ -101,7 +101,7 @@
     const isLastRound = Number(state.roundIndex || 0) + 1 >= Number(state.rounds || 1);
     const winner = roundWinner(state, players);
     const winnerNames = winner.winners.map(p => esc(p.name)).join(" & ");
-    const winnerTitle = winner.winners.length > 1 ? "ÉGALITÉ SUR LA MANCHE" : "VAINQUEUR DE LA MANCHE";
+    const winnerTitle = winner.winners.length > 1 ? "ÉGALITÉ" : "VAINQUEUR";
     const winnerPoints = winner.winners.length > 1
       ? `avec ${winner.points} point${winner.points !== 1 ? "s" : ""} chacun !`
       : `avec ${winner.points} point${winner.points !== 1 ? "s" : ""} !`;
@@ -196,7 +196,7 @@
         </section>
 
         <section class="ssv1-winner">
-          <small class="ssv1-winner-label"><img src="/admin-crown.png" alt=""> ${winnerTitle}</small>
+          <small class="ssv1-winner-label">${winnerTitle}<img src="/admin-crown.png" alt=""></small>
 
           <div class="ssv1-winner-body">
             <div class="ssv1-trophy"><img src="/scoreboard-trophy.png" alt="Trophée"></div>
