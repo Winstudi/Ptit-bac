@@ -54,6 +54,7 @@
       <button id="admReports" class="admin-v1-reports"><span>⚑</span><div><b>Reports</b><small>Avis, joueurs et réponses signalées</small></div><strong>›</strong></button>
     `);
     el.querySelector(".admin-v1-x").onclick=()=>el.remove();
+
     const save=async()=>{
       const r=await emit("admin:selfSettings",{infiniteCoins:el.querySelector("#admCoins").checked,infiniteLives:el.querySelector("#admLives").checked});
       if(!r.ok) return toast(r.error||"Erreur");
@@ -61,6 +62,7 @@
       toast("Options admin enregistrées.");
     };
     el.querySelector("#admCoins").onchange=save; el.querySelector("#admLives").onchange=save;
+
     el.querySelector("#admValidate").onclick=async()=>{
       const r=await emit("admin:addCoins",{friendCode:el.querySelector("#admId").value.replace("#",""),amount:el.querySelector("#admAmount").value});
       toast(r.ok?`${r.name}: pièces ajoutées.`:(r.error||"Erreur"));
@@ -68,11 +70,28 @@
     el.querySelector("#admReports").onclick=()=>reportsPage();
   }
 
+  function reportActions(x) {
+    if (x.type !== "report-bug" || !x.letter || !x.category || !x.answer) return "";
+    const validated = x.status === "admin_validated";
+    return `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+        ${validated
+          ? `<div style="color:#42e2a9;font-size:11px;font-weight:900;text-align:center">✓ VALIDÉ — APPRIS PAR L’IA</div>`
+          : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="adm-answer-validate" data-id="${escapeHtml(x.id)}"
+                style="min-height:40px;border:1px solid #38dca0;border-radius:12px;background:#0c604c;color:white;font-weight:900">✓ Valider</button>
+              <button class="adm-answer-delete" data-id="${escapeHtml(x.id)}"
+                style="min-height:40px;border:1px solid #e45278;border-radius:12px;background:#652143;color:white;font-weight:900">Supprimer</button>
+            </div>`}
+      </div>`;
+  }
+
   async function reportsPage() {
     const r=await emit("admin:reports");
     if(!r.ok) return toast(r.error||"Erreur");
     state.reports=r.reports||[];
     document.querySelector(".admin-v1-overlay")?.remove();
+
     setScreen(`<main class="screen admin-v1-page">
       <header><button id="admBack" class="admin-v1-back">‹</button><div><small>MODÉRATION</small><h1>Reports</h1></div><img src="/admin-crown.png"></header>
       <div class="admin-v1-tabs">
@@ -81,21 +100,51 @@
       <div id="admReportList" class="admin-v1-list"></div>
       <footer class="ptb-shared-footer" aria-hidden="true"><img src="/shared-footer-v1.png" alt=""></footer>
     </main>`);
+
     document.getElementById("admBack").onclick=()=>window.renderProfile();
+
+    const bindActions=()=>{
+      document.querySelectorAll(".adm-answer-validate").forEach(btn=>{
+        btn.onclick=async()=>{
+          btn.disabled=true; btn.textContent="Validation…";
+          const res=await emit("admin:answerReportAction",{reportId:btn.dataset.id,action:"validate"});
+          if(!res.ok){btn.disabled=false;btn.textContent="✓ Valider";return toast(res.error||"Erreur");}
+          toast(`Réponse validée : ${res.answer}`);
+          await reportsPage();
+        };
+      });
+      document.querySelectorAll(".adm-answer-delete").forEach(btn=>{
+        btn.onclick=async()=>{
+          btn.disabled=true; btn.textContent="Suppression…";
+          const res=await emit("admin:answerReportAction",{reportId:btn.dataset.id,action:"delete"});
+          if(!res.ok){btn.disabled=false;btn.textContent="Supprimer";return toast(res.error||"Erreur");}
+          toast("Report supprimé.");
+          await reportsPage();
+        };
+      });
+    };
+
     const renderList=(filter="all")=>{
       const list=state.reports.filter(x=>filter==="all"||x.type===filter);
       document.getElementById("admReportList").innerHTML=list.length?list.map(x=>`
         <article class="admin-v1-report">
           <div class="admin-v1-report-top"><span class="admin-v1-badge ${x.type}">${x.type==="report-avis"?"AVIS":x.type==="report-joueur"?"JOUEUR":"RÉPONSE / BUG"}</span><time>${new Date(x.created_at).toLocaleString("fr-FR")}</time></div>
           <h3>${escapeHtml(x.player_name||"Joueur")} ${x.friend_code?`<small>#${escapeHtml(x.friend_code)}</small>`:""}</h3>
-          ${x.category?`<p class="admin-v1-context">${escapeHtml(x.category)}${x.answer?` · « ${escapeHtml(x.answer)} »`:""}</p>`:""}
+          ${x.letter?`<p class="admin-v1-context"><b>Lettre ${escapeHtml(x.letter)}</b></p>`:""}
+          ${x.category?`<p class="admin-v1-context"><b>Catégorie :</b> ${escapeHtml(x.category)}</p>`:""}
+          ${x.answer?`<p class="admin-v1-context"><b>Réponse :</b> « ${escapeHtml(x.answer)} »</p>`:""}
           <p>${escapeHtml(x.message||"Signalement")}</p>
           ${x.room_code?`<small>Salon ${escapeHtml(x.room_code)}</small>`:""}
+          ${reportActions(x)}
         </article>`).join(""):`<div class="admin-v1-empty">Aucun report dans cette catégorie.</div>`;
+      bindActions();
     };
+
     renderList();
     document.querySelectorAll(".admin-v1-tabs button").forEach(b=>b.onclick=()=>{
-      document.querySelectorAll(".admin-v1-tabs button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); renderList(b.dataset.filter);
+      document.querySelectorAll(".admin-v1-tabs button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      renderList(b.dataset.filter);
     });
   }
 
@@ -117,116 +166,64 @@
   }
 
   function adminActivationModal() {
-    // Sécurité UX : cette fenêtre n'est accessible QUE depuis la page Mon profil.
     if (!document.querySelector(".profile-v2-final") || state.admin) return;
-
     const el = modal(`
       <button class="admin-v1-x" type="button" aria-label="Fermer">×</button>
-      <div class="admin-v1-brand admin-v1-activation-brand">
-        <img src="/admin-crown.png" alt="">
-        <div>
-          <small>ACCÈS PRIVÉ</small>
-          <h2>Administration</h2>
-        </div>
-      </div>
-      <p class="admin-v1-sub">
-        Entre ton code administrateur pour lier ce compte à l'espace admin.
-      </p>
-
-      <label class="admin-v1-code-label">
-        Code administrateur
-        <input
-          id="adminActivationCode"
-          type="password"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          placeholder="••••••••"
-        >
+      <div class="admin-v1-brand admin-v1-activation-brand"><img src="/admin-crown.png" alt=""><div><small>ACCÈS PRIVÉ</small><h2>Administration</h2></div></div>
+      <p class="admin-v1-sub">Entre ton code administrateur pour lier ce compte à l'espace admin.</p>
+      <label class="admin-v1-code-label">Code administrateur
+        <input id="adminActivationCode" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="••••••••">
       </label>
-
       <p id="adminActivationError" class="admin-v1-inline-error" hidden></p>
-
-      <button id="adminActivationValidate" class="admin-v1-primary" type="button">
-        Activer l'espace admin
-      </button>
+      <button id="adminActivationValidate" class="admin-v1-primary" type="button">Activer l'espace admin</button>
     `, "admin-v1-activation");
 
     const input = el.querySelector("#adminActivationCode");
     const error = el.querySelector("#adminActivationError");
     const validate = el.querySelector("#adminActivationValidate");
-
     el.querySelector(".admin-v1-x")?.addEventListener("click", () => el.remove());
 
     const submit = async () => {
       const code = String(input?.value || "").trim();
-      if (!code) {
-        error.hidden = false;
-        error.textContent = "Entre le code administrateur.";
-        return;
-      }
-
-      validate.disabled = true;
-      error.hidden = true;
-
+      if (!code) { error.hidden=false; error.textContent="Entre le code administrateur."; return; }
+      validate.disabled=true; error.hidden=true;
       const r = await emit("admin:claim", { code });
-
-      if (!r.ok) {
-        validate.disabled = false;
-        error.hidden = false;
-        error.textContent = r.error || "Activation impossible.";
-        return;
-      }
-
-      el.remove();
-      toast("Espace administrateur activé.");
-      await refreshAdmin();
-
-      // Reste sur Mon profil et affiche immédiatement la couronne.
+      if (!r.ok) { validate.disabled=false; error.hidden=false; error.textContent=r.error||"Activation impossible."; return; }
+      el.remove(); toast("Espace administrateur activé."); await refreshAdmin();
       if (document.querySelector(".profile-v2-final")) decorate();
     };
 
     validate?.addEventListener("click", submit);
-    input?.addEventListener("keydown", event => {
-      if (event.key === "Enter") submit();
-    });
-
+    input?.addEventListener("keydown", event => { if (event.key === "Enter") submit(); });
     setTimeout(() => input?.focus(), 120);
   }
 
   function decorate() {
     const root=document.querySelector(".profile-v2-final");
-
-    // La couronne est TOUJOURS visible sur Mon profil.
-    // - si ce compte est déjà admin -> ouvre directement le menu admin
-    // - sinon -> ouvre uniquement la fenêtre d'activation intégrée
     if(root && !root.querySelector(".admin-v1-crown-btn")) {
       const b=document.createElement("button");
-      b.className="admin-v1-crown-btn";
-      b.type="button";
+      b.className="admin-v1-crown-btn"; b.type="button";
       b.setAttribute("aria-label", state.admin ? "Ouvrir le menu admin" : "Activer l'espace admin");
       b.innerHTML='<img src="/admin-crown.png" alt="">';
       b.onclick=()=> state.admin ? adminMenu() : adminActivationModal();
       root.appendChild(b);
     }
 
-    // Bulle avis uniquement sur l'accueil, discrète au-dessus du footer.
     const home=document.querySelector(".home-v129,.home-v130,.home-v150");
     if(home && !home.querySelector(".admin-v1-feedback-bubble")) {
-      const b=document.createElement("button"); b.className="admin-v1-feedback-bubble"; b.type="button"; b.innerHTML='<span>✦</span><b>Donne-nous ton avis</b>';
+      const b=document.createElement("button"); b.className="admin-v1-feedback-bubble"; b.type="button";
+      b.innerHTML='<span>✦</span><b>Donne-nous ton avis</b>';
       b.onclick=()=>feedbackModal("report-avis"); home.appendChild(b);
     }
-    // En complément du vrai answer:report déjà présent dans le serveur, propose un report-bug
-    // sur les écrans de résultats si aucun bouton de contestation n'est visible.
+
     const text=(document.querySelector("#app")?.textContent||"").toLowerCase();
     if((text.includes("résultat")||text.includes("score")) && !document.querySelector(".admin-v1-answer-report")) {
-      const b=document.createElement("button"); b.className="admin-v1-answer-report"; b.textContent="⚑ Signaler une réponse"; b.onclick=()=>feedbackModal("report-bug");
+      const b=document.createElement("button"); b.className="admin-v1-answer-report";
+      b.textContent="⚑ Signaler une réponse";
+      b.onclick=()=>feedbackModal("report-bug");
       document.querySelector("main.screen")?.appendChild(b);
     }
   }
-
-  // Aucun raccourci caché / aucun déclenchement par 7 clics.
-  // L'entrée admin se fait uniquement avec l'icône couronne de Mon profil.
 
   const obs=new MutationObserver(()=>decorate());
   obs.observe(document.getElementById("app"),{childList:true,subtree:true});

@@ -25,6 +25,18 @@ function friendCode(v) {
 }
 function id() { return crypto.randomBytes(12).toString("hex"); }
 
+function normalizeLearningValue(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ");
+}
+function learnedAnswerKey(category, answer) {
+  return `${normalizeLearningValue(category)}|${normalizeLearningValue(answer)}`;
+}
+
 async function schema() {
   if (!pool) throw new Error("DATABASE_URL manquant");
   if (schemaPromise) return schemaPromise;
@@ -51,6 +63,33 @@ async function schema() {
       category text,
       answer text,
       created_at timestamptz NOT NULL DEFAULT now()
+    )`);
+
+    // Les tables existent déjà dans server.js, mais ces CREATE sont idempotents.
+    await pool.query(`CREATE TABLE IF NOT EXISTS ptitbac_learned_answers(
+      answer_key text PRIMARY KEY,
+      category text NOT NULL,
+      answer text NOT NULL,
+      status text NOT NULL,
+      confidence integer NOT NULL,
+      source text NOT NULL,
+      support_count integer NOT NULL DEFAULT 1,
+      updated_at bigint NOT NULL
+    )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS ptitbac_answer_reports(
+      id text PRIMARY KEY,
+      room_code text,
+      player_id text,
+      round_index integer,
+      category text NOT NULL,
+      answer text NOT NULL,
+      letter text NOT NULL,
+      original_reason text,
+      status text NOT NULL,
+      review_verdict text,
+      review_confidence integer,
+      created_at bigint NOT NULL,
+      reviewed_at bigint
     )`);
   })();
   return schemaPromise;
@@ -81,140 +120,195 @@ async function applyFlags(token) {
   return s;
 }
 
-// Wallet integrations live in server.js.
-
 function installAdmin(io) {
+  const timer = setInterval(async () => {
+    if (!pool || !infiniteLives.size) return;
+    for (const token of infiniteLives) {
+      await pool.query("UPDATE public.users SET lives=5,life_updated_at=now(),updated_at=now() WHERE wallet_token=$1",[token]).catch(()=>{});
+    }
+  }, 1200);
+  timer.unref?.();
 
-    // Maintient les vies à 5 pour l'admin si le mode infini est actif.
-    const timer = setInterval(async () => {
-      if (!pool || !infiniteLives.size) return;
-      for (const token of infiniteLives) {
-        await pool.query("UPDATE public.users SET lives=5,life_updated_at=now(),updated_at=now() WHERE wallet_token=$1",[token]).catch(()=>{});
-      }
-    }, 1200);
-    timer.unref?.();
-
-    io.on("connection", socket => {
-      socket.on("admin:status", async (payload={}, cb=()=>{}) => {
-        try {
-          const token = walletToken(payload.walletToken);
-          const admin = await isAdmin(token);
-          if (!admin) return cb({ok:true,admin:false});
-          const s = await applyFlags(token);
-          cb({ok:true,admin:true,infiniteCoins:!!s.infinite_coins,infiniteLives:!!s.infinite_lives});
-        } catch { cb({ok:false,admin:false}); }
-      });
-
-      // Installation unique : le code Render PTITBAC_ADMIN_CODE lie définitivement
-      // le premier portefeuille admin. Après cela, le code ne permet pas de changer de propriétaire.
-      socket.on("admin:claim", async (payload={}, cb=()=>{}) => {
-        try {
-          await schema();
-          const token = walletToken(payload.walletToken);
-          if (!token || !ADMIN_CODE || String(payload.code||"").trim() !== ADMIN_CODE)
-            return cb({ok:false,error:"Code admin incorrect."});
-          const current = await ownerToken();
-          if (current && current !== token)
-            return cb({ok:false,error:"Un administrateur est déjà enregistré."});
-          await pool.query(`INSERT INTO ptitbac_admin_owner(singleton,wallet_token)
-            VALUES(true,$1) ON CONFLICT(singleton) DO NOTHING`, [token]);
-          await pool.query(`INSERT INTO ptitbac_admin_settings(wallet_token)
-            VALUES($1) ON CONFLICT(wallet_token) DO NOTHING`, [token]);
-          cb({ok:true,admin:true});
-        } catch (e) { cb({ok:false,error:"Activation admin impossible."}); }
-      });
-
-      socket.on("admin:selfSettings", async (payload={}, cb=()=>{}) => {
-        try {
-          const token = walletToken(payload.walletToken);
-          if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
-          const coins = !!payload.infiniteCoins, lives = !!payload.infiniteLives;
-          await pool.query(`INSERT INTO ptitbac_admin_settings(wallet_token,infinite_coins,infinite_lives,updated_at)
-            VALUES($1,$2,$3,now()) ON CONFLICT(wallet_token) DO UPDATE
-            SET infinite_coins=$2,infinite_lives=$3,updated_at=now()`, [token,coins,lives]);
-          await applyFlags(token);
-
-          let balance = null;
-          if (coins) {
-            balance = global.__ptbAdminSetCoins?.(token, 999999) ?? 999999;
-          } else if (pool) {
-            const q = await pool.query(
-              "SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",
-              [token]
-            ).catch(() => ({ rows: [] }));
-            balance = Number(q.rows[0]?.coins ?? 0);
-          }
-
-          if (Number.isFinite(Number(balance))) {
-            socket.emit("wallet:update", { balance: Number(balance) });
-          }
-
-          cb({ok:true,infiniteCoins:coins,infiniteLives:lives,balance});
-        } catch { cb({ok:false,error:"Modification impossible."}); }
-      });
-
-      socket.on("admin:addCoins", async (payload={}, cb=()=>{}) => {
-        try {
-          const token = walletToken(payload.walletToken);
-          if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
-          const code = friendCode(payload.friendCode);
-          const amount = Math.max(1,Math.min(999999,Math.floor(Number(payload.amount)||0)));
-          if (!code || !amount) return cb({ok:false,error:"ID ou montant invalide."});
-          const u = await pool.query("SELECT wallet_token,username FROM public.users WHERE friend_code=$1 OR friend_code=$2 LIMIT 1",[code,"PLAYER#"+code.slice(-4)]);
-          if (!u.rowCount || !u.rows[0].wallet_token) return cb({ok:false,error:"Joueur introuvable."});
-          const target = u.rows[0].wallet_token;
-          const current = await pool.query("SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",[target]);
-          const next = Math.min(999999, Number(current.rows[0]?.coins||0)+amount);
-          await pool.query(`INSERT INTO ptitbac_wallets(token,coins,created_at,updated_at,history)
-            VALUES($1,$2,$3,$3,'[]'::jsonb)
-            ON CONFLICT(token) DO UPDATE SET coins=$2,updated_at=$3`,[target,next,Date.now()]);
-          global.__ptbAdminSetCoins?.(target, next);
-
-          // Si le joueur est connecté au même serveur, son prochain wallet:update
-          // et les transactions utilisent immédiatement la nouvelle valeur mémoire.
-          cb({ok:true,name:u.rows[0].username||"Joueur",balance:next});
-        } catch { cb({ok:false,error:"Ajout de pièces impossible."}); }
-      });
-
-      socket.on("feedback:submit", async (payload={}, cb=()=>{}) => {
-        try {
-          await schema();
-          const type = payload.type === "report-bug" ? "report-bug" : "report-avis";
-          const message = String(payload.message||"").trim().slice(0,1000);
-          if (!message) return cb({ok:false,error:"Écris un message."});
-          await pool.query(`INSERT INTO ptitbac_feedback_reports
-            (id,report_type,wallet_token,friend_code,player_name,message,room_code,category,answer)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[
-              id(),type,walletToken(payload.walletToken)||null,friendCode(payload.friendCode)||null,
-              String(payload.playerName||"Joueur").slice(0,24),message,
-              String(payload.roomCode||"").slice(0,8)||null,
-              String(payload.category||"").slice(0,80)||null,
-              String(payload.answer||"").slice(0,100)||null
-            ]);
-          cb({ok:true});
-        } catch { cb({ok:false,error:"Envoi impossible."}); }
-      });
-
-      socket.on("admin:reports", async (payload={}, cb=()=>{}) => {
-        try {
-          const token = walletToken(payload.walletToken);
-          if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
-          await schema();
-          const feedback = await pool.query(`SELECT id,report_type AS type,friend_code,player_name,message,room_code,category,answer,created_at
-            FROM ptitbac_feedback_reports ORDER BY created_at DESC LIMIT 250`);
-          const players = await pool.query(`SELECT id,'report-joueur' AS type,reported_friend_code AS friend_code,
-            reported_name AS player_name,reason AS message,room_code,NULL::text AS category,NULL::text AS answer,created_at
-            FROM ptitbac_player_reports ORDER BY created_at DESC LIMIT 250`).catch(()=>({rows:[]}));
-          const answers = await pool.query(`SELECT id,'report-bug' AS type,NULL::text AS friend_code,
-            'Réponse signalée' AS player_name,COALESCE(original_reason,'Réponse contestée') AS message,
-            room_code,category,answer,to_timestamp(created_at/1000.0) AS created_at
-            FROM ptitbac_answer_reports ORDER BY created_at DESC LIMIT 250`).catch(()=>({rows:[]}));
-          const reports = [...feedback.rows,...players.rows,...answers.rows]
-            .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,400);
-          cb({ok:true,reports});
-        } catch { cb({ok:false,error:"Impossible de charger les reports."}); }
-      });
+  io.on("connection", socket => {
+    socket.on("admin:status", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+        const admin = await isAdmin(token);
+        if (!admin) return cb({ok:true,admin:false});
+        const s = await applyFlags(token);
+        cb({ok:true,admin:true,infiniteCoins:!!s.infinite_coins,infiniteLives:!!s.infinite_lives});
+      } catch { cb({ok:false,admin:false}); }
     });
+
+    socket.on("admin:claim", async (payload={}, cb=()=>{}) => {
+      try {
+        await schema();
+        const token = walletToken(payload.walletToken);
+        if (!token || !ADMIN_CODE || String(payload.code||"").trim() !== ADMIN_CODE)
+          return cb({ok:false,error:"Code admin incorrect."});
+        const current = await ownerToken();
+        if (current && current !== token)
+          return cb({ok:false,error:"Un administrateur est déjà enregistré."});
+        await pool.query(`INSERT INTO ptitbac_admin_owner(singleton,wallet_token)
+          VALUES(true,$1) ON CONFLICT(singleton) DO NOTHING`, [token]);
+        await pool.query(`INSERT INTO ptitbac_admin_settings(wallet_token)
+          VALUES($1) ON CONFLICT(wallet_token) DO NOTHING`, [token]);
+        cb({ok:true,admin:true});
+      } catch { cb({ok:false,error:"Activation admin impossible."}); }
+    });
+
+    socket.on("admin:selfSettings", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+        if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
+        const coins = !!payload.infiniteCoins, lives = !!payload.infiniteLives;
+        await pool.query(`INSERT INTO ptitbac_admin_settings(wallet_token,infinite_coins,infinite_lives,updated_at)
+          VALUES($1,$2,$3,now()) ON CONFLICT(wallet_token) DO UPDATE
+          SET infinite_coins=$2,infinite_lives=$3,updated_at=now()`, [token,coins,lives]);
+        await applyFlags(token);
+
+        let balance = null;
+        if (coins) {
+          balance = global.__ptbAdminSetCoins?.(token, 999999) ?? 999999;
+        } else if (pool) {
+          const q = await pool.query("SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",[token]).catch(() => ({ rows: [] }));
+          balance = Number(q.rows[0]?.coins ?? 0);
+        }
+
+        if (Number.isFinite(Number(balance))) socket.emit("wallet:update", { balance: Number(balance) });
+        cb({ok:true,infiniteCoins:coins,infiniteLives:lives,balance});
+      } catch { cb({ok:false,error:"Modification impossible."}); }
+    });
+
+    socket.on("admin:addCoins", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+        if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
+        const code = friendCode(payload.friendCode);
+        const amount = Math.max(1,Math.min(999999,Math.floor(Number(payload.amount)||0)));
+        if (!code || !amount) return cb({ok:false,error:"ID ou montant invalide."});
+        const u = await pool.query("SELECT wallet_token,username FROM public.users WHERE friend_code=$1 OR friend_code=$2 LIMIT 1",[code,"PLAYER#"+code.slice(-4)]);
+        if (!u.rowCount || !u.rows[0].wallet_token) return cb({ok:false,error:"Joueur introuvable."});
+        const target = u.rows[0].wallet_token;
+        const current = await pool.query("SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",[target]);
+        const next = Math.min(999999, Number(current.rows[0]?.coins||0)+amount);
+        await pool.query(`INSERT INTO ptitbac_wallets(token,coins,created_at,updated_at,history)
+          VALUES($1,$2,$3,$3,'[]'::jsonb)
+          ON CONFLICT(token) DO UPDATE SET coins=$2,updated_at=$3`,[target,next,Date.now()]);
+        global.__ptbAdminSetCoins?.(target, next);
+        cb({ok:true,name:u.rows[0].username||"Joueur",balance:next});
+      } catch { cb({ok:false,error:"Ajout de pièces impossible."}); }
+    });
+
+    socket.on("feedback:submit", async (payload={}, cb=()=>{}) => {
+      try {
+        await schema();
+        const type = payload.type === "report-bug" ? "report-bug" : "report-avis";
+        const message = String(payload.message||"").trim().slice(0,1000);
+        if (!message) return cb({ok:false,error:"Écris un message."});
+        await pool.query(`INSERT INTO ptitbac_feedback_reports
+          (id,report_type,wallet_token,friend_code,player_name,message,room_code,category,answer)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[
+            id(),type,walletToken(payload.walletToken)||null,friendCode(payload.friendCode)||null,
+            String(payload.playerName||"Joueur").slice(0,24),message,
+            String(payload.roomCode||"").slice(0,8)||null,
+            String(payload.category||"").slice(0,80)||null,
+            String(payload.answer||"").slice(0,100)||null
+          ]);
+        cb({ok:true});
+      } catch { cb({ok:false,error:"Envoi impossible."}); }
+    });
+
+    socket.on("admin:reports", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+        if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
+        await schema();
+
+        const feedback = await pool.query(`SELECT id,report_type AS type,friend_code,player_name,message,room_code,
+          category,answer,NULL::text AS letter,NULL::text AS status,created_at
+          FROM ptitbac_feedback_reports ORDER BY created_at DESC LIMIT 250`);
+
+        const players = await pool.query(`SELECT id,'report-joueur' AS type,reported_friend_code AS friend_code,
+          reported_name AS player_name,reason AS message,room_code,NULL::text AS category,NULL::text AS answer,
+          NULL::text AS letter,NULL::text AS status,created_at
+          FROM ptitbac_player_reports ORDER BY created_at DESC LIMIT 250`).catch(()=>({rows:[]}));
+
+        const answers = await pool.query(`SELECT id,'report-bug' AS type,NULL::text AS friend_code,
+          'Réponse signalée' AS player_name,COALESCE(original_reason,'Réponse contestée') AS message,
+          room_code,category,answer,letter,status,to_timestamp(created_at/1000.0) AS created_at
+          FROM ptitbac_answer_reports
+          WHERE status <> 'admin_deleted'
+          ORDER BY created_at DESC LIMIT 250`).catch(()=>({rows:[]}));
+
+        const reports = [...feedback.rows,...players.rows,...answers.rows]
+          .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,400);
+        cb({ok:true,reports});
+      } catch { cb({ok:false,error:"Impossible de charger les reports."}); }
+    });
+
+    socket.on("admin:answerReportAction", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+        if (!await isAdmin(token)) return cb({ok:false,error:"Accès refusé."});
+        await schema();
+
+        const reportId = String(payload.reportId || "").trim();
+        const action = String(payload.action || "").trim();
+        if (!/^[a-f0-9]{16,64}$/i.test(reportId)) return cb({ok:false,error:"Report invalide."});
+        if (!["validate","delete"].includes(action)) return cb({ok:false,error:"Action invalide."});
+
+        const q = await pool.query(`SELECT id,category,answer,letter,status
+          FROM ptitbac_answer_reports WHERE id=$1 LIMIT 1`, [reportId]);
+        if (!q.rowCount) return cb({ok:false,error:"Report introuvable."});
+
+        const report = q.rows[0];
+
+        if (action === "delete") {
+          await pool.query("UPDATE ptitbac_answer_reports SET status='admin_deleted',reviewed_at=$2 WHERE id=$1",
+            [reportId, Date.now()]);
+          return cb({ok:true,deleted:true});
+        }
+
+        const key = learnedAnswerKey(report.category, report.answer);
+        const now = Date.now();
+
+        await pool.query(`INSERT INTO ptitbac_learned_answers
+          (answer_key,category,answer,status,confidence,source,support_count,updated_at)
+          VALUES($1,$2,$3,'valid',100,'admin_approved',1,$4)
+          ON CONFLICT(answer_key) DO UPDATE SET
+            category=EXCLUDED.category,
+            answer=EXCLUDED.answer,
+            status='valid',
+            confidence=100,
+            source='admin_approved',
+            support_count=ptitbac_learned_answers.support_count+1,
+            updated_at=EXCLUDED.updated_at`,
+          [key, report.category, report.answer, now]);
+
+        await pool.query(`UPDATE ptitbac_answer_reports SET
+          status='admin_validated',review_verdict='valid',review_confidence=100,reviewed_at=$2
+          WHERE id=$1`, [reportId, now]);
+
+        // Permet à server.js d'utiliser ce hook si une passerelle mémoire est ajoutée plus tard.
+        global.__ptbAdminLearningOverlay ||= new Map();
+        global.__ptbAdminLearningOverlay.set(key, {
+          category: report.category,
+          answer: report.answer,
+          status: "valid",
+          confidence: 100,
+          source: "admin_approved",
+          supportCount: 1,
+          updatedAt: now
+        });
+
+        cb({ok:true,validated:true,letter:report.letter,category:report.category,answer:report.answer});
+      } catch (e) {
+        console.error("Action admin report réponse:", e.message);
+        cb({ok:false,error:"Action impossible."});
+      }
+    });
+  });
 }
 module.exports = installAdmin;
 
