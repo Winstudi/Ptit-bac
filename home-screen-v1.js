@@ -288,6 +288,15 @@
       </svg>`;
   }
 
+  function chevronIcon() {
+    return `
+      <span class="hm-chevron" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="m9 5 7 7-7 7"></path>
+        </svg>
+      </span>`;
+  }
+
   function renderPlaquetteHome() {
     if (session.state) return render();
 
@@ -414,17 +423,17 @@
           <div class="hm-mode-grid">
             <button id="homePlaqueQuick" class="hm-quick" type="button">
               ${img("lightning")}
-              <b>Partie rapide <span>›</span></b>
+              <b>Partie rapide ${chevronIcon()}</b>
             </button>
 
             <button id="homePlaqueCreate" class="hm-create" type="button">
               ${img("create")}
-              <b>Créer un salon <span>›</span></b>
+              <b>Créer un salon ${chevronIcon()}</b>
             </button>
 
             <button id="homeJoinOpen" class="hm-join" type="button">
               ${img("join")}
-              <b>Rejoindre une partie <span>›</span></b>
+              <b>Rejoindre une partie ${chevronIcon()}</b>
             </button>
           </div>
 
@@ -446,7 +455,7 @@
             <b class="hm-trophies-title">
               ${img("scoreboard-trophy")}
               <span>La voie des trophées</span>
-              <i>›</i>
+              ${chevronIcon()}
             </b>
 
             <div class="hm-milestones" aria-hidden="true">
@@ -466,7 +475,7 @@
 
           <button id="homeInventory" class="hm-inventory" type="button">
             ${img("inventaire")}
-            <b>Inventaire <span>›</span></b>
+            <b>Inventaire ${chevronIcon()}</b>
           </button>
         </section>
 

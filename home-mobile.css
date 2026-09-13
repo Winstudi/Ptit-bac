@@ -131,7 +131,7 @@ body:has(.home-mobile) .economy-hud {
   align-self:start;
   display:grid;
   grid-template-columns:92px minmax(0,1fr) 32px;
-  align-items:start;
+  align-items:center;
   gap:3px;
 }
 
@@ -151,7 +151,7 @@ body:has(.home-mobile) .economy-hud {
   align-items:center;
   gap:5px;
   text-align:left;
-  margin-top:3px;
+  margin-top:0;
 }
 
 .hm-avatar {
@@ -204,7 +204,7 @@ body:has(.home-mobile) .economy-hud {
   min-width:0;
   justify-self:center;
   align-self:center;
-  margin-top:3px;
+  margin-top:0;
   display:grid;
   grid-template-columns:62px minmax(82px,1fr) 62px;
   justify-content:center;
@@ -268,9 +268,10 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-menu-button {
   justify-self:end;
+  align-self:center;
   width:32px;
   height:32px;
-  margin-top:1px;
+  margin-top:0;
   padding:6px;
   border:1.4px solid #6953f4;
   border-radius:11px;
@@ -521,7 +522,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-modes {
   position:relative;
   z-index:3;
-  margin-top:52px;
+  margin-top:72px;
   padding:10px 9px 3px;
   border:1.5px solid #9856ff;
   border-radius:22px;
@@ -596,17 +597,36 @@ body:has(.home-mobile) .economy-hud {
 .hm-mode-grid b {
   min-height:27px;
   margin-top:3px;
-  display:block;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  flex-wrap:wrap;
   font-size:.72rem;
   line-height:1.18;
   font-weight:900;
+  text-align:center;
 }
 
-.hm-mode-grid b span {
-  padding-left:2px;
-  color:#d9ccff;
-  font-size:1.05rem;
-  vertical-align:-1px;
+.hm-chevron {
+  flex:0 0 auto;
+  width:15px;
+  height:15px;
+  display:inline-grid;
+  place-items:center;
+  color:#e3d8ff;
+  filter:drop-shadow(0 0 4px rgba(160,96,255,.35));
+}
+
+.hm-chevron svg {
+  width:100%;
+  height:100%;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 .hm-ranked {
@@ -820,18 +840,22 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-inventory > img {
-  width:38px;
-  height:36px;
+  width:43px;
+  height:41px;
 }
 
 .hm-inventory b {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
   font-size:.54rem;
   font-weight:900;
 }
 
-.hm-inventory b span {
-  padding-left:3px;
-  font-size:.82rem;
+.hm-inventory b .hm-chevron {
+  width:13px;
+  height:13px;
 }
 
 /* =========================
@@ -1141,7 +1165,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-modes {
-    margin-top:42px;
+    margin-top:62px;
     padding-top:8px;
   }
 
@@ -1174,8 +1198,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-inventory > img {
-    width:35px;
-    height:33px;
+    width:40px;
+    height:38px;
   }
 
   .hm-milestone-icon {
@@ -1195,7 +1219,7 @@ body:has(.home-mobile) .economy-hud {
 
 @media (max-height:670px) {
   .hm-modes {
-    margin-top:34px;
+    margin-top:54px;
   }
 
   .home-mobile {
@@ -1287,8 +1311,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-inventory > img {
-    width:32px;
-    height:30px;
+    width:37px;
+    height:35px;
   }
 }
 
