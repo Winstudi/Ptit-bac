@@ -7,16 +7,20 @@ function renderWaitingV1(){
  const players=Array.isArray(state.players)?state.players:[];const readyCount=players.filter(p=>p.submitted).length;const total=players.length;const allReady=total>0&&readyCount===total;
  setScreen(`
  <main class="wsv1-screen">
-   <header class="wsv1-brandbar">
-     <button class="wsv1-exit" id="wsv1Exit" type="button" aria-label="Quitter la partie"><img src="/lobby-exit.png" alt=""></button>
-     <img class="wsv1-brand" src="/ptitbac.logo.png" alt="P’tit Bac">
+   <header class="wsv1-brandbar" style="display:grid;grid-template-columns:1fr 62px 1fr;align-items:center;min-height:52px;width:100%;">
+     <button class="wsv1-exit" id="wsv1Exit" type="button" aria-label="Quitter la partie" style="justify-self:start;margin:0;">
+       <img src="/lobby-exit.png" alt="">
+     </button>
+     <img class="wsv1-brand" src="/ptitbac.logo.png" alt="P’tit Bac" style="display:block;width:62px;height:52px;max-width:62px;max-height:52px;object-fit:contain;justify-self:center;">
      <span aria-hidden="true"></span>
    </header>
+
    <section class="wsv1-main">
      <div class="wsv1-timer" id="wsv1TimerRing" style="--wsv1-progress:100%"><div><strong id="wsv1Timer">${Math.max(0,Number(state.duration||0))}</strong><span>secondes</span></div></div>
      <h1 id="wsv1Title">${allReady?"Tout le monde est prêt !":"En attente des autres joueurs…"}</h1>
      <p>Tes réponses sont enregistrées.</p>
    </section>
+
    <section class="wsv1-players">
      <div class="wsv1-players-head"><h2>Joueurs prêts <span>(${readyCount}/${total})</span></h2>${!allReady?`<small>${total-readyCount} restant${total-readyCount>1?"s":""}</small>`:""}</div>
      <div class="wsv1-player-list">${players.map((p,index)=>`<article class="wsv1-player ${p.submitted?"is-ready":"is-writing"}">${playerAvatar(p,index)}<strong>${esc(p.name)}</strong><span class="wsv1-state">${p.submitted?`<b class="wsv1-check">✓</b> Prêt`:`<i class="wsv1-spinner" aria-hidden="true"></i> En cours…`}</span></article>`).join("")}</div>
