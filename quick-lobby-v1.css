@@ -1,255 +1,401 @@
-/* P'tit Bac — Salon Partie rapide V1
+/* P'tit Bac — Salon Partie rapide V2
    S'applique UNIQUEMENT à .lobby-v5[data-mode="quick"].
    Les salons privés gardent leur design et leurs fonctions actuelles. */
 
 .lobby-v5[data-mode="quick"].quick-lobby-v1 {
-  gap: 9px;
-  padding-bottom: max(105px, calc(env(safe-area-inset-bottom) + 92px));
+  gap:9px;
+  padding-bottom:max(105px,calc(env(safe-area-inset-bottom) + 92px));
 }
 
 .quick-lobby-v1 .lobby-v5-header {
-  align-items: center;
-}
-.quick-lobby-v1 .lobby-v5-title h1 {
-  font-size: 1.55rem;
-  line-height: 1;
-}
-.quick-lobby-subtitle {
-  margin-top: 4px;
-  color: #a99ad8;
-  font-size: .62rem;
-  font-weight: 700;
+  align-items:center;
 }
 
+.quick-lobby-v1 .lobby-v5-title h1 {
+  font-size:1.55rem;
+  line-height:1;
+}
+
+.quick-lobby-subtitle {
+  margin-top:4px;
+  color:#a99ad8;
+  font-size:.62rem;
+  font-weight:700;
+}
+
+/* PARAMÈTRES */
 .quick-lobby-v1 .lobby-v5-settings-panel {
-  padding: 11px;
-  border-color: #3158b7;
+  padding:11px;
+  border-color:#3158b7;
   background:
-    radial-gradient(circle at 10% 0%, rgba(72,94,255,.12), transparent 36%),
+    radial-gradient(circle at 10% 0%,rgba(72,94,255,.12),transparent 36%),
     linear-gradient(145deg,rgba(8,34,91,.96),rgba(5,25,72,.98));
 }
+
 .quick-lobby-v1 .lobby-v5-settings-panel h2 {
-  font-size: .72rem;
-  margin-bottom: 10px;
+  font-size:.72rem;
+  margin-bottom:10px;
 }
+
 .quick-lobby-v1 .lobby-v5-settings-grid {
-  gap: 7px;
+  gap:7px;
 }
+
 .quick-lobby-v1 .lobby-v5-setting-card {
-  min-height: 88px;
-  border-color: #3155a9;
-  background: linear-gradient(180deg,rgba(10,39,100,.94),rgba(7,29,79,.96));
+  min-height:88px;
+  border-color:#3155a9;
+  background:linear-gradient(180deg,rgba(10,39,100,.94),rgba(7,29,79,.96));
 }
+
 .quick-lobby-v1 .lobby-v5-setting-icon {
-  width: 31px;
-  height: 31px;
+  width:31px;
+  height:31px;
 }
+
 .quick-lobby-v1 .lobby-v5-setting-card small {
-  font-size: .45rem;
+  font-size:.45rem;
 }
+
 .quick-lobby-v1 .lobby-v5-setting-value strong {
-  font-size: .78rem;
+  font-size:.78rem;
 }
 
+/* JOUEURS */
 .quick-lobby-v1 .lobby-v5-players-section h2 {
-  margin-top: 2px;
-  font-size: .95rem;
+  margin-top:2px;
+  font-size:.95rem;
 }
+
 .quick-lobby-v1 .lobby-v5-player-list {
-  gap: 5px;
+  width:100%;
+  min-width:0;
+  gap:5px;
 }
+
 .quick-lobby-v1 .lobby-v5-player {
-  min-height: 51px;
-  padding: 5px 8px;
-  grid-template-columns: 40px minmax(0,1fr) auto;
-  border-color: #3155a9;
-  background: linear-gradient(90deg,rgba(8,33,87,.96),rgba(6,28,75,.94));
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  min-height:51px;
+  padding:5px 8px;
+  box-sizing:border-box;
+  grid-template-columns:40px minmax(0,1fr) 82px;
+  align-items:center;
+  column-gap:8px;
+  border-color:#3155a9;
+  background:linear-gradient(90deg,rgba(8,33,87,.96),rgba(6,28,75,.94));
+  overflow:hidden;
 }
+
 .quick-lobby-v1 .lobby-v5-avatar {
-  width: 39px;
-  height: 39px;
+  width:39px;
+  height:39px;
 }
+
+.quick-lobby-v1 .lobby-v5-player-copy {
+  min-width:0;
+  overflow:hidden;
+}
+
 .quick-lobby-v1 .lobby-v5-player-name-row {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center;
-  gap: 7px;
+  min-width:0;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center;
+  gap:7px;
+  overflow:hidden;
 }
+
 .quick-lobby-v1 .lobby-v5-player-copy strong {
-  font-size: .67rem;
+  min-width:0;
+  flex:0 1 auto;
+  font-size:.67rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-.quick-lobby-v1 .ready-badge {
-  color: #4fe5b5;
-  font-size: .48rem;
-  font-weight: 900;
+
+.quick-player-state {
+  flex:0 1 auto;
+  min-width:0;
+  font-size:.48rem;
+  font-weight:900;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+
+.quick-player-state.is-waiting {
+  color:#8f93ae;
+  font-weight:800;
+}
+
+.quick-player-state.is-ready {
+  color:#4fe5b5;
+}
+
 .quick-lobby-v1 .lobby-v5-player-copy small {
-  color: #9d8ad4;
-  font-size: .45rem;
+  color:#9d8ad4;
+  font-size:.45rem;
 }
 
+/* BOUTON PRÊT
+   Colonne dédiée : il reste toujours dans la carte et parfaitement à droite. */
 .quick-ready-btn {
-  min-width: 77px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1.2px solid #7047d9;
-  border-radius: 999px;
-  background: linear-gradient(180deg,#182968,#101e56);
-  color: #b7acd8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  box-shadow: inset 0 0 12px rgba(112,76,232,.12);
+  justify-self:end;
+  align-self:center;
+  width:82px;
+  min-width:82px;
+  max-width:82px;
+  height:34px;
+  margin:0;
+  padding:0 10px;
+  box-sizing:border-box;
+  border:1.2px solid #7047d9;
+  border-radius:999px;
+  background:linear-gradient(180deg,#182968,#101e56);
+  color:#b7acd8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  box-shadow:inset 0 0 12px rgba(112,76,232,.12);
+  white-space:nowrap;
 }
+
 .quick-ready-btn span {
-  font-size: .75rem;
-  font-weight: 900;
+  min-width:0;
+  font-size:.75rem;
+  font-weight:900;
+  line-height:1;
 }
+
 .quick-ready-btn strong {
-  font-size: .54rem;
-  letter-spacing: .02em;
+  font-size:.54rem;
+  letter-spacing:.02em;
+  line-height:1;
 }
+
 .quick-ready-btn.is-ready {
-  border-color: #48e8b4;
-  color: #effff9;
-  background: linear-gradient(180deg,#147457,#0a4b3a);
-  box-shadow: 0 0 13px rgba(56,237,176,.25), inset 0 0 12px rgba(85,255,198,.12);
+  border-color:#48e8b4;
+  color:#effff9;
+  background:linear-gradient(180deg,#147457,#0a4b3a);
+  box-shadow:
+    0 0 13px rgba(56,237,176,.25),
+    inset 0 0 12px rgba(85,255,198,.12);
 }
 
+/* EMPLACEMENTS VIDES */
 .quick-lobby-v1 .quick-empty-player {
-  position: relative;
-  min-height: 43px;
-  border-color: #2f56ac;
-  background: rgba(5,24,66,.52);
-}
-.quick-lobby-v1 .quick-empty-player .lobby-v5-empty-plus {
-  width: 29px;
-  height: 29px;
-}
-.quick-slot-dots {
-  margin-left: auto;
-  padding-right: 5px;
-  color: #6c76c6;
-  font-weight: 900;
-  letter-spacing: 2px;
+  position:relative;
+  min-height:43px;
+  border-color:#2f56ac;
+  background:rgba(5,24,66,.52);
 }
 
+.quick-lobby-v1 .quick-empty-player .lobby-v5-empty-plus {
+  width:29px;
+  height:29px;
+}
+
+.quick-slot-dots {
+  margin-left:auto;
+  padding-right:5px;
+  color:#6c76c6;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+/* RECHERCHE */
 .quick-search-panel {
-  margin-top: auto;
-  min-height: 116px;
-  padding: 14px 16px;
-  border: 1.3px solid #3972ff;
-  border-radius: 20px;
+  margin-top:auto;
+  min-height:116px;
+  padding:14px 16px;
+  border:1.3px solid #3972ff;
+  border-radius:20px;
   background:
     radial-gradient(circle at 10% 30%,rgba(41,111,255,.22),transparent 32%),
     linear-gradient(145deg,rgba(7,35,95,.98),rgba(7,24,70,.98));
-  box-shadow: 0 0 18px rgba(40,100,255,.10), inset 0 0 24px rgba(55,86,255,.06);
-  display: grid;
-  grid-template-columns: 92px minmax(0,1fr);
-  align-items: center;
-  gap: 10px;
-  z-index: 4;
-}
-.quick-search-icon {
-  position: relative;
-  width: 86px;
-  height: 82px;
-  display: grid;
-  place-items: center;
-}
-.quick-search-icon img {
-  width: 74px;
-  height: 74px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(95,90,255,.35));
-}
-.quick-search-icon span {
-  position: absolute;
-  right: 2px;
-  bottom: 5px;
-  width: 31px;
-  height: 31px;
-  border: 5px solid #e9e7ff;
-  border-radius: 50%;
-  background: #7354f0;
-  box-shadow: 0 0 8px #604bff;
-}
-.quick-search-icon span::after {
-  content: "";
-  position: absolute;
-  width: 13px;
-  height: 5px;
-  right: -10px;
-  bottom: -5px;
-  border-radius: 999px;
-  background: #e9e7ff;
-  transform: rotate(45deg);
-}
-.quick-search-copy {
-  min-width: 0;
-}
-.quick-search-copy > strong {
-  display: block;
-  font-size: .76rem;
-  font-weight: 900;
-  line-height: 1.15;
-}
-.quick-search-copy > small {
-  display: block;
-  margin-top: 4px;
-  color: #9b91c7;
-  font-size: .48rem;
-}
-.quick-search-dots {
-  height: 19px;
-  margin: 3px 0 2px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.quick-search-dots i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #523e9f;
-  animation: quickLobbyDot 1.2s infinite ease-in-out;
-}
-.quick-search-dots i:first-child {
-  background: #dc35ef;
-}
-.quick-search-dots i:nth-child(2) { animation-delay: .15s; }
-.quick-search-dots i:nth-child(3) { animation-delay: .3s; }
-@keyframes quickLobbyDot {
-  0%, 70%, 100% { transform: scale(.78); opacity: .5; }
-  35% { transform: scale(1); opacity: 1; }
-}
-.quick-cancel-search {
-  min-height: 31px;
-  padding: 0 13px;
-  border: 1px solid #6754bf;
-  border-radius: 999px;
-  background: linear-gradient(180deg,#27366f,#1b285f);
-  color: #ded9ff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-.quick-cancel-search b {
-  font-size: .9rem;
-  font-weight: 500;
-}
-.quick-cancel-search span {
-  font-size: .48rem;
-  font-weight: 800;
+  box-shadow:
+    0 0 18px rgba(40,100,255,.10),
+    inset 0 0 24px rgba(55,86,255,.06);
+  display:grid;
+  grid-template-columns:92px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  z-index:4;
 }
 
-@media (max-height: 760px) {
-  .quick-lobby-v1 .lobby-v5-setting-card { min-height: 78px; }
+.quick-search-icon {
+  position:relative;
+  width:86px;
+  height:82px;
+  display:grid;
+  place-items:center;
+}
+
+.quick-search-icon img {
+  width:74px;
+  height:74px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 8px rgba(95,90,255,.35));
+}
+
+.quick-search-icon span {
+  position:absolute;
+  right:2px;
+  bottom:5px;
+  width:31px;
+  height:31px;
+  border:5px solid #e9e7ff;
+  border-radius:50%;
+  background:#7354f0;
+  box-shadow:0 0 8px #604bff;
+}
+
+.quick-search-icon span::after {
+  content:"";
+  position:absolute;
+  width:13px;
+  height:5px;
+  right:-10px;
+  bottom:-5px;
+  border-radius:999px;
+  background:#e9e7ff;
+  transform:rotate(45deg);
+}
+
+.quick-search-copy {
+  min-width:0;
+}
+
+.quick-search-copy > strong {
+  display:block;
+  font-size:.76rem;
+  font-weight:900;
+  line-height:1.15;
+}
+
+.quick-search-copy > small {
+  display:block;
+  margin-top:4px;
+  color:#9b91c7;
+  font-size:.48rem;
+}
+
+.quick-search-dots {
+  height:19px;
+  margin:3px 0 2px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.quick-search-dots i {
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#523e9f;
+  animation:quickLobbyDot 1.2s infinite ease-in-out;
+}
+
+.quick-search-dots i:first-child {
+  background:#dc35ef;
+}
+
+.quick-search-dots i:nth-child(2) {
+  animation-delay:.15s;
+}
+
+.quick-search-dots i:nth-child(3) {
+  animation-delay:.3s;
+}
+
+@keyframes quickLobbyDot {
+  0%,70%,100% {
+    transform:scale(.78);
+    opacity:.5;
+  }
+  35% {
+    transform:scale(1);
+    opacity:1;
+  }
+}
+
+.quick-cancel-search {
+  min-height:31px;
+  padding:0 13px;
+  border:1px solid #6754bf;
+  border-radius:999px;
+  background:linear-gradient(180deg,#27366f,#1b285f);
+  color:#ded9ff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+
+.quick-cancel-search b {
+  font-size:.9rem;
+  font-weight:500;
+}
+
+.quick-cancel-search span {
+  font-size:.48rem;
+  font-weight:800;
+}
+
+@media (max-width:370px) {
+  .quick-lobby-v1 .lobby-v5-player {
+    grid-template-columns:38px minmax(0,1fr) 74px;
+    column-gap:6px;
+    padding-left:7px;
+    padding-right:7px;
+  }
+
+  .quick-lobby-v1 .lobby-v5-avatar {
+    width:37px;
+    height:37px;
+  }
+
+  .quick-ready-btn {
+    width:74px;
+    min-width:74px;
+    max-width:74px;
+    padding-inline:7px;
+  }
+
+  .quick-lobby-v1 .lobby-v5-player-copy strong {
+    font-size:.63rem;
+  }
+
+  .quick-player-state {
+    font-size:.44rem;
+  }
+}
+
+@media (max-height:760px) {
+  .quick-lobby-v1 .lobby-v5-setting-card {
+    min-height:78px;
+  }
+
   .quick-lobby-v1 .lobby-v5-player,
-  .quick-lobby-v1 .quick-empty-player { min-height: 39px; }
-  .quick-search-panel { min-height: 98px; padding-block: 9px; }
-  .quick-search-icon { width: 74px; height: 68px; }
-  .quick-search-icon img { width: 62px; height: 62px; }
+  .quick-lobby-v1 .quick-empty-player {
+    min-height:39px;
+  }
+
+  .quick-search-panel {
+    min-height:98px;
+    padding-block:9px;
+  }
+
+  .quick-search-icon {
+    width:74px;
+    height:68px;
+  }
+
+  .quick-search-icon img {
+    width:62px;
+    height:62px;
+  }
 }
