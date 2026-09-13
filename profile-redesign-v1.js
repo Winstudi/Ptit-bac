@@ -140,7 +140,7 @@
     return icons[type] || icons.games;
   }
 
-  function renderProfileV10() {
+  function renderProfileV13() {
     if (window.session?.state) {
       try { return render(); } catch { return; }
     }
@@ -155,7 +155,7 @@
     const stats = getProfileStats();
 
     setScreen(`
-      <main class="screen profile-v10">
+      <main class="screen profile-v10 profile-v13">
         <header class="profile-v10-top">
           <button id="profileV10Back" class="profile-v10-back" type="button" aria-label="Retour">
             <img src="/back-arrow.png" alt="">
@@ -165,7 +165,7 @@
         </header>
 
         <section class="profile-v10-card profile-v10-identity-card">
-          <button id="profileV10Avatar" class="profile-v10-avatar" type="button" aria-label="Modifier mon avatar">
+          <button id="profileV10Avatar" class="profile-v10-avatar" type="button" aria-label="Choisir mon avatar">
             <span class="profile-v10-avatar-visual">
               ${avatarMarkup(profile.icon)}
             </span>
@@ -173,56 +173,31 @@
           </button>
 
           <div class="profile-v10-identity-copy">
-            <label for="profileV10Name">Pseudo</label>
-            <div class="profile-v10-name-row">
-              <input
-                id="profileV10Name"
-                type="text"
-                maxlength="16"
-                autocomplete="nickname"
-                value="${esc(profile.name || "Joueur")}"
-                aria-label="Pseudo"
-                readonly
-              >
-              <button id="profileV10EditName" type="button" aria-label="Modifier le pseudo">${editIcon()}</button>
+            <div class="profile-v13-field">
+              <label for="profileV10Name">Pseudo</label>
+              <div class="profile-v10-name-row">
+                <input
+                  id="profileV10Name"
+                  type="text"
+                  maxlength="16"
+                  autocomplete="nickname"
+                  value="${esc(profile.name || "Joueur")}"
+                  aria-label="Pseudo"
+                  readonly
+                >
+                <button id="profileV10EditName" type="button" aria-label="Modifier le pseudo">${editIcon()}</button>
+              </div>
             </div>
 
-            <label>Code ami</label>
-            <button id="profileV10CopyCode" class="profile-v10-code-row" type="button" aria-label="Copier mon code ami">
-              <strong># ${esc(publicId())}</strong>
-              <span aria-hidden="true">${copyIcon()}</span>
-            </button>
+            <div class="profile-v13-field">
+              <label>Code ami</label>
+              <button id="profileV10CopyCode" class="profile-v10-code-row" type="button" aria-label="Copier mon code ami">
+                <strong># ${esc(publicId())}</strong>
+                <span aria-hidden="true">${copyIcon()}</span>
+              </button>
+            </div>
           </div>
         </section>
-
-        <nav class="profile-v10-menu" aria-label="Menu du profil">
-          <button data-nav="friends" type="button">
-            <span class="profile-v10-menu-icon"><img src="/friends.png" alt=""></span>
-            <span class="profile-v10-menu-copy">
-              <strong>Mes amis</strong>
-              <small>Voir et gérer mes amis</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-
-          <button id="profileV10Settings" type="button">
-            <span class="profile-v10-menu-icon"><img src="/settings.png" alt=""></span>
-            <span class="profile-v10-menu-copy">
-              <strong>Paramètres</strong>
-              <small>Son, notifications, confidentialité...</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-
-          <button id="profileV10Shop" type="button">
-            <span class="profile-v10-menu-icon"><img src="/shop.png" alt=""></span>
-            <span class="profile-v10-menu-copy">
-              <strong>Ma boutique</strong>
-              <small>Acheter des pièces, packs, bonus...</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-        </nav>
 
         <section class="profile-v10-card profile-v10-stats">
           <h2>
@@ -269,7 +244,11 @@
     });
 
     document.getElementById("profileV10Avatar")?.addEventListener("click", () => {
-      if (typeof window.renderProfileEdit === "function") window.renderProfileEdit();
+      if (typeof window.openProfileAvatarPicker === "function") {
+        window.openProfileAvatarPicker();
+        return;
+      }
+      toast("Le choix d’avatar est indisponible.");
     });
 
     const nameInput = document.getElementById("profileV10Name");
@@ -278,6 +257,7 @@
 
     const saveName = () => {
       const next = String(nameInput?.value || "").trim().slice(0, 16);
+
       if (!next) {
         toast("Choisis un pseudo.");
         nameInput?.focus();
@@ -285,9 +265,13 @@
       }
 
       const current = typeof getProfile === "function" ? getProfile() : profile;
+
       try {
-        if (typeof saveProfile === "function") saveProfile(next, safeAvatar(current.icon));
-        else localStorage.setItem("petitbac_profile_name", next);
+        if (typeof saveProfile === "function") {
+          saveProfile(next, safeAvatar(current.icon));
+        } else {
+          localStorage.setItem("petitbac_profile_name", next);
+        }
 
         if (nameInput) {
           nameInput.value = next;
@@ -316,6 +300,7 @@
       nameInput.readOnly = false;
       editNameButton.classList.add("is-editing");
       nameInput.focus();
+
       try {
         nameInput.setSelectionRange(nameInput.value.length, nameInput.value.length);
       } catch {}
@@ -334,6 +319,7 @@
 
     document.getElementById("profileV10CopyCode")?.addEventListener("click", async () => {
       const code = publicId();
+
       try {
         await navigator.clipboard.writeText(code);
         toast("Code ami copié !");
@@ -341,20 +327,8 @@
         toast(`# ${code}`);
       }
     });
-
-    document.getElementById("profileV10Settings")?.addEventListener("click", () => {
-      toast("Paramètres bientôt disponibles.");
-    });
-
-    document.getElementById("profileV10Shop")?.addEventListener("click", () => {
-      if (typeof window.renderShop === "function") return window.renderShop();
-      if (typeof window.renderShopV2 === "function") return window.renderShopV2();
-      toast("Boutique bientôt disponible.");
-    });
   }
 
-  // L'éditeur pseudo/avatar (sans import de photo) reste fourni par profile-screen-v2.js.
-  // Cette couche remplace uniquement la page principale du profil.
-  window.renderProfile = renderProfileV10;
-  try { renderProfile = renderProfileV10; } catch {}
+  window.renderProfile = renderProfileV13;
+  try { renderProfile = renderProfileV13; } catch {}
 })();

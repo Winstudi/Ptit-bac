@@ -1,173 +1,124 @@
 (() => {
   "use strict";
 
-  // Avatars temporaires intégrés au jeu.
-  // Aucun import de photo personnelle n'est autorisé.
-  const PROFILE_AVATARS_V8 = [
+  const PROFILE_AVATARS = [
     "🧠", "🐼", "🦊", "🐯", "🐸",
     "🦁", "🐨", "🐙", "🦄", "🤖",
     "😎", "⭐", "🎮", "⚽"
   ];
 
-  function backButtonMarkup(id) {
-    return `
-      <button id="${id}" class="profile-v2-back" type="button" aria-label="Retour">
-        <img src="/back-arrow.png" alt="">
-      </button>
-    `;
-  }
-
   function safeAvatar(value) {
     const avatar = String(value || "").trim();
-
-    // Anciennes photos personnalisées éventuellement présentes en local
-    // sont volontairement ignorées depuis la suppression de l'import.
-    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) {
-      return "🧠";
-    }
-
+    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) return "🧠";
     return avatar;
   }
 
-  function renderProfileEditV8() {
+  function esc(value = "") {
     try {
-      if (window.session?.state) return render();
+      if (typeof escapeHtml === "function") return escapeHtml(value);
     } catch {}
 
-    const current = getProfile();
-    let selectedAvatar = safeAvatar(current.icon);
-
-    setScreen(`
-      <main class="screen profile-edit-v8">
-        <div class="profile-edit-v8-glow glow-a"></div>
-        <div class="profile-edit-v8-glow glow-b"></div>
-
-        <header class="profile-edit-v8-top">
-          ${backButtonMarkup("profileEditBack")}
-          <div class="profile-edit-v8-heading">
-            <h1>Modifier mon <span>profil</span></h1>
-            <p>Modifie ton pseudo et choisis un avatar du jeu.</p>
-          </div>
-          <span class="profile-v2-top-spacer" aria-hidden="true"></span>
-        </header>
-
-        <section class="profile-edit-v8-card profile-edit-v8-name-card">
-          <div class="profile-edit-v8-card-title">
-            <div class="profile-edit-v8-section-icon">T</div>
-            <strong>Ton pseudo</strong>
-            <span id="profileEditCount">${String(current.name || "").length}/16</span>
-          </div>
-
-          <div class="profile-edit-v8-input-row">
-            <input
-              id="profileEditName"
-              type="text"
-              maxlength="16"
-              autocomplete="nickname"
-              value="${escapeHtml(current.name || "")}"
-              placeholder="Ton pseudo"
-              aria-label="Ton pseudo"
-            >
-            <button id="profileEditClear" type="button" aria-label="Effacer le pseudo">×</button>
-          </div>
-
-          <small>Ton pseudo sera visible par tous les joueurs.</small>
-        </section>
-
-        <section class="profile-edit-v8-card profile-edit-v8-avatar-card">
-          <div class="profile-edit-v8-card-title avatars-title">
-            <div class="profile-edit-v8-section-icon profile-edit-v8-section-icon-image">
-              <img src="/profile-icon.png" alt="" aria-hidden="true">
-            </div>
-            <strong>Avatar</strong>
-            <span>Avatars du jeu</span>
-          </div>
-
-          <div class="profile-edit-v8-grid" id="profileEditGrid">
-            ${PROFILE_AVATARS_V8.map(icon => `
-              <button
-                type="button"
-                class="profile-edit-v8-avatar ${icon === selectedAvatar ? "is-selected" : ""}"
-                data-avatar="${escapeHtml(icon)}"
-                aria-label="Choisir ${escapeHtml(icon)}"
-              >
-                <span>${escapeHtml(icon)}</span>
-                <i>✓</i>
-              </button>
-            `).join("")}
-          </div>
-        </section>
-
-        <div class="profile-edit-v8-actions">
-          <button id="profileEditCancel" class="profile-edit-v8-cancel" type="button">Annuler</button>
-          <button id="profileEditSave" class="profile-edit-v8-save" type="button">Enregistrer</button>
-        </div>
-      </main>
-    `);
-
-    const input = document.getElementById("profileEditName");
-    const count = document.getElementById("profileEditCount");
-    const grid = document.getElementById("profileEditGrid");
-
-    const updateCounter = () => {
-      const value = String(input?.value || "").slice(0, 16);
-      if (input && input.value !== value) input.value = value;
-      if (count) count.textContent = `${value.length}/16`;
-    };
-
-    const refreshSelection = () => {
-      grid?.querySelectorAll("[data-avatar]").forEach(el => {
-        el.classList.toggle("is-selected", el.dataset.avatar === selectedAvatar);
-      });
-    };
-
-    input?.addEventListener("input", updateCounter);
-
-    document.getElementById("profileEditClear")?.addEventListener("click", () => {
-      if (!input) return;
-      input.value = "";
-      input.focus();
-      updateCounter();
-    });
-
-    grid?.addEventListener("click", event => {
-      const btn = event.target.closest("[data-avatar]");
-      if (!btn) return;
-      selectedAvatar = safeAvatar(btn.dataset.avatar);
-      refreshSelection();
-    });
-
-    const returnToProfile = () => {
-      if (typeof window.renderProfile === "function") window.renderProfile();
-    };
-
-    document.getElementById("profileEditBack")?.addEventListener("click", returnToProfile);
-    document.getElementById("profileEditCancel")?.addEventListener("click", returnToProfile);
-
-    document.getElementById("profileEditSave")?.addEventListener("click", () => {
-      const name = String(input?.value || "").trim();
-
-      if (!name) {
-        toast("Choisis un pseudo.");
-        input?.focus();
-        return;
-      }
-
-      if (name.length > 16) {
-        toast("Le pseudo doit faire 16 caractères maximum.");
-        input?.focus();
-        return;
-      }
-
-      saveProfile(name, safeAvatar(selectedAvatar));
-      toast("Profil enregistré !");
-      returnToProfile();
-    });
-
-    // Aucun focus automatique : le clavier mobile ne s'ouvre que sur action du joueur.
+    return String(value).replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[char]));
   }
 
-  // La page principale du profil est fournie par profile-redesign-v1.js.
-  // Ce fichier ne gère plus que l'éditeur afin d'éviter le double rendu historique.
-  window.renderProfileEdit = renderProfileEditV8;
+  function closeAvatarPicker() {
+    const overlay = document.getElementById("profileAvatarPicker");
+    if (!overlay) return;
+
+    document.documentElement.classList.remove("profile-avatar-picker-open");
+    overlay.remove();
+  }
+
+  function openProfileAvatarPicker() {
+    closeAvatarPicker();
+
+    const current = typeof getProfile === "function"
+      ? getProfile()
+      : {
+          name: localStorage.getItem("petitbac_profile_name") || "Joueur",
+          icon: localStorage.getItem("petitbac_profile_icon") || "🧠"
+        };
+
+    const selectedAvatar = safeAvatar(current.icon);
+
+    const overlay = document.createElement("div");
+    overlay.id = "profileAvatarPicker";
+    overlay.className = "profile-avatar-picker-backdrop";
+    overlay.innerHTML = `
+      <section class="profile-avatar-picker" role="dialog" aria-modal="true" aria-labelledby="profileAvatarPickerTitle">
+        <header class="profile-avatar-picker-head">
+          <div>
+            <small>MON PROFIL</small>
+            <h2 id="profileAvatarPickerTitle">Choisir un avatar</h2>
+          </div>
+
+          <button id="profileAvatarPickerClose" class="profile-avatar-picker-close" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <p class="profile-avatar-picker-subtitle">Appuie sur un avatar pour le sélectionner.</p>
+
+        <div class="profile-avatar-picker-grid">
+          ${PROFILE_AVATARS.map(icon => `
+            <button
+              type="button"
+              class="profile-avatar-choice ${icon === selectedAvatar ? "is-selected" : ""}"
+              data-avatar="${esc(icon)}"
+              aria-label="Choisir ${esc(icon)}"
+            >
+              <span>${esc(icon)}</span>
+              <i aria-hidden="true">✓</i>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    `;
+
+    document.body.appendChild(overlay);
+    document.documentElement.classList.add("profile-avatar-picker-open");
+
+    const close = () => closeAvatarPicker();
+
+    document.getElementById("profileAvatarPickerClose")?.addEventListener("click", close);
+
+    overlay.addEventListener("click", event => {
+      if (event.target === overlay) close();
+    });
+
+    overlay.querySelectorAll("[data-avatar]").forEach(button => {
+      button.addEventListener("click", () => {
+        const nextAvatar = safeAvatar(button.dataset.avatar);
+        const latest = typeof getProfile === "function" ? getProfile() : current;
+
+        if (typeof saveProfile === "function") {
+          saveProfile(latest.name || "Joueur", nextAvatar);
+        } else {
+          localStorage.setItem("petitbac_profile_icon", nextAvatar);
+        }
+
+        close();
+        toast("Avatar modifié !");
+
+        if (typeof window.renderProfile === "function") {
+          window.renderProfile();
+        }
+      });
+    });
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("is-open");
+      overlay.querySelector(".profile-avatar-choice.is-selected")?.focus({ preventScroll: true });
+    });
+  }
+
+  window.openProfileAvatarPicker = openProfileAvatarPicker;
+
+  // Compatibilité temporaire avec d'anciens appels éventuels :
+  // l'ancienne page "pseudo + avatar" n'existe plus.
+  window.renderProfileEdit = openProfileAvatarPicker;
 })();
