@@ -100,9 +100,9 @@
               Non
             </button>
 
-            <button id="categoryExitLobby" class="cat-v2-exit-lobby" type="button">
+            ${me()?.isHost && Number(session.state?.roundIndex ?? -1) < 0 && session.state?.mode !== "quick" ? `<button id="categoryExitLobby" class="cat-v2-exit-lobby" type="button">
               Revenir au salon
-            </button>
+            </button>` : ""}
 
             <button id="categoryExitHome" class="cat-v2-exit-home" type="button">
               Revenir à l’accueil
@@ -140,14 +140,16 @@
     clearInterval(session.timerHandle);
 
     const state = session.state;
+    session.localAnswers = {};
     const user = me();
     const categories = Array.isArray(state.categories) ? state.categories : [];
     const categoryRerollCost = Number(state.categoryRerollCost || 10);
     const balance = getCoins();
-    const host = !!user?.isHost;
+    const chooser = state.players.find(p => p.id === state.categoryChooserPlayerId);
+    const host = !!user && user.id === state.categoryChooserPlayerId;
     const insufficient = balance < categoryRerollCost;
     const missingCoins = Math.max(0, categoryRerollCost - balance);
-    const drawKey = JSON.stringify([state.code, state.gameSessionId, categories]);
+    const drawKey = JSON.stringify([state.code, state.gameSessionId, state.roundIndex, categories]);
     const reveal = drawKey !== lastDraw;
     lastDraw = drawKey;
     const categoryCountClass =
@@ -161,7 +163,7 @@
         ${categoryDecorLetters()}
 
         <header class="category-pick-header cat-v2-top">
-          ${host
+          ${user
             ? `<button class="pregame-return-btn cat-v2-back" id="returnLobbyCategoriesBtn" type="button" aria-label="Retour au salon">
                 <img src="/lobby-exit.png" alt="">
               </button>`
@@ -178,6 +180,7 @@
         <section class="category-pick-copy cat-v2-copy">
           <h1>Votre tirage !</h1>
           <p>${categories.length} catégories <b>•</b> Niveau ${difficultyLabel(state.categoryDifficulty)}</p>
+          <p class="cat-chooser" role="status">${host ? "C’est à toi de choisir !" : chooser ? "C’est à " + escapeHtml(chooser.name) + " de choisir." : "En attente d’un joueur connecté…"}</p>
         </section>
 
         <section class="category-pick-grid cat-v2-grid" aria-label="Catégories tirées">
@@ -208,14 +211,14 @@
         ` : `
           <section class="cat-v2-wait">
             <span class="spinner small-spinner"></span>
-            <strong>${state.mode === "quick" ? "Préparation de la lettre…" : "En attente de l’hôte…"}</strong>
-            <small>${state.mode === "quick" ? "La partie va continuer." : "L’hôte choisit quand continuer vers la lettre."}</small>
+            <strong>${chooser ? "En attente de " + escapeHtml(chooser.name) + "…" : "En attente d’un joueur…"}</strong>
+            <small>Le joueur désigné valide le tirage avant la lettre.</small>
           </section>
         `}
 
         ${categoryExitMenu()}
 
-        <p class="cat-reminder">Ces catégories restent les mêmes toute la partie.</p>
+        <p class="cat-reminder">Manche ${Number(state.roundIndex ?? -1) + 2} / ${Number(state.rounds || 1)} · Nouveau tirage à chaque manche.</p>
       </main>
     `);
 

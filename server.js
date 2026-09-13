@@ -873,6 +873,27 @@ function prepareLetterSelection(room) {
   emitRoom(room);
 }
 
+function ensureCategoryChooser(room) {
+  if (room.phase !== "category_selection") return;
+  const current = room.players.find(p => p.id === room.categoryChooserPlayerId && p.connected && !p.isBot);
+  if (!current) {
+    const eligible = room.players.filter(p => p.connected && !p.isBot);
+    room.categoryChooserPlayerId = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)].id : null;
+  }
+}
+
+function prepareCategorySelection(room) {
+  room.phase = "category_selection";
+  room.categoryChooserPlayerId = null;
+  room.categories = pickCategories(room.categoryDifficulty || "beginner", room.categoryCount || 6);
+  room.letterChooserPlayerId = null;
+  room.pendingLetter = null;
+  room.roundEndsAt = null;
+  room.roundStartsAt = null;
+  ensureCategoryChooser(room);
+  emitRoom(room);
+}
+
 function spinLetter(room, exclude = null) {
   const pool = availableLetters(room, exclude);
   const letter = pool[Math.floor(Math.random() * pool.length)];
@@ -930,6 +951,7 @@ function publicRoom(room, viewerPlayerId = null) {
     roundIndex: room.roundIndex,
     currentLetter: room.roundIndex >= 0 ? room.letters[room.roundIndex] : null,
     letterChooserPlayerId: room.letterChooserPlayerId || null,
+    categoryChooserPlayerId: room.categoryChooserPlayerId || null,
     pendingLetter: room.pendingLetter || null,
     letterSpinVersion: room.letterSpinVersion || 0,
     letterRerollCost: LETTER_REROLL_COST,
@@ -2387,6 +2409,7 @@ function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
 
   // 3 humains ou plus : on retire uniquement le joueur.
   if (wasHost) ptitBacTransferHost(room);
+  ensureCategoryChooser(room);
 
   if (room.letterChooserPlayerId === player.id) {
     const chooser = chooseLetterPlayer(room);
@@ -2598,8 +2621,7 @@ async function startGame(socket, payload, automatic = false) {
     room.roundEndsAt = null;
     room.validation = null;
     room.lastRoundScores = {};
-    room.phase = "category_selection";
-    emitRoom(room);
+    prepareCategorySelection(room);
     return true;
   }
 
@@ -2798,6 +2820,7 @@ io.on("connection", socket => {
     if (!player.isBot && (!walletToken || player.walletToken !== walletToken)) return cb({ ok: false });
 
     setPlayerSocket(room, player, socket);
+    ensureCategoryChooser(room);
     cb({ ok: true, balance: player.walletToken ? walletBalance(player.walletToken) : 0, state: publicRoom(room, player.id) });
     emitRoom(room);
   });
@@ -2901,7 +2924,7 @@ io.on("connection", socket => {
   socket.on("game:rerollCategories", payload => {
     const { room, player } = requireMember(socket, payload);
     if (room?.mode === "quick") return socket.emit("toast", "Les relances sont désactivées en partie rapide.");
-    if (!room || !player?.isHost || room.phase !== "category_selection") return;
+    if (!room || !player || room.phase !== "category_selection" || player.id !== room.categoryChooserPlayerId) return;
     if (player.isBot || !player.walletToken) return;
 
     if (walletBalance(player.walletToken) < CATEGORY_REROLL_COST) {
@@ -2922,7 +2945,7 @@ io.on("connection", socket => {
 
   socket.on("game:confirmCategories", payload => {
     const { room, player } = requireMember(socket, payload);
-    if (!room || !player?.isHost || room.phase !== "category_selection") return;
+    if (!room || !player || room.phase !== "category_selection" || player.id !== room.categoryChooserPlayerId) return;
     prepareLetterSelection(room);
   });
 
@@ -3045,7 +3068,7 @@ io.on("connection", socket => {
       emitRoom(room);
       return;
     }
-    prepareLetterSelection(room);
+    prepareCategorySelection(room);
   });
 
   socket.on("game:restart", payload => {
@@ -3085,6 +3108,7 @@ io.on("connection", socket => {
     if (!room || !player) return;
 
     player.connected = false;
+    ensureCategoryChooser(room);
     if (room.phase === "letter_selection" && room.letterChooserPlayerId === player.id) {
       const chooser = chooseLetterPlayer(room);
       room.letterChooserPlayerId = chooser?.id || null;
