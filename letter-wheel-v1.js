@@ -9,6 +9,7 @@
     animationFrame: 0,
     lastVersion: null,
     activeCode: "",
+    spinKey: "",
     dragged: false
   };
 
@@ -65,10 +66,14 @@
     const direction = 1;
     const base = exactTarget(letter, start, direction);
     const target = base + 360 * 3;
-    const duration = 5000;
+    const duration = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 1 : 3500;
     const started = performance.now();
 
     const tick = now => {
+      if (session.state?.phase !== "letter_selection" || !document.getElementById("pbw1Wheel")) {
+        stopAnimation();
+        return;
+      }
       const t = clamp((now - started) / duration, 0, 1);
       // Garde une rotation visible jusqu'à la toute fin.
       // L'ancienne courbe quintique donnait l'impression que la roue
@@ -97,9 +102,9 @@
 
       runtime.animating = false;
       runtime.lastVersion = version;
-      zone?.classList.remove("is-spinning");
-      zone?.classList.add("is-landed");
-      actions?.classList.add("is-visible");
+      document.getElementById("pbw1WheelZone")?.classList.remove("is-spinning");
+      document.getElementById("pbw1WheelZone")?.classList.add("is-landed");
+      document.getElementById("pbw1Actions")?.classList.add("is-visible");
     };
 
     runtime.animationFrame = requestAnimationFrame(tick);
@@ -114,7 +119,14 @@
     const user = me();
     if (!state || state.phase !== "letter_selection") return render();
 
-    runtime.activeCode = state.code;
+    const contextKey = JSON.stringify([state.code, state.gameSessionId, state.roundIndex]);
+    if (runtime.activeCode !== contextKey || !state.pendingLetter) {
+      stopAnimation();
+      runtime.lastVersion = null;
+      runtime.spinKey = "";
+      runtime.rotation = 0;
+    }
+    runtime.activeCode = contextKey;
 
     const chooser = state.players.find(p => p.id === state.letterChooserPlayerId);
     const isChooser = user?.id === state.letterChooserPlayerId;
@@ -126,7 +138,7 @@
     const sectors = LETTERS.map((_, i) => {
       const start = i * SEGMENT;
       const end = (i + 1) * SEGMENT;
-      const color = i === 0 ? "#fff0c8" : (i % 2 ? "#bc7d05" : "#f4b814");
+      const color = i % 2 ? "#242166" : "#7534c9";
       return `${color} ${start}deg ${end}deg`;
     }).join(",");
 
@@ -142,17 +154,22 @@
     const chooserName = chooser?.name || "Un joueur";
 
     setScreen(`
-      <main class="pbw1-screen">
+      <main class="pbw1-screen letter-prototype">
         <header class="pbw1-top">
           <button class="pbw1-exit" id="pbw1Exit" type="button" aria-label="Quitter">
             <img src="/lobby-exit.png" alt="">
           </button>
 
+          <img class="pbw1-brand" src="/ptitbac.logo.png" alt="P’tit Bac" width="62" height="52">
           <div class="pbw1-wallet">
             <img src="/coin.png" alt="">
             <strong>${adminCoins()}</strong>
           </div>
         </header>
+        <nav class="pbw1-steps" aria-label="Étapes de la manche">
+          <span>Catégories</span><i>•</i><strong aria-current="step">Lettre</strong><i>•</i><span>À vous de jouer</span>
+        </nav>
+        <h1 class="pbw1-title">Tirage de la lettre</h1>
 
         <section class="pbw1-chooser">
           <div class="pbw1-lightning"><img src="/lightning.png" alt=""></div>
@@ -180,28 +197,27 @@
             </div>
 
             <div class="pbw1-center" id="pbw1Center">
-              <strong id="pbw1CenterLetter"></strong>
+              <strong id="pbw1CenterLetter" aria-live="polite">↻</strong>
             </div>
           </div>
         </section>
+        <p class="pbw1-caption">Une lettre pour toute la manche</p>
 
         ${isChooser && selectedLetter ? `
           <section class="pbw1-actions ${runtime.lastVersion === version ? "is-visible" : ""}" id="pbw1Actions">
-            <button class="pbw1-reroll" id="pbw1Reroll" type="button" ${canReroll ? "" : "disabled"}>
+            ${state.mode !== "quick" ? `<button class="pbw1-reroll" id="pbw1Reroll" type="button" ${canReroll ? "" : "disabled"}>
               <span>↻ Relancer</span>
               <b><img src="/coin.png" alt=""> ${rerollCost}</b>
-            </button>
+            </button>` : ""}
 
             <button class="pbw1-confirm" id="pbw1Confirm" type="button">
               Valider la lettre ${escapeHtml(selectedLetter)}
               <span>→</span>
             </button>
           </section>
-        ` : '<div class="pbw1-actions-spacer"></div>'}
+        ` : isChooser ? '<section class="pbw1-actions is-visible"><button class="pbw1-confirm" id="pbw1Launch" type="button">Lancer la roue <span>↻</span></button></section>' : `<p class="pbw1-wait" role="status">${selectedLetter ? "La lettre va être validée…" : `En attente de ${escapeHtml(chooserName)}…`}</p>`}
 
-        <footer class="ptb-shared-footer pbw1-footer" aria-hidden="true">
-          <img src="/shared-footer-v1.png" alt="">
-        </footer>
+        <p class="pbw1-hint">Trouve ensuite un mot par catégorie.</p>
       </main>
     `);
 
@@ -211,7 +227,11 @@
 
     if (selectedLetter) {
       if (runtime.lastVersion !== version) {
-        requestAnimationFrame(() => animateToLetter(selectedLetter, version));
+        const spinKey = version + ":" + selectedLetter;
+        if (!runtime.animating || runtime.spinKey !== spinKey) {
+          runtime.spinKey = spinKey;
+          animateToLetter(selectedLetter, version);
+        }
       } else {
         document.getElementById("pbw1Actions")?.classList.add("is-visible");
         const center = document.getElementById("pbw1CenterLetter");
@@ -245,11 +265,14 @@
       const launch = () => {
         if (zone.classList.contains("is-requesting")) return;
         zone.classList.add("is-requesting");
+        const button = document.getElementById("pbw1Launch");
+        if (button) { button.disabled = true; button.textContent = "Lancement…"; }
         socket.emit("game:spinLetter", {
           code: state.code,
           playerId: session.playerId
         });
       };
+      document.getElementById("pbw1Launch")?.addEventListener("click", launch);
 
       zone.addEventListener("pointerdown", e => {
         if (runtime.animating) return;
@@ -280,7 +303,7 @@
       };
 
       zone.addEventListener("pointerup", finish);
-      zone.addEventListener("pointercancel", finish);
+      zone.addEventListener("pointercancel", () => { dragging = false; moved = true; });
       zone.addEventListener("click", () => {
         if (!moved) launch();
       });
@@ -294,6 +317,7 @@
     }
 
     document.getElementById("pbw1Reroll")?.addEventListener("click", () => {
+      if (runtime.animating || runtime.lastVersion !== version) return;
       if (!canReroll) return toast(`Il te faut ${rerollCost} pièces pour relancer.`);
       const reroll = document.getElementById("pbw1Reroll");
       const confirm = document.getElementById("pbw1Confirm");
@@ -307,6 +331,7 @@
     });
 
     document.getElementById("pbw1Confirm")?.addEventListener("click", () => {
+      if (runtime.animating || runtime.lastVersion !== version) return;
       const reroll = document.getElementById("pbw1Reroll");
       const confirm = document.getElementById("pbw1Confirm");
       if (reroll) reroll.disabled = true;
