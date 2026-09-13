@@ -1132,3 +1132,45 @@ body:has(.friends-v2) [data-economy-hud] {
     width:178px;
   }
 }
+/* Mobile friends page: actions remain directly accessible. */
+body:has(.friends-mobile) .economy-hud{display:none!important}
+html .friends-mobile{width:min(100%,480px)!important;min-height:100dvh!important;height:auto!important;padding:16px 14px 110px!important;margin:0 auto!important;background:radial-gradient(ellipse at top left,#33207070,transparent 65%),#09143d!important}
+.friends-mobile .friends-v2-header{display:grid!important;grid-template-columns:44px 1fr 44px!important;align-items:center!important;min-height:52px!important}
+.friends-mobile .friends-v2-title h1{font-size:30px!important;text-align:center;margin:0!important}
+.friends-mobile .friends-v2-code{border:1px solid #9149f5!important;border-radius:20px!important;padding:16px!important;margin:16px 0!important}
+.friends-mobile .friends-v2-code strong{font-size:26px!important}
+.friends-mobile .friends-v2-code button{min-height:46px!important;background:linear-gradient(110deg,#9035f6,#b642fa)!important}
+.friends-mobile .friends-v2-tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:3px!important;padding:4px!important}
+.friends-mobile .friends-v2-tabs button{display:flex!important;align-items:center!important;justify-content:center!important;gap:3px!important;min-height:46px!important;padding:6px 3px!important;font-size:11px!important}
+.friends-mobile .friends-v2-tab-icon{width:18px!important;height:18px!important}
+.friends-mobile .friends-v2-tabs button.active{background:linear-gradient(110deg,#8430ed,#b341f9)!important}
+.friends-mobile .friends-v4-tools{display:grid!important;grid-template-columns:minmax(0,1fr) 135px!important;gap:7px!important}
+.friends-mobile .friends-v4-search input{font-size:13px!important;min-width:0}
+.friends-mobile .friends-v4-sort select{font-size:11px!important}
+.friends-mobile .friends-v4-card{gap:6px;padding:10px 8px;min-height:78px;border-radius:18px;background:linear-gradient(130deg,#152558,#0b1b49);overflow:visible}
+.friends-mobile .friends-v4-main{gap:8px}
+.friends-mobile .friends-v4-avatar-wrap,.friends-mobile .friends-v4-avatar-wrap .friends-v2-avatar{width:43px;height:43px;flex-basis:43px}
+.friends-mobile .friends-v4-card .friends-v2-card-main strong{font-size:14px}
+.friends-mobile .friends-v4-card .friends-v2-status{font-size:10px}
+.friends-mobile .friends-v4-actions{gap:4px;align-items:center}
+.friends-mobile .friends-v4-chat-btn{width:auto;min-width:42px;display:flex;gap:4px;padding:6px;font-size:10px}
+.friends-mobile .friends-v4-chat-btn svg{width:16px;height:16px}
+.friends-mobile .friends-invite-btn{height:38px;padding:6px 9px;border:1px solid #bd68ff;border-radius:12px;background:linear-gradient(110deg,#8831ef,#ac3afa);font-size:11px;color:white;font-weight:700}
+.friends-mobile .friends-v4-more-btn{width:30px;height:38px}
+.friends-mobile .friends-v4-context{z-index:40;background:#192353;border:1px solid #a85bf4;box-shadow:0 12px 26px #0008}
+.friends-mobile .friends-v4-context button{min-height:44px}
+.friends-mobile .friends-v4-add-shortcut{margin-top:12px;border:1px dashed #a254f7;border-radius:17px}
+.friends-mobile .friends-v2-content{overflow:visible!important}
+.friends-mobile .ptb-shared-footer{position:relative!important;inset:auto!important;margin-top:24px!important;height:64px!important}
+.friends-mobile .ptb-shared-footer img{height:64px!important;object-fit:contain!important}
+.friends-popup{position:fixed;inset:0;z-index:100000;background:#03091dcc;display:grid;place-items:center;padding:20px;backdrop-filter:blur(5px)}
+.friends-popup section{width:min(100%,360px);box-sizing:border-box;border:1px solid #a453f6;border-radius:24px;background:linear-gradient(145deg,#1f255b,#0c1945);padding:22px;color:#fff;font-family:"DM Sans",system-ui,sans-serif;box-shadow:0 18px 60px #0008}
+.friends-popup h2{font-size:23px;margin:0 0 16px;overflow-wrap:anywhere}
+.friends-popup p{color:#c4b4df;line-height:1.5;overflow-wrap:anywhere}
+.friends-popup textarea{box-sizing:border-box;width:100%;min-height:100px;margin:10px 0;background:#101c49;border:1px solid #7962bc;border-radius:12px;padding:12px;color:white;font:inherit}
+.friends-popup-actions{display:flex;gap:10px}
+.friends-popup button{min-height:44px;flex:1;padding:10px;border:1px solid #8a65ca;border-radius:13px;background:#192455;color:#fff;font:inherit;cursor:pointer}
+.friends-popup button.primary{background:linear-gradient(110deg,#8231ed,#ab36f5)}
+.friends-popup button:disabled{opacity:.5}
+.friends-popup :focus-visible{outline:2px solid #e2bbff;outline-offset:3px}
+@media(max-width:390px){.friends-mobile .friends-v4-chat-btn span{display:none}.friends-mobile .friends-v4-card .friends-v2-card-main strong{font-size:13px}.friends-mobile .friends-v4-chat-btn{min-width:32px}}

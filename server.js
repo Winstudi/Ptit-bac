@@ -32,7 +32,15 @@ io.use((socket, next) => {
   next();
 });
 
-require("./friends-hook.js")(io);
+require("./friends-hook.js")(io, {
+  canInvite: (token, code) => {
+    const room = rooms.get(code);
+    return !!room && room.mode !== "quick" && room.phase === "lobby" &&
+      !room.economyStartPending && room.players.length < 6 &&
+      room.players.some(p => !p.isBot && p.walletToken === token && p.connected);
+  },
+  isBusy: token => hasActiveRoom(token)
+});
 require("./chat-hook.js")(io);
 require("./player-report-hook.js")(io);
 require("./admin-hook.js")(io);

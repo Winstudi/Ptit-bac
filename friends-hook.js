@@ -299,7 +299,7 @@ async function identityForSocket(socket, payload = {}) {
   return profile;
 }
 
-function installFriends(io) {
+function installFriends(io, game = {}) {
   if (!DATABASE_URL) {
     console.warn("Amis V1 désactivé: DATABASE_URL absent.");
     return;
@@ -515,9 +515,27 @@ function installFriends(io) {
           return callback({ ok: false, error: "Ce joueur n'est pas dans tes amis." });
         }
 
+        if (!game.canInvite?.(profile.wallet_token, roomCode)) {
+          return callback({ ok:false, error:"Rejoins un salon privé disponible avant d’inviter." });
+        }
+        const target = await pool.query("SELECT wallet_token FROM public.users WHERE id=$1", [friendId]);
+        if (!target.rowCount || game.isBusy?.(target.rows[0].wallet_token)) {
+          return callback({ ok:false, error:"Cet ami est déjà dans un salon ou en partie." });
+        }
+        if (!isOnline(friendId)) return callback({ok:true,delivered:false});
+        if (!game.canInvite?.(profile.wallet_token, roomCode)) {
+          return callback({ok:false,error:"Ce salon n’est plus disponible."});
+        }
+        // One invitation per sender socket every ten seconds.
+        if (Date.now() - (socket.data.lastFriendInvite || 0) < 10000) {
+          return callback({ok:false,error:"Attends quelques secondes avant de réinviter."});
+        }
+        socket.data.lastFriendInvite = Date.now();
+
         emitToUser(io, friendId, "friends:room-invite", {
           from: safeProfile(profile, true),
-          roomCode
+          roomCode,
+          expiresAt: Date.now() + 60000
         });
 
         callback({ ok: true, delivered: isOnline(friendId) });

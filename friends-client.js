@@ -19,6 +19,70 @@
   let friendsOpen = false;
   let bootstrapTimer = null;
   let openedFriendId = "";
+  let inviteTimer = null;
+  const inMenus = () => typeof session !== "undefined" && (!session.state || session.state.phase === "finished");
+  function closeInvite() {
+    clearTimeout(inviteTimer);
+    document.getElementById("friendInviteDialog")?.remove();
+  }
+  function invitation({from,roomCode,expiresAt} = {}) {
+    if (!roomCode || !inMenus() || Date.now() >= Number(expiresAt)) return;
+    if (document.getElementById("friendInviteDialog")) return;
+    const el=document.createElement("div");
+    el.id="friendInviteDialog"; el.className="friends-popup";
+    el.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="friendInviteTitle">
+      <h2 id="friendInviteTitle">Invitation à jouer</h2>
+      <p><strong>${escapeHtml(from?.username || "Un ami")}</strong> t’invite dans son salon.</p>
+      <p>Code : <b>${escapeHtml(roomCode)}</b></p>
+      <div class="friends-popup-actions"><button id="friendInviteNo">Refuser</button><button id="friendInviteYes" class="primary">Rejoindre</button></div>
+      <p id="friendInviteError" role="status"></p></section>`;
+    document.body.append(el);
+    const decline=el.querySelector("#friendInviteNo"),accept=el.querySelector("#friendInviteYes");
+    decline.onclick=closeInvite; decline.focus();
+    el.addEventListener("keydown",e=>{
+      if(e.key==="Escape")closeInvite();
+      if(e.key==="Tab"){e.preventDefault();(document.activeElement===decline?accept:decline).focus();}
+    });
+    inviteTimer=setTimeout(closeInvite,Math.max(0,Number(expiresAt)-Date.now()));
+    accept.onclick=()=>{
+      if(!inMenus() || Date.now()>=Number(expiresAt)){closeInvite();return;}
+      accept.disabled=true;accept.textContent="Connexion…";
+      const p=identityPayload();
+      socket.emit("room:join",{code:roomCode,name:p.username,avatar:p.avatar,walletToken:p.walletToken},res=>{
+        if(!res?.ok){
+          if(!el.isConnected)return;
+          accept.disabled=false;accept.textContent="Rejoindre";
+          el.querySelector("#friendInviteError").textContent=res?.error||"Invitation indisponible.";
+          return;
+        }
+        closeInvite();friendsOpen=false;
+        if(typeof setWalletState==="function")setWalletState(res.walletToken,res.balance);
+        saveSession(res.code,res.playerId);session.state=res.state;render();
+      });
+    };
+  }
+  function reportFriend(user) {
+    document.getElementById("friendReportDialog")?.remove();
+    const el=document.createElement("div");el.id="friendReportDialog";el.className="friends-popup";
+    el.innerHTML=`<section role="dialog" aria-modal="true" aria-labelledby="friendReportTitle">
+      <h2 id="friendReportTitle">Signaler ${escapeHtml(user.username)}</h2>
+      <label for="friendReportReason">Motif du signalement</label>
+      <textarea id="friendReportReason" maxlength="500" placeholder="Explique ce qui s’est passé"></textarea>
+      <div class="friends-popup-actions"><button id="friendReportCancel">Annuler</button><button id="friendReportSend" class="primary">Envoyer</button></div>
+      <p id="friendReportStatus" role="status"></p></section>`;
+    document.body.append(el);
+    el.querySelector("#friendReportCancel").onclick=()=>el.remove();
+    el.querySelector("textarea").focus();
+    el.querySelector("#friendReportSend").onclick=()=>{
+      const reason=el.querySelector("textarea").value.trim();
+      if(!reason){el.querySelector("#friendReportStatus").textContent="Indique un motif.";return;}
+      const btn=el.querySelector("#friendReportSend");btn.disabled=true;
+      friendSocket.emit("players:report",identityPayload({targetFriendId:user.id,reason}),res=>{
+        if(!res?.ok){btn.disabled=false;el.querySelector("#friendReportStatus").textContent=res?.error||"Envoi impossible.";return;}
+        el.remove();localToast("Signalement envoyé à la modération.");
+      });
+    };
+  }
 
   function identityPayload(extra = {}) {
     return {
@@ -131,7 +195,7 @@
       friendsState.incoming = res.incoming || [];
       friendsState.outgoing = res.outgoing || [];
 
-      if (friendsOpen) renderFriends();
+      if (friendsOpen && document.querySelector(".friends-mobile")) renderFriends();
     });
   }
 
@@ -149,7 +213,7 @@
       if (openedFriendId && !friendsState.friends.some(item => String(item.id) === String(openedFriendId))) {
         openedFriendId = "";
       }
-      if (friendsOpen) renderFriends();
+      if (friendsOpen && document.querySelector(".friends-mobile")) renderFriends();
     });
   }
 
@@ -184,7 +248,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 5h14v10H9l-4 4V5Z"></path>
             </svg>
+            <span>Message</span>
           </button>
+          <button class="friends-invite-btn invite-friend" type="button" data-id="${escapeHtml(user.id)}" aria-label="Inviter ${escapeHtml(user.username)}">Inviter</button>
 
           <button class="friends-v4-more-btn" type="button"
             data-friend-menu="${escapeHtml(user.id)}"
@@ -193,9 +259,8 @@
 
         ${friendsState.quickMenuFriendId === String(user.id) ? `
           <div class="friends-v4-context" data-context-menu="${escapeHtml(user.id)}">
-            <button type="button" data-menu-profile="${escapeHtml(user.id)}">Voir le profil</button>
-            <button type="button" data-menu-message="${escapeHtml(user.id)}">Envoyer un message</button>
             <button type="button" class="danger" data-menu-remove="${escapeHtml(user.id)}">Supprimer l'ami</button>
+            <button type="button" data-menu-report="${escapeHtml(user.id)}">Signaler</button>
           </div>
         ` : ""}
       </article>`;
@@ -429,8 +494,9 @@
     const profile = friendsState.profile;
     const incomingCount = friendsState.incoming.length;
 
+    document.documentElement.classList.remove("gameplay-flow");
     app.innerHTML = `
-      <main class="screen friends-v2">
+      <main class="screen friends-v2 friends-mobile">
         <div class="friends-v2-bg-glow glow-a"></div>
         <div class="friends-v2-bg-glow glow-b"></div>
         <header class="friends-v2-header">
@@ -442,11 +508,6 @@
             <h1>Amis</h1>
           </div>
 
-          <button id="friendsMessagesBtn" class="friends-v3-messages-btn" type="button" aria-label="Messages">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 5h14v10H9l-4 4V5Z"></path>
-            </svg>
-          </button>
         </header>
 
         <section class="friends-v2-code">
@@ -466,6 +527,8 @@
             <span>Mes amis</span>
             ${friendsState.friends.length ? `<b class="friends-v4-friend-count">${friendsState.friends.length}</b>` : ""}
           </button>
+
+          <button id="friendsMessagesBtn" type="button"><span>Messages</span></button>
 
           <button data-friend-tab="requests" class="${friendsState.activeTab === "requests" ? "active" : ""}">
             <span class="friends-v2-tab-icon">${tabIcon("requests")}</span>
@@ -494,6 +557,10 @@
   }
 
   function bindFriendsUI() {
+    document.querySelectorAll("[data-menu-report]").forEach(btn=>btn.onclick=()=>{
+      const user=friendsState.friends.find(u=>String(u.id)===btn.dataset.menuReport);
+      if(user)reportFriend(user);
+    });
     document.getElementById("friendsBackBtn")?.addEventListener("click", () => {
       if (openedFriendId) {
         openedFriendId = "";
@@ -788,13 +855,14 @@
   friendSocket.on("friends:presence", ({ userId, online } = {}) => {
     const friend = friendsState.friends.find(item => item.id === userId);
     if (friend) friend.online = Boolean(online);
-    if (friendsOpen && friendsState.activeTab === "friends") renderFriends();
+    if (friendsOpen && document.querySelector(".friends-mobile") && friendsState.activeTab === "friends") renderFriends();
   });
 
-  friendSocket.on("friends:room-invite", ({ from, roomCode } = {}) => {
-    if (!roomCode) return;
-    localToast(`${from?.username || "Un ami"} t'invite dans le salon ${roomCode}`);
-  });
+  friendSocket.on("friends:room-invite", invitation);
+  if(typeof socket!=="undefined"){
+    socket.on("room:state",state=>{if(state&&state.phase!=="finished")closeInvite();});
+    socket.on("disconnect",closeInvite);
+  }
 
   // API légère réutilisable depuis le salon.
   window.PtitBacFriends = {

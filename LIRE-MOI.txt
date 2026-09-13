@@ -1,0 +1,25 @@
+P’TIT BAC — PAGE AMIS ET INVITATIONS
+
+BASE
+Dépôt Winstudi/Ptit-bac, commit 65f6ba3f2c6b0d46ee687f5cd4b9df9434cfc546.
+Les dernières références au profil, au salon rapide et au classement sont conservées dans index.html.
+
+INSTALLATION
+Remplace les 6 fichiers à la racine du projet, puis redéploie sur Render et recharge le site.
+Aucun fichier à supprimer, aucune nouvelle dépendance. PostgreSQL reste nécessaire au système Amis comme dans la version actuelle.
+
+CHANGEMENTS
+- Page Amis harmonisée avec la maquette : code ami, recherche, tri, onglets Mes amis / Messages / Demandes / Ajouter.
+- Aucun slogan sous le titre, aucune ligne supplémentaire sous le statut, aucun bouton Messages en haut à droite.
+- Boutons Message et Inviter directement dans la liste. Sur les petits téléphones, Message est représenté par son icône.
+- Menu à trois points : Supprimer l’ami et Signaler. Le signalement demande un motif et utilise la table déjà consultée par Admin > Reports > Joueurs.
+- Invitation avec Rejoindre / Refuser, expiration après une minute. Un ami déjà dans un salon ou dans une partie ne reçoit pas cette fenêtre. Les invitations ignorées ne sont pas affichées après la partie.
+- L’expéditeur doit être dans un salon privé disponible. Un salon plein, démarré ou inexistant est refusé. La disponibilité est revérifiée au moment de rejoindre.
+- Les mises à jour de présence ne remplacent plus une autre page après avoir quitté Amis.
+
+VÉRIFICATION
+Syntaxe des quatre fichiers JavaScript vérifiée.
+Tests DOM avec sockets simulées : menu à deux options, envoi de signalement, rejoindre/refuser, absence de fenêtre pendant le jeu, fermeture au démarrage.
+Tests des gestionnaires serveur avec PostgreSQL simulé : vérification de l’amitié et du salon, destinataire occupé, stockage du signalement dans la table admin avec identité réelle du destinataire et protection contre les signalements rapprochés.
+À vérifier sur le site après installation : rendu iPhone, invitation entre deux appareils et apparition du signalement dans Reports avec ta vraie base PostgreSQL.
+Le site en ligne et GitHub n’ont pas été modifiés.
