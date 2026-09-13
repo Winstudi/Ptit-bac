@@ -890,3 +890,11 @@ body:has(.ssv1-screen) .economy-hud{display:none!important}
     font-size:.88rem !important;
   }
 }
+
+
+/* Résultats V13 — titre sur une seule ligne */
+.ssv1-heading h1{
+  white-space:nowrap !important;
+  font-size:clamp(1.65rem, 7vw, 2.45rem) !important;
+  letter-spacing:-0.04em !important;
+}
