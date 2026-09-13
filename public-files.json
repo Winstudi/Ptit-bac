@@ -77,5 +77,11 @@
   "/wallet-client.js",
   "/wallet.css",
   "/gameplay-flow.css",
-  "/category-prototype.css"
+  "/category-prototype.css",
+  "/gem.png",
+  "/task.png",
+  "/info.png",
+  "/inventaire.png",
+  "/create.png",
+  "/home-mobile.css"
 ]

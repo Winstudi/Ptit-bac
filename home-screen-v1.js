@@ -31,6 +31,8 @@
     if (coin) coin.textContent = String(Math.max(0, Number(state.coins) || 0));
     if (lives) lives.textContent = `${Math.max(0, Number(state.lives) || 0)}/${Math.max(1, Number(state.maxLives) || 5)}`;
 
+    const gems = document.getElementById("homeGems");
+    if (gems) gems.textContent = String(Math.max(0, Number(state.gems) || 0));
     refreshResourcePopup();
 
     const quick = document.getElementById("homePlaqueQuick");
@@ -85,10 +87,10 @@
     layer.dataset.type = type;
     layer.innerHTML = resourcePopupContent(type);
 
-    document.querySelector(".home-plaque-v1")?.appendChild(layer);
+    document.querySelector(".home-mobile")?.appendChild(layer);
 
     const rect = anchorEl?.getBoundingClientRect?.();
-    const host = document.querySelector(".home-plaque-v1")?.getBoundingClientRect?.();
+    const host = document.querySelector(".home-mobile")?.getBoundingClientRect?.();
     if (rect && host) {
       const center = rect.left - host.left + rect.width / 2;
       const top = rect.bottom - host.top + 7;
@@ -262,114 +264,88 @@
     const lives = Math.max(0, Number(eco.lives) || 0);
     const maxLives = Math.max(1, Number(eco.maxLives) || 5);
 
+    const img = (file) => `<img src="/${file}.png" alt="" draggable="false">`;
+    const side = (id,file,label,soon=false) => `<button type="button" id="${id}" ${soon?'data-soon="'+label+'"':''}>${img(file)}<b>${label}</b>${soon?'<small>À venir</small>':''}</button>`;
     setScreen(`
-      <main class="screen home-plaque-v1">
-        <div class="home-plaque-bg-letter letter-a">A</div>
-        <div class="home-plaque-bg-letter letter-b">B</div>
-        <div class="home-plaque-bg-letter letter-c">C</div>
-        <div class="home-plaque-bg-letter letter-d">D</div>
-        <div class="home-plaque-bg-letter letter-e">E</div>
-        <i class="home-plaque-spark spark-1"></i>
-        <i class="home-plaque-spark spark-2"></i>
-        <i class="home-plaque-spark spark-3"></i>
-
-        <header class="home-plaque-top">
-          <div class="home-plaque-top-left">
-            <button class="home-plaque-avatar" id="homePlaqueAvatar" type="button" aria-label="Mon profil">
-              ${window.PtitBacProfilePhoto?.isImageAvatar?.(profile.icon)
-                ? `<img class="home-plaque-avatar-photo" src="${profile.icon}" alt="" draggable="false">`
-                : `<span>${escapeHtml(profile.icon || "🐼")}</span>`}
-              <i></i>
-            </button>
-
-            <div class="home-plaque-resources">
-              <button class="home-plaque-chip coin-chip" id="homePlaqueCoinsBtn" type="button" aria-label="Voir mes pièces">
-                <img class="pb-icon pb-icon-coin" src="/coin.png" alt="">
-                <strong id="homePlaqueCoins">${coins}</strong>
-              </button>
-
-              <button class="home-plaque-chip life-chip" id="homePlaqueLivesBtn" type="button" aria-label="Voir mes vies">
-                <img class="pb-icon pb-icon-heart" src="/heart.png" alt="">
-                <strong id="homePlaqueLives">${lives}/${maxLives}</strong>
-              </button>
-            </div>
+      <main class="home-mobile">
+        <header class="hm-header">
+          <button id="homePlaqueAvatar" class="hm-profile" aria-label="Mon profil">
+            <span class="hm-avatar">${window.PtitBacProfilePhoto?.isImageAvatar?.(profile.icon)
+              ? '<img src="'+escapeHtml(profile.icon)+'" alt="">':escapeHtml(profile.icon || "🐼")}</span>
+            <span class="hm-profile-copy"><b>${escapeHtml(profile.name || "Mon profil")}</b><small title="Système de niveau à venir">Niv. —</small></span>
+          </button>
+          <div class="hm-resources">
+            <button id="homePlaqueLivesBtn" aria-label="Mes vies">${img('heart')}<b id="homePlaqueLives">${lives}/${maxLives}</b><i>+</i></button>
+            <button id="homePlaqueCoinsBtn" aria-label="Mes pièces">${img('coin')}<b id="homePlaqueCoins">${coins}</b><i>+</i></button>
+            <button id="homeGemButton" aria-label="Mes gemmes">${img('gem')}<b id="homeGems">0</b><i>+</i></button>
           </div>
+          <button id="homeMenuButton" class="hm-menu-button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="homeMenu">☰</button>
+          <nav id="homeMenu" class="hm-menu" aria-label="Menu" hidden>
+            <button id="homeSettings">${img('settings')}Paramètres</button>
+            <button id="homeProfileLink">${img('profile-icon')}Mon profil</button>
+            <button id="homeHistory">${img('coin')}Historique des pièces</button>
+            <button id="homeMenuClose">Fermer</button>
+          </nav>
         </header>
-
-        <section class="home-plaque-brand" aria-label="P'tit Bac">
-          <div class="home-plaque-logo-glow"></div>
-          <img src="/ptitbac.logo.png" alt="P'tit Bac" class="home-plaque-logo">
+        <section class="hm-hero" aria-label="P’tit Bac">
+          <div class="hm-letters" aria-hidden="true"><span>A</span><span>C</span><span>E</span><span>B</span></div>
+          <nav class="hm-side hm-left" aria-label="Activités">
+            ${side('homeQuests','task','Quêtes',true)}${side('homePlaqueShop','shop','Boutique')}
+          </nav>
+          <nav class="hm-side hm-right" aria-label="Communauté">
+            ${side('homeInfo','info','Info',true)}${side('homeFriends','friends','Amis')}
+          </nav>
+          <img class="hm-logo" src="/ptitbac.logo.png" alt="P’tit Bac" fetchpriority="high">
+          <div class="hm-book" aria-hidden="true"><span>ANIMAL<br>PAYS<br>PRÉNOM</span><span>OBJET<br>MÉTIER<br>COULEUR</span></div>
         </section>
-
-        <section class="home-plaque-actions">
-          <button class="home-plaque-main quick" id="homePlaqueQuick" type="button" ${lives < 1 ? "disabled" : ""}>
-            <span class="home-plaque-action-icon lightning"><img class="pb-icon pb-icon-action" src="/lightning.png" alt=""></span>
-            <span class="home-plaque-action-copy">
-              <strong>Partie rapide</strong>
-              <small class="home-quick-cost"><img class="pb-icon pb-icon-life-inline" src="/heart.png" alt=""><span>Coûte 1 vie</span></small>
-            </span>
-            <span class="home-plaque-chevron">›</span>
-          </button>
-
-          <button class="home-plaque-main create" id="homePlaqueCreate" type="button">
-            <span class="home-plaque-action-icon plus"><img class="pb-icon pb-icon-action" src="/plus.png" alt=""></span>
-            <span class="home-plaque-action-copy">
-              <strong>Créer un salon</strong>
-            </span>
-            <span class="home-plaque-chevron">›</span>
-          </button>
-
-          <section class="home-plaque-join">
-            <div class="home-plaque-join-icon"><img class="pb-icon pb-icon-join" src="/join.png" alt=""></div>
-            <div class="home-plaque-join-main">
-              <strong>Rejoindre une partie</strong>
-              <div class="home-plaque-code-row">
-                <input id="homePlaqueCode" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Entrez le code..." aria-label="Code du salon">
-                <button id="homePlaqueJoin" type="button">Rejoindre</button>
-              </div>
-            </div>
-          </section>
+        <section class="hm-modes" aria-labelledby="homeModesTitle">
+          <h1 id="homeModesTitle">Choisis ton mode de jeu</h1>
+          <div class="hm-mode-grid">
+            <button id="homePlaqueQuick" class="hm-quick">${img('lightning')}<b>Partie rapide <span>›</span></b></button>
+            <button id="homePlaqueCreate" class="hm-create">${img('create')}<b>Créer un salon <span>›</span></b></button>
+            <button id="homeJoinOpen" class="hm-join">${img('join')}<b>Rejoindre une partie <span>›</span></b></button>
+          </div>
+          <button class="hm-ranked" data-soon="Mode classé">${img('scoreboard-trophy')}<span><b>Mode Classé <i>♙</i></b><small>Bientôt disponible…</small></span><span class="hm-ranked-note">Grimpe dans le classement<br>et deviens le meilleur !</span></button>
         </section>
-
-        <nav class="home-plaque-shortcuts" aria-label="Navigation">
-          <button id="homePlaqueShop" type="button">
-            <span><img class="pb-icon pb-icon-shortcut" src="/shop.png" alt=""></span>
-            <strong>Boutique</strong>
+        <section class="hm-bottom" aria-label="Progression et inventaire">
+          <button class="hm-trophies" data-soon="La voie des trophées">
+            <b>${img('scoreboard-trophy')}La voie des trophées <span>›</span></b>
+            <div class="hm-milestones" aria-hidden="true">${['coin','gem','rewards','rewards','rewards'].map((x,i)=>'<span>'+img(x)+'<i></i><small>'+[100,250,500,750,1000][i]+'</small></span>').join('')}</div>
+            <small>À venir</small>
           </button>
-
-          <button id="homePlaqueRewards" type="button">
-            <span><img class="pb-icon pb-icon-shortcut" src="/rewards.png" alt=""></span>
-            <strong>Récompenses</strong>
-          </button>
-
-          <button type="button" data-nav="friends">
-            <span><img class="pb-icon pb-icon-shortcut" src="/friends.png" alt=""></span>
-            <strong>Amis</strong>
-          </button>
-
-          <button id="homePlaqueSettings" type="button">
-            <span><img class="pb-icon pb-icon-shortcut" src="/settings.png" alt=""></span>
-            <strong>Paramètres</strong>
-          </button>
-        </nav>
-
-        <footer class="home-plaque-footer">
-          <button id="homePlaqueCrown" class="home-plaque-beta-bar" type="button" aria-label="Version bêta">
-            <span class="home-plaque-beta-line"></span>
-            <i></i>
-            <span class="home-plaque-beta-line"></span>
-          </button>
-          <p>Version bêta</p>
-        </footer>
-
-        <div class="home-plaque-wave wave-1"></div>
-        <div class="home-plaque-wave wave-2"></div>
-      </main>
-    `);
-
+          <button id="homeInventory" class="hm-inventory">${img('inventaire')}<b>Inventaire ›</b></button>
+        </section>
+        <footer class="hm-footer"><button id="homePlaqueCrown" aria-label="Version bêta">◆</button><small>Version bêta</small></footer>
+        <dialog id="homeJoinDialog" class="hm-dialog"><form method="dialog"><button class="hm-close" aria-label="Fermer">×</button></form><h2>Rejoindre une partie</h2><label for="homePlaqueCode">Code du salon</label><input id="homePlaqueCode" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="ABCDE"><button id="homePlaqueJoin">Rejoindre</button></dialog>
+        <dialog id="homeDetailDialog" class="hm-dialog"><form method="dialog"><button class="hm-close" aria-label="Fermer">×</button></form><div id="homeDetailContent"></div></dialog>
+      </main>`);
     bindHomeActions(profile);
+    const menu = document.getElementById("homeMenu");
+    const trigger = document.getElementById("homeMenuButton");
+    const closeMenu = () => { menu.hidden = true; trigger.setAttribute("aria-expanded","false"); };
+    trigger.onclick = () => { menu.hidden = !menu.hidden; trigger.setAttribute("aria-expanded",String(!menu.hidden)); };
+    document.getElementById("homeMenuClose").onclick = () => { closeMenu(); trigger.focus(); };
+    document.querySelector(".home-mobile").addEventListener("click", e => { if (!menu.contains(e.target) && !trigger.contains(e.target)) closeMenu(); });
+    document.querySelector(".home-mobile").addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+    const details = (html) => { closeMenu(); document.getElementById("homeDetailContent").innerHTML=html; document.getElementById("homeDetailDialog").showModal(); };
+    document.getElementById("homeJoinOpen").onclick = () => document.getElementById("homeJoinDialog").showModal();
+    document.getElementById("homeGemButton").onclick = () => details('<h2>Mes gemmes</h2><p>'+Math.max(0,Number(economyState().gems)||0)+' gemmes</p><p>Les utilisations des gemmes arrivent bientôt.</p>');
+    document.querySelectorAll("[data-soon]").forEach(button => button.onclick=()=>toast(button.dataset.soon+" : bientôt disponible."));
+    document.getElementById("homeFriends").onclick = () => window.PtitBacFriends?.open?.();
+    document.getElementById("homeProfileLink").onclick = () => renderProfile();
+    document.getElementById("homeHistory").onclick = () => { closeMenu(); window.openWalletHistory?.(); };
+    document.getElementById("homeSettings").onclick = () => details('<h2>Paramètres</h2><p>Les réglages du jeu arrivent bientôt.</p>');
+    document.getElementById("homeInventory").onclick = () => {
+      details('<h2>Inventaire</h2><p>Ton avatar équipé</p><div class="hm-inventory-avatar"></div><button id="homeChangeAvatar">Changer mon avatar</button><p>Les autres objets arrivent bientôt.</p>');
+      document.querySelector(".hm-inventory-avatar").append(document.querySelector(".hm-avatar").cloneNode(true));
+      document.getElementById("homeChangeAvatar").onclick=()=>renderProfile();
+    };
+    window.PtitBacEconomy?.refresh?.();
     refreshHomeResources();
-    homeTimer = setInterval(refreshHomeResources, 1000);
+    homeTimer = setInterval(() => {
+      if (!document.querySelector(".home-mobile")) { clearInterval(homeTimer); return; }
+      refreshHomeResources();
+    }, 1000);
   }
 
   window.renderHome = renderPlaquetteHome;
@@ -379,3 +355,4 @@
     renderPlaquetteHome();
   }
 })();
+

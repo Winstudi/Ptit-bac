@@ -4,6 +4,7 @@
   const ecoSocket = io({forceNew:true});
   const eco = {
     coins:Number(localStorage.getItem("petitbac_walletBalance") || 0),
+    gems:0,
     lives:5,
     maxLives:5,
     nextLifeAt:null,
@@ -181,3 +182,4 @@
     rewardedAdCoins:80
   };
 })();
+

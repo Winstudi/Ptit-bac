@@ -121,6 +121,7 @@ function normalizeWalletRecord(wallet) {
   const history = Array.isArray(wallet?.history) ? wallet.history.slice(-100) : [];
   return {
     coins: Math.max(0, Math.floor(Number(wallet?.coins) || 0)),
+    gems: Math.max(0, Math.floor(Number(wallet?.gems) || 0)),
     createdAt: Number(wallet?.createdAt) || Date.now(),
     updatedAt: Number(wallet?.updatedAt) || Date.now(),
     history
@@ -172,10 +173,12 @@ async function initWalletPersistence() {
         history JSONB NOT NULL DEFAULT '[]'::jsonb
       )
     `);
-    const { rows } = await pgPool.query("SELECT token, coins, created_at, updated_at, history FROM ptitbac_wallets");
+    await pgPool.query("ALTER TABLE ptitbac_wallets ADD COLUMN IF NOT EXISTS gems INTEGER NOT NULL DEFAULT 0 CHECK (gems >= 0)");
+    const { rows } = await pgPool.query("SELECT token, coins, gems, created_at, updated_at, history FROM ptitbac_wallets");
     for (const row of rows) {
       wallets.set(row.token, normalizeWalletRecord({
         coins: row.coins,
+        gems: row.gems,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         history: row.history
@@ -200,13 +203,14 @@ function persistWallet(token) {
     return;
   }
   pgPool.query(
-    `INSERT INTO ptitbac_wallets(token, coins, created_at, updated_at, history)
-     VALUES($1,$2,$3,$4,$5::jsonb)
+    `INSERT INTO ptitbac_wallets(token, coins, created_at, updated_at, history, gems)
+     VALUES($1,$2,$3,$4,$5::jsonb,$6)
      ON CONFLICT(token) DO UPDATE SET
        coins=EXCLUDED.coins,
+       gems=EXCLUDED.gems,
        updated_at=EXCLUDED.updated_at,
        history=EXCLUDED.history`,
-    [token, wallet.coins, wallet.createdAt, wallet.updatedAt, JSON.stringify(wallet.history || [])]
+    [token, wallet.coins, wallet.createdAt, wallet.updatedAt, JSON.stringify(wallet.history || []), wallet.gems ?? 0]
   ).catch(err => console.error("Erreur persistance portefeuille PostgreSQL:", err.message));
 }
 
@@ -224,7 +228,7 @@ function ensureWallet(token) {
   if (!safeToken) safeToken = createWalletToken();
   if (!wallets.has(safeToken)) {
     const now = Date.now();
-    wallets.set(safeToken, { coins: DEFAULT_COINS, createdAt: now, updatedAt: now, history: [{
+    wallets.set(safeToken, { coins: DEFAULT_COINS, gems: 0, createdAt: now, updatedAt: now, history: [{
       id: crypto.randomBytes(8).toString("hex"), type: "WELCOME", delta: DEFAULT_COINS,
       before: 0, after: DEFAULT_COINS, at: now, roomCode: "",
       note: "Bienvenue dans P’tit Bac", idempotencyKey: "welcome:" + safeToken
@@ -451,6 +455,7 @@ async function economyState(walletToken) {
   return {
     userId:user.id,
     coins,
+    gems: wallets.get(walletToken)?.gems ?? 0,
     lives:life.lives,
     maxLives:ECONOMY_MAX_LIVES,
     nextLifeAt:life.nextLifeAt,
@@ -3157,3 +3162,4 @@ initWalletPersistence()
       console.log(`Admin pièces: ${ADMIN_COIN_CODE ? "activé par variable d’environnement" : "désactivé"}`);
     });
   });
+
