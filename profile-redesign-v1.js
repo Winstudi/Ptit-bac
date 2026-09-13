@@ -20,15 +20,14 @@
     return /^\d{5}$/.test(code) ? code : "-----";
   }
 
-  function isPhotoAvatar(value) {
-    return !!window.PtitBacProfilePhoto?.isImageAvatar?.(value);
+  function safeAvatar(value) {
+    const avatar = String(value || "").trim();
+    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) return "🧠";
+    return avatar;
   }
 
   function avatarMarkup(value) {
-    if (isPhotoAvatar(value)) {
-      return `<img src="${value}" alt="" draggable="false">`;
-    }
-    return `<span>${esc(value || "🧠")}</span>`;
+    return `<span>${esc(safeAvatar(value))}</span>`;
   }
 
   function readStat(keys, fallback = 0) {
@@ -168,7 +167,7 @@
         <section class="profile-v10-card profile-v10-identity-card">
           <button id="profileV10Avatar" class="profile-v10-avatar" type="button" aria-label="Modifier mon avatar">
             <span class="profile-v10-avatar-visual">
-              ${avatarMarkup(profile.icon || "🧠")}
+              ${avatarMarkup(profile.icon)}
             </span>
             <span class="profile-v10-avatar-edit" aria-hidden="true">${editIcon()}</span>
           </button>
@@ -287,7 +286,7 @@
 
       const current = typeof getProfile === "function" ? getProfile() : profile;
       try {
-        if (typeof saveProfile === "function") saveProfile(next, current.icon || "🧠");
+        if (typeof saveProfile === "function") saveProfile(next, safeAvatar(current.icon));
         else localStorage.setItem("petitbac_profile_name", next);
 
         if (nameInput) {
@@ -354,7 +353,7 @@
     });
   }
 
-  // L'éditeur pseudo/avatar reste fourni par profile-screen-v2.js.
+  // L'éditeur pseudo/avatar (sans import de photo) reste fourni par profile-screen-v2.js.
   // Cette couche remplace uniquement la page principale du profil.
   window.renderProfile = renderProfileV10;
   try { renderProfile = renderProfileV10; } catch {}
