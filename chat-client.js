@@ -2,6 +2,9 @@
   "use strict";
 
   const chatSocket = io({ forceNew: true });
+  let embedded = false, requestVersion = 0, pendingFriend = null;
+  const target = () => embedded ? document.getElementById("friendsChatPanel") : document.getElementById("app");
+  const visible = () => embedded ? !!document.getElementById("friendsChatPanel") : !!document.querySelector(".chat-v1");
   const state = {
     me: null,
     friends: [],
@@ -112,7 +115,7 @@
   function renderList() {
     state.screen = "list";
     state.menuOpen = false;
-    const app = document.getElementById("app");
+    const app = target();
     if (!app) return;
 
     const q = state.search.trim().toLowerCase();
@@ -201,7 +204,7 @@
 
   function renderNewMessage() {
     state.screen = "new";
-    const app = document.getElementById("app");
+    const app = target();
     if (!app) return;
 
     app.innerHTML = `
@@ -266,8 +269,10 @@
     state.previousScreen = previous;
     state.screen = "conversation";
     state.menuOpen = false;
+    const version = ++requestVersion;
 
     chatSocket.emit("chat:history", payload({ friendId: friend.id }), res => {
+      if(version !== requestVersion || (embedded && !target())) return;
       if (!res?.ok) return toast(res?.error || "Conversation indisponible.");
       state.me = res.me || state.me;
       state.currentFriend = res.friend || friend;
@@ -305,8 +310,10 @@
     const friend = state.currentFriend;
     if (!friend) return renderList();
 
-    const app = document.getElementById("app");
+    const app = target();
     if (!app) return;
+    const draft = app.querySelector("#chatMessageInput")?.value || "";
+    const wasTyping = document.activeElement === app.querySelector("#chatMessageInput");
 
     app.innerHTML = `
       <main class="screen chat-v1 chat-conversation-v1">
@@ -350,6 +357,7 @@
     });
 
     document.getElementById("chatConversationBack")?.addEventListener("click", () => {
+      if(embedded){++requestVersion;state.currentFriend=null;return refresh(ok=>ok && target() && renderList());}
       if (state.previousScreen === "friends" && window.PtitBacFriends?.open) return window.PtitBacFriends.open();
       refresh(ok => ok && renderList());
     });
@@ -394,6 +402,7 @@
     document.getElementById("chatComposer")?.addEventListener("submit", event => {
       event.preventDefault();
       const input = document.getElementById("chatMessageInput");
+      if(input?.disabled)return;
       const content = String(input?.value || "").trim();
       if (!content) return;
 
@@ -405,14 +414,20 @@
           return toast(res?.error || "Envoi impossible.");
         }
         input.value = "";
-        if (!state.messages.some(m => m.id === res.message.id)) {
-          state.messages.push(res.message);
+        if(state.currentFriend?.id === friend.id){
+          const currentInput=document.getElementById("chatMessageInput");
+          if(currentInput?.value === content)currentInput.value="";
         }
-        renderConversation();
+        if (!state.messages.some(m => m.id === res.message.id)) {
+          if(state.currentFriend?.id === friend.id) state.messages.push(res.message);
+        }
+        if(visible() && state.screen === "conversation" && state.currentFriend?.id === friend.id) renderConversation();
       });
     });
+    const composerInput=app.querySelector("#chatMessageInput");
+    if(composerInput){composerInput.value=draft;if(wasTyping)composerInput.focus({preventScroll:true});}
 
-    chatSocket.emit("chat:read", payload({ friendId: friend.id }), () => {});
+    if(visible())chatSocket.emit("chat:read", payload({ friendId: friend.id }), () => {});
   }
 
   function bootstrap() {
@@ -429,7 +444,7 @@
     if (!message) return;
 
     if (
-      state.screen === "conversation" &&
+      visible() && state.screen === "conversation" &&
       state.currentFriend &&
       (
         String(message.sender_id) === String(state.currentFriend.id) ||
@@ -443,13 +458,13 @@
       }
     } else {
       refresh(() => {
-        if (state.screen === "list") renderList();
+        if (visible() && state.screen === "list") renderList();
       });
     }
   });
 
   chatSocket.on("chat:read", ({ messageIds = [], readAt } = {}) => {
-    if (!messageIds.length || state.screen !== "conversation") return;
+    if (!messageIds.length || !visible() || state.screen !== "conversation") return;
     const set = new Set(messageIds.map(String));
     state.messages.forEach(m => {
       if (set.has(String(m.id))) m.read_at = readAt || new Date().toISOString();
@@ -460,11 +475,26 @@
   chatSocket.on("connect", bootstrap);
 
   window.PtitBacChat = {
+    prepare(friend) { pendingFriend=friend||null; },
+    unmount() { ++requestVersion;state.screen=""; },
+    mount() {
+      embedded=true;
+      const version=++requestVersion;
+      refresh(ok=>{
+        if(version!==requestVersion || !target())return;
+        if(!ok){target().innerHTML='<p role="status">Messages indisponibles. Réouvre cet onglet pour réessayer.</p>';return;}
+        const friend=pendingFriend;pendingFriend=null;
+        if(friend)return openConversation(friend,"list");
+        renderList();
+      });
+    },
     openList(options = {}) {
+      if(window.PtitBacFriends?.openMessages)return window.PtitBacFriends.openMessages();
       state.listPreviousScreen = options.from || state.listPreviousScreen || "friends";
       refresh(ok => ok && renderList());
     },
     openConversation(friend) {
+      if(window.PtitBacFriends?.openMessages)return window.PtitBacFriends.openMessages(friend);
       refresh(ok => {
         if (!ok) return;
         const fresh = state.friends.find(x => String(x.id) === String(friend?.id)) || friend;

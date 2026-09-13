@@ -195,7 +195,7 @@
       friendsState.incoming = res.incoming || [];
       friendsState.outgoing = res.outgoing || [];
 
-      if (friendsOpen && document.querySelector(".friends-mobile")) renderFriends();
+      if (friendsOpen && friendsState.activeTab !== "messages" && document.querySelector(".friends-mobile")) renderFriends();
     });
   }
 
@@ -213,7 +213,7 @@
       if (openedFriendId && !friendsState.friends.some(item => String(item.id) === String(openedFriendId))) {
         openedFriendId = "";
       }
-      if (friendsOpen && document.querySelector(".friends-mobile")) renderFriends();
+      if (friendsOpen && friendsState.activeTab !== "messages" && document.querySelector(".friends-mobile")) renderFriends();
     });
   }
 
@@ -434,6 +434,7 @@
   }
 
   function currentPanel() {
+    if (friendsState.activeTab === "messages") return '<section id="friendsChatPanel" aria-label="Messages"><p>Chargement des messages…</p></section>';
     if (friendsState.activeTab === "requests") {
       const incoming = friendsState.incoming.length
         ? friendsState.incoming.map(incomingCard).join("")
@@ -528,7 +529,7 @@
             ${friendsState.friends.length ? `<b class="friends-v4-friend-count">${friendsState.friends.length}</b>` : ""}
           </button>
 
-          <button id="friendsMessagesBtn" type="button"><span>Messages</span></button>
+          <button data-friend-tab="messages" class="${friendsState.activeTab === "messages" ? "active" : ""}" type="button"><span>Messages</span></button>
 
           <button data-friend-tab="requests" class="${friendsState.activeTab === "requests" ? "active" : ""}">
             <span class="friends-v2-tab-icon">${tabIcon("requests")}</span>
@@ -554,6 +555,7 @@
       </main>`;
 
     bindFriendsUI();
+    if (friendsState.activeTab === "messages") window.PtitBacChat?.mount?.();
   }
 
   function bindFriendsUI() {
@@ -567,6 +569,7 @@
         return renderFriends();
       }
       friendsOpen = false;
+      window.PtitBacChat?.unmount?.();
       if (typeof window.renderHome === "function") {
         window.renderHome();
       } else {
@@ -600,6 +603,7 @@
         openedFriendId = "";
         friendsState.quickMenuFriendId = "";
         friendsState.activeTab = btn.dataset.friendTab;
+        if(friendsState.activeTab !== "messages") window.PtitBacChat?.unmount?.();
         renderFriends();
       });
     });
@@ -866,6 +870,14 @@
 
   // API légère réutilisable depuis le salon.
   window.PtitBacFriends = {
+    open() {
+      friendsState.activeTab="friends";renderFriends();refreshFriends();
+    },
+    openMessages(friend) {
+      friendsState.activeTab="messages";
+      window.PtitBacChat?.prepare?.(friend);
+      renderFriends();
+    },
     sendRequestByCode(friendCode, callback = () => {}) {
       const code = String(friendCode || "").trim().replace(/\D/g, "").slice(0, 5);
       if (!/^\d{5}$/.test(code)) {

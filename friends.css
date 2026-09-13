@@ -1174,3 +1174,49 @@ html .friends-mobile{width:min(100%,480px)!important;min-height:100dvh!important
 .friends-popup button:disabled{opacity:.5}
 .friends-popup :focus-visible{outline:2px solid #e2bbff;outline-offset:3px}
 @media(max-width:390px){.friends-mobile .friends-v4-chat-btn span{display:none}.friends-mobile .friends-v4-card .friends-v2-card-main strong{font-size:13px}.friends-mobile .friends-v4-chat-btn{min-width:32px}}
+
+/* Responsive friends shell and embedded messages. */
+html body:has(.friends-mobile){overflow-x:hidden!important}
+html .friends-mobile,html .friends-mobile *{box-sizing:border-box!important;min-width:0}
+html .friends-mobile{width:100%!important;max-width:480px!important;min-width:0!important;padding:10px 12px 20px!important;overflow-x:clip!important}
+html .friends-mobile .friends-v2-header{margin:0!important;height:48px!important;min-height:48px!important}
+html .friends-mobile .friends-v2-code{width:100%!important;min-height:0!important;height:auto!important;padding:8px 10px!important;margin:8px 0 12px!important;border-radius:14px!important;gap:10px!important}
+html .friends-mobile .friends-v2-code>div{display:flex!important;align-items:center;gap:8px;flex-wrap:wrap}
+html .friends-mobile .friends-v2-code small{font-size:11px!important}
+html .friends-mobile .friends-v2-code strong{font-size:18px!important;letter-spacing:1px!important}
+html .friends-mobile .friends-v2-code button{min-width:0!important;min-height:36px!important;height:36px!important;padding:6px 10px!important;font-size:12px!important;gap:4px!important}
+html .friends-mobile .friends-v2-code button svg{width:18px!important;height:18px!important}
+html .friends-mobile :is(.friends-v2-tabs,.friends-v2-content,.friends-v4-friends-panel,.friends-v4-list,.friends-v4-card,.friends-v4-tools,.friends-v4-add-shortcut){width:100%!important;max-width:100%!important;min-width:0!important}
+html .friends-mobile .friends-v2-tabs{margin:0 0 10px!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html .friends-mobile .friends-v2-tabs button{font-size:10px!important;overflow-wrap:anywhere}
+html .friends-mobile .friends-v4-tools{grid-template-columns:minmax(0,1fr) minmax(0,130px)!important}
+html .friends-mobile :is(.friends-v4-search,.friends-v4-sort){width:auto!important;min-width:0!important;max-width:100%!important}
+html .friends-mobile .friends-v4-search input{width:100%!important}
+html .friends-mobile .friends-v4-sort select{width:100%!important;padding:4px!important}
+html .friends-mobile .friends-v4-sort>span{display:none}
+html .friends-mobile :is(.friends-v2-avatar,.friends-v3-modal-avatar,.chat-list-avatar,.chat-header-avatar){border-radius:12px!important;border:2px solid #a64cf5!important;background:#192254!important;overflow:hidden}
+html .friends-mobile :is(.friends-v2-avatar,.friends-v3-modal-avatar,.chat-list-avatar,.chat-header-avatar) img{border-radius:8px!important;object-fit:contain!important}
+html .friends-mobile .friends-v4-avatar-wrap{flex:0 0 43px!important}
+html .friends-mobile .friends-v4-main{flex:1 1 0!important}
+html .friends-mobile .friends-v4-card .friends-v2-card-main strong{overflow-wrap:anywhere}
+html .friends-mobile .friends-v4-actions{flex:0 0 auto!important}
+html .friends-mobile .friends-v4-chat-btn{min-width:32px!important}
+html .friends-mobile .friends-v4-chat-btn span{display:none!important}
+html .friends-mobile .friends-v4-add-shortcut{padding:12px!important}
+html .friends-mobile .friends-v4-add-shortcut small{white-space:normal!important}
+html .friends-mobile .ptb-shared-footer{display:none!important}
+html .friends-mobile #friendsChatPanel{width:100%;min-width:0}
+html .friends-mobile #friendsChatPanel .chat-v1{position:relative!important;width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;background:transparent!important;overflow:visible!important}
+html .friends-mobile #friendsChatPanel .chat-list-header{display:flex!important;position:static!important;min-height:44px!important;margin:0 0 8px!important;padding:0!important}
+html .friends-mobile #friendsChatPanel .chat-list-header h1{font-size:18px!important;flex:1}
+html .friends-mobile #chatListBack{display:none!important}
+html .friends-mobile #friendsChatPanel .chat-conversation-header{position:static!important;width:100%!important;padding:8px 0!important;display:flex!important;gap:8px!important}
+html .friends-mobile #friendsChatPanel .chat-person{flex:1!important}
+html .friends-mobile #friendsChatPanel .chat-history{height:clamp(150px,calc(100dvh - 360px),420px)!important;min-height:0!important;overflow-y:auto!important;padding:8px!important}
+html .friends-mobile #friendsChatPanel .chat-composer{position:sticky!important;bottom:0!important;left:auto!important;right:auto!important;width:100%!important;margin:0!important;padding:8px!important;background:#101b49!important;display:flex!important;gap:6px!important}
+html .friends-mobile #chatMessageInput{flex:1!important;width:0!important;font-size:16px!important}
+html .friends-mobile #chatAttach{display:none!important}
+html .friends-mobile #friendsChatPanel :is(.chat-search,.chat-conversation-list,.chat-new-list,.chat-conversation-row){width:100%!important;max-width:100%!important;min-width:0!important}
+html .friends-mobile #friendsChatPanel .chat-bubble{overflow-wrap:anywhere}
+html .friends-mobile #friendsChatPanel .chat-row-copy{flex:1!important;min-width:0!important}
+html .friends-mobile #friendsChatPanel .chat-row-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
