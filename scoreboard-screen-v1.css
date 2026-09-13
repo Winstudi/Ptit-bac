@@ -60,3 +60,11 @@ html .results-screen .res-heading h1{font-size:clamp(23px,6vw,29px)!important;ma
 @media(max-height:680px){html .ssv1-screen.results-screen{gap:7px!important}.res-winner{padding:8px}.res-trophy{width:45px;height:45px}.res-panel{gap:5px;padding-top:8px;padding-bottom:8px}.res-category{min-height:50px}.res-row{min-height:44px;padding:5px}}
 
 .res-continue{position:sticky;bottom:0;z-index:2;box-shadow:0 -8px 16px #09143d}
+
+/* Hide the legacy overlay, not the game's wallet data. */
+html body:has(.results-screen) .economy-hud{display:none!important}
+.results-screen .res-winner{display:grid;grid-template-columns:74px minmax(0,1fr) 74px}
+.results-screen .res-winner-copy{text-align:center}
+.results-screen .res-winner-copy>div{justify-content:center}
+.results-screen .res-winner>b{text-align:right}
+@media(max-width:360px){.results-screen .res-winner{grid-template-columns:50px minmax(0,1fr) 50px}.results-screen .res-winner>b{font-size:18px;padding-left:5px}.results-screen .res-trophy{width:44px;height:44px}}
