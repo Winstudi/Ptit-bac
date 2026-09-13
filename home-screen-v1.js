@@ -261,7 +261,7 @@
 
     document.getElementById("homePlaqueShop")?.addEventListener("click", renderShop);
 
-    const betaTrigger = document.getElementById("homePlaqueCrown");
+    const betaTrigger = document.getElementById("homeBrandLogo");
     let adminTapCount = 0;
     let adminTapTimer = null;
 
@@ -390,6 +390,7 @@
           <div class="hm-brand">
             <div class="hm-brand-glow" aria-hidden="true"></div>
             <img
+              id="homeBrandLogo"
               class="hm-logo"
               src="/ptitbac.logo.png"
               alt="P’tit Bac"
@@ -468,15 +469,6 @@
             <b>Inventaire <span>›</span></b>
           </button>
         </section>
-
-        <footer class="hm-footer">
-          <button id="homePlaqueCrown" type="button" aria-label="Version bêta">
-            <span class="hm-footer-line"></span>
-            <i></i>
-            <span class="hm-footer-line"></span>
-          </button>
-          <small>Version bêta</small>
-        </footer>
 
         <dialog id="homeJoinDialog" class="hm-dialog">
           <form method="dialog">
