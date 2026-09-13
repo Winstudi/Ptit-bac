@@ -21,7 +21,6 @@ function renderFinishedV2(){
  const rows=ranked.map(p=>'<div class="fin-row '+(p.id===session.playerId?'is-me':'')+'"><span class="fin-rank place-'+Math.min(rank(p),4)+'">'+rank(p)+'</span><div class="fin-player">'+avatar(p)+'<strong>'+esc(p.name)+'</strong>'+(p.id===session.playerId?'<small class="fin-you">Toi</small>':'')+'</div><b>'+pts(p)+'</b></div>').join("");
  const rawDifficulty=String(state.categoryDifficulty||"").toLowerCase();
  const difficulty=["hard","difficile"].includes(rawDifficulty)?"Difficile":["medium","normal","moyen"].includes(rawDifficulty)?"Moyen":"Facile";
- const difficultyImage=difficulty==="Difficile"?"hard":difficulty==="Moyen"?"normal":"easy";
  const quick=state.mode==="quick";
  const gain=Math.max(0,Number(state.myReward??state.rewardsByPlayerId?.[session.playerId]??0)||0);
 
@@ -30,7 +29,7 @@ function renderFinishedV2(){
  '<section class="fin-podium" aria-label="Podium">'+podium+'</section>'+
  '<section class="fin-ranking">'+rows+'</section>'+
  '<section class="fin-stats">'+[
- ["/friends.png",ranked.length,"Joueurs"],["/lightning.png",Number(state.rounds)||1,"Manche"+(state.rounds>1?"s":"")],["/lobby-clock.png",(Number(state.duration)||0)+" s","Par manche"],["/difficulty-"+difficultyImage+".png",difficulty,"Niveau"]
+ ["/friends.png",ranked.length,"Joueurs"],["/lightning.png",Number(state.rounds)||1,"Manche"+(state.rounds>1?"s":"")],["/lobby-clock.png",(Number(state.duration)||0)+" s","Par manche"],["/difficulty.png",difficulty,"Niveau"]
  ].map(([img,value,label])=>'<div><img src="'+img+'" alt=""><strong>'+value+'</strong><small>'+label+'</small></div>').join("")+'</section>'+
  '<p class="fin-mode">'+(quick?'Partie rapide · +'+gain+' pièces':'Salon privé · Partie sans gain de pièces')+'</p>'+
  '<div class="fin-actions">'+(user?.isHost&&!quick?'<button id="finReplay" class="fin-primary">↻ Rejouer</button>':quick?'<button id="finQuick" class="fin-primary">↻ Rejouer</button>':'<p>L’hôte peut relancer une partie.</p>')+'<button id="finHome" class="fin-secondary">⌂ Retour à l’accueil</button></div></main>');

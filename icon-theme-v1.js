@@ -32,4 +32,46 @@
       };
     } catch {}
   }
+
+  // Une seule image pour les 3 niveaux de difficulté.
+  const DIFFICULTY_ICON = `${BASE}difficulty.png`;
+
+  function normalizeDifficultyIcons(root = document) {
+    if (!root?.querySelectorAll) return;
+
+    root.querySelectorAll(
+      'img[src*="difficulty-easy.png"], img[src*="difficulty-normal.png"], img[src*="difficulty-hard.png"]'
+    ).forEach(img => {
+      if (img.getAttribute("src") !== DIFFICULTY_ICON) {
+        img.setAttribute("src", DIFFICULTY_ICON);
+      }
+    });
+  }
+
+  normalizeDifficultyIcons();
+
+  const difficultyObserver = new MutationObserver(records => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue;
+
+        if (
+          node.matches?.(
+            'img[src*="difficulty-easy.png"], img[src*="difficulty-normal.png"], img[src*="difficulty-hard.png"]'
+          )
+        ) {
+          node.setAttribute("src", DIFFICULTY_ICON);
+        }
+
+        normalizeDifficultyIcons(node);
+      }
+    }
+  });
+
+  difficultyObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+
+  window.PtitBacDifficultyIcon = DIFFICULTY_ICON;
 })();
