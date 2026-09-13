@@ -217,8 +217,6 @@
         `}
 
         ${categoryExitMenu()}
-
-        <p class="cat-reminder">Manche ${Number(state.roundIndex ?? -1) + 2} / ${Number(state.rounds || 1)} · Nouveau tirage à chaque manche.</p>
       </main>
     `);
 
