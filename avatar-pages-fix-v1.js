@@ -826,6 +826,7 @@
     ".lobby-v5-avatar",
     ".lobby-v5-host-avatar",
     ".lobby-v5-profile-avatar",
+    ".lobby-v5-profile-modal .lobby-v5-profile-avatar",
     ".pl-avatar",
     ".wsv1-avatar",
     ".res-avatar",
@@ -837,6 +838,7 @@
 
   const PLAYER_ROWS = [
     "[data-player-id]",
+    "[data-lobby-player-profile]",
     ".wsv1-player",
     ".res-row",
     ".fin-row",
@@ -901,6 +903,112 @@
     ).trim();
   }
 
+  function statePlayerById(id) {
+    const playerId = String(id || "").trim();
+    if (!playerId) return null;
+
+    return (liveState()?.players || []).find(
+      player => String(player?.id || "") === playerId
+    ) || null;
+  }
+
+  function statePlayerByName(name) {
+    const expected = String(name || "").trim();
+    if (!expected) return null;
+
+    const matches = (liveState()?.players || []).filter(
+      player => String(player?.name || "").trim() === expected
+    );
+
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  function playerForAvatarBox(box) {
+    if (!(box instanceof Element)) return null;
+
+    const state = liveState();
+    const meId = localPlayerId();
+
+    if (box.matches(
+      ".hm-avatar," +
+      ".profile-v10-avatar-visual," +
+      ".lobby-v5-profile-avatar"
+    ) && !box.closest(".lobby-v5-profile-modal")) {
+      return statePlayerById(meId) || localRoomPlayer();
+    }
+
+    if (box.matches(".pbw1-chooser-avatar")) {
+      return statePlayerById(state?.letterChooserPlayerId);
+    }
+
+    if (box.matches(".cat-existing-chooser-avatar")) {
+      return statePlayerById(state?.categoryChooserPlayerId);
+    }
+
+    const row = box.closest(PLAYER_ROWS);
+
+    if (row) {
+      const rowId = String(
+        row.dataset?.playerId ||
+        row.dataset?.lobbyPlayerProfile ||
+        row.getAttribute?.("data-player-id") ||
+        row.getAttribute?.("data-lobby-player-profile") ||
+        ""
+      );
+
+      const byId = statePlayerById(rowId);
+      if (byId) return byId;
+
+      return statePlayerByName(rowPlayerName(row));
+    }
+
+    const modal = box.closest(".lobby-v5-profile-modal");
+    if (modal) {
+      const visibleName = modal.querySelector("h2")?.textContent || "";
+      return statePlayerByName(visibleName);
+    }
+
+    return null;
+  }
+
+  function frameIdForAvatarBox(box) {
+    if (!(box instanceof Element)) return "";
+
+    if (box.closest(".inventory-v1")) return "";
+
+    if (box.closest(
+      ".friends-v2-card," +
+      ".friends-v4-card," +
+      ".chat-conversation-row," +
+      ".chat-new-row," +
+      ".lobby-v5-invite-friend"
+    )) {
+      return "";
+    }
+
+    const player = playerForAvatarBox(box);
+    const syncedFrame = String(player?.frameId || "").trim();
+
+    if (syncedFrame && FRAMES[syncedFrame]) {
+      return syncedFrame;
+    }
+
+    if (
+      player &&
+      String(player.id || "") === localPlayerId()
+    ) {
+      const localFrame = String(loadState().equipped.frame || "");
+      return FRAMES[localFrame] ? localFrame : "";
+    }
+
+    if (isLocalPlayerAvatar(box)) {
+      const localFrame = String(loadState().equipped.frame || "");
+      return FRAMES[localFrame] ? localFrame : "";
+    }
+
+    return "";
+  }
+
   function isLocalPlayerAvatar(box) {
     if (!(box instanceof Element)) return false;
 
@@ -948,7 +1056,9 @@
     if (row) {
       const rowId = String(
         row.dataset?.playerId ||
+        row.dataset?.lobbyPlayerProfile ||
         row.getAttribute?.("data-player-id") ||
+        row.getAttribute?.("data-lobby-player-profile") ||
         ""
       );
 
@@ -994,13 +1104,14 @@
     box.removeAttribute("data-ptb-frame");
   }
 
-  function applyEquippedFrame(box, frameId) {
+  function applyEquippedFrame(box) {
     if (!(box instanceof Element)) return;
 
     removeEquippedFrame(box);
 
+    const frameId = frameIdForAvatarBox(box);
     const frame = FRAMES[frameId];
-    if (!frame || !isLocalPlayerAvatar(box)) return;
+    if (!frame) return;
 
     const overlay = document.createElement("span");
     overlay.className =
@@ -1013,24 +1124,92 @@
   }
 
   function refreshGlobalFrames(root = document) {
-    const frameId = loadState().equipped.frame || "";
-
     if (
       root instanceof Element &&
       root.matches(GLOBAL_FRAME_AVATARS)
     ) {
-      applyEquippedFrame(root, frameId);
+      applyEquippedFrame(root);
     }
 
     root
       .querySelectorAll?.(GLOBAL_FRAME_AVATARS)
-      .forEach(box => applyEquippedFrame(box, frameId));
+      .forEach(box => applyEquippedFrame(box));
+  }
+
+  const FRAME_TRANSPORT_EVENTS = new Set([
+    "room:create",
+    "room:join",
+    "room:reconnect",
+    "quick:join"
+  ]);
+
+  function currentFrameId() {
+    const frameId = String(loadState().equipped.frame || "");
+    return FRAMES[frameId] ? frameId : "";
+  }
+
+  function syncFrameWithServer() {
+    try {
+      if (typeof socket === "undefined" || !socket?.connected) return;
+
+      const live = liveSession();
+      const playerId = String(live?.playerId || "");
+      if (!playerId) return;
+
+      socket.emit("cosmetics:sync", {
+        playerId,
+        code: String(live?.code || ""),
+        frameId: currentFrameId()
+      });
+    } catch {}
+  }
+
+  function installFrameTransport() {
+    try {
+      if (typeof socket === "undefined" || !socket || socket.__ptbFrameTransportV1) {
+        return;
+      }
+
+      const nativeEmit = socket.emit;
+
+      socket.emit = function ptbFrameAwareEmit(event, ...args) {
+        if (
+          FRAME_TRANSPORT_EVENTS.has(String(event)) &&
+          args[0] &&
+          typeof args[0] === "object" &&
+          !Array.isArray(args[0])
+        ) {
+          args[0] = {
+            ...args[0],
+            frameId: currentFrameId()
+          };
+        }
+
+        return nativeEmit.call(this, event, ...args);
+      };
+
+      Object.defineProperty(socket, "__ptbFrameTransportV1", {
+        value: true,
+        configurable: false,
+        enumerable: false
+      });
+
+      socket.on("connect", () => {
+        setTimeout(syncFrameWithServer, 80);
+      });
+
+      socket.on("room:state", () => {
+        setTimeout(syncFrameWithServer, 0);
+      });
+    } catch {}
   }
 
   let globalFrameObserver = null;
 
   function startGlobalFrameSync() {
+    installFrameTransport();
     refreshGlobalFrames(document);
+    syncFrameWithServer();
 
     if (globalFrameObserver) return;
 
@@ -1061,6 +1240,7 @@
     });
 
     document.addEventListener("ptitbac:inventory-changed", () => {
+      syncFrameWithServer();
       requestAnimationFrame(() => refreshGlobalFrames(document));
     });
   }

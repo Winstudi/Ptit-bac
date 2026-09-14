@@ -5,8 +5,8 @@
   "description": "P'tit Bac multijoueur mobile — profils persistants, amis, chat, vies rechargeables et économie serveur.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node -r ./frame-sync-server.js server.js",
+    "dev": "node --watch -r ./frame-sync-server.js server.js",
     "test": "node --test tests/*.test.cjs"
   },
   "engines": {
