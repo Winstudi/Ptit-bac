@@ -59,45 +59,106 @@
       "#ffffff"
     ];
 
-    return Array.from(
-      { length:72 },
-      (_, index) => {
-        const left =
-          (index * 37 + 11) % 100;
+    const lanes = 12;
 
-        const delay =
+    return Array.from(
+      { length:60 },
+      (_, index) => {
+        const lane =
+          index % lanes;
+
+        const wave =
+          Math.floor(
+            index / lanes
+          );
+
+        /*
+          12 couloirs répartissent les confettis sur toute
+          la largeur. Un petit décalage évite l'effet grille.
+        */
+        const laneCenter =
           (
-            (index * 17) % 135
-          ) / 100;
+            lane + 0.5
+          ) *
+          (
+            100 / lanes
+          );
+
+        const jitter =
+          (
+            (
+              index * 17
+            ) % 7
+          ) - 3;
+
+        const left =
+          Math.max(
+            2,
+            Math.min(
+              98,
+              laneCenter +
+              jitter * 0.72
+            )
+          );
+
+        /*
+          Les groupes arrivent progressivement au lieu
+          de tomber en gros paquets simultanés.
+        */
+        const delay =
+          wave * 0.34 +
+          (
+            (
+              lane * 7
+            ) % lanes
+          ) * 0.018;
 
         const duration =
-          2.65 +
+          2.55 +
           (
-            (index * 23) % 75
+            (
+              index * 19
+            ) % 58
           ) / 100;
 
         const drift =
-          -42 +
+          -26 +
           (
-            (index * 29) % 85
+            (
+              index * 23
+            ) % 53
+          );
+
+        const sway =
+          10 +
+          (
+            (
+              index * 11
+            ) % 17
           );
 
         const spin =
-          260 +
+          220 +
           (
-            (index * 71) % 520
+            (
+              index * 67
+            ) % 420
           );
 
         const width =
-          5 +
+          4 +
           (
-            (index * 13) % 6
+            (
+              index * 7
+            ) % 4
           );
 
         const height =
-          9 +
+          7 +
           (
-            (index * 19) % 10
+            (
+              index * 13
+            ) % 5
           );
 
         const color =
@@ -106,10 +167,10 @@
           ];
 
         const round =
-          index % 5 === 0
+          index % 6 === 0
             ? "50%"
-            : index % 3 === 0
-              ? "3px"
+            : index % 4 === 0
+              ? "2px"
               : "1px";
 
         return (
@@ -118,6 +179,7 @@
             '--fin-delay:' + delay + 's;' +
             '--fin-duration:' + duration + 's;' +
             '--fin-drift:' + drift + 'px;' +
+            '--fin-sway:' + sway + 'px;' +
             '--fin-spin:' + spin + 'deg;' +
             '--fin-width:' + width + 'px;' +
             '--fin-height:' + height + 'px;' +
@@ -213,7 +275,7 @@
               0;
           }
         },
-        4000
+        4600
       );
   }
 

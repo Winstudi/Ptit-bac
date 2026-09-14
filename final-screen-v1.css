@@ -629,7 +629,7 @@ html .fsv1-screen.final-mobile
   }
 }
 
-/* ---------- Confettis fin de partie ---------- */
+/* ---------- Confettis fin de partie V2 ---------- */
 
 .fin-confetti-layer {
   position:fixed;
@@ -642,30 +642,24 @@ html .fsv1-screen.final-mobile
 
 .fin-confetti-piece {
   position:absolute;
-  top:-24px;
+  top:-18px;
   left:var(--fin-left);
   width:var(--fin-width);
   height:var(--fin-height);
   border-radius:var(--fin-round);
   background:var(--fin-color);
   opacity:0;
-  box-shadow:
-    0 0 5px
-    color-mix(
-      in srgb,
-      var(--fin-color) 40%,
-      transparent
-    );
   will-change:transform,opacity;
   animation:
     finConfettiFall
     var(--fin-duration)
-    cubic-bezier(.18,.65,.34,1)
+    linear
     var(--fin-delay)
     both;
 }
 
-.fin-confetti-piece:nth-child(4n) {
+/* Quelques formes différentes, mais discrètes. */
+.fin-confetti-piece:nth-child(7n) {
   clip-path:polygon(
     50% 0%,
     61% 36%,
@@ -678,52 +672,90 @@ html .fsv1-screen.final-mobile
   );
 }
 
-.fin-confetti-piece:nth-child(7n) {
+.fin-confetti-piece:nth-child(6n) {
   width:calc(
-    var(--fin-width) + 3px
+    var(--fin-width) + 1px
   );
   height:calc(
-    var(--fin-width) + 3px
+    var(--fin-width) + 1px
   );
 }
 
+/*
+  Chute continue + petit mouvement gauche/droite.
+  Les confettis restent légers et ne masquent plus le classement.
+*/
 @keyframes finConfettiFall {
   0% {
     opacity:0;
     transform:
       translate3d(
         0,
-        -8vh,
+        -5vh,
         0
       )
       rotate(0deg)
-      scale(.8);
+      scale(.82);
   }
 
-  8% {
-    opacity:1;
+  6% {
+    opacity:.88;
   }
 
-  56% {
-    opacity:1;
+  25% {
+    opacity:.88;
     transform:
       translate3d(
         calc(
-          var(--fin-drift) * .55
+          var(--fin-sway) * -1
         ),
-        52vh,
+        27vh,
         0
       )
       rotate(
         calc(
-          var(--fin-spin) * .55
+          var(--fin-spin) * .24
+        )
+      )
+      scale(.96);
+  }
+
+  52% {
+    opacity:.86;
+    transform:
+      translate3d(
+        calc(
+          var(--fin-drift) * .52 +
+          var(--fin-sway)
+        ),
+        58vh,
+        0
+      )
+      rotate(
+        calc(
+          var(--fin-spin) * .52
         )
       )
       scale(1);
   }
 
-  92% {
-    opacity:.95;
+  76% {
+    opacity:.82;
+    transform:
+      translate3d(
+        calc(
+          var(--fin-drift) * .78 -
+          var(--fin-sway) * .45
+        ),
+        84vh,
+        0
+      )
+      rotate(
+        calc(
+          var(--fin-spin) * .78
+        )
+      )
+      scale(.96);
   }
 
   100% {
@@ -737,7 +769,7 @@ html .fsv1-screen.final-mobile
       rotate(
         var(--fin-spin)
       )
-      scale(.92);
+      scale(.9);
   }
 }
 
