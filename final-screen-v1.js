@@ -43,6 +43,180 @@
     " pt" +
     (points(player) > 1 ? "s" : "");
 
+
+  const finalFxRuntime = {
+    confettiKey:"",
+    confettiTimer:0
+  };
+
+  function confettiMarkup() {
+    const colors = [
+      "#b84cff",
+      "#ff58bd",
+      "#54d8ff",
+      "#ffd45d",
+      "#6df0b5",
+      "#ffffff"
+    ];
+
+    return Array.from(
+      { length:72 },
+      (_, index) => {
+        const left =
+          (index * 37 + 11) % 100;
+
+        const delay =
+          (
+            (index * 17) % 135
+          ) / 100;
+
+        const duration =
+          2.65 +
+          (
+            (index * 23) % 75
+          ) / 100;
+
+        const drift =
+          -42 +
+          (
+            (index * 29) % 85
+          );
+
+        const spin =
+          260 +
+          (
+            (index * 71) % 520
+          );
+
+        const width =
+          5 +
+          (
+            (index * 13) % 6
+          );
+
+        const height =
+          9 +
+          (
+            (index * 19) % 10
+          );
+
+        const color =
+          colors[
+            index % colors.length
+          ];
+
+        const round =
+          index % 5 === 0
+            ? "50%"
+            : index % 3 === 0
+              ? "3px"
+              : "1px";
+
+        return (
+          '<i class="fin-confetti-piece" style="' +
+            '--fin-left:' + left + '%;' +
+            '--fin-delay:' + delay + 's;' +
+            '--fin-duration:' + duration + 's;' +
+            '--fin-drift:' + drift + 'px;' +
+            '--fin-spin:' + spin + 'deg;' +
+            '--fin-width:' + width + 'px;' +
+            '--fin-height:' + height + 'px;' +
+            '--fin-color:' + color + ';' +
+            '--fin-round:' + round + ';' +
+          '"></i>'
+        );
+      }
+    ).join("");
+  }
+
+  function launchFinalConfetti(
+    state,
+    ranked
+  ) {
+    if (
+      window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)"
+      ).matches
+    ) {
+      return;
+    }
+
+    const key =
+      [
+        state.code || "",
+        state.gameSessionId ||
+          state.matchId ||
+          "",
+        ranked
+          .map(
+            player =>
+              String(player.id) +
+              ":" +
+              String(points(player))
+          )
+          .join("|")
+      ].join("::");
+
+    if (
+      finalFxRuntime.confettiKey ===
+      key
+    ) {
+      return;
+    }
+
+    finalFxRuntime.confettiKey = key;
+
+    document
+      .getElementById(
+        "finConfetti"
+      )
+      ?.remove();
+
+    if (
+      finalFxRuntime.confettiTimer
+    ) {
+      clearTimeout(
+        finalFxRuntime.confettiTimer
+      );
+    }
+
+    const layer =
+      document.createElement("div");
+
+    layer.id =
+      "finConfetti";
+
+    layer.className =
+      "fin-confetti-layer";
+
+    layer.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+    layer.innerHTML =
+      confettiMarkup();
+
+    document.body.appendChild(
+      layer
+    );
+
+    finalFxRuntime.confettiTimer =
+      window.setTimeout(
+        () => {
+          layer.remove();
+
+          if (
+            finalFxRuntime.confettiTimer
+          ) {
+            finalFxRuntime.confettiTimer =
+              0;
+          }
+        },
+        4000
+      );
+  }
+
   function renderFinishedV2() {
     clearInterval(session.timerHandle);
 
@@ -350,7 +524,29 @@
       '</main>'
     );
 
+    launchFinalConfetti(
+      state,
+      ranked
+    );
+
     const leave = () => {
+      document
+        .getElementById(
+          "finConfetti"
+        )
+        ?.remove();
+
+      if (
+        finalFxRuntime.confettiTimer
+      ) {
+        clearTimeout(
+          finalFxRuntime.confettiTimer
+        );
+
+        finalFxRuntime.confettiTimer =
+          0;
+      }
+
       socket.emit(
         "room:leave",
         {

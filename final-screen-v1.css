@@ -628,3 +628,122 @@ html .fsv1-screen.final-mobile
     flex-basis:56px !important;
   }
 }
+
+/* ---------- Confettis fin de partie ---------- */
+
+.fin-confetti-layer {
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  overflow:hidden;
+  pointer-events:none;
+  contain:layout paint;
+}
+
+.fin-confetti-piece {
+  position:absolute;
+  top:-24px;
+  left:var(--fin-left);
+  width:var(--fin-width);
+  height:var(--fin-height);
+  border-radius:var(--fin-round);
+  background:var(--fin-color);
+  opacity:0;
+  box-shadow:
+    0 0 5px
+    color-mix(
+      in srgb,
+      var(--fin-color) 40%,
+      transparent
+    );
+  will-change:transform,opacity;
+  animation:
+    finConfettiFall
+    var(--fin-duration)
+    cubic-bezier(.18,.65,.34,1)
+    var(--fin-delay)
+    both;
+}
+
+.fin-confetti-piece:nth-child(4n) {
+  clip-path:polygon(
+    50% 0%,
+    61% 36%,
+    100% 50%,
+    61% 64%,
+    50% 100%,
+    39% 64%,
+    0% 50%,
+    39% 36%
+  );
+}
+
+.fin-confetti-piece:nth-child(7n) {
+  width:calc(
+    var(--fin-width) + 3px
+  );
+  height:calc(
+    var(--fin-width) + 3px
+  );
+}
+
+@keyframes finConfettiFall {
+  0% {
+    opacity:0;
+    transform:
+      translate3d(
+        0,
+        -8vh,
+        0
+      )
+      rotate(0deg)
+      scale(.8);
+  }
+
+  8% {
+    opacity:1;
+  }
+
+  56% {
+    opacity:1;
+    transform:
+      translate3d(
+        calc(
+          var(--fin-drift) * .55
+        ),
+        52vh,
+        0
+      )
+      rotate(
+        calc(
+          var(--fin-spin) * .55
+        )
+      )
+      scale(1);
+  }
+
+  92% {
+    opacity:.95;
+  }
+
+  100% {
+    opacity:0;
+    transform:
+      translate3d(
+        var(--fin-drift),
+        112vh,
+        0
+      )
+      rotate(
+        var(--fin-spin)
+      )
+      scale(.92);
+  }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .fin-confetti-layer {
+    display:none !important;
+  }
+}
+
