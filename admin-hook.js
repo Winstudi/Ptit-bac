@@ -735,6 +735,9 @@ function installAdmin(io) {
 
   io.on("connection", socket => {
     socket.on("profile:update", async (payload={}, cb=()=>{}) => {
+      const PROFILE_NAME_COST = 20;
+      let client = null;
+
       try {
         const token =
           walletToken(payload.walletToken);
@@ -766,8 +769,99 @@ function installAdmin(io) {
           });
         }
 
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        const userQuery =
+          await client.query(
+            `SELECT username,friend_code
+             FROM public.users
+             WHERE wallet_token=$1
+             LIMIT 1
+             FOR UPDATE`,
+            [token]
+          );
+
+        if (!userQuery.rowCount) {
+          await client.query("ROLLBACK");
+
+          return cb({
+            ok:false,
+            error:"Profil joueur introuvable."
+          });
+        }
+
+        const currentName =
+          String(
+            userQuery.rows[0].username ||
+            ""
+          ).trim();
+
+        if (currentName === name) {
+          await client.query("ROLLBACK");
+
+          return cb({
+            ok:true,
+            name:currentName,
+            charged:false,
+            gems:null
+          });
+        }
+
+        const walletQuery =
+          await client.query(
+            `SELECT coins,gems,created_at,updated_at
+             FROM ptitbac_wallets
+             WHERE token=$1
+             LIMIT 1
+             FOR UPDATE`,
+            [token]
+          );
+
+        const currentCoins =
+          Number(
+            walletQuery.rows[0]?.coins || 0
+          );
+
+        const currentGems =
+          Number(
+            walletQuery.rows[0]?.gems || 0
+          );
+
+        if (currentGems < PROFILE_NAME_COST) {
+          await client.query("ROLLBACK");
+
+          return cb({
+            ok:false,
+            error:`Il te faut ${PROFILE_NAME_COST} gemmes pour changer de pseudo.`,
+            insufficientGems:true,
+            required:PROFILE_NAME_COST,
+            gems:currentGems
+          });
+        }
+
+        const nextGems =
+          currentGems - PROFILE_NAME_COST;
+
+        const now = Date.now();
+
+        await client.query(
+          `INSERT INTO ptitbac_wallets
+           (token,coins,gems,created_at,updated_at,history)
+           VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
+           ON CONFLICT(token) DO UPDATE SET
+             gems=$3,
+             updated_at=$4`,
+          [
+            token,
+            currentCoins,
+            nextGems,
+            now
+          ]
+        );
+
         const updated =
-          await pool.query(
+          await client.query(
             `UPDATE public.users
              SET username=$2,
                  last_seen=now(),
@@ -777,14 +871,26 @@ function installAdmin(io) {
             [token,name]
           );
 
-        if (!updated.rowCount) {
-          return cb({
-            ok:false,
-            error:"Profil joueur introuvable."
-          });
-        }
+        await client.query("COMMIT");
+
+        client.release();
+        client = null;
 
         socket.data.walletToken = token;
+
+        gemOverrides.set(
+          token,
+          nextGems
+        );
+
+        emitToWallet(
+          io,
+          token,
+          {
+            coins:currentCoins,
+            gems:nextGems
+          }
+        );
 
         emitWalletEvent(
           io,
@@ -792,15 +898,29 @@ function installAdmin(io) {
           "admin:profile-sync",
           {
             name:updated.rows[0].username,
-            friendCode:updated.rows[0].friend_code || ""
+            friendCode:
+              updated.rows[0].friend_code ||
+              ""
           }
         );
 
         cb({
           ok:true,
-          name:updated.rows[0].username
+          name:updated.rows[0].username,
+          charged:true,
+          cost:PROFILE_NAME_COST,
+          gems:nextGems
         });
       } catch (error) {
+        if (client) {
+          try {
+            await client.query("ROLLBACK");
+          } catch {}
+
+          client.release();
+          client = null;
+        }
+
         cb({
           ok:false,
           error:"Impossible de modifier le pseudo."

@@ -140,6 +140,98 @@
     return icons[type] || icons.games;
   }
 
+  function confirmNameChange(nextName) {
+    return new Promise(resolve => {
+      document
+        .querySelector(".profile-v16-confirm-layer")
+        ?.remove();
+
+      const layer =
+        document.createElement("div");
+
+      layer.className =
+        "profile-v16-confirm-layer";
+
+      layer.innerHTML = `
+        <section
+          class="profile-v16-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profileV16ConfirmTitle"
+        >
+          <button
+            class="profile-v16-confirm-close"
+            type="button"
+            aria-label="Fermer"
+          >×</button>
+
+          <div class="profile-v16-confirm-gem">
+            <img src="/gem.png" alt="">
+            <strong>20</strong>
+          </div>
+
+          <h2 id="profileV16ConfirmTitle">
+            Changer de pseudo ?
+          </h2>
+
+          <p>
+            Voulez-vous changer votre pseudo en
+            <strong>« ${esc(nextName)} »</strong>
+            pour <b>20 gemmes</b> ?
+          </p>
+
+          <div class="profile-v16-confirm-actions">
+            <button
+              class="profile-v16-cancel"
+              type="button"
+            >Annuler</button>
+
+            <button
+              class="profile-v16-confirm-btn"
+              type="button"
+            >
+              Confirmer
+            </button>
+          </div>
+        </section>
+      `;
+
+      const finish = result => {
+        layer.remove();
+        resolve(result);
+      };
+
+      layer.addEventListener("click", event => {
+        if (event.target === layer) {
+          finish(false);
+        }
+      });
+
+      layer
+        .querySelector(".profile-v16-confirm-close")
+        ?.addEventListener(
+          "click",
+          () => finish(false)
+        );
+
+      layer
+        .querySelector(".profile-v16-cancel")
+        ?.addEventListener(
+          "click",
+          () => finish(false)
+        );
+
+      layer
+        .querySelector(".profile-v16-confirm-btn")
+        ?.addEventListener(
+          "click",
+          () => finish(true)
+        );
+
+      document.body.appendChild(layer);
+    });
+  }
+
   function renderProfileV13() {
     if (window.session?.state) {
       try { return render(); } catch { return; }
@@ -275,6 +367,15 @@
         return true;
       }
 
+      const confirmed =
+        await confirmNameChange(next);
+
+      if (!confirmed) {
+        nameInput.value = lastSavedName;
+        editNameButton?.classList.remove("is-editing");
+        return false;
+      }
+
       const walletToken =
         String(
           window.session?.walletToken ||
@@ -347,7 +448,18 @@
         nameInput.value = saved;
         lastSavedName = saved;
 
-        toast("Pseudo enregistré !");
+        if (
+          Number.isFinite(
+            Number(response.gems)
+          )
+        ) {
+          toast(
+            `Pseudo modifié ! ${Number(response.gems)} gemmes restantes.`
+          );
+        } else {
+          toast("Pseudo modifié !");
+        }
+
         return true;
       } catch {
         toast("Impossible d’enregistrer le pseudo.");
