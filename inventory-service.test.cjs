@@ -2,50 +2,72 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  CATALOG,
   DEFAULT_OWNED,
   normalizeItemId,
   normalizeAvatarId,
   normalizeLegacyEquipped,
-  canEquipFromState
+  canEquipFromState,
+  createInventoryService
 } = require("./inventory-service.js");
 
-test("les cinq avatars, la flamme violette et Débutant sont possédés par défaut", () => {
+test("les cinq avatars et Débutant sont possédés par défaut, sans cadre", () => {
   assert.deepEqual(DEFAULT_OWNED.avatars, ["/a1.webp", "/a2.webp", "/a3.webp", "/a4.webp", "/a5.webp"]);
-  assert.deepEqual(DEFAULT_OWNED.frames, ["frame_purple_flame"]);
+  assert.deepEqual(DEFAULT_OWNED.frames, []);
   assert.deepEqual(DEFAULT_OWNED.tags, ["tag_debutant"]);
+  assert.deepEqual(Object.keys(CATALOG.frame), []);
+  assert.deepEqual(Object.keys(CATALOG.tag), ["tag_debutant"]);
 });
 
-test("un identifiant cosmétique inconnu est rejeté", () => {
-  assert.equal(normalizeItemId("frame", "frame_hacked"), "");
-  assert.equal(normalizeItemId("tag", "tag_hacked"), "");
+test("les anciens cadres et tags avancés ne font plus partie du catalogue", () => {
+  for (const id of ["frame_purple_flame", "frame_ice", "frame_gold", "frame_nature"]) {
+    assert.equal(normalizeItemId("frame", id), "");
+  }
+  for (const id of ["tag_curieux", "tag_maitre_bac", "tag_champion", "tag_legende"]) {
+    assert.equal(normalizeItemId("tag", id), "");
+  }
   assert.equal(normalizeAvatarId("/avatar-secret.webp"), "/a1.webp");
 });
 
-test("la migration locale ne donne jamais un objet premium non possédé", () => {
+test("la migration locale retire les anciens cosmétiques", () => {
   assert.deepEqual(
-    normalizeLegacyEquipped({ avatar:"/a4.webp", frame:"frame_gold", tag:"tag_legende" }),
+    normalizeLegacyEquipped({ avatar:"/a4.webp", frame:"frame_purple_flame", tag:"tag_legende" }),
     { avatar:"/a4.webp", frame:"", tag:"tag_debutant" }
   );
   assert.deepEqual(
-    normalizeLegacyEquipped({ avatar:"/a2.webp", frame:"frame_purple_flame", tag:"tag_debutant" }),
-    { avatar:"/a2.webp", frame:"frame_purple_flame", tag:"tag_debutant" }
+    normalizeLegacyEquipped({ avatar:"/a2.webp", frame:"frame_gold", tag:"tag_debutant" }),
+    { avatar:"/a2.webp", frame:"", tag:"tag_debutant" }
   );
 });
 
-test("l’équipement exige que l’objet soit réellement possédé", () => {
+test("le système de cadre reste actif avec Sans cadre uniquement", () => {
   const state = {
     owned: {
       avatars:["/a1.webp", "/a2.webp"],
-      frames:["frame_purple_flame"],
+      frames:[],
       tags:["tag_debutant"]
     },
     equipped:{avatar:"/a1.webp",frame:"",tag:"tag_debutant"}
   };
 
   assert.equal(canEquipFromState(state, "avatar", "/a2.webp"), true);
-  assert.equal(canEquipFromState(state, "frame", "frame_purple_flame"), true);
-  assert.equal(canEquipFromState(state, "frame", "frame_gold"), false);
-  assert.equal(canEquipFromState(state, "tag", "tag_legende"), false);
   assert.equal(canEquipFromState(state, "frame", ""), true);
-  assert.equal(canEquipFromState(state, "tag", ""), true);
+  assert.equal(canEquipFromState(state, "frame", "frame_purple_flame"), false);
+  assert.equal(canEquipFromState(state, "frame", "frame_gold"), false);
+  assert.equal(canEquipFromState(state, "tag", "tag_debutant"), true);
+  assert.equal(canEquipFromState(state, "tag", "tag_legende"), false);
+});
+
+test("le schéma nettoie les anciens cadres et tags de PostgreSQL", async () => {
+  const queries = [];
+  const db = {
+    async query(sql) { queries.push(String(sql)); return { rows: [] }; }
+  };
+  const service = createInventoryService({ getPool: () => db });
+  await service.ensureSchema();
+  const joined = queries.join("\n");
+  assert.match(joined, /DELETE FROM public\.ptitbac_inventory_items/);
+  assert.match(joined, /item_type = 'frame'/);
+  assert.match(joined, /item_id <> 'tag_debutant'/);
+  assert.match(joined, /SET frame_id = ''/);
 });

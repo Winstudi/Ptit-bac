@@ -11,18 +11,10 @@ const CATALOG = Object.freeze({
     "/a4.webp": Object.freeze({ id: "/a4.webp", name: "Avatar 4", defaultOwned: true }),
     "/a5.webp": Object.freeze({ id: "/a5.webp", name: "Avatar 5", defaultOwned: true })
   }),
-  frame: Object.freeze({
-    frame_purple_flame: Object.freeze({ id: "frame_purple_flame", name: "Flamme violette", defaultOwned: true }),
-    frame_ice: Object.freeze({ id: "frame_ice", name: "Glace", defaultOwned: false }),
-    frame_gold: Object.freeze({ id: "frame_gold", name: "Royal", defaultOwned: false }),
-    frame_nature: Object.freeze({ id: "frame_nature", name: "Nature", defaultOwned: false })
-  }),
+  // Le système de cadres reste actif, mais aucun cadre n'est publié pour le moment.
+  frame: Object.freeze({}),
   tag: Object.freeze({
-    tag_debutant: Object.freeze({ id: "tag_debutant", name: "Débutant", defaultOwned: true }),
-    tag_curieux: Object.freeze({ id: "tag_curieux", name: "Curieux", defaultOwned: false }),
-    tag_maitre_bac: Object.freeze({ id: "tag_maitre_bac", name: "Maître du Bac", defaultOwned: false }),
-    tag_champion: Object.freeze({ id: "tag_champion", name: "Champion", defaultOwned: false }),
-    tag_legende: Object.freeze({ id: "tag_legende", name: "Légende", defaultOwned: false })
+    tag_debutant: Object.freeze({ id: "tag_debutant", name: "Débutant", defaultOwned: true })
   })
 });
 
@@ -56,15 +48,19 @@ function normalizeAvatarId(value) {
 
 function normalizeLegacyEquipped(raw = {}) {
   const avatar = normalizeAvatarId(raw.avatar);
-  const frameCandidate = normalizeItemId("frame", raw.frame, { allowEmpty: true });
-  const tagCandidate = normalizeItemId("tag", raw.tag, { allowEmpty: true });
+  const rawFrame = String(raw.frame || "").trim();
+  const rawTag = String(raw.tag || "").trim();
+  const frameCandidate = normalizeItemId("frame", rawFrame, { allowEmpty: true });
+  const tagCandidate = normalizeItemId("tag", rawTag, { allowEmpty: true });
 
   return {
     avatar: DEFAULT_OWNED.avatars.includes(avatar) ? avatar : DEFAULT_OWNED.avatars[0],
-    frame: DEFAULT_OWNED.frames.includes(frameCandidate) ? frameCandidate : "",
-    tag: tagCandidate === "" || DEFAULT_OWNED.tags.includes(tagCandidate)
-      ? tagCandidate
-      : DEFAULT_OWNED.tags[0]
+    frame: rawFrame && DEFAULT_OWNED.frames.includes(frameCandidate) ? frameCandidate : "",
+    tag: rawTag === ""
+      ? ""
+      : DEFAULT_OWNED.tags.includes(tagCandidate)
+        ? tagCandidate
+        : DEFAULT_OWNED.tags[0]
   };
 }
 
@@ -136,6 +132,25 @@ function createInventoryService({ getPool }) {
       await db.query(`
         CREATE INDEX IF NOT EXISTS ptitbac_inventory_items_wallet_idx
         ON public.ptitbac_inventory_items(wallet_token, item_type, acquired_at)
+      `);
+
+      // Nettoyage de l'ancien prototype cosmétique.
+      // Les cadres reviendront plus tard avec un nouveau catalogue serveur.
+      await db.query(`
+        DELETE FROM public.ptitbac_inventory_items
+         WHERE item_type = 'frame'
+            OR (item_type = 'tag' AND item_id <> 'tag_debutant')
+      `);
+      await db.query(`
+        UPDATE public.ptitbac_inventory_equipped
+           SET frame_id = '',
+               tag_id = CASE
+                 WHEN tag_id = '' THEN ''
+                 ELSE 'tag_debutant'
+               END,
+               updated_at = now()
+         WHERE frame_id <> ''
+            OR tag_id NOT IN ('', 'tag_debutant')
       `);
     })().catch(err => {
       schemaPromise = null;

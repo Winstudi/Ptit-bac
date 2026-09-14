@@ -189,19 +189,11 @@
   const STORAGE_KEY = "petitbac_inventory_v1";
   const BASE_AVATARS = ["/a1.webp", "/a2.webp", "/a3.webp", "/a4.webp", "/a5.webp"];
 
-  const FRAMES = Object.freeze({
-    frame_purple_flame: { id:"frame_purple_flame", name:"Flamme violette", className:"inv-frame-purple-flame" },
-    frame_ice: { id:"frame_ice", name:"Glace", className:"inv-frame-ice" },
-    frame_gold: { id:"frame_gold", name:"Royal", className:"inv-frame-gold" },
-    frame_nature: { id:"frame_nature", name:"Nature", className:"inv-frame-nature" }
-  });
+  // Infrastructure conservée : de nouveaux cadres pourront être ajoutés plus tard.
+  const FRAMES = Object.freeze({});
 
   const TAGS = Object.freeze({
-    tag_debutant: { id:"tag_debutant", name:"Débutant", icon:"🌱", className:"inv-tag-starter" },
-    tag_curieux: { id:"tag_curieux", name:"Curieux", icon:"💡", className:"inv-tag-curious" },
-    tag_maitre_bac: { id:"tag_maitre_bac", name:"Maître du Bac", icon:"👑", className:"inv-tag-master" },
-    tag_champion: { id:"tag_champion", name:"Champion", icon:"🏆", className:"inv-tag-champion" },
-    tag_legende: { id:"tag_legende", name:"Légende", icon:"✦", className:"inv-tag-legend" }
+    tag_debutant: { id:"tag_debutant", name:"Débutant", icon:"🌱", className:"inv-tag-starter" }
   });
 
   let serverState = null;
@@ -234,6 +226,22 @@
     }
   }
 
+  function purgeDeprecatedLocalCosmetics() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!raw || typeof raw !== "object") return;
+      raw.owned = raw.owned && typeof raw.owned === "object" ? raw.owned : {};
+      raw.equipped = raw.equipped && typeof raw.equipped === "object" ? raw.equipped : {};
+      raw.owned.frames = [];
+      raw.owned.tags = ["tag_debutant"];
+      raw.equipped.frame = "";
+      raw.equipped.tag = raw.equipped.tag === "" ? "" : "tag_debutant";
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
+    } catch {}
+  }
+
+  purgeDeprecatedLocalCosmetics();
+
   function normalizeState(value) {
     const owned = value?.owned || {};
     const equipped = value?.equipped || {};
@@ -242,7 +250,7 @@
       : [...BASE_AVATARS];
     const frames = Array.isArray(owned.frames)
       ? owned.frames.filter(id => FRAMES[id])
-      : ["frame_purple_flame"];
+      : [];
     const tags = Array.isArray(owned.tags)
       ? owned.tags.filter(id => TAGS[id])
       : ["tag_debutant"];
@@ -505,8 +513,8 @@
         console.warn("Inventaire V2: utilise l’équipement serveur.");
         return false;
       },
-      frames: old.frames || FRAMES,
-      tags: old.tags || TAGS,
+      frames: FRAMES,
+      tags: TAGS,
       serverManaged: true,
       refresh: () => requestState({ force:true })
     };
