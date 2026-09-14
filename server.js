@@ -11,6 +11,7 @@ const { Pool } = require("pg");
 const { normalizeFrameId } = require("./frame-sync-server.js");
 const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
 const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
+const { createProgressionService } = require("./progression-service.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -119,6 +120,7 @@ const wallets = new Map();
 let pgPool = null;
 let walletStorageMode = "json";
 const inventoryService = createInventoryService({ getPool: () => pgPool });
+const progressionService = createProgressionService({ getPool: () => pgPool });
 
 function normalizeWalletRecord(wallet) {
   const history = Array.isArray(wallet?.history) ? wallet.history.slice(-100) : [];
@@ -1047,7 +1049,9 @@ function publicRoom(room, viewerPlayerId = null) {
     pot: room.pot || 0,
     myReward: viewerPlayerId ? (room.rewardsByPlayerId?.[viewerPlayerId] || 0) : 0,
     rewardsByPlayerId: room.rewardsDistributed ? (room.rewardsByPlayerId || {}) : {},
-    rewardsDistributed: !!room.rewardsDistributed
+    rewardsDistributed: !!room.rewardsDistributed,
+    myProgression: viewerPlayerId ? (room.progressionByPlayerId?.[viewerPlayerId] || null) : null,
+    progressionDistributed: !!room.progressionDistributed
   };
 }
 
@@ -1992,6 +1996,43 @@ function distributeRewards(room) {
   room.players.forEach(emitWallet);
 }
 
+async function distributeProgression(room) {
+  if (room.progressionDistributed || room.progressionDistributionPending) return;
+
+  room.progressionDistributionPending = true;
+
+  try {
+    const results = await progressionService.awardRoom(room);
+    room.progressionByPlayerId = results || {};
+    room.progressionDistributed = true;
+    room.progressionDistributedAt = Date.now();
+
+    for (const player of room.players) {
+      const result = room.progressionByPlayerId[player.id];
+      if (!result || !player.socketId) continue;
+      io.to(player.socketId).emit("progression:update", {
+        state: result.after,
+        result: {
+          eventKey: result.eventKey,
+          gainedXp: result.gainedXp,
+          rank: result.rank,
+          validAnswers: result.validAnswers,
+          rounds: result.rounds,
+          before: result.before,
+          after: result.after,
+          levelUp: !!result.levelUp
+        }
+      });
+    }
+  } catch (err) {
+    room.progressionDistributed = false;
+    room.progressionByPlayerId = {};
+    console.error("Progression XP:", err.message);
+  } finally {
+    room.progressionDistributionPending = false;
+  }
+}
+
 function resultLabel(result, letter) {
   if (!result) return "";
   const reason = result.reason || "";
@@ -2568,6 +2609,10 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
       rewardsDistributed: false,
       rewardsByPlayerId: {},
       rewardsDistributedAt: null,
+      progressionDistributed: false,
+      progressionDistributionPending: false,
+      progressionByPlayerId: {},
+      progressionDistributedAt: null,
       gameSessionId: null,
       createdAt: Date.now()
     };
@@ -2938,6 +2983,19 @@ io.on("connection", socket => {
     }
   });
 
+  socket.on("progression:get", async (payload = {}, cb = () => {}) => {
+    const token = inventoryTokenForSocket(socket, payload);
+    if (!token) return cb({ ok: false, error: "Session progression non autorisée." });
+
+    try {
+      const state = await progressionService.getState(token);
+      cb({ ok: true, state });
+    } catch (err) {
+      console.error("progression:get:", err.message);
+      cb({ ok: false, error: "Progression indisponible pour le moment." });
+    }
+  });
+
   socket.on("inventory:equip", async (payload = {}, cb = () => {}) => {
     const token = inventoryTokenForSocket(socket, payload);
     if (!token) return cb({ ok: false, error: "Session inventaire non autorisée." });
@@ -3005,6 +3063,10 @@ io.on("connection", socket => {
       room.rewardsDistributed = false;
       room.rewardsByPlayerId = {};
       room.rewardsDistributedAt = null;
+      room.progressionDistributed = false;
+      room.progressionDistributionPending = false;
+      room.progressionByPlayerId = {};
+      room.progressionDistributedAt = null;
       room.entryDebited = false;
       room.paidPlayerIds = [];
       room.pot = 0;
@@ -3336,12 +3398,13 @@ io.on("connection", socket => {
     });
   });
 
-  socket.on("game:nextRound", payload => {
+  socket.on("game:nextRound", async payload => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player?.isHost || room.phase !== "scoreboard") return;
     if (room.roundIndex + 1 >= room.rounds) {
       room.phase = "finished";
       distributeRewards(room);
+      await distributeProgression(room);
       emitRoom(room);
       return;
     }
@@ -3371,6 +3434,10 @@ io.on("connection", socket => {
     room.rewardsDistributed = false;
     room.rewardsByPlayerId = {};
     room.rewardsDistributedAt = null;
+    room.progressionDistributed = false;
+    room.progressionDistributionPending = false;
+    room.progressionByPlayerId = {};
+    room.progressionDistributedAt = null;
     room.gameSessionId = null;
     room.players.forEach(p => {
       p.score = 0;
