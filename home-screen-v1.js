@@ -61,41 +61,34 @@
 
   function resourcePopupContent(type) {
     const state = economyState();
-    const coins = Math.max(0, Number(state.coins) || 0);
-    const gems = Math.max(0, Number(state.gems) || 0);
     const lives = Math.max(0, Number(state.lives) || 0);
     const maxLives = Math.max(1, Number(state.maxLives) || 5);
     const isFull = lives >= maxLives;
 
     if (type === "coins") {
       return `
-        <div class="home-resource-popup-card" role="dialog" aria-label="Mes pièces">
-          <strong class="home-resource-popup-value">
-            <img src="/coin.png" alt="">
-            <span>${coins}</span>
-          </strong>
-
-          <div class="home-resource-popup-actions">
-            <button id="homeResourceShop" type="button">Boutique</button>
-            <button id="homeResourceHistory" type="button">Historique</button>
-          </div>
+        <div class="home-resource-popup-card home-resource-popup-info" role="dialog" aria-label="À quoi servent les pièces ?">
+          <p>
+            Les <span class="hm-resource-word is-coins">pièces</span> servent à acheter des cosmétiques.
+            Récupérez des <span class="hm-resource-word is-coins">pièces</span> via le pass,
+            les évents ou le magasin.
+          </p>
         </div>`;
     }
 
     if (type === "gems") {
       return `
-        <div class="home-resource-popup-card" role="dialog" aria-label="Mes gemmes">
-          <strong class="home-resource-popup-value">
-            <img src="/gem.png" alt="">
-            <span>${gems}</span>
-          </strong>
-
-          <small>Gemmes disponibles</small>
+        <div class="home-resource-popup-card home-resource-popup-info" role="dialog" aria-label="À quoi servent les gemmes ?">
+          <p>
+            Les <span class="hm-resource-word is-gems">gemmes</span> servent à acheter des ressources
+            et des cosmétiques. Obtenez des <span class="hm-resource-word is-gems">gemmes</span>
+            dans le pass, les évents ou dans le magasin.
+          </p>
         </div>`;
     }
 
     return `
-      <div class="home-resource-popup-card" role="dialog" aria-label="Mes vies">
+      <div class="home-resource-popup-card home-resource-popup-lives" role="dialog" aria-label="Mes vies">
         <strong class="home-resource-popup-value">
           <img src="/heart.png" alt="">
           <span>${lives}/${maxLives}</span>
@@ -115,7 +108,7 @@
 
     const homeRect = home.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
-    const popupWidth = 136;
+    const popupWidth = 80;
 
     const center =
       anchorRect.left -
@@ -168,15 +161,7 @@
   }
 
   function bindResourcePopupActions() {
-    document.getElementById("homeResourceHistory")?.addEventListener("click", () => {
-      closeResourcePopup();
-      window.openWalletHistory?.();
-    });
-
-    document.getElementById("homeResourceShop")?.addEventListener("click", () => {
-      closeResourcePopup();
-      renderShop();
-    });
+    // Les mini-fenêtres sont désormais purement informatives.
   }
 
   function refreshResourcePopup() {

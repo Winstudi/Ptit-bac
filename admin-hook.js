@@ -734,6 +734,80 @@ function installAdmin(io) {
   gemTimer.unref?.();
 
   io.on("connection", socket => {
+    socket.on("profile:update", async (payload={}, cb=()=>{}) => {
+      try {
+        const token =
+          walletToken(payload.walletToken);
+
+        const name =
+          String(payload.name || "")
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0,16);
+
+        if (!token) {
+          return cb({
+            ok:false,
+            error:"Profil indisponible."
+          });
+        }
+
+        if (!name) {
+          return cb({
+            ok:false,
+            error:"Choisis un pseudo."
+          });
+        }
+
+        if (!pool) {
+          return cb({
+            ok:false,
+            error:"Synchronisation du profil indisponible."
+          });
+        }
+
+        const updated =
+          await pool.query(
+            `UPDATE public.users
+             SET username=$2,
+                 last_seen=now(),
+                 updated_at=now()
+             WHERE wallet_token=$1
+             RETURNING friend_code,username`,
+            [token,name]
+          );
+
+        if (!updated.rowCount) {
+          return cb({
+            ok:false,
+            error:"Profil joueur introuvable."
+          });
+        }
+
+        socket.data.walletToken = token;
+
+        emitWalletEvent(
+          io,
+          token,
+          "admin:profile-sync",
+          {
+            name:updated.rows[0].username,
+            friendCode:updated.rows[0].friend_code || ""
+          }
+        );
+
+        cb({
+          ok:true,
+          name:updated.rows[0].username
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:"Impossible de modifier le pseudo."
+        });
+      }
+    });
+
     socket.on("admin:status", async (payload={}, cb=()=>{}) => {
       try {
         const token = walletToken(payload.walletToken);

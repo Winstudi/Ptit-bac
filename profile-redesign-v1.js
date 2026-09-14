@@ -183,7 +183,6 @@
                   autocomplete="nickname"
                   value="${esc(profile.name || "Joueur")}"
                   aria-label="Pseudo"
-                  readonly
                 >
                 <button id="profileV10EditName" type="button" aria-label="Modifier le pseudo">${editIcon()}</button>
               </div>
@@ -253,33 +252,97 @@
 
     const nameInput = document.getElementById("profileV10Name");
     const editNameButton = document.getElementById("profileV10EditName");
-    let editingName = false;
+    let lastSavedName = String(profile.name || "Joueur").trim().slice(0,16);
+    let savingName = false;
 
-    const saveName = () => {
-      const next = String(nameInput?.value || "").trim().slice(0, 16);
+    const saveName = async () => {
+      if (!nameInput || savingName) return false;
+
+      const next =
+        String(nameInput.value || "")
+          .trim()
+          .replace(/\s+/g, " ")
+          .slice(0,16);
 
       if (!next) {
         toast("Choisis un pseudo.");
-        nameInput?.focus();
+        nameInput.value = lastSavedName;
         return false;
       }
 
-      const current = typeof getProfile === "function" ? getProfile() : profile;
+      if (next === lastSavedName) {
+        editNameButton?.classList.remove("is-editing");
+        return true;
+      }
+
+      const walletToken =
+        String(
+          window.session?.walletToken ||
+          localStorage.getItem("petitbac_walletToken") ||
+          ""
+        );
+
+      savingName = true;
+      editNameButton?.classList.add("is-editing");
+
+      const response =
+        await new Promise(resolve => {
+          if (!window.socket || !walletToken) {
+            resolve({
+              ok:false,
+              error:"Profil indisponible."
+            });
+            return;
+          }
+
+          socket.emit(
+            "profile:update",
+            {
+              walletToken,
+              name:next
+            },
+            result => resolve(result || {})
+          );
+        });
+
+      savingName = false;
+      editNameButton?.classList.remove("is-editing");
+
+      if (!response.ok) {
+        nameInput.value = lastSavedName;
+        toast(
+          response.error ||
+          "Impossible d’enregistrer le pseudo."
+        );
+        return false;
+      }
+
+      const saved =
+        String(response.name || next)
+          .trim()
+          .slice(0,16);
+
+      const current =
+        typeof getProfile === "function"
+          ? getProfile()
+          : profile;
 
       try {
         if (typeof saveProfile === "function") {
-          saveProfile(next, safeAvatar(current.icon));
+          saveProfile(
+            saved,
+            safeAvatar(current.icon)
+          );
         } else {
-          localStorage.setItem("petitbac_profile_name", next);
+          localStorage.setItem(
+            "petitbac_profile_name",
+            saved
+          );
         }
 
-        if (nameInput) {
-          nameInput.value = next;
-          nameInput.readOnly = true;
-        }
+        nameInput.value = saved;
+        lastSavedName = saved;
 
-        editingName = false;
-        editNameButton?.classList.remove("is-editing");
         toast("Pseudo enregistré !");
         return true;
       } catch {
@@ -288,33 +351,44 @@
       }
     };
 
-    editNameButton?.addEventListener("click", () => {
+    nameInput?.addEventListener("focus", () => {
+      editNameButton?.classList.add("is-editing");
+    });
+
+    nameInput?.addEventListener("input", () => {
+      editNameButton?.classList.add("is-editing");
+    });
+
+    editNameButton?.addEventListener("click", async () => {
       if (!nameInput) return;
 
-      if (editingName) {
-        saveName();
+      if (document.activeElement !== nameInput) {
+        nameInput.focus();
+
+        try {
+          nameInput.setSelectionRange(
+            nameInput.value.length,
+            nameInput.value.length
+          );
+        } catch {}
+
         return;
       }
 
-      editingName = true;
-      nameInput.readOnly = false;
-      editNameButton.classList.add("is-editing");
-      nameInput.focus();
-
-      try {
-        nameInput.setSelectionRange(nameInput.value.length, nameInput.value.length);
-      } catch {}
+      await saveName();
+      nameInput.blur();
     });
 
-    nameInput?.addEventListener("keydown", event => {
+    nameInput?.addEventListener("keydown", async event => {
       if (event.key !== "Enter") return;
+
       event.preventDefault();
-      if (editingName) saveName();
+      await saveName();
       nameInput.blur();
     });
 
     nameInput?.addEventListener("blur", () => {
-      if (editingName) saveName();
+      saveName();
     });
 
     document.getElementById("profileV10CopyCode")?.addEventListener("click", async () => {
