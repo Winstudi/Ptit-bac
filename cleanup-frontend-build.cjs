@@ -7,6 +7,7 @@ const root = __dirname;
 const wheelPath = path.join(root, "letter-wheel-v1.js");
 const soundPath = path.join(root, "letter-wheel-spin.wav");
 const appPath = path.join(root, "app.js");
+const stylePath = path.join(root, "style.css");
 
 function log(message) {
   console.log(`[Frontend cleanup] ${message}`);
@@ -579,9 +580,584 @@ function cleanupApp() {
   }
 }
 
+
+/* =========================================================
+   D3 — style.css
+   Supprime uniquement les règles des anciens écrans qui ont
+   été remplacés par les modules dédiés actuellement chargés.
+   Les styles globaux et les sélecteurs encore utilisés restent.
+   ========================================================= */
+
+const LEGACY_STYLE_SELECTOR_PATTERNS = Object.freeze([
+  /\.home-v129(?:\b|-)/,
+  /\.home-v130(?:\b|-)/,
+  /\.home-v150(?:\b|-)/,
+  /\.profile-v150(?:\b|-)/,
+
+  /\.v141-/,
+  /\.v143-/,
+  /\.v146-/,
+  /\.v147-/,
+
+  /\.letter-pick(?:-screen\b|-)/,
+  /\.letter-wheel(?:\b|-)/,
+  /\.v135-/,
+  /\.v137-/,
+
+  /\.play-screen\b/,
+  /\.play-/,
+
+  /\.validation-auto-v131\b/,
+  /\.validation-auto-/,
+  /\.auto-review-/,
+  /\.auto-validation-/,
+  /\.auto-check-/,
+
+  /\.round-results-v132\b/,
+  /\.round-results-v133\b/,
+  /\.round-results-/,
+  /\.v133-/,
+
+  /\.final-v134\b/,
+  /\.final-v134-/
+]);
+
+function isLegacyStyleSelector(selector) {
+  const value = String(selector || "").trim();
+  if (!value) return false;
+
+  return LEGACY_STYLE_SELECTOR_PATTERNS.some(
+    pattern => pattern.test(value)
+  );
+}
+
+function splitCssSelectorList(selectorText) {
+  const values = [];
+  let start = 0;
+  let paren = 0;
+  let bracket = 0;
+  let quote = "";
+
+  for (let i = 0; i < selectorText.length; i += 1) {
+    const char = selectorText[i];
+
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+        continue;
+      }
+
+      if (char === quote) quote = "";
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (char === "(") {
+      paren += 1;
+      continue;
+    }
+
+    if (char === ")") {
+      paren = Math.max(0, paren - 1);
+      continue;
+    }
+
+    if (char === "[") {
+      bracket += 1;
+      continue;
+    }
+
+    if (char === "]") {
+      bracket = Math.max(0, bracket - 1);
+      continue;
+    }
+
+    if (
+      char === "," &&
+      paren === 0 &&
+      bracket === 0
+    ) {
+      values.push(
+        selectorText.slice(start, i).trim()
+      );
+      start = i + 1;
+    }
+  }
+
+  values.push(
+    selectorText.slice(start).trim()
+  );
+
+  return values.filter(Boolean);
+}
+
+function cssFindMatchingBrace(source, start) {
+  let depth = 0;
+  let quote = "";
+
+  for (let i = start; i < source.length; i += 1) {
+    const char = source[i];
+    const next = source[i + 1];
+
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+        continue;
+      }
+
+      if (char === quote) quote = "";
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+
+      if (end < 0) return -1;
+
+      i = end + 1;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+
+      if (depth === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function cssNextStructuralToken(source, start) {
+  let quote = "";
+  let paren = 0;
+  let bracket = 0;
+
+  for (let i = start; i < source.length; i += 1) {
+    const char = source[i];
+    const next = source[i + 1];
+
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+        continue;
+      }
+
+      if (char === quote) quote = "";
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+
+      if (end < 0) {
+        return {
+          index: source.length,
+          token: ""
+        };
+      }
+
+      i = end + 1;
+      continue;
+    }
+
+    if (char === "(") {
+      paren += 1;
+      continue;
+    }
+
+    if (char === ")") {
+      paren = Math.max(0, paren - 1);
+      continue;
+    }
+
+    if (char === "[") {
+      bracket += 1;
+      continue;
+    }
+
+    if (char === "]") {
+      bracket = Math.max(0, bracket - 1);
+      continue;
+    }
+
+    if (
+      paren === 0 &&
+      bracket === 0 &&
+      (char === "{" || char === ";")
+    ) {
+      return {
+        index: i,
+        token: char
+      };
+    }
+  }
+
+  return {
+    index: source.length,
+    token: ""
+  };
+}
+
+function cleanCssSegment(source, stats) {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < source.length) {
+    const leadingStart = cursor;
+
+    while (
+      cursor < source.length &&
+      /\s/.test(source[cursor])
+    ) {
+      cursor += 1;
+    }
+
+    if (
+      source[cursor] === "/" &&
+      source[cursor + 1] === "*"
+    ) {
+      const commentEnd =
+        source.indexOf("*/", cursor + 2);
+
+      if (commentEnd < 0) {
+        output += source.slice(leadingStart);
+        break;
+      }
+
+      output +=
+        source.slice(
+          leadingStart,
+          commentEnd + 2
+        );
+
+      cursor = commentEnd + 2;
+      continue;
+    }
+
+    if (cursor >= source.length) {
+      output += source.slice(leadingStart);
+      break;
+    }
+
+    const preludeStart = cursor;
+    const structure =
+      cssNextStructuralToken(
+        source,
+        preludeStart
+      );
+
+    if (!structure.token) {
+      output += source.slice(leadingStart);
+      break;
+    }
+
+    const prefix =
+      source.slice(
+        leadingStart,
+        preludeStart
+      );
+
+    const prelude =
+      source.slice(
+        preludeStart,
+        structure.index
+      );
+
+    if (structure.token === ";") {
+      output +=
+        prefix +
+        prelude +
+        ";";
+
+      cursor = structure.index + 1;
+      continue;
+    }
+
+    const braceStart =
+      structure.index;
+
+    const braceEnd =
+      cssFindMatchingBrace(
+        source,
+        braceStart
+      );
+
+    if (braceEnd < 0) {
+      throw new Error(
+        "Accolade CSS fermante introuvable."
+      );
+    }
+
+    const body =
+      source.slice(
+        braceStart + 1,
+        braceEnd
+      );
+
+    const trimmedPrelude =
+      prelude.trim();
+
+    if (trimmedPrelude.startsWith("@")) {
+      const lower =
+        trimmedPrelude.toLowerCase();
+
+      const recursiveAtRule =
+        lower.startsWith("@media") ||
+        lower.startsWith("@supports") ||
+        lower.startsWith("@container") ||
+        lower.startsWith("@layer") ||
+        lower.startsWith("@document");
+
+      if (recursiveAtRule) {
+        const cleanedBody =
+          cleanCssSegment(
+            body,
+            stats
+          );
+
+        if (cleanedBody.trim()) {
+          output +=
+            prefix +
+            prelude +
+            "{" +
+            cleanedBody +
+            "}";
+        } else {
+          stats.rulesRemoved += 1;
+        }
+      } else {
+        // @keyframes, @font-face, @property, etc.
+        // restent inchangés : aucun risque de casser une animation partagée.
+        output +=
+          prefix +
+          prelude +
+          "{" +
+          body +
+          "}";
+      }
+
+      cursor = braceEnd + 1;
+      continue;
+    }
+
+    const selectors =
+      splitCssSelectorList(prelude);
+
+    const kept =
+      selectors.filter(
+        selector =>
+          !isLegacyStyleSelector(
+            selector
+          )
+      );
+
+    const removedCount =
+      selectors.length -
+      kept.length;
+
+    if (removedCount > 0) {
+      stats.selectorsRemoved +=
+        removedCount;
+    }
+
+    if (!kept.length) {
+      stats.rulesRemoved += 1;
+      cursor = braceEnd + 1;
+      continue;
+    }
+
+    if (
+      kept.length !==
+      selectors.length
+    ) {
+      stats.rulesTrimmed += 1;
+    }
+
+    output +=
+      prefix +
+      kept.join(",\n") +
+      "{" +
+      body +
+      "}";
+
+    cursor = braceEnd + 1;
+  }
+
+  return output;
+}
+
+function bracesAreBalanced(source) {
+  let depth = 0;
+  let quote = "";
+
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i];
+    const next = source[i + 1];
+
+    if (quote) {
+      if (char === "\\") {
+        i += 1;
+        continue;
+      }
+
+      if (char === quote) quote = "";
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+
+      if (end < 0) return false;
+
+      i = end + 1;
+      continue;
+    }
+
+    if (char === "{") depth += 1;
+    if (char === "}") depth -= 1;
+
+    if (depth < 0) return false;
+  }
+
+  return depth === 0 && !quote;
+}
+
+function cleanupStyle() {
+  if (!fs.existsSync(stylePath)) {
+    log(
+      "style.css absent : nettoyage D3 ignoré."
+    );
+    return;
+  }
+
+  const original =
+    fs.readFileSync(
+      stylePath,
+      "utf8"
+    );
+
+  const stats = {
+    rulesRemoved: 0,
+    rulesTrimmed: 0,
+    selectorsRemoved: 0
+  };
+
+  let cleaned;
+
+  try {
+    cleaned =
+      cleanCssSegment(
+        original,
+        stats
+      );
+  } catch (error) {
+    log(
+      "D3 annulé : " +
+      (error?.message || error)
+    );
+    return;
+  }
+
+  const criticalSelectors = [
+    ".screen",
+    ".toast",
+    ".btn",
+    ".category-pick-screen"
+  ];
+
+  const missingCritical =
+    criticalSelectors.filter(
+      selector =>
+        original.includes(selector) &&
+        !cleaned.includes(selector)
+    );
+
+  if (missingCritical.length) {
+    log(
+      "D3 annulé : styles critiques " +
+      "introuvables après nettoyage (" +
+      missingCritical.join(", ") +
+      ")."
+    );
+    return;
+  }
+
+  if (!bracesAreBalanced(cleaned)) {
+    log(
+      "D3 annulé : accolades CSS " +
+      "déséquilibrées après nettoyage."
+    );
+    return;
+  }
+
+  const before =
+    Buffer.byteLength(original);
+
+  const after =
+    Buffer.byteLength(cleaned);
+
+  if (
+    after >= before ||
+    stats.selectorsRemoved === 0
+  ) {
+    log(
+      "style.css : aucun ancien style " +
+      "à retirer."
+    );
+    return;
+  }
+
+  fs.writeFileSync(
+    stylePath,
+    cleaned,
+    "utf8"
+  );
+
+  log(
+    `style.css : ${(before / 1024).toFixed(1)} Ko -> ` +
+    `${(after / 1024).toFixed(1)} Ko ` +
+    `(-${((before - after) / 1024).toFixed(1)} Ko).`
+  );
+
+  log(
+    "D3 : " +
+    `${stats.rulesRemoved} règle(s) supprimée(s), ` +
+    `${stats.rulesTrimmed} règle(s) mixte(s) nettoyée(s), ` +
+    `${stats.selectorsRemoved} sélecteur(s) legacy retiré(s).`
+  );
+}
+
 function main() {
   cleanupWheel();
   cleanupApp();
+  cleanupStyle();
 }
 
 main();
