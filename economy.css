@@ -91,7 +91,7 @@
 
   color:#fff !important;
   text-shadow:0 1px 3px rgba(22,19,84,.65) !important;
-  font-size:.62rem !important;
+  font-size:1.12rem !important;
   line-height:1.05 !important;
   font-weight:1000 !important;
   text-align:center !important;
@@ -193,7 +193,7 @@ body .home-mobile .hm-right{
     left:-2px !important;
     width:36px !important;
     height:36px !important;
-    font-size:.57rem !important;
+    font-size:1.03rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
@@ -242,7 +242,7 @@ body .home-mobile .hm-right{
     left:-3px !important;
     width:34px !important;
     height:34px !important;
-    font-size:.53rem !important;
+    font-size:.95rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
