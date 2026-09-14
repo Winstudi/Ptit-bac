@@ -415,19 +415,16 @@
             <button id="homePlaqueLivesBtn" type="button" aria-label="Mes vies">
               ${img("heart")}
               <b id="homePlaqueLives">${lives}/${maxLives}</b>
-              <i aria-hidden="true">+</i>
             </button>
 
             <button id="homePlaqueCoinsBtn" type="button" aria-label="Mes pièces">
               ${img("coin")}
               <b id="homePlaqueCoins">${coins}</b>
-              <i aria-hidden="true">+</i>
             </button>
 
             <button id="homeGemButton" type="button" aria-label="Mes gemmes">
               ${img("gem")}
               <b id="homeGems">${Math.max(0, Number(eco.gems) || 0)}</b>
-              <i aria-hidden="true">+</i>
             </button>
           </div>
 
@@ -471,7 +468,7 @@
 
           <nav class="hm-side hm-left" aria-label="Activités">
             ${side("homeQuests", "task", "Quêtes", true)}
-            ${side("homePlaqueShop", "shop", "Boutique")}
+            ${side("homePlaqueShop", "shop", "Magasin")}
           </nav>
 
           <nav class="hm-side hm-right" aria-label="Communauté">

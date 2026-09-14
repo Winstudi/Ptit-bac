@@ -201,29 +201,30 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-resources {
-  width:min(100%,224px);
+  width:min(100%,192px);
   min-width:0;
   justify-self:center;
   align-self:center;
   margin-top:0;
   display:grid;
-  grid-template-columns:62px minmax(82px,1fr) 62px;
+  grid-template-columns:repeat(3,62px);
   justify-content:center;
   gap:3px;
 }
 
 .hm-resources button {
-  min-width:0;
+  width:62px;
+  min-width:62px;
   height:29px;
-  padding:1px 2px;
+  padding:1px 4px;
   border:1.3px solid #6850ef;
   border-radius:11px;
   background:linear-gradient(180deg,#22165e,#0d1748);
   box-shadow:inset 0 0 12px rgba(102,75,234,.08);
   display:grid;
-  grid-template-columns:16px minmax(0,1fr) 12px;
+  grid-template-columns:16px minmax(0,1fr);
   align-items:center;
-  gap:1px;
+  gap:2px;
 }
 
 .hm-resources img {
@@ -246,25 +247,6 @@ body:has(.home-mobile) .economy-hud {
 #homePlaqueCoinsBtn b {
   font-size:.50rem;
   letter-spacing:-.04em;
-}
-
-#homePlaqueCoinsBtn {
-  padding-left:3px;
-  padding-right:2px;
-}
-
-.hm-resources i {
-  width:12px;
-  height:15px;
-  border-radius:6px;
-  background:linear-gradient(180deg,#7d6aff,#681de6);
-  box-shadow:0 0 8px rgba(110,72,255,.32);
-  display:grid;
-  place-items:center;
-  font-style:normal;
-  font-size:.66rem;
-  font-weight:900;
-  line-height:1;
 }
 
 .hm-menu-button {
@@ -367,11 +349,11 @@ body:has(.home-mobile) .economy-hud {
 .hm-right { right:1px; }
 
 .hm-side button {
-  width:66px;
-  height:72px;
-  padding:5px 4px;
-  border:1.4px solid #8557ff;
-  border-radius:17px;
+  width:53px;
+  height:58px;
+  padding:4px 3px;
+  border:1.2px solid #8557ff;
+  border-radius:14px;
   background:
     radial-gradient(circle at 50% 12%,rgba(127,77,255,.17),transparent 48%),
     linear-gradient(145deg,rgba(35,21,91,.96),rgba(8,20,63,.97));
@@ -385,12 +367,12 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-side img {
-  width:40px;
-  height:40px;
+  width:32px;
+  height:32px;
 }
 
 .hm-side b {
-  font-size:.68rem;
+  font-size:.57rem;
   line-height:1;
   font-weight:900;
 }
@@ -596,13 +578,16 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-mode-grid b {
+  position:relative;
+  width:100%;
   min-height:27px;
   margin-top:3px;
+  padding:0 16px;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
-  flex-wrap:wrap;
+  gap:0;
+  flex-wrap:nowrap;
   font-size:.72rem;
   line-height:1.18;
   font-weight:900;
@@ -610,6 +595,10 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-chevron {
+  position:absolute;
+  right:2px;
+  top:50%;
+  transform:translateY(-50%);
   flex:0 0 auto;
   width:15px;
   height:15px;
@@ -862,9 +851,10 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-join b {
   flex-wrap:nowrap;
-  gap:3px;
+  gap:0;
   white-space:nowrap;
   font-size:.62rem;
+  text-align:center;
 }
 
 .hm-join b .hm-chevron {
@@ -1153,15 +1143,17 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources {
-    width:min(100%,204px);
-    grid-template-columns:56px minmax(76px,1fr) 56px;
+    width:min(100%,172px);
+    grid-template-columns:repeat(3,56px);
     gap:2px;
   }
 
   .hm-resources button {
+    width:56px;
+    min-width:56px;
     height:27px;
-    grid-template-columns:14px minmax(0,1fr) 10px;
-    padding-inline:2px;
+    grid-template-columns:14px minmax(0,1fr);
+    padding-inline:3px;
   }
 
   .hm-resources img {
@@ -1173,12 +1165,6 @@ body:has(.home-mobile) .economy-hud {
     font-size:.48rem;
   }
 
-  .hm-resources i {
-    width:10px;
-    height:14px;
-    font-size:.61rem;
-  }
-
   .hm-menu-button {
     width:30px;
     height:30px;
@@ -1186,13 +1172,13 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-side button {
-    width:61px;
-    height:68px;
+    width:49px;
+    height:54px;
   }
 
   .hm-side img {
-    width:37px;
-    height:37px;
+    width:30px;
+    height:30px;
   }
 
   .hm-mode-grid {
@@ -1254,7 +1240,7 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-side button {
-    height:65px;
+    height:52px;
   }
 
   .hm-brand {
@@ -1338,18 +1324,18 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-side button {
-    width:57px;
-    height:58px;
-    border-radius:14px;
+    width:46px;
+    height:46px;
+    border-radius:11px;
   }
 
   .hm-side img {
-    width:33px;
-    height:32px;
+    width:26px;
+    height:26px;
   }
 
   .hm-side b {
-    font-size:.59rem;
+    font-size:.49rem;
   }
 
   .hm-brand {
@@ -1432,12 +1418,12 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources b {
-    font-size:.64rem;
+    font-size:.52rem;
   }
 
   .hm-side button {
-    width:72px;
-    height:78px;
+    width:58px;
+    height:62px;
   }
 
   .hm-mode-grid b {
