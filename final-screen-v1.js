@@ -125,9 +125,19 @@
             '</strong>' +
 
             (
-              player.id === session.playerId
-                ? '<small class="fin-you">Toi</small>'
-                : ""
+              winners.length > 1 && playerRank === 1
+                ? '<span class="fin-you-slot">' +
+                    (
+                      player.id === session.playerId
+                        ? '<small class="fin-you">Toi</small>'
+                        : ""
+                    ) +
+                  '</span>'
+                : (
+                    player.id === session.playerId
+                      ? '<small class="fin-you">Toi</small>'
+                      : ""
+                  )
             ) +
 
             '<b>' +
@@ -142,14 +152,20 @@
       }).join("");
 
     /*
-      À partir de 3 joueurs, le podium porte déjà les trois premiers :
-      la liste inférieure ne montre donc plus que les suivants.
-      À 1–2 joueurs, on conserve la liste complète.
+      Le classement inférieur ne répète jamais les joueurs
+      déjà affichés sur le podium. Cela corrige notamment
+      les égalités à deux joueurs.
     */
+    const podiumIds =
+      new Set(
+        top.map(player => String(player.id))
+      );
+
     const rankingPlayers =
-      ranked.length >= 3
-        ? ranked.slice(3)
-        : ranked;
+      ranked.filter(
+        player =>
+          !podiumIds.has(String(player.id))
+      );
 
     const rows =
       rankingPlayers.map(player => {
@@ -252,6 +268,11 @@
 
         '<section class="fin-podium fin-podium-' +
           Math.min(top.length, 3) +
+          (
+            winners.length > 1
+              ? " fin-podium-shared-win"
+              : ""
+          ) +
           '" aria-label="Podium">' +
           podium +
         '</section>' +
