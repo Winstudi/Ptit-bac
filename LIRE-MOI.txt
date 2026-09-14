@@ -1,25 +1,51 @@
-P’TIT BAC — PAGE AMIS ET INVITATIONS
+P'TIT BAC — CORRECTIF CORE V1
 
-BASE
-Dépôt Winstudi/Ptit-bac, commit 65f6ba3f2c6b0d46ee687f5cd4b9df9434cfc546.
-Les dernières références au profil, au salon rapide et au classement sont conservées dans index.html.
+Ce ZIP corrige la première grosse couche du diagnostic sans toucher au design.
 
-INSTALLATION
-Remplace les 6 fichiers à la racine du projet, puis redéploie sur Render et recharge le site.
-Aucun fichier à supprimer, aucune nouvelle dépendance. PostgreSQL reste nécessaire au système Amis comme dans la version actuelle.
+POURQUOI UN PATCH AUTOMATIQUE ?
+Le connecteur GitHub disponible dans cette conversation a l'accès en lecture,
+mais GitHub a refusé l'écriture avec l'erreur 403 "Resource not accessible by integration".
+Le script évite donc de réécrire manuellement les ~130 Ko de server.js.
 
-CHANGEMENTS
-- Page Amis harmonisée avec la maquette : code ami, recherche, tri, onglets Mes amis / Messages / Demandes / Ajouter.
-- Aucun slogan sous le titre, aucune ligne supplémentaire sous le statut, aucun bouton Messages en haut à droite.
-- Boutons Message et Inviter directement dans la liste. Sur les petits téléphones, Message est représenté par son icône.
-- Menu à trois points : Supprimer l’ami et Signaler. Le signalement demande un motif et utilise la table déjà consultée par Admin > Reports > Joueurs.
-- Invitation avec Rejoindre / Refuser, expiration après une minute. Un ami déjà dans un salon ou dans une partie ne reçoit pas cette fenêtre. Les invitations ignorées ne sont pas affichées après la partie.
-- L’expéditeur doit être dans un salon privé disponible. Un salon plein, démarré ou inexistant est refusé. La disponibilité est revérifiée au moment de rejoindre.
-- Les mises à jour de présence ne remplacent plus une autre page après avoir quitté Amis.
+FICHIERS FINALEMENT MODIFIÉS
+- server.js
+- frame-sync-server.js
+- package.json
 
-VÉRIFICATION
-Syntaxe des quatre fichiers JavaScript vérifiée.
-Tests DOM avec sockets simulées : menu à deux options, envoi de signalement, rejoindre/refuser, absence de fenêtre pendant le jeu, fermeture au démarrage.
-Tests des gestionnaires serveur avec PostgreSQL simulé : vérification de l’amitié et du salon, destinataire occupé, stockage du signalement dans la table admin avec identité réelle du destinataire et protection contre les signalements rapprochés.
-À vérifier sur le site après installation : rendu iPhone, invitation entre deux appareils et apparition du signalement dans Reports avec ta vraie base PostgreSQL.
-Le site en ligne et GitHub n’ont pas été modifiés.
+CORRECTIONS
+- Suppression du monkey-patch Module._extensions.
+- Suppression des monkey-patches Server.prototype.on / Server.prototype.to.
+- Les règles ne sont plus modifiées au chargement de Node.
+- Coût relance lettre = 20 pièces directement dans server.js.
+- Coût relance catégories = 20 pièces directement dans server.js.
+- Relances rapides toujours autorisées.
+- Difficulté rapide = medium directement dans server.js.
+- frameId stocké dans le joueur et envoyé dans room:state.
+- cosmetics:sync contrôlé via requireMember.
+- Reconnexion resynchronise le cadre.
+- Suppression de la route /health dupliquée.
+- npm start = node server.js.
+- npm run dev = node --watch server.js.
+- Les tests quick-match restent actifs.
+
+UTILISATION
+1. Mets apply-core-cleanup.cjs à la racine de P'tit-bac
+   (au même niveau que server.js et package.json).
+2. Dans un terminal ouvert dans ce dossier:
+      node apply-core-cleanup.cjs
+3. Le script lance automatiquement:
+      node --check server.js
+      node --check frame-sync-server.js
+      node --check quick-match.js
+      node --test quick-match.test.cjs
+4. S'il y a la moindre erreur, les trois fichiers sont restaurés automatiquement.
+5. Si tout est vert, supprime apply-core-cleanup.cjs et envoie uniquement:
+      server.js
+      frame-sync-server.js
+      package.json
+   sur GitHub.
+
+IMPORTANT
+Le script reconnaît la structure de la version auditée du dépôt Winstudi/Ptit-bac.
+Si server.js a été modifié entre-temps et que les motifs ne correspondent plus,
+le patch s'arrête au lieu de forcer la modification.
