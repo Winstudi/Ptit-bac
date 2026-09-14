@@ -97,20 +97,23 @@
         Number(unread) || 0
       );
 
-    const badge =
-      document.getElementById(
-        "homeInboxBadge"
-      );
-
-    if (!badge) return;
-
-    badge.hidden =
-      state.unread < 1;
-
-    badge.textContent =
+    const value =
       state.unread > 99
         ? "99+"
         : String(state.unread);
+
+    [
+      document.getElementById("homeInboxBadge"),
+      document.getElementById("homeMenuInboxBadge")
+    ]
+      .filter(Boolean)
+      .forEach(badge => {
+        badge.hidden =
+          state.unread < 1;
+
+        badge.textContent =
+          value;
+      });
   }
 
   async function refreshCount() {
@@ -329,12 +332,7 @@
     layer.innerHTML = `
       <article class="inbox-v1-detail">
         <header>
-          <span class="inbox-v1-card-icon ${type.className}">
-            ${type.icon}
-          </span>
-
           <div>
-            <small>${type.label}</small>
             <h2>${esc(message.title)}</h2>
             <time>
               ${

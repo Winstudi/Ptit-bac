@@ -62,6 +62,7 @@
   function resourcePopupContent(type) {
     const state = economyState();
     const coins = Math.max(0, Number(state.coins) || 0);
+    const gems = Math.max(0, Number(state.gems) || 0);
     const lives = Math.max(0, Number(state.lives) || 0);
     const maxLives = Math.max(1, Number(state.maxLives) || 5);
     const isFull = lives >= maxLives;
@@ -69,28 +70,77 @@
     if (type === "coins") {
       return `
         <div class="home-resource-popup-card" role="dialog" aria-label="Mes pièces">
-          <strong class="home-resource-popup-value home-resource-popup-coins">
-            <img src="/coin.png" alt="">${coins} pièce${coins > 1 ? "s" : ""}
+          <strong class="home-resource-popup-value">
+            <img src="/coin.png" alt="">
+            <span>${coins}</span>
           </strong>
-          <button id="homeResourceShop" type="button">Ajouter des pièces</button>
-          <button id="homeResourceHistory" type="button">Historique</button>
+
+          <div class="home-resource-popup-actions">
+            <button id="homeResourceShop" type="button">Boutique</button>
+            <button id="homeResourceHistory" type="button">Historique</button>
+          </div>
+        </div>`;
+    }
+
+    if (type === "gems") {
+      return `
+        <div class="home-resource-popup-card" role="dialog" aria-label="Mes gemmes">
+          <strong class="home-resource-popup-value">
+            <img src="/gem.png" alt="">
+            <span>${gems}</span>
+          </strong>
+
+          <small>Gemmes disponibles</small>
         </div>`;
     }
 
     return `
       <div class="home-resource-popup-card" role="dialog" aria-label="Mes vies">
-        <strong class="home-resource-popup-value home-resource-popup-lives">
-          <img src="/heart.png" alt="">${lives}/${maxLives} vies
+        <strong class="home-resource-popup-value">
+          <img src="/heart.png" alt="">
+          <span>${lives}/${maxLives}</span>
         </strong>
+
         <small>
           ${isFull
             ? "Vies rechargées"
-            : `Prochaine vie dans ${formatRecharge(state.secondsToNext)}`}
+            : `Prochaine vie : ${formatRecharge(state.secondsToNext)}`}
         </small>
       </div>`;
   }
 
-  function openResourcePopup(type) {
+  function positionResourcePopup(layer, anchor) {
+    const home = document.querySelector(".home-mobile");
+    if (!home || !layer || !anchor) return;
+
+    const homeRect = home.getBoundingClientRect();
+    const anchorRect = anchor.getBoundingClientRect();
+    const popupWidth = 136;
+
+    const center =
+      anchorRect.left -
+      homeRect.left +
+      (anchorRect.width / 2);
+
+    const left =
+      Math.max(
+        6,
+        Math.min(
+          homeRect.width - popupWidth - 6,
+          center - (popupWidth / 2)
+        )
+      );
+
+    const top =
+      anchorRect.bottom -
+      homeRect.top +
+      6;
+
+    layer.style.left = `${left}px`;
+    layer.style.top = `${top}px`;
+  }
+
+  function openResourcePopup(type, anchor) {
     const current = document.getElementById("homeResourcePopover");
 
     if (current?.dataset.type === type) {
@@ -104,12 +154,14 @@
     layer.id = "homeResourcePopover";
     layer.className = "home-resource-popover";
     layer.dataset.type = type;
+    layer.dataset.anchorId = anchor?.id || "";
     layer.innerHTML = resourcePopupContent(type);
 
     document.querySelector(".home-mobile")?.appendChild(layer);
+    positionResourcePopup(layer, anchor);
 
     layer.addEventListener("click", event => {
-      if (event.target === layer) closeResourcePopup();
+      event.stopPropagation();
     });
 
     bindResourcePopupActions();
@@ -137,6 +189,13 @@
     const wrapper = document.createElement("div");
     wrapper.innerHTML = resourcePopupContent(popup.dataset.type);
     oldCard.replaceWith(wrapper.firstElementChild);
+
+    const anchor =
+      document.getElementById(
+        popup.dataset.anchorId || ""
+      );
+
+    positionResourcePopup(popup, anchor);
     bindResourcePopupActions();
   }
 
@@ -160,12 +219,12 @@
 
     document.getElementById("homePlaqueCoinsBtn")?.addEventListener("click", event => {
       event.stopPropagation();
-      openResourcePopup("coins");
+      openResourcePopup("coins", event.currentTarget);
     });
 
     document.getElementById("homePlaqueLivesBtn")?.addEventListener("click", event => {
       event.stopPropagation();
-      openResourcePopup("lives");
+      openResourcePopup("lives", event.currentTarget);
     });
 
     document.getElementById("homePlaqueQuick")?.addEventListener("click", () => {
@@ -396,6 +455,12 @@
             aria-controls="homeMenu"
           >
             <span></span><span></span><span></span>
+            <i
+              id="homeMenuInboxBadge"
+              class="hm-menu-button-badge"
+              hidden
+              aria-label="Messages non lus"
+            >0</i>
           </button>
 
           <nav id="homeMenu" class="hm-menu" aria-label="Menu" hidden>
@@ -569,6 +634,17 @@
       if (!menu?.contains(event.target) && !trigger?.contains(event.target)) {
         closeMenu();
       }
+
+      const resourcePopup =
+        document.getElementById("homeResourcePopover");
+
+      if (
+        resourcePopup &&
+        !resourcePopup.contains(event.target) &&
+        !event.target.closest?.(".hm-resources")
+      ) {
+        closeResourcePopup();
+      }
     });
 
     screen?.addEventListener("keydown", event => {
@@ -590,15 +666,9 @@
       setTimeout(() => document.getElementById("homePlaqueCode")?.focus(), 20);
     });
 
-    document.getElementById("homeGemButton")?.addEventListener("click", () => {
-      showDetails(`
-        <h2>Mes gemmes</h2>
-        <div class="hm-detail-resource">
-          ${img("gem")}
-          <strong>${Math.max(0, Number(economyState().gems) || 0)}</strong>
-        </div>
-        <p>Les gemmes seront utilisées dans de futures fonctionnalités.</p>
-      `);
+    document.getElementById("homeGemButton")?.addEventListener("click", event => {
+      event.stopPropagation();
+      openResourcePopup("gems", event.currentTarget);
     });
 
     document.querySelectorAll("[data-soon]").forEach(button => {
