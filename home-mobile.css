@@ -1446,3 +1446,19 @@ body:has(.home-mobile) .economy-hud {
     transition:none;
   }
 }
+
+
+/* Accueil V11 — texte des mini-fenêtres vies / pièces / gemmes */
+.home-mobile .home-resource-popup-card small {
+  font-size:.82rem;
+  line-height:1.32;
+}
+
+.home-mobile .home-resource-popup-info p {
+  font-size:.86rem;
+  line-height:1.38;
+}
+
+.home-mobile .hm-resource-word {
+  font-size:1em;
+}
