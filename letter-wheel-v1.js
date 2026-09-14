@@ -27,6 +27,499 @@
   }
 
   /* =========================================================
+     Effets visuels de la roue
+     - étoiles multicolores pendant la rotation
+     - burst + rayons + pop de la lettre à l'arrêt
+     - animations limitées à transform/opacity pour rester fluides
+     ========================================================= */
+
+  const SPIN_STARS = [
+    ["7%","22%","11px","0s","1.12s","#b45cff","-12px","-10px"],
+    ["18%","7%","8px",".18s","1.34s","#55d8ff","-5px","-14px"],
+    ["35%","2%","12px",".42s","1.22s","#ffd95e","4px","-13px"],
+    ["58%","3%","9px",".08s","1.45s","#6cf5bb","8px","-14px"],
+    ["79%","11%","13px",".31s","1.18s","#ff72ca","13px","-9px"],
+    ["93%","29%","8px",".55s","1.32s","#7c78ff","14px","-4px"],
+    ["97%","52%","12px",".15s","1.26s","#ffd45c","15px","4px"],
+    ["88%","76%","9px",".49s","1.41s","#54dfff","13px","11px"],
+    ["70%","91%","13px",".25s","1.20s","#ff72cb","8px","14px"],
+    ["47%","97%","8px",".62s","1.30s","#78f1ad","0px","15px"],
+    ["26%","91%","11px",".11s","1.38s","#ffd95e","-8px","14px"],
+    ["8%","76%","8px",".38s","1.16s","#9d69ff","-14px","9px"],
+    ["2%","52%","13px",".68s","1.28s","#59dfff","-15px","3px"],
+    ["13%","39%","7px",".23s","1.47s","#ff7bc8","-12px","0px"],
+    ["84%","42%","7px",".74s","1.36s","#6cf5bb","12px","0px"],
+    ["52%","10%","6px",".35s","1.55s","#ffffff","3px","-12px"]
+  ];
+
+  const BURST_STARS = [
+    ["50%","-3%","17px","0s","#ffd858","0px","-32px"],
+    ["72%","5%","13px",".04s","#5ee6ff","22px","-25px"],
+    ["91%","21%","16px",".09s","#ff72c9","32px","-18px"],
+    ["101%","47%","12px",".13s","#8b69ff","37px","0px"],
+    ["91%","75%","15px",".07s","#65efb3","30px","22px"],
+    ["70%","94%","13px",".15s","#ffd95e","20px","31px"],
+    ["47%","102%","17px",".02s","#ff78c8","0px","37px"],
+    ["23%","94%","12px",".11s","#5fddff","-23px","30px"],
+    ["5%","78%","16px",".06s","#a76cff","-32px","23px"],
+    ["-2%","51%","12px",".16s","#ffd95e","-38px","1px"],
+    ["8%","25%","15px",".03s","#68f0b6","-31px","-21px"],
+    ["27%","7%","12px",".12s","#ff72c9","-20px","-28px"]
+  ];
+
+  function wheelFxMarkup() {
+    const spinStars =
+      SPIN_STARS.map(
+        ([x,y,size,delay,duration,color,dx,dy], index) => `
+          <i
+            class="pbw1-fx-star pbw1-fx-spin-star"
+            style="
+              --fx-x:${x};
+              --fx-y:${y};
+              --fx-size:${size};
+              --fx-delay:${delay};
+              --fx-duration:${duration};
+              --fx-color:${color};
+              --fx-dx:${dx};
+              --fx-dy:${dy};
+              --fx-rot:${index % 2 ? "38deg" : "-34deg"};
+            "
+          ></i>
+        `
+      ).join("");
+
+    const burstStars =
+      BURST_STARS.map(
+        ([x,y,size,delay,color,dx,dy], index) => `
+          <i
+            class="pbw1-fx-star pbw1-fx-burst-star"
+            style="
+              --fx-x:${x};
+              --fx-y:${y};
+              --fx-size:${size};
+              --fx-delay:${delay};
+              --fx-color:${color};
+              --fx-dx:${dx};
+              --fx-dy:${dy};
+              --fx-rot:${index % 2 ? "78deg" : "-72deg"};
+            "
+          ></i>
+        `
+      ).join("");
+
+    return `
+      <div class="pbw1-fx-layer" aria-hidden="true">
+        <div class="pbw1-fx-spin">
+          ${spinStars}
+        </div>
+
+        <div class="pbw1-fx-land">
+          <div class="pbw1-fx-rays"></div>
+          <div class="pbw1-fx-glow"></div>
+          ${burstStars}
+        </div>
+      </div>
+    `;
+  }
+
+  function ensureWheelFxStyles() {
+    if (
+      document.getElementById(
+        "pbw1WheelFxStyles"
+      )
+    ) {
+      return;
+    }
+
+    const style =
+      document.createElement("style");
+
+    style.id =
+      "pbw1WheelFxStyles";
+
+    style.textContent = `
+      .pbw1-wheel-zone{
+        overflow:visible !important;
+      }
+
+      .pbw1-wheel-shell{
+        z-index:4;
+      }
+
+      .pbw1-fx-layer{
+        position:absolute;
+        z-index:12;
+        inset:-24px;
+        pointer-events:none;
+        overflow:visible;
+      }
+
+      .pbw1-fx-spin,
+      .pbw1-fx-land{
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+      }
+
+      .pbw1-fx-star{
+        position:absolute;
+        left:var(--fx-x);
+        top:var(--fx-y);
+        width:var(--fx-size);
+        height:var(--fx-size);
+        margin:
+          calc(var(--fx-size) / -2)
+          0
+          0
+          calc(var(--fx-size) / -2);
+        opacity:0;
+        background:var(--fx-color);
+        clip-path:polygon(
+          50% 0%,
+          61% 38%,
+          100% 50%,
+          61% 62%,
+          50% 100%,
+          39% 62%,
+          0% 50%,
+          39% 38%
+        );
+        transform:
+          translate3d(0,0,0)
+          scale(.15)
+          rotate(0deg);
+        will-change:transform,opacity;
+      }
+
+      .pbw1-fx-spin-star{
+        box-shadow:
+          0 0 9px
+          color-mix(
+            in srgb,
+            var(--fx-color) 82%,
+            transparent
+          );
+      }
+
+      .pbw1-wheel-zone.is-spinning
+      .pbw1-fx-spin-star{
+        animation:
+          pbw1SpinSpark
+          var(--fx-duration)
+          cubic-bezier(.22,.78,.36,1)
+          var(--fx-delay)
+          infinite;
+      }
+
+      @keyframes pbw1SpinSpark{
+        0%{
+          opacity:0;
+          transform:
+            translate3d(0,0,0)
+            scale(.15)
+            rotate(0deg);
+        }
+        18%{
+          opacity:.9;
+          transform:
+            translate3d(
+              calc(var(--fx-dx) * .25),
+              calc(var(--fx-dy) * .25),
+              0
+            )
+            scale(1)
+            rotate(calc(var(--fx-rot) * .35));
+        }
+        56%{
+          opacity:.72;
+          transform:
+            translate3d(
+              calc(var(--fx-dx) * .7),
+              calc(var(--fx-dy) * .7),
+              0
+            )
+            scale(.68)
+            rotate(calc(var(--fx-rot) * .72));
+        }
+        100%{
+          opacity:0;
+          transform:
+            translate3d(
+              var(--fx-dx),
+              var(--fx-dy),
+              0
+            )
+            scale(.12)
+            rotate(var(--fx-rot));
+        }
+      }
+
+      .pbw1-fx-land{
+        opacity:0;
+      }
+
+      .pbw1-fx-rays,
+      .pbw1-fx-glow{
+        position:absolute;
+        left:50%;
+        top:50%;
+        border-radius:50%;
+        opacity:0;
+        transform:
+          translate(-50%,-50%)
+          scale(.45);
+        will-change:transform,opacity;
+      }
+
+      .pbw1-fx-rays{
+        width:122%;
+        height:122%;
+        background:
+          repeating-conic-gradient(
+            from -8deg,
+            rgba(172,78,255,0) 0deg 8deg,
+            rgba(172,78,255,.34) 8deg 13deg,
+            rgba(86,214,255,0) 13deg 27deg,
+            rgba(86,214,255,.25) 27deg 32deg,
+            rgba(255,103,203,0) 32deg 47deg
+          );
+        -webkit-mask:
+          radial-gradient(
+            circle,
+            transparent 0 43%,
+            #000 57% 100%
+          );
+        mask:
+          radial-gradient(
+            circle,
+            transparent 0 43%,
+            #000 57% 100%
+          );
+      }
+
+      .pbw1-fx-glow{
+        width:108%;
+        height:108%;
+        background:
+          radial-gradient(
+            circle,
+            rgba(255,255,255,.32) 0 12%,
+            rgba(184,70,255,.28) 27%,
+            rgba(89,205,255,.16) 48%,
+            rgba(98,55,255,0) 72%
+          );
+      }
+
+      .pbw1-wheel-zone.is-landed
+      .pbw1-fx-land{
+        opacity:1;
+      }
+
+      .pbw1-wheel-zone.is-landed
+      .pbw1-fx-rays{
+        animation:
+          pbw1LandRays
+          .82s
+          cubic-bezier(.16,.76,.3,1)
+          both;
+      }
+
+      .pbw1-wheel-zone.is-landed
+      .pbw1-fx-glow{
+        animation:
+          pbw1LandGlow
+          .72s
+          ease-out
+          both;
+      }
+
+      .pbw1-wheel-zone.is-landed
+      .pbw1-fx-burst-star{
+        animation:
+          pbw1BurstStar
+          .72s
+          cubic-bezier(.16,.78,.3,1)
+          var(--fx-delay)
+          both;
+      }
+
+      @keyframes pbw1LandRays{
+        0%{
+          opacity:0;
+          transform:
+            translate(-50%,-50%)
+            scale(.42)
+            rotate(-14deg);
+        }
+        24%{
+          opacity:.8;
+        }
+        62%{
+          opacity:.42;
+        }
+        100%{
+          opacity:0;
+          transform:
+            translate(-50%,-50%)
+            scale(1.16)
+            rotate(16deg);
+        }
+      }
+
+      @keyframes pbw1LandGlow{
+        0%{
+          opacity:0;
+          transform:
+            translate(-50%,-50%)
+            scale(.45);
+        }
+        28%{
+          opacity:1;
+          transform:
+            translate(-50%,-50%)
+            scale(1.03);
+        }
+        100%{
+          opacity:0;
+          transform:
+            translate(-50%,-50%)
+            scale(1.13);
+        }
+      }
+
+      @keyframes pbw1BurstStar{
+        0%{
+          opacity:0;
+          transform:
+            translate3d(0,0,0)
+            scale(.15)
+            rotate(0deg);
+        }
+        28%{
+          opacity:1;
+          transform:
+            translate3d(
+              calc(var(--fx-dx) * .35),
+              calc(var(--fx-dy) * .35),
+              0
+            )
+            scale(1.22)
+            rotate(calc(var(--fx-rot) * .36));
+        }
+        68%{
+          opacity:.9;
+          transform:
+            translate3d(
+              calc(var(--fx-dx) * .78),
+              calc(var(--fx-dy) * .78),
+              0
+            )
+            scale(.92)
+            rotate(calc(var(--fx-rot) * .78));
+        }
+        100%{
+          opacity:0;
+          transform:
+            translate3d(
+              var(--fx-dx),
+              var(--fx-dy),
+              0
+            )
+            scale(.12)
+            rotate(var(--fx-rot));
+        }
+      }
+
+      #pbw1CenterLetter.pbw1-letter-reveal{
+        animation:
+          pbw1LetterReveal
+          .62s
+          cubic-bezier(.16,.82,.25,1)
+          both;
+        transform-origin:center;
+        will-change:transform,opacity;
+      }
+
+      @keyframes pbw1LetterReveal{
+        0%{
+          opacity:0;
+          transform:
+            scale(.38)
+            rotate(-10deg);
+        }
+        48%{
+          opacity:1;
+          transform:
+            scale(1.22)
+            rotate(3deg);
+        }
+        72%{
+          transform:
+            scale(.94)
+            rotate(-1deg);
+        }
+        100%{
+          opacity:1;
+          transform:
+            scale(1)
+            rotate(0deg);
+        }
+      }
+
+      .pbw1-wheel-zone.is-landed
+      .pbw1-center{
+        animation:
+          pbw1CenterPulse
+          .62s
+          cubic-bezier(.16,.82,.25,1)
+          both;
+      }
+
+      @keyframes pbw1CenterPulse{
+        0%{
+          box-shadow:
+            0 4px 18px rgba(0,0,0,.45),
+            inset 0 0 18px rgba(255,255,255,.06);
+        }
+        36%{
+          box-shadow:
+            0 0 0 5px rgba(199,124,255,.18),
+            0 0 30px rgba(170,65,255,.62),
+            0 4px 18px rgba(0,0,0,.45),
+            inset 0 0 22px rgba(255,255,255,.12);
+        }
+        100%{
+          box-shadow:
+            0 4px 18px rgba(0,0,0,.45),
+            inset 0 0 18px rgba(255,255,255,.06);
+        }
+      }
+
+      @media(prefers-reduced-motion:reduce){
+        .pbw1-wheel-zone.is-spinning
+        .pbw1-fx-spin-star,
+        .pbw1-wheel-zone.is-landed
+        .pbw1-fx-rays,
+        .pbw1-wheel-zone.is-landed
+        .pbw1-fx-glow,
+        .pbw1-wheel-zone.is-landed
+        .pbw1-fx-burst-star,
+        #pbw1CenterLetter.pbw1-letter-reveal,
+        .pbw1-wheel-zone.is-landed
+        .pbw1-center{
+          animation:none !important;
+        }
+
+        .pbw1-fx-layer{
+          display:none !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  /* =========================================================
      Son de la roue — V4 iOS
      Une seule piste audio de 3,5 s jouée une fois par rotation.
      Aucun play() dans requestAnimationFrame => roue fluide.
@@ -252,8 +745,21 @@
 
     runtime.animating = true;
 
+    zone?.classList.remove(
+      "is-landed"
+    );
+
     zone?.classList.add(
       "is-spinning"
+    );
+
+    const currentCenter =
+      document.getElementById(
+        "pbw1CenterLetter"
+      );
+
+    currentCenter?.classList.remove(
+      "pbw1-letter-reveal"
     );
 
     actions?.classList.remove(
@@ -344,36 +850,70 @@
           "pbw1CenterLetter"
         );
 
+      const landedZone =
+        document.getElementById(
+          "pbw1WheelZone"
+        );
+
       if (center) {
         center.textContent = letter;
+        center.classList.remove(
+          "pbw1-letter-reveal"
+        );
+
+        // Force un nouveau départ de l'animation même après une relance.
+        void center.offsetWidth;
+
+        center.classList.add(
+          "pbw1-letter-reveal"
+        );
       }
 
       runtime.animating = false;
       runtime.lastVersion = version;
 
-      document
-        .getElementById(
-          "pbw1WheelZone"
-        )
-        ?.classList.remove(
-          "is-spinning"
-        );
+      landedZone?.classList.remove(
+        "is-spinning"
+      );
 
-      document
-        .getElementById(
-          "pbw1WheelZone"
-        )
-        ?.classList.add(
+      landedZone?.classList.remove(
+        "is-landed"
+      );
+
+      if (landedZone) {
+        // Même principe : permet de rejouer le burst après un reroll.
+        void landedZone.offsetWidth;
+        landedZone.classList.add(
           "is-landed"
         );
+      }
 
-      document
-        .getElementById(
-          "pbw1Actions"
-        )
-        ?.classList.add(
-          "is-visible"
-        );
+      const revealDelay =
+        window.matchMedia?.(
+          "(prefers-reduced-motion: reduce)"
+        ).matches
+          ? 0
+          : 620;
+
+      window.setTimeout(
+        () => {
+          if (
+            session.state?.phase !==
+            "letter_selection"
+          ) {
+            return;
+          }
+
+          document
+            .getElementById(
+              "pbw1Actions"
+            )
+            ?.classList.add(
+              "is-visible"
+            );
+        },
+        revealDelay
+      );
     };
 
     runtime.animationFrame =
@@ -381,6 +921,8 @@
   }
 
   function renderLetterWheelV1() {
+    ensureWheelFxStyles();
+
     clearInterval(
       session.timerHandle
     );
@@ -569,6 +1111,8 @@
               : ""
           }
         >
+          ${wheelFxMarkup()}
+
           <div
             class="pbw1-pointer"
             aria-hidden="true"
