@@ -38,146 +38,234 @@
 }
 
 /* =========================================================
-   P'tit Bac — Accueil : bloc niveau / XP compact
+   P'tit Bac — Accueil : badge niveau + barre XP V2
+   Inspiré d'un badge étoilé de jeu mobile.
    ========================================================= */
 
+/* Badge étoilé */
 .home-mobile .hm-profile-copy > small{
   position:absolute !important;
-  z-index:8 !important;
-  top:43px !important;
-  left:-1px !important;
-  width:92px !important;
-  height:32px !important;
+  z-index:12 !important;
+  top:42px !important;
+  left:-5px !important;
+
+  width:43px !important;
+  height:43px !important;
   margin:0 !important;
-  padding:5px 8px 14px !important;
-  display:block !important;
+  padding:0 3px !important;
+
+  display:grid !important;
+  place-items:center !important;
+
+  clip-path:polygon(
+    50% 0%,
+    63% 16%,
+    82% 12%,
+    86% 32%,
+    100% 50%,
+    86% 67%,
+    82% 88%,
+    63% 84%,
+    50% 100%,
+    37% 84%,
+    18% 88%,
+    14% 67%,
+    0% 50%,
+    14% 32%,
+    18% 12%,
+    37% 16%
+  ) !important;
+
+  border:0 !important;
+  border-radius:0 !important;
   overflow:hidden !important;
-  border:1.2px solid #7957ff !important;
-  border-radius:11px !important;
+
   background:
-    radial-gradient(circle at 28% 0%,rgba(145,76,255,.20),transparent 62%),
-    linear-gradient(145deg,rgba(35,22,91,.98),rgba(8,20,63,.98)) !important;
-  box-shadow:
-    inset 0 0 12px rgba(127,92,255,.10),
-    0 5px 14px rgba(1,5,31,.22) !important;
-  color:#f7f2ff !important;
-  font-size:.53rem !important;
-  font-weight:900 !important;
-  line-height:1 !important;
-  text-align:left !important;
+    radial-gradient(circle at 38% 30%,rgba(120,220,255,.72),transparent 34%),
+    linear-gradient(145deg,#23c8ff 0%,#426cff 48%,#8d3fff 100%) !important;
+
+  filter:
+    drop-shadow(0 0 1px #8dd9ff)
+    drop-shadow(0 0 4px rgba(97,79,255,.88))
+    drop-shadow(0 4px 5px rgba(0,0,0,.28)) !important;
+
+  color:#fff !important;
+  text-shadow:0 1px 3px rgba(22,19,84,.65) !important;
+  font-size:.48rem !important;
+  line-height:1.05 !important;
+  font-weight:1000 !important;
+  text-align:center !important;
   white-space:nowrap !important;
   pointer-events:none !important;
 }
 
-.home-mobile .hm-profile-copy > .ptb-home-xp-bar{
+/* Petit contour intérieur du badge */
+.home-mobile .hm-profile-copy > small::after{
+  content:"" !important;
   position:absolute !important;
-  z-index:9 !important;
-  top:61px !important;
-  left:7px !important;
-  width:76px !important;
-  height:5px !important;
-  margin:0 !important;
-  overflow:hidden !important;
-  border:1px solid rgba(164,117,255,.62) !important;
-  border-radius:999px !important;
-  background:rgba(5,11,42,.92) !important;
-  box-shadow:
-    inset 0 1px 4px rgba(0,0,0,.38),
-    0 0 7px rgba(102,62,229,.13) !important;
+  inset:4px !important;
+  z-index:-1 !important;
+  clip-path:inherit !important;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,0)) !important;
   pointer-events:none !important;
 }
 
+/* Capsule attachée au badge */
+.home-mobile .hm-profile-copy > .ptb-home-xp-bar{
+  position:absolute !important;
+  z-index:10 !important;
+  top:50px !important;
+  left:28px !important;
+
+  width:75px !important;
+  height:25px !important;
+  margin:0 !important;
+  padding:0 7px 0 13px !important;
+  box-sizing:border-box !important;
+
+  display:flex !important;
+  align-items:center !important;
+
+  overflow:hidden !important;
+  border:1.5px solid #5d75ff !important;
+  border-radius:0 9px 9px 0 !important;
+
+  background:
+    linear-gradient(180deg,rgba(35,38,115,.98),rgba(12,22,71,.99)) !important;
+
+  box-shadow:
+    inset 0 0 9px rgba(73,157,255,.15),
+    0 0 7px rgba(84,72,255,.27),
+    0 4px 8px rgba(0,0,0,.18) !important;
+
+  pointer-events:none !important;
+}
+
+/* Rail intérieur derrière le remplissage */
+.home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
+  content:"" !important;
+  position:absolute !important;
+  left:13px !important;
+  right:7px !important;
+  top:50% !important;
+  height:7px !important;
+  transform:translateY(-50%) !important;
+
+  border-radius:999px !important;
+  background:rgba(5,11,42,.90) !important;
+  box-shadow:
+    inset 0 1px 3px rgba(0,0,0,.55),
+    0 0 0 1px rgba(181,196,255,.24) !important;
+}
+
+/* XP réellement remplie */
 .home-mobile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+  position:relative !important;
+  z-index:2 !important;
+
   display:block !important;
-  height:100% !important;
-  border-radius:inherit !important;
-  background:linear-gradient(90deg,#7745ff,#d261ff) !important;
-  box-shadow:0 0 8px rgba(183,77,255,.62) !important;
+  height:7px !important;
+  min-width:0 !important;
+
+  border-radius:999px !important;
+  background:
+    linear-gradient(90deg,#20cfff 0%,#4b79ff 48%,#c049ff 100%) !important;
+
+  box-shadow:
+    0 0 6px rgba(71,183,255,.78),
+    0 0 9px rgba(176,64,255,.40) !important;
+
   transition:width .45s ease !important;
 }
 
-/* =========================================================
-   Alignement parfait des raccourcis latéraux
-   Quêtes <-> Info
-   Magasin <-> Amis
-   ========================================================= */
-
-body .home-mobile .hm-side{
-  top:72px !important;
-}
-
+/* Les deux colonnes latérales restent parfaitement en face. */
+body .home-mobile .hm-side,
 body .home-mobile .hm-left,
 body .home-mobile .hm-right{
-  top:72px !important;
+  top:82px !important;
 }
 
-/* Petits écrans */
+/* Petits iPhone */
 @media(max-width:370px){
   .home-mobile .hm-profile-copy > small{
-    top:41px !important;
-    left:-1px !important;
-    width:84px !important;
-    height:30px !important;
-    padding:4px 7px 13px !important;
-    border-radius:10px !important;
-    font-size:.50rem !important;
+    top:40px !important;
+    left:-4px !important;
+    width:40px !important;
+    height:40px !important;
+    font-size:.45rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:58px !important;
-    left:6px !important;
-    width:70px !important;
-    height:5px !important;
+    top:47px !important;
+    left:27px !important;
+    width:69px !important;
+    height:24px !important;
+    padding-left:12px !important;
+  }
+
+  .home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
+    left:12px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:67px !important;
+    top:77px !important;
   }
 }
 
 /* Écrans moins hauts */
 @media(max-height:760px){
   .home-mobile .hm-profile-copy > small{
-    top:41px !important;
-    height:30px !important;
-    padding-top:4px !important;
+    top:39px !important;
+    width:40px !important;
+    height:40px !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:58px !important;
-    height:5px !important;
+    top:46px !important;
+    left:26px !important;
+    height:23px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:64px !important;
+    top:74px !important;
   }
 }
 
 @media(max-height:670px){
   .home-mobile .hm-profile-copy > small{
-    top:39px !important;
-    width:80px !important;
-    height:28px !important;
-    padding:4px 6px 12px !important;
-    border-radius:9px !important;
-    font-size:.47rem !important;
+    top:37px !important;
+    left:-3px !important;
+    width:37px !important;
+    height:37px !important;
+    font-size:.42rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:55px !important;
-    left:5px !important;
-    width:68px !important;
-    height:4px !important;
+    top:43px !important;
+    left:24px !important;
+    width:66px !important;
+    height:22px !important;
+    padding-left:11px !important;
+  }
+
+  .home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
+    left:11px !important;
+    height:6px !important;
+  }
+
+  .home-mobile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+    height:6px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:58px !important;
+    top:69px !important;
   }
 }
 
