@@ -860,8 +860,8 @@
   inset:auto !important;
   left:50% !important;
   top:50% !important;
-  width:56px !important;
-  height:56px !important;
+  width:100% !important;
+  height:100% !important;
   transform:translate(-50%,-50%) !important;
   transform-origin:center !important;
 }
@@ -885,8 +885,8 @@
   .quick-lobby-v1
   .lobby-v5-avatar.ptb-has-equipped-frame
   > .ptb-equipped-frame-overlay {
-    width:51px !important;
-    height:51px !important;
+    width:100% !important;
+    height:100% !important;
   }
 }
 
@@ -895,4 +895,25 @@
 .ptb-quick-reroll-restored {
   visibility:visible !important;
   opacity:1 !important;
+}
+
+
+/* =========================================================
+   P'tit Bac — Correctif V6 : cadre lobby + bouton Prêt
+   ========================================================= */
+/* Le cadre suit exactement la taille du carré avatar du lobby rapide. */
+.quick-lobby-v1
+.lobby-v5-avatar.ptb-has-equipped-frame
+> .ptb-equipped-frame-overlay {
+  width:100% !important;
+  height:100% !important;
+}
+
+/* Bouton Prêt raccourci de 10px (58px -> 48px). */
+.quick-lobby-v1 .quick-ready-btn {
+  width:48px !important;
+  min-width:48px !important;
+  padding-left:4px !important;
+  padding-right:4px !important;
+  gap:2px !important;
 }
