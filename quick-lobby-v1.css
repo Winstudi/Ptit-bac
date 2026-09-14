@@ -79,17 +79,19 @@
   min-height:51px;
   padding:5px 8px;
   box-sizing:border-box;
-  grid-template-columns:40px minmax(0,1fr) 82px;
+  grid-template-columns:44px minmax(0,1fr) 82px;
   align-items:center;
-  column-gap:8px;
+  column-gap:10px;
   border-color:#3155a9;
   background:linear-gradient(90deg,rgba(8,33,87,.96),rgba(6,28,75,.94));
   overflow:hidden;
 }
 
 .quick-lobby-v1 .lobby-v5-avatar {
-  width:39px;
-  height:39px;
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
 }
 
 .quick-lobby-v1 .lobby-v5-player-copy {
