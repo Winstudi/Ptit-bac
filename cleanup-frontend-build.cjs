@@ -1200,7 +1200,6 @@ const D4_BUNDLES = Object.freeze([
     type:"js",
     output:"ptb-core-client.js",
     files:[
-      "runtime-compat-v1.js",
       "avatar-system-v1.js",
       "inventory-client.js",
       "progression-client.js",
