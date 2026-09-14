@@ -53,10 +53,72 @@ const BUILD_VERSION = require("./package.json").version;
 app.get("/health", (req, res) => res.status(200).json({ ok: true, version: BUILD_VERSION }));
 // Only explicitly public files may be downloaded. Never expose server data.
 const PUBLIC_FILES = new Set(require("./public-files.json"));
+const OPTIMIZED_ASSET_DIR = path.join(__dirname, ".ptb-assets");
+const OPTIMIZED_PNG_ASSETS = new Set([
+  "/admin-crown.png",
+  "/back-arrow.png",
+  "/coin.png",
+  "/create.png",
+  "/difficulty.png",
+  "/friends.png",
+  "/gem.png",
+  "/heart.png",
+  "/info.png",
+  "/inventaire.png",
+  "/join.png",
+  "/lightning.png",
+  "/lobby-categories.png",
+  "/lobby-clock.png",
+  "/lobby-copy.png",
+  "/lobby-exit.png",
+  "/lobby-minus.png",
+  "/lobby-plus.png",
+  "/plus.png",
+  "/profile-icon.png",
+  "/ptitbac.logo.png",
+  "/rewards.png",
+  "/round-flag.png",
+  "/scoreboard-trophy.png",
+  "/settings.png",
+  "/shared-footer-v1.png",
+  "/shop.png",
+  "/task.png"
+]);
+
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   next();
 });
+
+// Sert automatiquement la version WebP générée pendant le build, tout en
+// conservant les anciennes URL *.png. Si WebP n'est pas disponible ou si
+// l'optimisation a échoué, Express retombe simplement sur le PNG original.
+app.use((req, res, next) => {
+  let pathname;
+  try { pathname = decodeURIComponent(req.path); }
+  catch { return res.sendStatus(400); }
+
+  if (!PUBLIC_FILES.has(pathname) || !OPTIMIZED_PNG_ASSETS.has(pathname)) {
+    return next();
+  }
+
+  const acceptsWebp = /(?:^|,)\s*image\/webp(?:\s*;|\s*,|$)/i.test(
+    String(req.get("Accept") || "")
+  );
+  if (!acceptsWebp) return next();
+
+  const webpFile = path.join(
+    OPTIMIZED_ASSET_DIR,
+    path.basename(pathname, ".png") + ".webp"
+  );
+  if (!fs.existsSync(webpFile)) return next();
+
+  res.setHeader("Content-Type", "image/webp");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.setHeader("Vary", "Accept");
+  return res.sendFile(webpFile);
+});
+
 const servePublicFile = express.static(__dirname, {
   dotfiles: "deny",
   index: false,
