@@ -1,6 +1,6 @@
 /* =========================================================
-   P'tit Bac — Vérification IA V2
-   Écran de transition épuré
+   P'tit Bac — Vérification IA V3
+   Spinner + texte centrés au milieu de l'écran
    ========================================================= */
 
 html:has(.vsv1-screen),
@@ -27,13 +27,13 @@ body:has(.vsv1-screen)
 .vsv1-screen {
   position:relative;
   width:min(100%,430px);
-  height:100dvh;
-  min-height:100dvh;
+  height:var(--game-height,100dvh);
+  min-height:var(--game-height,100dvh);
   margin:0 auto;
   padding:
     max(12px,env(safe-area-inset-top))
     15px
-    max(102px,calc(env(safe-area-inset-bottom) + 88px));
+    max(12px,env(safe-area-inset-bottom));
   overflow:hidden;
   color:#fff;
   background:
@@ -57,13 +57,14 @@ body:has(.vsv1-screen)
     "DM Sans",
     system-ui,
     sans-serif;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
 }
 
+/* Bouton quitter indépendant du centrage. */
 .vsv1-exit {
-  position:relative;
+  position:absolute;
   z-index:5;
+  top:max(12px,env(safe-area-inset-top));
+  left:15px;
   width:42px;
   height:42px;
   padding:5px;
@@ -79,12 +80,17 @@ body:has(.vsv1-screen)
   object-fit:contain;
 }
 
+/* Animation + texte au centre réel de la fenêtre. */
 .vsv1-simple {
-  align-self:center;
-  justify-self:center;
-  width:100%;
+  position:absolute;
+  z-index:2;
+  left:50%;
+  top:50%;
+  width:calc(100% - 30px);
   max-width:340px;
   padding:10px 12px;
+  margin:0;
+  transform:translate(-50%,-50%);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -95,7 +101,7 @@ body:has(.vsv1-screen)
 .vsv1-spinner {
   width:80px;
   height:80px;
-  margin-bottom:25px;
+  margin:0 0 25px;
   border-radius:50%;
   border:8px solid #353589;
   border-top-color:#b345ff;
@@ -141,12 +147,14 @@ body:has(.vsv1-screen)
 }
 
 .vsv1-simple h1 {
+  width:100%;
   margin:0;
   color:#fff;
   font-size:1.48rem;
   line-height:1.15;
   font-weight:900;
   letter-spacing:-.025em;
+  text-align:center;
 }
 
 .vsv1-retry {
@@ -166,9 +174,9 @@ body:has(.vsv1-screen)
   font-weight:850;
 }
 
+/* Ancien footer/logo désactivé par sécurité si un vieux rendu reste en cache. */
 .vsv1-footer {
-  align-self:end;
-  margin-top:0 !important;
+  display:none !important;
 }
 
 /* modal Exit cohérente avec le reste du jeu */
@@ -248,5 +256,11 @@ button.danger {
 
   .vsv1-simple h1 {
     font-size:1.30rem;
+  }
+}
+
+@media(max-height:650px) {
+  .vsv1-simple {
+    top:48%;
   }
 }

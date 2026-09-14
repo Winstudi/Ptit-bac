@@ -100,16 +100,6 @@
               : ""
           }
         </section>
-
-        <footer
-          class="ptb-shared-footer vsv1-footer"
-          aria-hidden="true"
-        >
-          <img
-            src="/shared-footer-v1.png"
-            alt=""
-          >
-        </footer>
       </main>
     `);
 
