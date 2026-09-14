@@ -13,7 +13,8 @@
     spinKey: "",
     dragged: false,
     spinAudio: null,
-    spinAudioUnlocked: false
+    spinAudioUnlocked: false,
+    spinAudioStartedAt: 0
   };
 
   const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
@@ -34,37 +35,37 @@
      ========================================================= */
 
   const SPIN_STARS = [
-    ["7%","22%","11px","0s","1.12s","#b45cff","-12px","-10px"],
-    ["18%","7%","8px",".18s","1.34s","#55d8ff","-5px","-14px"],
-    ["35%","2%","12px",".42s","1.22s","#ffd95e","4px","-13px"],
-    ["58%","3%","9px",".08s","1.45s","#6cf5bb","8px","-14px"],
-    ["79%","11%","13px",".31s","1.18s","#ff72ca","13px","-9px"],
-    ["93%","29%","8px",".55s","1.32s","#7c78ff","14px","-4px"],
-    ["97%","52%","12px",".15s","1.26s","#ffd45c","15px","4px"],
-    ["88%","76%","9px",".49s","1.41s","#54dfff","13px","11px"],
-    ["70%","91%","13px",".25s","1.20s","#ff72cb","8px","14px"],
-    ["47%","97%","8px",".62s","1.30s","#78f1ad","0px","15px"],
-    ["26%","91%","11px",".11s","1.38s","#ffd95e","-8px","14px"],
-    ["8%","76%","8px",".38s","1.16s","#9d69ff","-14px","9px"],
-    ["2%","52%","13px",".68s","1.28s","#59dfff","-15px","3px"],
-    ["13%","39%","7px",".23s","1.47s","#ff7bc8","-12px","0px"],
-    ["84%","42%","7px",".74s","1.36s","#6cf5bb","12px","0px"],
-    ["52%","10%","6px",".35s","1.55s","#ffffff","3px","-12px"]
+    ["8%","23%","14px","0s","1.12s","#b45cff","-10px","-8px"],
+    ["19%","9%","11px",".18s","1.34s","#55d8ff","-4px","-11px"],
+    ["36%","4%","15px",".42s","1.22s","#ffd95e","3px","-10px"],
+    ["58%","5%","12px",".08s","1.45s","#6cf5bb","6px","-11px"],
+    ["79%","12%","16px",".31s","1.18s","#ff72ca","10px","-7px"],
+    ["92%","30%","11px",".55s","1.32s","#7c78ff","11px","-3px"],
+    ["95%","52%","15px",".15s","1.26s","#ffd45c","12px","3px"],
+    ["87%","75%","12px",".49s","1.41s","#54dfff","10px","8px"],
+    ["69%","89%","16px",".25s","1.20s","#ff72cb","6px","11px"],
+    ["47%","94%","11px",".62s","1.30s","#78f1ad","0px","12px"],
+    ["27%","89%","14px",".11s","1.38s","#ffd95e","-6px","11px"],
+    ["10%","75%","11px",".38s","1.16s","#9d69ff","-11px","7px"],
+    ["5%","52%","16px",".68s","1.28s","#59dfff","-12px","2px"],
+    ["14%","40%","10px",".23s","1.47s","#ff7bc8","-10px","0px"],
+    ["84%","42%","10px",".74s","1.36s","#6cf5bb","10px","0px"],
+    ["52%","11%","9px",".35s","1.55s","#ffffff","3px","-10px"]
   ];
 
   const BURST_STARS = [
-    ["50%","-3%","17px","0s","#ffd858","0px","-32px"],
-    ["72%","5%","13px",".04s","#5ee6ff","22px","-25px"],
-    ["91%","21%","16px",".09s","#ff72c9","32px","-18px"],
-    ["101%","47%","12px",".13s","#8b69ff","37px","0px"],
-    ["91%","75%","15px",".07s","#65efb3","30px","22px"],
-    ["70%","94%","13px",".15s","#ffd95e","20px","31px"],
-    ["47%","102%","17px",".02s","#ff78c8","0px","37px"],
-    ["23%","94%","12px",".11s","#5fddff","-23px","30px"],
-    ["5%","78%","16px",".06s","#a76cff","-32px","23px"],
-    ["-2%","51%","12px",".16s","#ffd95e","-38px","1px"],
-    ["8%","25%","15px",".03s","#68f0b6","-31px","-21px"],
-    ["27%","7%","12px",".12s","#ff72c9","-20px","-28px"]
+    ["50%","1%","22px","0s","#ffd858","0px","-38px"],
+    ["71%","7%","18px",".04s","#5ee6ff","25px","-31px"],
+    ["89%","22%","21px",".09s","#ff72c9","36px","-22px"],
+    ["98%","48%","17px",".13s","#8b69ff","42px","0px"],
+    ["89%","74%","20px",".07s","#65efb3","35px","27px"],
+    ["69%","91%","18px",".15s","#ffd95e","24px","37px"],
+    ["47%","98%","22px",".02s","#ff78c8","0px","43px"],
+    ["24%","91%","17px",".11s","#5fddff","-27px","35px"],
+    ["8%","76%","21px",".06s","#a76cff","-37px","27px"],
+    ["2%","51%","17px",".16s","#ffd95e","-43px","1px"],
+    ["10%","26%","20px",".03s","#68f0b6","-36px","-25px"],
+    ["28%","8%","17px",".12s","#ff72c9","-24px","-34px"]
   ];
 
   function wheelFxMarkup() {
@@ -138,6 +139,13 @@
       "pbw1WheelFxStyles";
 
     style.textContent = `
+      /* Supprime les anciennes petites étoiles violettes fixes du fond. */
+      .pbw1-screen::before,
+      .pbw1-screen::after{
+        content:none !important;
+        display:none !important;
+      }
+
       .pbw1-wheel-zone{
         overflow:visible !important;
       }
@@ -149,7 +157,7 @@
       .pbw1-fx-layer{
         position:absolute;
         z-index:12;
-        inset:-24px;
+        inset:-14px;
         pointer-events:none;
         overflow:visible;
       }
@@ -227,7 +235,7 @@
               calc(var(--fx-dy) * .25),
               0
             )
-            scale(1)
+            scale(1.18)
             rotate(calc(var(--fx-rot) * .35));
         }
         56%{
@@ -238,7 +246,7 @@
               calc(var(--fx-dy) * .7),
               0
             )
-            scale(.68)
+            scale(.82)
             rotate(calc(var(--fx-rot) * .72));
         }
         100%{
@@ -272,15 +280,15 @@
       }
 
       .pbw1-fx-rays{
-        width:122%;
-        height:122%;
+        width:132%;
+        height:132%;
         background:
           repeating-conic-gradient(
             from -8deg,
             rgba(172,78,255,0) 0deg 8deg,
-            rgba(172,78,255,.34) 8deg 13deg,
+            rgba(183,86,255,.62) 8deg 13deg,
             rgba(86,214,255,0) 13deg 27deg,
-            rgba(86,214,255,.25) 27deg 32deg,
+            rgba(86,214,255,.46) 27deg 32deg,
             rgba(255,103,203,0) 32deg 47deg
           );
         -webkit-mask:
@@ -298,14 +306,14 @@
       }
 
       .pbw1-fx-glow{
-        width:108%;
-        height:108%;
+        width:118%;
+        height:118%;
         background:
           radial-gradient(
             circle,
-            rgba(255,255,255,.32) 0 12%,
-            rgba(184,70,255,.28) 27%,
-            rgba(89,205,255,.16) 48%,
+            rgba(255,255,255,.58) 0 12%,
+            rgba(184,70,255,.48) 27%,
+            rgba(89,205,255,.28) 48%,
             rgba(98,55,255,0) 72%
           );
       }
@@ -319,7 +327,7 @@
       .pbw1-fx-rays{
         animation:
           pbw1LandRays
-          .82s
+          .92s
           cubic-bezier(.16,.76,.3,1)
           both;
       }
@@ -328,7 +336,7 @@
       .pbw1-fx-glow{
         animation:
           pbw1LandGlow
-          .72s
+          .82s
           ease-out
           both;
       }
@@ -337,7 +345,7 @@
       .pbw1-fx-burst-star{
         animation:
           pbw1BurstStar
-          .72s
+          .82s
           cubic-bezier(.16,.78,.3,1)
           var(--fx-delay)
           both;
@@ -403,7 +411,7 @@
               calc(var(--fx-dy) * .35),
               0
             )
-            scale(1.22)
+            scale(1.48)
             rotate(calc(var(--fx-rot) * .36));
         }
         68%{
@@ -414,7 +422,7 @@
               calc(var(--fx-dy) * .78),
               0
             )
-            scale(.92)
+            scale(1.08)
             rotate(calc(var(--fx-rot) * .78));
         }
         100%{
@@ -433,8 +441,8 @@
       #pbw1CenterLetter.pbw1-letter-reveal{
         animation:
           pbw1LetterReveal
-          .62s
-          cubic-bezier(.16,.82,.25,1)
+          .74s
+          cubic-bezier(.12,.84,.22,1)
           both;
         transform-origin:center;
         will-change:transform,opacity;
@@ -444,19 +452,24 @@
         0%{
           opacity:0;
           transform:
-            scale(.38)
-            rotate(-10deg);
+            scale(.22)
+            rotate(-12deg);
         }
-        48%{
+        44%{
           opacity:1;
           transform:
-            scale(1.22)
-            rotate(3deg);
+            scale(1.40)
+            rotate(4deg);
         }
-        72%{
+        70%{
           transform:
-            scale(.94)
-            rotate(-1deg);
+            scale(.88)
+            rotate(-2deg);
+        }
+        86%{
+          transform:
+            scale(1.08)
+            rotate(1deg);
         }
         100%{
           opacity:1;
@@ -552,53 +565,22 @@
     return audio;
   }
 
-  function unlockSpinAudio() {
+  function primeSpinAudio() {
     const audio =
       ensureSpinAudio();
 
     if (!audio) return;
 
-    /*
-      iOS/Safari : autorise ce même élément audio pendant
-      une interaction utilisateur. Ensuite on peut le relancer
-      quand la réponse du serveur démarre réellement la roue.
-    */
     try {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = 0.001;
-
-      const promise =
-        audio.play();
-
-      if (
-        promise &&
-        typeof promise.then === "function"
-      ) {
-        promise
-          .then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.volume = 0.85;
-            runtime.spinAudioUnlocked = true;
-          })
-          .catch(() => {
-            audio.volume = 0.85;
-          });
-      } else {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = 0.85;
-        runtime.spinAudioUnlocked = true;
-      }
-    } catch {
-      audio.volume = 0.85;
-    }
+      audio.load?.();
+    } catch {}
   }
 
   function stopSpinSound() {
     const audio =
       runtime.spinAudio;
+
+    runtime.spinAudioStartedAt = 0;
 
     if (!audio) return;
 
@@ -606,6 +588,49 @@
       audio.pause();
       audio.currentTime = 0;
     } catch {}
+  }
+
+  function startSpinSoundFromGesture() {
+    const audio =
+      ensureSpinAudio();
+
+    if (!audio) return false;
+
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = 0.68;
+
+      runtime.spinAudioStartedAt =
+        performance.now();
+
+      const promise =
+        audio.play();
+
+      if (
+        promise &&
+        typeof promise.then ===
+          "function"
+      ) {
+        promise
+          .then(() => {
+            runtime.spinAudioUnlocked =
+              true;
+          })
+          .catch(() => {
+            runtime.spinAudioStartedAt =
+              0;
+          });
+      } else {
+        runtime.spinAudioUnlocked =
+          true;
+      }
+
+      return true;
+    } catch {
+      runtime.spinAudioStartedAt = 0;
+      return false;
+    }
   }
 
   function playSpinSound(duration) {
@@ -616,30 +641,46 @@
 
     if (!audio) return;
 
-    try {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = 0.85;
+    /*
+      Si le son a déjà été lancé par le clic/tap qui a demandé
+      la roue, surtout ne pas le couper/rejouer quand le serveur
+      renvoie la lettre. C'est ce qui rend le son fiable sur iOS
+      et garde la roue fluide.
+    */
+    const gestureStartedRecently =
+      runtime.spinAudioStartedAt > 0 &&
+      performance.now() -
+        runtime.spinAudioStartedAt <
+        1200 &&
+      !audio.paused;
 
-      /*
-        La piste dure exactement comme l'animation normale.
-        Un seul play() : aucun travail audio dans la boucle graphique.
-      */
+    if (gestureStartedRecently) {
+      return;
+    }
+
+    try {
+      audio.currentTime = 0;
+      audio.volume = 0.68;
+
       const promise =
         audio.play();
 
+      runtime.spinAudioStartedAt =
+        performance.now();
+
       if (
         promise &&
-        typeof promise.catch === "function"
+        typeof promise.catch ===
+          "function"
       ) {
         promise.catch(() => {
-          /*
-            Si iOS refuse encore l'audio, on ne touche pas à
-            l'animation : la roue reste parfaitement fluide.
-          */
+          runtime.spinAudioStartedAt =
+            0;
         });
       }
-    } catch {}
+    } catch {
+      runtime.spinAudioStartedAt = 0;
+    }
   }
 
   /*
@@ -650,7 +691,7 @@
     .forEach(eventName => {
       window.addEventListener(
         eventName,
-        unlockSpinAudio,
+        primeSpinAudio,
         {
           once:true,
           passive:true
@@ -658,7 +699,7 @@
       );
     });
 
-  function stopAnimation() {
+  function stopAnimation(stopSound = true) {
     if (runtime.animationFrame) {
       cancelAnimationFrame(
         runtime.animationFrame
@@ -667,7 +708,10 @@
 
     runtime.animationFrame = 0;
     runtime.animating = false;
-    stopSpinSound();
+
+    if (stopSound) {
+      stopSpinSound();
+    }
   }
 
   function setRotation(value) {
@@ -740,8 +784,8 @@
 
     if (!wheel) return;
 
-    stopAnimation();
-    unlockSpinAudio();
+    stopAnimation(false);
+    primeSpinAudio();
 
     runtime.animating = true;
 
@@ -893,7 +937,7 @@
           "(prefers-reduced-motion: reduce)"
         ).matches
           ? 0
-          : 620;
+          : 740;
 
       window.setTimeout(
         () => {
@@ -1365,7 +1409,7 @@
           return;
         }
 
-        unlockSpinAudio();
+        startSpinSoundFromGesture();
 
         zone.classList.add(
           "is-requesting"
@@ -1410,7 +1454,7 @@
             return;
           }
 
-          unlockSpinAudio();
+          primeSpinAudio();
 
           dragging = true;
           moved = false;
@@ -1509,7 +1553,6 @@
           }
 
           e.preventDefault();
-          unlockSpinAudio();
           launch();
         }
       );
@@ -1541,7 +1584,7 @@
             );
           }
 
-          unlockSpinAudio();
+          startSpinSoundFromGesture();
 
           const reroll =
             document.getElementById(
