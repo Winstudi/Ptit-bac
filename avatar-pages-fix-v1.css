@@ -844,3 +844,55 @@
 .pbw1-chooser-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before {
   border-width:2px !important;
 }
+
+
+/* =========================================================
+   P'tit Bac — Partie rapide : cadre parfaitement centré
+   ========================================================= */
+.quick-lobby-v1 .lobby-v5-avatar.ptb-has-equipped-frame {
+  position:relative !important;
+  overflow:visible !important;
+}
+
+.quick-lobby-v1
+.lobby-v5-avatar.ptb-has-equipped-frame
+> .ptb-equipped-frame-overlay {
+  inset:auto !important;
+  left:50% !important;
+  top:50% !important;
+  width:56px !important;
+  height:56px !important;
+  transform:translate(-50%,-50%) !important;
+  transform-origin:center !important;
+}
+
+.quick-lobby-v1
+.lobby-v5-avatar.ptb-has-equipped-frame
+> .ptb-equipped-frame-overlay.inv-frame-purple-flame::before {
+  inset:4px !important;
+  border-width:2px !important;
+  border-radius:12px !important;
+}
+
+.quick-lobby-v1
+.lobby-v5-avatar.ptb-has-equipped-frame
+> .ptb-equipped-frame-overlay.inv-frame-purple-flame::after {
+  inset:0 !important;
+  border-radius:14px !important;
+}
+
+@media(max-width:370px) {
+  .quick-lobby-v1
+  .lobby-v5-avatar.ptb-has-equipped-frame
+  > .ptb-equipped-frame-overlay {
+    width:51px !important;
+    height:51px !important;
+  }
+}
+
+/* Les boutons restaurés en partie rapide reprennent exactement les styles
+   existants de la roue / sélection catégories. */
+.ptb-quick-reroll-restored {
+  visibility:visible !important;
+  opacity:1 !important;
+}

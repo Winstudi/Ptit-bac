@@ -8,6 +8,45 @@
  * client et l'ajoute aux états publics des joueurs.
  */
 
+const Module = require("module");
+const fs = require("fs");
+const path = require("path");
+
+/*
+ * Partie rapide V5 :
+ * - les relances lettre/catégories sont autorisées aussi en mode quick ;
+ * - leur coût réel serveur passe de 10 à 20 pièces.
+ *
+ * server.js reste intact dans le dépôt : ce préchargeur transforme uniquement
+ * ces trois règles au moment où Node compile server.js.
+ */
+const nativeJsLoader = Module._extensions[".js"];
+const targetServer = path.resolve(__dirname, "server.js");
+
+Module._extensions[".js"] = function ptbV5ServerRules(module, filename) {
+  if (path.resolve(filename) !== targetServer) {
+    return nativeJsLoader(module, filename);
+  }
+
+  let source = fs.readFileSync(filename, "utf8");
+
+  source = source
+    .replace(
+      /const LETTER_REROLL_COST\s*=\s*\d+\s*;/,
+      "const LETTER_REROLL_COST = 20;"
+    )
+    .replace(
+      /const CATEGORY_REROLL_COST\s*=\s*\d+\s*;/,
+      "const CATEGORY_REROLL_COST = 20;"
+    )
+    .replace(
+      /\s*if \(room\?\.mode === ["']quick["']\) return socket\.emit\(["']toast["'], ["']Les relances sont désactivées en partie rapide\.["']\);/g,
+      ""
+    );
+
+  return module._compile(source, filename);
+};
+
 const { Server } = require("socket.io");
 
 const ALLOWED_FRAMES = new Set([
