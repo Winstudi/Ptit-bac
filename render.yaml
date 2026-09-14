@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: >-
       npm ci &&
+      node cleanup-frontend-build.cjs &&
       (npm install --no-save --package-lock=false sharp@0.34.1 && node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
     startCommand: npm start
     healthCheckPath: /health
