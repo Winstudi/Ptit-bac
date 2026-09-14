@@ -101,10 +101,14 @@ body:has(.asv1-screen) .economy-hud {
 }
 
 .asv1-round-mini {
-  margin-left:auto;
-  min-width:76px;
+  position:absolute;
+  top:0;
+  right:0;
+  width:88px;
+  min-width:88px;
+  max-width:88px;
   min-height:38px;
-  padding:5px 10px;
+  padding:5px 8px;
   border:1px solid rgba(82,109,191,.68);
   border-radius:13px;
   background:rgba(8,29,78,.88);
@@ -112,15 +116,24 @@ body:has(.asv1-screen) .economy-hud {
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
-  font-size:.63rem;
+  gap:4px;
+  overflow:hidden;
+  text-align:center;
+  white-space:nowrap;
+  font-size:.61rem;
   line-height:1;
   font-weight:800;
 }
 
+.asv1-round-mini > span,
+.asv1-round-mini strong {
+  display:inline-block;
+  line-height:1;
+}
+
 .asv1-round-mini strong {
   color:#fff;
-  font-size:.78rem;
+  font-size:.74rem;
   font-weight:900;
 }
 
@@ -164,9 +177,14 @@ body:has(.asv1-screen) .economy-hud {
 }
 
 .asv1-timer {
-  width:106px;
-  height:106px;
-  flex:0 0 106px;
+  width:104px;
+  height:104px;
+  min-width:104px;
+  min-height:104px;
+  max-width:104px;
+  max-height:104px;
+  flex:0 0 104px;
+  aspect-ratio:1 / 1;
   padding:6px;
   border-radius:50%;
   background:
@@ -482,9 +500,14 @@ body:has(.asv1-screen) .economy-hud {
   }
 
   .asv1-timer {
-    width:100px;
-    height:100px;
-    flex-basis:100px;
+    width:98px;
+    height:98px;
+    min-width:98px;
+    min-height:98px;
+    max-width:98px;
+    max-height:98px;
+    flex-basis:98px;
+    aspect-ratio:1 / 1;
   }
 
   .asv1-row {
@@ -562,7 +585,12 @@ body:has(.asv1-screen) .economy-hud {
   .asv1-screen:not(.is-keyboard-open) .asv1-timer {
     width:86px;
     height:86px;
+    min-width:86px;
+    min-height:86px;
+    max-width:86px;
+    max-height:86px;
     flex-basis:86px;
+    aspect-ratio:1 / 1;
   }
 
   .asv1-screen:not(.is-keyboard-open) .asv1-timer strong {
