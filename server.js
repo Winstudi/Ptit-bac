@@ -9,6 +9,7 @@ const fs = require("fs");
 const { Server } = require("socket.io");
 const { Pool } = require("pg");
 const { normalizeFrameId } = require("./frame-sync-server.js");
+const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -961,6 +962,9 @@ function publicRoom(room, viewerPlayerId = null) {
   return {
     code: room.code,
     mode: room.mode || "private",
+    economyEnabled: isEconomyMode(room.mode),
+    progressionEnabled: isEconomyMode(room.mode),
+    quickJoinable: isPublicRoomDiscoverable(room),
     phase: room.phase,
     players: room.players.map(publicPlayer),
     categories: room.categories,
@@ -2577,7 +2581,7 @@ async function startGame(socket, payload, automatic = false) {
       return socket.emit("toast", "Il faut au moins 2 joueurs.");
     }
 
-    if (room.mode === "quick" && !room.entryDebited) {
+    if (isEconomyMode(room.mode) && !room.entryDebited) {
       if (room.economyStartPending) {
         return socket.emit("toast", "Lancement deja en cours...");
       }
@@ -2650,6 +2654,30 @@ async function startGame(socket, payload, automatic = false) {
     return true;
   }
 
+function uniqueRoomPlayerName(room, requestedName) {
+  const base = cleanName(requestedName).slice(0, 16) || "Joueur";
+  let name = base;
+  let suffix = 2;
+
+  while (room.players.some(player => player.name.toLowerCase() === name.toLowerCase())) {
+    name = `${base} ${suffix++}`;
+  }
+
+  return name;
+}
+
+function findPublicLobbyForQuick(walletToken) {
+  return [...rooms.values()]
+    .filter(room =>
+      isPublicRoomDiscoverable(room) &&
+      !room.players.some(player => !player.isBot && player.walletToken === walletToken)
+    )
+    .sort((a, b) =>
+      (b.players.length - a.players.length) ||
+      (Number(a.createdAt || 0) - Number(b.createdAt || 0))
+    )[0] || null;
+}
+
 const quickMatch = require("./quick-match.js")({
   io,
   async eligible(socket, profile) {
@@ -2665,14 +2693,51 @@ const quickMatch = require("./quick-match.js")({
   admit(entry, peers) {
     let result;
     const reply = value => { result = value; };
-    if (!peers.length) createGameRoom(entry.socket, {...entry.profile, rounds:1, duration:60, categoryCount:6, categoryDifficulty:"medium"}, reply, "quick");
-    else {
+
+    if (!peers.length) {
+      const publicRoom = findPublicLobbyForQuick(entry.profile.walletToken);
+
+      if (publicRoom) {
+        const name = uniqueRoomPlayerName(publicRoom, entry.profile.name);
+        joinGameRoom(
+          entry.socket,
+          { ...entry.profile, name, code: publicRoom.code },
+          reply,
+          true
+        );
+
+        if (!result?.ok) {
+          throw new Error(result?.error || "Impossible de rejoindre le salon public.");
+        }
+
+        entry.code = result.code;
+        entry.playerId = result.playerId;
+
+        return {
+          ...result,
+          completed: true,
+          publicMatch: true
+        };
+      }
+
+      createGameRoom(
+        entry.socket,
+        {
+          ...entry.profile,
+          rounds: 1,
+          duration: 60,
+          categoryCount: 6,
+          categoryDifficulty: "medium"
+        },
+        reply,
+        "quick"
+      );
+    } else {
       const room = getRoom(peers[0].code);
-      const base = cleanName(entry.profile.name).slice(0, 16);
-      let name = base, suffix = 2;
-      while (room.players.some(p => p.name.toLowerCase() === name.toLowerCase())) name = base + " " + suffix++;
-      joinGameRoom(entry.socket, {...entry.profile, name, code:room.code}, reply, true);
+      const name = uniqueRoomPlayerName(room, entry.profile.name);
+      joinGameRoom(entry.socket, { ...entry.profile, name, code: room.code }, reply, true);
     }
+
     if (!result?.ok) throw new Error(result?.error || "Recherche interrompue.");
     entry.code = result.code;
     entry.playerId = result.playerId;
@@ -2821,6 +2886,47 @@ io.on("connection", socket => {
     emitRoom(room);
     cb({ok:true});
   });
+  socket.on("room:setMode", (payload = {}, cb = () => {}) => {
+    const { room, player } = requireMember(socket, payload);
+
+    if (!room || !player?.isHost) {
+      return cb({ ok: false, error: "Seul l’hôte peut modifier le type du salon." });
+    }
+
+    if (room.phase !== "lobby" || room.mode === "quick" || room.economyStartPending) {
+      return cb({ ok: false, error: "Le type du salon ne peut plus être modifié." });
+    }
+
+    const nextMode = payload.mode === "public" ? "public" :
+      payload.mode === "private" ? "private" : "";
+
+    if (!nextMode) {
+      return cb({ ok: false, error: "Type de salon invalide." });
+    }
+
+    if (nextMode === "public" && room.players.some(p => p.isBot)) {
+      return cb({
+        ok: false,
+        error: "Retire les bots de test avant de rendre le salon public."
+      });
+    }
+
+    if (room.mode !== nextMode) {
+      room.mode = nextMode;
+      room.players.forEach(p => { p.lobbyReady = false; });
+      room.rewardsDistributed = false;
+      room.rewardsByPlayerId = {};
+      room.rewardsDistributedAt = null;
+      room.entryDebited = false;
+      room.paidPlayerIds = [];
+      room.pot = 0;
+      room.gameSessionId = null;
+    }
+
+    const state = publicRoom(room, player.id);
+    cb({ ok: true, mode: room.mode, state });
+    emitRoom(room);
+  });
   socket.on("room:updateSettings", ({ code, playerId, rounds, duration, categoryCount, categoryDifficulty }, cb = () => {}) => {
     const { room, player } = requireMember(socket, { code, playerId });
     if (!room || !player?.isHost) return cb({ ok: false, error: "Seul l’hôte peut modifier les paramètres." });
@@ -2941,7 +3047,10 @@ io.on("connection", socket => {
 
   socket.on("room:addBot", payload => {
     const { room, player } = requireMember(socket, payload);
-    if (!room || !player?.isHost || room.phase !== "lobby" || room.mode === "quick" || room.economyStartPending) return;
+    if (!room || !player?.isHost || room.phase !== "lobby" || room.economyStartPending) return;
+    if (room.mode !== "private") {
+      return socket.emit("toast", "Les bots de test sont disponibles uniquement en salon privé.");
+    }
 
     if (room.players.length >= 6) { return socket.emit("toast", "Le salon est complet (6 joueurs maximum)."); }
 

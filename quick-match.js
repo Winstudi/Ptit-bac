@@ -258,6 +258,22 @@ module.exports = function installQuickMatch({
 
         const result = admit(entry, [...group.entries]);
 
+        // Le serveur peut admettre directement le joueur dans un salon public
+        // déjà existant. Dans ce cas la recherche est terminée immédiatement :
+        // aucune file rapide parallèle ne doit rester attachée à la socket.
+        if (result?.completed === true) {
+          cb({
+            ok: true,
+            queued: false,
+            matched: true,
+            ready: false
+          });
+
+          socket.emit("quick:matched", result);
+          remove(entry);
+          return;
+        }
+
         entry.group = group;
         group.entries.add(entry);
         groups.add(group);

@@ -7,6 +7,7 @@
   let countdownCode = "";
   let countdownAudio = null;
   let lastCountdownValue = "";
+  let modeSwitching = false;
 
   function isLobbyVisible() {
     return !!document.querySelector(".lobby-v5");
@@ -18,6 +19,106 @@
     } catch {
       return null;
     }
+  }
+
+  function currentLobbyState() {
+    try {
+      return session?.state || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function ensureRoomModeControl() {
+    const state = currentLobbyState();
+    const root = document.querySelector(".lobby-v5.pl-private");
+
+    if (!state || state.phase !== "lobby" || !root || state.mode === "quick") {
+      return;
+    }
+
+    const publicMode = state.mode === "public";
+    const host = currentPlayer()?.isHost === true;
+    const header = root.querySelector(".pl-header");
+    const heading = header?.querySelector("h1");
+
+    if (!header || !heading) return;
+
+    root.dataset.mode = publicMode ? "public" : "private";
+    root.classList.toggle("pl-public-mode", publicMode);
+    heading.textContent = publicMode ? "Salon public" : "Salon privé";
+
+    let titleWrap = header.querySelector(".pl-title-mode");
+
+    if (!titleWrap) {
+      titleWrap = document.createElement("div");
+      titleWrap.className = "pl-title-mode";
+      heading.before(titleWrap);
+      titleWrap.appendChild(heading);
+    }
+
+    let toggle = titleWrap.querySelector("#plModeToggle");
+
+    if (!toggle) {
+      toggle = document.createElement("button");
+      toggle.id = "plModeToggle";
+      toggle.className = "pl-mode-toggle";
+      toggle.type = "button";
+      titleWrap.appendChild(toggle);
+
+      toggle.addEventListener("click", () => {
+        const liveState = currentLobbyState();
+        const user = currentPlayer();
+
+        if (!liveState || liveState.phase !== "lobby" || !user?.isHost || modeSwitching) {
+          return;
+        }
+
+        const nextMode = liveState.mode === "public" ? "private" : "public";
+        modeSwitching = true;
+        ensureRoomModeControl();
+
+        socket.timeout(8000).emit(
+          "room:setMode",
+          {
+            code: liveState.code,
+            playerId: session.playerId,
+            mode: nextMode
+          },
+          (err, res) => {
+            modeSwitching = false;
+
+            if (err || !res?.ok) {
+              ensureRoomModeControl();
+              return toast(res?.error || "Impossible de modifier le type du salon.");
+            }
+
+            if (res.state) session.state = res.state;
+            ensureRoomModeControl();
+          }
+        );
+      });
+    }
+
+    toggle.disabled = !host || modeSwitching;
+    toggle.classList.toggle("is-public", publicMode);
+    toggle.setAttribute("aria-pressed", publicMode ? "true" : "false");
+    toggle.setAttribute(
+      "aria-label",
+      host
+        ? `Passer le salon en mode ${publicMode ? "privé" : "public"}`
+        : `Salon ${publicMode ? "public" : "privé"}`
+    );
+    toggle.title = publicMode
+      ? "Public : 1 vie, gains activés, visible en recherche rapide"
+      : "Privé : gratuit, sans gains, accès par code ou invitation";
+    toggle.innerHTML = `
+      <span class="pl-mode-toggle-dot" aria-hidden="true"></span>
+      <strong>${publicMode ? "Public" : "Privé"}</strong>
+    `;
+
+    const botButton = root.querySelector(".pl-test");
+    if (botButton) botButton.hidden = publicMode;
   }
 
   function removeCountdown() {
@@ -162,8 +263,26 @@
   socket.on("room:state", state => {
     if (state?.phase !== "lobby") {
       removeCountdown();
+      return;
     }
+
+    queueMicrotask(ensureRoomModeControl);
   });
+
+  queueMicrotask(ensureRoomModeControl);
+
+  const appRoot = document.getElementById("app");
+  if (appRoot) {
+    const lobbyModeObserver = new MutationObserver(() => {
+      if (document.querySelector(".lobby-v5.pl-private")) {
+        queueMicrotask(ensureRoomModeControl);
+      }
+    });
+
+    lobbyModeObserver.observe(appRoot, {
+      childList: true
+    });
+  }
 
   /*
    * Le lobby historique possède déjà un listener direct sur #startBtn

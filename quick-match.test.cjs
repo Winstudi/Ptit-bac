@@ -216,3 +216,49 @@ test("un groupe rapide ne dépasse pas six joueurs", async () => {
     quick.close();
   }
 });
+
+test("une admission directe dans un salon public termine la recherche", async () => {
+  const io = new FakeIO();
+  const matches = [];
+
+  const quick = installQuickMatch({
+    io,
+    startDelayMs: 5,
+    eligible: async (_socket, profile) => profile,
+    admit: entry => {
+      entry.playerId = "public-player";
+      entry.code = "PUB01";
+      return {
+        ok: true,
+        completed: true,
+        publicMatch: true,
+        playerId: entry.playerId,
+        code: entry.code,
+        state: { mode: "public", players: [] }
+      };
+    },
+    leave: () => {},
+    match: async selected => {
+      matches.push(selected);
+    }
+  });
+
+  try {
+    const joined = await join(io, "public-socket", token("9"));
+
+    assert.equal(joined.result.ok, true);
+    assert.equal(joined.result.queued, false);
+    assert.equal(joined.result.matched, true);
+    assert.equal(joined.socket.last("quick:matched")?.state?.mode, "public");
+
+    const cancelResult = await new Promise(resolve => {
+      joined.socket.trigger("quick:cancel", {}, resolve);
+    });
+
+    assert.equal(cancelResult.ok, true);
+    assert.equal(matches.length, 0);
+  } finally {
+    quick.close();
+  }
+});
+
