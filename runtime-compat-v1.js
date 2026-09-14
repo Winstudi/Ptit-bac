@@ -708,9 +708,10 @@
 
     const level = copy.querySelector("small");
     if (level) {
-      const nextLabel = `Niv. ${current.level}`;
+      const nextLabel = String(current.level);
       if (level.textContent !== nextLabel) level.textContent = nextLabel;
       level.removeAttribute("title");
+      level.setAttribute("aria-label", `Niveau ${current.level}`);
     }
 
     let bar = copy.querySelector(".ptb-home-xp-bar");
