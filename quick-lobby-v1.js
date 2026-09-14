@@ -147,12 +147,36 @@
         const heading = title.querySelector("h1");
 
         if (heading) {
-          heading.textContent = "Salon rapide";
+          heading.textContent = "Partie Rapide";
         }
       }
 
       // Partie rapide : paramètres seulement informatifs.
       root.querySelector(".lobby-v5-settings-shortcut")?.remove();
+
+      // Le format Partie Rapide est fixe : difficulté Moyen.
+      const difficultyCard =
+        root.querySelector(".lobby-v5-setting-card.is-difficulty");
+
+      if (difficultyCard) {
+        const difficultyIcon =
+          difficultyCard.querySelector(".lobby-v5-setting-icon");
+
+        const difficultyValue =
+          difficultyCard.querySelector(
+            ".lobby-v5-setting-value strong"
+          );
+
+        if (difficultyIcon) {
+          difficultyIcon.src =
+            "/difficulty-normal.png?v=lobby-v5";
+        }
+
+        if (difficultyValue) {
+          difficultyValue.textContent =
+            "Moyen";
+        }
+      }
 
       const list = root.querySelector(".lobby-v5-player-list");
 
