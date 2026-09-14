@@ -1,0 +1,102 @@
+/* =========================================================
+   P'tit Bac — avatars cohérents sur tous les écrans
+   ========================================================= */
+
+.ptb-base-avatar {
+  overflow:hidden !important;
+  display:grid !important;
+  place-items:center !important;
+}
+
+.ptb-base-avatar > img,
+.avatar-emoji.ptb-base-avatar > img,
+.wsv1-avatar.ptb-base-avatar > img,
+.res-avatar.ptb-base-avatar > img,
+.fin-avatar.ptb-base-avatar > img,
+.lobby-v5-avatar.ptb-base-avatar > img,
+.pl-avatar.ptb-base-avatar > img {
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  display:block !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+/* Attente des autres joueurs : même carré violet que le salon. */
+.wsv1-player .wsv1-avatar.ptb-base-avatar {
+  border-radius:10px !important;
+}
+
+.wsv1-player .wsv1-avatar.ptb-base-avatar > img {
+  border-radius:7px !important;
+}
+
+/* Résultats de manche : carré arrondi. */
+.results-screen .res-avatar {
+  border-radius:9px !important;
+}
+
+.results-screen .res-avatar > img {
+  border-radius:6px !important;
+}
+
+/* Classement final : plus aucun avatar rond. */
+.final-mobile .fin-avatar {
+  border-radius:11px !important;
+}
+
+.final-mobile .fin-avatar > img {
+  border-radius:8px !important;
+}
+
+.final-mobile .fin-podium-card > .fin-avatar {
+  width:60px !important;
+  height:60px !important;
+  flex-basis:60px !important;
+  border-radius:14px !important;
+  border-width:3px !important;
+}
+
+.final-mobile .fin-podium-card > .fin-avatar > img {
+  border-radius:10px !important;
+}
+
+/* Roue : l'avatar du joueur remplace l'éclair dans "C'est à..." */
+.letter-prototype .pbw1-chooser .pbw1-lightning.pbw1-chooser-avatar {
+  width:42px !important;
+  height:42px !important;
+  flex:0 0 42px !important;
+  padding:0 !important;
+  border:2px solid #a94fff !important;
+  border-radius:11px !important;
+  overflow:hidden !important;
+  background:#0a1d50 !important;
+  box-shadow:0 0 10px rgba(167,72,255,.3) !important;
+}
+
+.letter-prototype .pbw1-chooser .pbw1-lightning.pbw1-chooser-avatar > img {
+  width:100% !important;
+  height:100% !important;
+  display:block !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  border-radius:8px !important;
+}
+
+@media (max-width:370px) {
+  .final-mobile .fin-podium-card > .fin-avatar {
+    width:50px !important;
+    height:50px !important;
+    flex-basis:50px !important;
+  }
+
+  .letter-prototype .pbw1-chooser .pbw1-lightning.pbw1-chooser-avatar {
+    width:38px !important;
+    height:38px !important;
+    flex-basis:38px !important;
+  }
+}
