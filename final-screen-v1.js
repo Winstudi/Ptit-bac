@@ -1,48 +1,402 @@
 (() => {
-"use strict";
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function avatar(p){
- const raw=String(p?.avatar||"");
- const image=window.PtitBacProfilePhoto?.isImageAvatar?.(raw)||/^data:image\//i.test(raw);
- return '<span class="fin-avatar">'+(image?'<img src="'+esc(raw)+'" alt="">':'<span>'+esc(raw||String(p?.name||"?").slice(0,1))+'</span>')+'</span>';
-}
-const points=p=>Number(p?.score)||0;
-const pts=p=>points(p)+" pt"+(points(p)>1?"s":"");
-function renderFinishedV2(){
- clearInterval(session.timerHandle);
- const state=session.state,user=me();
- if(!state||state.phase!=="finished")return;
- const ranked=[...(state.players||[])].sort((a,b)=>points(b)-points(a)||String(a.name||"").localeCompare(String(b.name||"")));
- const rank=p=>ranked.findIndex(x=>points(x)===points(p))+1;
- const winners=ranked.filter(p=>points(p)===points(ranked[0]));
- const title=winners.length>1?"Victoire partagée : "+winners.map(p=>p.name).join(" & "):winners.length?winners[0].name+" remporte la partie !":"Partie terminée";
- const top=ranked.slice(0,3), order=top.length>1?[top[1],top[0],...top.slice(2)]:top;
- const podium=order.map(p=>'<article class="fin-podium-card place-'+Math.min(rank(p),3)+'"><div class="fin-medal">'+rank(p)+'</div>'+(rank(p)===1?'<span class="fin-crown" aria-hidden="true">♛</span>':'')+avatar(p)+'<strong>'+esc(p.name)+'</strong>'+(p.id===session.playerId?'<small class="fin-you">Toi</small>':'')+'<b>'+pts(p)+'</b><div class="fin-pedestal" aria-hidden="true">'+rank(p)+'</div></article>').join("");
- const rows=ranked.map(p=>'<div class="fin-row '+(p.id===session.playerId?'is-me':'')+'"><span class="fin-rank place-'+Math.min(rank(p),4)+'">'+rank(p)+'</span><div class="fin-player">'+avatar(p)+'<strong>'+esc(p.name)+'</strong>'+(p.id===session.playerId?'<small class="fin-you">Toi</small>':'')+'</div><b>'+pts(p)+'</b></div>').join("");
- const rawDifficulty=String(state.categoryDifficulty||"").toLowerCase();
- const difficulty=["hard","difficile"].includes(rawDifficulty)?"Difficile":["medium","normal","moyen"].includes(rawDifficulty)?"Moyen":"Facile";
- const quick=state.mode==="quick";
- const gain=Math.max(0,Number(state.myReward??state.rewardsByPlayerId?.[session.playerId]??0)||0);
+  "use strict";
 
- setScreen('<main class="fsv1-screen final-mobile"><header class="fin-top"><img class="fin-brand" src="/ptitbac.logo.png" alt="P’tit Bac"><span></span></header>'+
- '<section class="fin-heading"><h1>Partie <span>terminée !</span></h1><p>'+esc(title)+'</p></section>'+
- '<section class="fin-podium" aria-label="Podium">'+podium+'</section>'+
- '<section class="fin-ranking">'+rows+'</section>'+
- '<section class="fin-stats">'+[
- ["/friends.png",ranked.length,"Joueurs"],["/lightning.png",Number(state.rounds)||1,"Manche"+(state.rounds>1?"s":"")],["/lobby-clock.png",(Number(state.duration)||0)+" s","Par manche"],["/difficulty.png",difficulty,"Niveau"]
- ].map(([img,value,label])=>'<div><img src="'+img+'" alt=""><strong>'+value+'</strong><small>'+label+'</small></div>').join("")+'</section>'+
- '<p class="fin-mode">'+(quick?'Partie rapide · +'+gain+' pièces':'Salon privé · Partie sans gain de pièces')+'</p>'+
- '<div class="fin-actions">'+(user?.isHost&&!quick?'<button id="finReplay" class="fin-primary">↻ Rejouer</button>':quick?'<button id="finQuick" class="fin-primary">↻ Rejouer</button>':'<p>L’hôte peut relancer une partie.</p>')+'<button id="finHome" class="fin-secondary">⌂ Retour à l’accueil</button></div></main>');
+  const esc = value =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
 
- const leave=()=>{socket.emit("room:leave",{code:state.code,playerId:session.playerId});clearSession();renderHome();};
- document.getElementById("finHome").onclick=leave;
+  function avatar(player) {
+    const raw = String(player?.avatar || "");
+    const image =
+      window.PtitBacProfilePhoto?.isImageAvatar?.(raw) ||
+      /^data:image\//i.test(raw);
 
- const replay=document.getElementById("finReplay");
- if(replay)replay.onclick=()=>{if(replay.disabled)return;replay.disabled=true;socket.emit("game:restart",{code:state.code,playerId:session.playerId});};
+    return (
+      '<span class="fin-avatar">' +
+        (
+          image
+            ? '<img src="' + esc(raw) + '" alt="" draggable="false">'
+            : '<span>' +
+                esc(
+                  raw ||
+                  String(player?.name || "?").slice(0, 1)
+                ) +
+              '</span>'
+        ) +
+      '</span>'
+    );
+  }
 
- const again=document.getElementById("finQuick");
- if(again)again.onclick=()=>{if(again.disabled)return;again.disabled=true;const profile={name:user?.name||"Joueur",icon:user?.avatar||"🙂"};leave();window.startQuickPlay?.(profile);};
-}
-window.renderFinished=renderFinishedV2;
-try{renderFinished=renderFinishedV2;}catch{}
+  const points = player =>
+    Number(player?.score) || 0;
+
+  const pts = player =>
+    points(player) +
+    " pt" +
+    (points(player) > 1 ? "s" : "");
+
+  function renderFinishedV2() {
+    clearInterval(session.timerHandle);
+
+    const state = session.state;
+    const user = me();
+
+    if (
+      !state ||
+      state.phase !== "finished"
+    ) {
+      return;
+    }
+
+    const ranked =
+      [...(state.players || [])].sort(
+        (a, b) =>
+          points(b) - points(a) ||
+          String(a.name || "").localeCompare(
+            String(b.name || "")
+          )
+      );
+
+    const rank = player =>
+      ranked.findIndex(
+        item =>
+          points(item) === points(player)
+      ) + 1;
+
+    const winners =
+      ranked.filter(
+        player =>
+          points(player) ===
+          points(ranked[0])
+      );
+
+    const title =
+      winners.length > 1
+        ? "Victoire partagée : " +
+          winners
+            .map(player => player.name)
+            .join(" & ")
+        : winners.length
+          ? winners[0].name +
+            " remporte la partie !"
+          : "Partie terminée";
+
+    const top =
+      ranked.slice(0, 3);
+
+    const order =
+      top.length >= 3
+        ? [top[1], top[0], top[2]]
+        : top.length > 1
+          ? [top[1], top[0]]
+          : top;
+
+    const podium =
+      order.map(player => {
+        const playerRank =
+          rank(player);
+
+        return (
+          '<article class="fin-podium-card place-' +
+            Math.min(playerRank, 3) +
+          '">' +
+            '<div class="fin-medal">' +
+              playerRank +
+            '</div>' +
+
+            (
+              playerRank === 1
+                ? '<img class="fin-crown" src="/admin-crown.png" alt="" aria-hidden="true">'
+                : ""
+            ) +
+
+            avatar(player) +
+
+            '<strong>' +
+              esc(player.name) +
+            '</strong>' +
+
+            (
+              player.id === session.playerId
+                ? '<small class="fin-you">Toi</small>'
+                : ""
+            ) +
+
+            '<b>' +
+              pts(player) +
+            '</b>' +
+
+            '<div class="fin-pedestal" aria-hidden="true">' +
+              playerRank +
+            '</div>' +
+          '</article>'
+        );
+      }).join("");
+
+    /*
+      À partir de 3 joueurs, le podium porte déjà les trois premiers :
+      la liste inférieure ne montre donc plus que les suivants.
+      À 1–2 joueurs, on conserve la liste complète.
+    */
+    const rankingPlayers =
+      ranked.length >= 3
+        ? ranked.slice(3)
+        : ranked;
+
+    const rows =
+      rankingPlayers.map(player => {
+        const playerRank =
+          rank(player);
+
+        return (
+          '<div class="fin-row ' +
+            (
+              player.id === session.playerId
+                ? "is-me"
+                : ""
+            ) +
+          '">' +
+
+            '<span class="fin-rank place-' +
+              Math.min(playerRank, 4) +
+            '">' +
+              playerRank +
+            '</span>' +
+
+            '<div class="fin-player">' +
+              avatar(player) +
+              '<strong>' +
+                esc(player.name) +
+              '</strong>' +
+              (
+                player.id === session.playerId
+                  ? '<small class="fin-you">Toi</small>'
+                  : ""
+              ) +
+            '</div>' +
+
+            '<b>' +
+              pts(player) +
+            '</b>' +
+          '</div>'
+        );
+      }).join("");
+
+    const rankingSection =
+      rankingPlayers.length
+        ? (
+          '<section class="fin-ranking ' +
+            (
+              ranked.length >= 5
+                ? "is-many"
+                : ""
+            ) +
+          '">' +
+            rows +
+          '</section>'
+        )
+        : "";
+
+    const rawDifficulty =
+      String(
+        state.categoryDifficulty || ""
+      ).toLowerCase();
+
+    const difficulty =
+      ["hard", "difficile"].includes(
+        rawDifficulty
+      )
+        ? "Difficile"
+        : ["medium", "normal", "moyen"]
+            .includes(rawDifficulty)
+          ? "Moyen"
+          : "Facile";
+
+    const quick =
+      state.mode === "quick";
+
+    const gain =
+      Math.max(
+        0,
+        Number(
+          state.myReward ??
+          state.rewardsByPlayerId?.[
+            session.playerId
+          ] ??
+          0
+        ) || 0
+      );
+
+    setScreen(
+      '<main class="fsv1-screen final-mobile">' +
+
+        '<header class="fin-top">' +
+          '<img class="fin-brand" src="/ptitbac.logo.png" alt="P’tit Bac">' +
+          '<span></span>' +
+        '</header>' +
+
+        '<section class="fin-heading">' +
+          '<h1>Partie <span>terminée !</span></h1>' +
+          '<p>' +
+            esc(title) +
+          '</p>' +
+        '</section>' +
+
+        '<section class="fin-podium fin-podium-' +
+          Math.min(top.length, 3) +
+          '" aria-label="Podium">' +
+          podium +
+        '</section>' +
+
+        rankingSection +
+
+        '<section class="fin-stats">' +
+          [
+            [
+              "/friends.png",
+              ranked.length,
+              "Joueurs"
+            ],
+            [
+              "/lightning.png",
+              Number(state.rounds) || 1,
+              "Manche" +
+                (
+                  state.rounds > 1
+                    ? "s"
+                    : ""
+                )
+            ],
+            [
+              "/lobby-clock.png",
+              (Number(state.duration) || 0) +
+                " s",
+              "Par manche"
+            ],
+            [
+              "/difficulty.png",
+              difficulty,
+              "Niveau"
+            ]
+          ]
+            .map(
+              ([img, value, label]) =>
+                '<div>' +
+                  '<img src="' +
+                    img +
+                    '" alt="">' +
+                  '<strong>' +
+                    value +
+                  '</strong>' +
+                  '<small>' +
+                    label +
+                  '</small>' +
+                '</div>'
+            )
+            .join("") +
+        '</section>' +
+
+        '<p class="fin-mode">' +
+          (
+            quick
+              ? "Partie rapide · +" +
+                gain +
+                " pièces"
+              : "Salon privé · Partie sans gain de pièces"
+          ) +
+        '</p>' +
+
+        '<div class="fin-actions">' +
+          (
+            user?.isHost && !quick
+              ? '<button id="finReplay" class="fin-primary">↻ Rejouer</button>'
+              : quick
+                ? '<button id="finQuick" class="fin-primary">↻ Rejouer</button>'
+                : '<p>L’hôte peut relancer une partie.</p>'
+          ) +
+
+          '<button id="finHome" class="fin-secondary">⌂ Retour à l’accueil</button>' +
+        '</div>' +
+
+      '</main>'
+    );
+
+    const leave = () => {
+      socket.emit(
+        "room:leave",
+        {
+          code:state.code,
+          playerId:session.playerId
+        }
+      );
+
+      clearSession();
+      renderHome();
+    };
+
+    document
+      .getElementById("finHome")
+      .onclick = leave;
+
+    const replay =
+      document.getElementById(
+        "finReplay"
+      );
+
+    if (replay) {
+      replay.onclick = () => {
+        if (replay.disabled) return;
+
+        replay.disabled = true;
+
+        socket.emit(
+          "game:restart",
+          {
+            code:state.code,
+            playerId:session.playerId
+          }
+        );
+      };
+    }
+
+    const again =
+      document.getElementById(
+        "finQuick"
+      );
+
+    if (again) {
+      again.onclick = () => {
+        if (again.disabled) return;
+
+        again.disabled = true;
+
+        const profile = {
+          name:user?.name || "Joueur",
+          icon:user?.avatar || "🙂"
+        };
+
+        leave();
+
+        window.startQuickPlay?.(
+          profile
+        );
+      };
+    }
+  }
+
+  window.renderFinished =
+    renderFinishedV2;
+
+  try {
+    renderFinished =
+      renderFinishedV2;
+  } catch {}
 })();
