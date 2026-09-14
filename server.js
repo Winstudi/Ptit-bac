@@ -10,6 +10,7 @@ const { Server } = require("socket.io");
 const { Pool } = require("pg");
 const { normalizeFrameId } = require("./frame-sync-server.js");
 const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
+const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -117,6 +118,7 @@ const validationServiceState = {
 const wallets = new Map();
 let pgPool = null;
 let walletStorageMode = "json";
+const inventoryService = createInventoryService({ getPool: () => pgPool });
 
 function normalizeWalletRecord(wallet) {
   const history = Array.isArray(wallet?.history) ? wallet.history.slice(-100) : [];
@@ -954,8 +956,51 @@ function publicPlayer(p) {
     submitted: p.submitted,
     avatar: p.avatar || "",
     frameId: normalizeFrameId(p.frameId),
+    tagId: String(p.tagId || ""),
     friendCode: p.friendCode || ""
   };
+}
+
+function applyInventoryStateToPlayer(player, state) {
+  if (!player || player.isBot || !state) return false;
+
+  const nextAvatar = normalizeAvatarId(state.equipped?.avatar || player.avatar);
+  const nextFrameId = normalizeFrameId(state.equipped?.frame);
+  const nextTagId = String(state.equipped?.tag || "");
+  const changed =
+    player.avatar !== nextAvatar ||
+    player.frameId !== nextFrameId ||
+    String(player.tagId || "") !== nextTagId;
+
+  player.avatar = nextAvatar;
+  player.frameId = nextFrameId;
+  player.tagId = nextTagId;
+  return changed;
+}
+
+function hydratePlayerInventory(room, player, legacyEquipped = {}) {
+  if (!room || !player || player.isBot || !player.walletToken) return;
+
+  const cached = inventoryService.peek(player.walletToken);
+  if (cached) applyInventoryStateToPlayer(player, cached);
+
+  inventoryService
+    .getState(player.walletToken, legacyEquipped)
+    .then(state => {
+      if (!room.players.includes(player)) return;
+      if (applyInventoryStateToPlayer(player, state)) emitRoom(room);
+    })
+    .catch(err => {
+      console.warn("Inventaire joueur:", err.message);
+    });
+}
+
+function inventoryTokenForSocket(socket, payload = {}) {
+  const requested = String(payload.walletToken || socket.data.walletToken || "").trim();
+  if (!/^[a-f0-9]{48}$/i.test(requested)) return "";
+  if (socket.data.walletToken && socket.data.walletToken !== requested) return "";
+  if (!wallets.has(requested)) return "";
+  return requested;
 }
 
 function publicRoom(room, viewerPlayerId = null) {
@@ -2490,8 +2535,9 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
       isHost: true,
       isBot: false,
       walletToken: walletResult.token,
-      avatar: (typeof avatar === "string" && avatar.startsWith("data:image/") && avatar.includes(";base64,") && avatar.length <= 450000) ? avatar : Array.from(String(avatar || "")).slice(0, 8).join(""),
-      frameId: normalizeFrameId(frameId),
+      avatar: normalizeAvatarId(avatar),
+      frameId: "",
+      tagId: "",
       friendCode: (() => { const c = String(friendCode || "").trim(); return c.length === 5 && Array.from(c).every(ch => ch >= "0" && ch <= "9") ? c : ""; })(),
       submitted: false,
       answers: {}
@@ -2528,6 +2574,7 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
 
     rooms.set(code, room);
     setPlayerSocket(room, player, socket);
+    hydratePlayerInventory(room, player, { avatar, frame: frameId, tag: "tag_debutant" });
     cb({ ok: true, code, playerId: player.id, walletToken: walletResult.token, balance: walletResult.wallet.coins, state: publicRoom(room, player.id) });
     emitRoom(room);
   }
@@ -2559,8 +2606,9 @@ function joinGameRoom(socket, { code, name, avatar, frameId, friendCode, walletT
       isHost: false,
       isBot: false,
       walletToken: walletResult.token,
-      avatar: (typeof avatar === "string" && avatar.startsWith("data:image/") && avatar.includes(";base64,") && avatar.length <= 450000) ? avatar : Array.from(String(avatar || "")).slice(0, 8).join(""),
-      frameId: normalizeFrameId(frameId),
+      avatar: normalizeAvatarId(avatar),
+      frameId: "",
+      tagId: "",
       friendCode: (() => { const c = String(friendCode || "").trim(); return c.length === 5 && Array.from(c).every(ch => ch >= "0" && ch <= "9") ? c : ""; })(),
       submitted: false,
       answers: {}
@@ -2568,6 +2616,7 @@ function joinGameRoom(socket, { code, name, avatar, frameId, friendCode, walletT
 
     room.players.push(player);
     setPlayerSocket(room, player, socket);
+    hydratePlayerInventory(room, player, { avatar, frame: frameId, tag: "tag_debutant" });
     cb({ ok: true, code: room.code, playerId: player.id, walletToken: walletResult.token, balance: walletResult.wallet.coins, state: publicRoom(room, player.id) });
     emitRoom(room);
   }
@@ -2872,6 +2921,45 @@ io.on("connection", socket => {
     if (!safeToken || safeToken !== socket.data.walletToken) return cb({ ok: false, error: "Portefeuille non autorisé." });
     cb({ ok: true, balance: walletBalance(safeToken), transactions: recentWalletTransactions(safeToken, limit) });
   });
+
+  socket.on("inventory:get", async (payload = {}, cb = () => {}) => {
+    const token = inventoryTokenForSocket(socket, payload);
+    if (!token) return cb({ ok: false, error: "Session inventaire non autorisée." });
+
+    try {
+      const legacy = payload.legacyEquipped && typeof payload.legacyEquipped === "object"
+        ? payload.legacyEquipped
+        : {};
+      const state = await inventoryService.getState(token, legacy);
+      cb({ ok: true, state });
+    } catch (err) {
+      console.error("inventory:get:", err.message);
+      cb({ ok: false, error: "Inventaire indisponible pour le moment." });
+    }
+  });
+
+  socket.on("inventory:equip", async (payload = {}, cb = () => {}) => {
+    const token = inventoryTokenForSocket(socket, payload);
+    if (!token) return cb({ ok: false, error: "Session inventaire non autorisée." });
+
+    try {
+      const state = await inventoryService.equip(token, payload.type, payload.id);
+
+      for (const room of rooms.values()) {
+        const player = room.players.find(p => !p.isBot && p.walletToken === token);
+        if (!player) continue;
+        if (applyInventoryStateToPlayer(player, state)) emitRoom(room);
+      }
+
+      cb({ ok: true, state });
+      socket.emit("inventory:update", state);
+    } catch (err) {
+      const message = err?.code === "NOT_OWNED"
+        ? "Cet objet n’est pas dans ton inventaire."
+        : "Impossible d’équiper cet objet.";
+      cb({ ok: false, error: message });
+    }
+  });
   socket.on("room:create", (payload, cb) => {
     if (!quickMatch.cancel(socket)) return cb?.({ok:false,error:"Une partie rapide se prépare."});
     createGameRoom(socket, payload, cb);
@@ -2955,13 +3043,25 @@ io.on("connection", socket => {
     joinGameRoom(socket, payload, cb);
   });
 
-  socket.on("room:reconnect", ({ code, playerId, walletToken, frameId }, cb = () => {}) => {
+  socket.on("room:reconnect", async ({ code, playerId, walletToken, frameId, tagId }, cb = () => {}) => {
     const room = getRoom(code);
     const player = getPlayer(room, playerId);
     if (!room || !player || player.isBot) return cb({ ok: false });
-    if (!player.isBot && (!walletToken || player.walletToken !== walletToken)) return cb({ ok: false });
+    if (!walletToken || player.walletToken !== walletToken) return cb({ ok: false });
 
-    player.frameId = normalizeFrameId(frameId);
+    try {
+      const state = await inventoryService.getState(player.walletToken, {
+        avatar: player.avatar,
+        frame: frameId,
+        tag: tagId
+      });
+      applyInventoryStateToPlayer(player, state);
+    } catch (err) {
+      player.frameId = "";
+      player.tagId = "";
+      console.warn("Inventaire reconnexion:", err.message);
+    }
+
     setPlayerSocket(room, player, socket);
     ensureCategoryChooser(room);
     cb({ ok: true, balance: player.walletToken ? walletBalance(player.walletToken) : 0, state: publicRoom(room, player.id) });
@@ -2969,18 +3069,35 @@ io.on("connection", socket => {
   });
 
 
-  socket.on("cosmetics:sync", (payload = {}, cb = () => {}) => {
+  socket.on("cosmetics:sync", async (payload = {}, cb = () => {}) => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player) {
       return cb({ ok: false, error: "Joueur introuvable." });
     }
 
-    const nextFrameId = normalizeFrameId(payload.frameId);
-    const changed = player.frameId !== nextFrameId;
-    player.frameId = nextFrameId;
-
-    if (changed) emitRoom(room);
-    cb({ ok: true, playerId: player.id, frameId: player.frameId });
+    try {
+      const state = inventoryService.peek(player.walletToken) ||
+        await inventoryService.getState(player.walletToken, {
+          avatar: player.avatar,
+          frame: payload.frameId,
+          tag: payload.tagId
+        });
+      const changed = applyInventoryStateToPlayer(player, state);
+      if (changed) emitRoom(room);
+      cb({
+        ok: true,
+        playerId: player.id,
+        avatar: player.avatar,
+        frameId: player.frameId,
+        tagId: player.tagId
+      });
+    } catch (err) {
+      const changed = player.frameId !== "" || String(player.tagId || "") !== "";
+      player.frameId = "";
+      player.tagId = "";
+      if (changed) emitRoom(room);
+      cb({ ok: false, error: "Cosmétiques indisponibles." });
+    }
   });
 
   socket.on("room:leave", (payload, cb = () => {}) => {
