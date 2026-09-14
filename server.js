@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const { Server } = require("socket.io");
 const { Pool } = require("pg");
+const { normalizeFrameId } = require("./frame-sync-server.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -54,7 +55,6 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   next();
 });
-app.get("/health", (req, res) => res.json({ ok: true, version: BUILD_VERSION }));
 const servePublicFile = express.static(__dirname, {
   dotfiles: "deny",
   index: false,
@@ -73,8 +73,8 @@ app.use((req, res, next) => {
 });
 
 const GAME_COST = 0; // Economie V2.5: entree payee en vies
-const LETTER_REROLL_COST = 10;
-const CATEGORY_REROLL_COST = 10;
+const LETTER_REROLL_COST = 20;
+const CATEGORY_REROLL_COST = 20;
 const DEFAULT_COINS = 50;
 const ADMIN_COIN_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const WALLET_FILE = process.env.PTITBAC_WALLET_FILE
@@ -952,6 +952,7 @@ function publicPlayer(p) {
     lobbyReady: !!p.isBot || (p.connected && p.lobbyReady === true),
     submitted: p.submitted,
     avatar: p.avatar || "",
+    frameId: normalizeFrameId(p.frameId),
     friendCode: p.friendCode || ""
   };
 }
@@ -1503,7 +1504,8 @@ async function callValidationModel(items, letter, { review = false } = {}) {
   const payloadItems = makeValidationPayload(items, letter);
 
   const reviewInstructions = review
-    ? `${VALIDATION_SYSTEM_PROMPT}\nSECONDE VÉRIFICATION : tu réexamines uniquement des cas ambigus. Cherche activement les faux positifs. Une réponse inconnue ou dont l'existence n'est pas établie doit rester invalide/incertaine. Ne confirme "valid" que si l'appartenance à la catégorie est réellement solide.`
+    ? `${VALIDATION_SYSTEM_PROMPT}\
+SECONDE VÉRIFICATION : tu réexamines uniquement des cas ambigus. Cherche activement les faux positifs. Une réponse inconnue ou dont l'existence n'est pas établie doit rester invalide/incertaine. Ne confirme "valid" que si l'appartenance à la catégorie est réellement solide.`
     : VALIDATION_SYSTEM_PROMPT;
 
   const body = {
@@ -2189,7 +2191,21 @@ async function generateBotPlansWithAI(room, bots, roundIndex, letter) {
       const persona = botPersonaFor(bot, index);
       return { id: bot.id, name: bot.name, persona: persona.label, instruction: persona.instruction };
     });
-    const prompt = `Tu incarnes plusieurs joueurs DISTINCTS d'une partie de P'tit Bac. Tu n'es PAS l'arbitre et tu ne dois jamais évaluer les réponses : ton seul rôle est de proposer ce que chaque joueur taperait pendant la manche.\n\nLettre: ${letter}\nCatégories: ${JSON.stringify(room.categories)}\nJoueurs simulés: ${JSON.stringify(botDescriptions)}\n\nRègles de génération:\n- Chaque réponse non vide doit commencer par la lettre ${letter} (accents tolérés).\n- Utilise de vrais mots, noms, marques, lieux ou références existantes adaptées à la catégorie. N'invente pas de faux mots.\n- Les joueurs doivent avoir des réponses DIFFÉRENTES entre eux dès qu'une alternative raisonnable existe. Évite absolument de copier la même grille d'un joueur à l'autre.\n- Un joueur peut laisser quelques réponses vides.\n- Les personnalités doivent se ressentir légèrement : certains choisissent des évidences, d'autres des réponses plus originales.\n- Ne cherche pas à provoquer volontairement des doublons. Un doublon occasionnel reste possible, mais ne doit pas être systématique.\n- Retourne exactement une entrée par catégorie et par joueur, dans le même ordre que les catégories.\n- Ne fais aucun commentaire et n'ajoute aucun verdict de validité.`;
+    const prompt = `Tu incarnes plusieurs joueurs DISTINCTS d'une partie de P'tit Bac. Tu n'es PAS l'arbitre et tu ne dois jamais évaluer les réponses : ton seul rôle est de proposer ce que chaque joueur taperait pendant la manche.\
+\
+Lettre: ${letter}\
+Catégories: ${JSON.stringify(room.categories)}\
+Joueurs simulés: ${JSON.stringify(botDescriptions)}\
+\
+Règles de génération:\
+- Chaque réponse non vide doit commencer par la lettre ${letter} (accents tolérés).\
+- Utilise de vrais mots, noms, marques, lieux ou références existantes adaptées à la catégorie. N'invente pas de faux mots.\
+- Les joueurs doivent avoir des réponses DIFFÉRENTES entre eux dès qu'une alternative raisonnable existe. Évite absolument de copier la même grille d'un joueur à l'autre.\
+- Un joueur peut laisser quelques réponses vides.\
+- Les personnalités doivent se ressentir légèrement : certains choisissent des évidences, d'autres des réponses plus originales.\
+- Ne cherche pas à provoquer volontairement des doublons. Un doublon occasionnel reste possible, mais ne doit pas être systématique.\
+- Retourne exactement une entrée par catégorie et par joueur, dans le même ordre que les catégories.\
+- Ne fais aucun commentaire et n'ajoute aucun verdict de validité.`;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -2463,7 +2479,7 @@ function hasActiveRoom(token) {
   return [...rooms.values()].some(room => room.phase !== "finished" && room.players.some(p => p.walletToken === token));
 }
 
-function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount = 6, categoryDifficulty = "medium", avatar, friendCode, walletToken }, cb = () => {}, mode = "private") {
+function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount = 6, categoryDifficulty = "medium", avatar, frameId, friendCode, walletToken }, cb = () => {}, mode = "private") {
     const safeName = cleanName(name);
     const safeRounds = [1, 3, 5].includes(Number(rounds)) ? Number(rounds) : 1;
     const safeDuration = [30, 60, 90].includes(Number(duration)) ? Number(duration) : 60;
@@ -2486,6 +2502,7 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
       isBot: false,
       walletToken: walletResult.token,
       avatar: (typeof avatar === "string" && avatar.startsWith("data:image/") && avatar.includes(";base64,") && avatar.length <= 450000) ? avatar : Array.from(String(avatar || "")).slice(0, 8).join(""),
+      frameId: normalizeFrameId(frameId),
       friendCode: (() => { const c = String(friendCode || "").trim(); return c.length === 5 && Array.from(c).every(ch => ch >= "0" && ch <= "9") ? c : ""; })(),
       submitted: false,
       answers: {}
@@ -2526,7 +2543,7 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
     emitRoom(room);
   }
 
-function joinGameRoom(socket, { code, name, avatar, friendCode, walletToken }, cb = () => {}, matchmaking = false) {
+function joinGameRoom(socket, { code, name, avatar, frameId, friendCode, walletToken }, cb = () => {}, matchmaking = false) {
     const room = getRoom(code);
     const safeName = cleanName(name);
 
@@ -2554,6 +2571,7 @@ function joinGameRoom(socket, { code, name, avatar, friendCode, walletToken }, c
       isBot: false,
       walletToken: walletResult.token,
       avatar: (typeof avatar === "string" && avatar.startsWith("data:image/") && avatar.includes(";base64,") && avatar.length <= 450000) ? avatar : Array.from(String(avatar || "")).slice(0, 8).join(""),
+      frameId: normalizeFrameId(frameId),
       friendCode: (() => { const c = String(friendCode || "").trim(); return c.length === 5 && Array.from(c).every(ch => ch >= "0" && ch <= "9") ? c : ""; })(),
       submitted: false,
       answers: {}
@@ -2662,7 +2680,7 @@ const quickMatch = require("./quick-match.js")({
   admit(entry, peers) {
     let result;
     const reply = value => { result = value; };
-    if (!peers.length) createGameRoom(entry.socket, {...entry.profile, rounds:1, duration:60, categoryCount:6, categoryDifficulty:"beginner"}, reply, "quick");
+    if (!peers.length) createGameRoom(entry.socket, {...entry.profile, rounds:1, duration:60, categoryCount:6, categoryDifficulty:"medium"}, reply, "quick");
     else {
       const room = getRoom(peers[0].code);
       const base = cleanName(entry.profile.name).slice(0, 16);
@@ -2846,18 +2864,33 @@ io.on("connection", socket => {
     joinGameRoom(socket, payload, cb);
   });
 
-  socket.on("room:reconnect", ({ code, playerId, walletToken }, cb = () => {}) => {
+  socket.on("room:reconnect", ({ code, playerId, walletToken, frameId }, cb = () => {}) => {
     const room = getRoom(code);
     const player = getPlayer(room, playerId);
     if (!room || !player || player.isBot) return cb({ ok: false });
     if (!player.isBot && (!walletToken || player.walletToken !== walletToken)) return cb({ ok: false });
 
+    player.frameId = normalizeFrameId(frameId);
     setPlayerSocket(room, player, socket);
     ensureCategoryChooser(room);
     cb({ ok: true, balance: player.walletToken ? walletBalance(player.walletToken) : 0, state: publicRoom(room, player.id) });
     emitRoom(room);
   });
 
+
+  socket.on("cosmetics:sync", (payload = {}, cb = () => {}) => {
+    const { room, player } = requireMember(socket, payload);
+    if (!room || !player) {
+      return cb({ ok: false, error: "Joueur introuvable." });
+    }
+
+    const nextFrameId = normalizeFrameId(payload.frameId);
+    const changed = player.frameId !== nextFrameId;
+    player.frameId = nextFrameId;
+
+    if (changed) emitRoom(room);
+    cb({ ok: true, playerId: player.id, frameId: player.frameId });
+  });
 
   socket.on("room:leave", (payload, cb = () => {}) => {
     const {room} = requireMember(socket, payload);
@@ -2938,6 +2971,7 @@ io.on("connection", socket => {
       isBot: true,
       walletToken: null,
       avatar: identity.avatar,
+      frameId: "",
       botPersona: BOT_PERSONAS[Math.floor(Math.random() * BOT_PERSONAS.length)].id,
       submitted: false,
       answers: {}
@@ -2956,7 +2990,6 @@ io.on("connection", socket => {
 
   socket.on("game:rerollCategories", payload => {
     const { room, player } = requireMember(socket, payload);
-    if (room?.mode === "quick") return socket.emit("toast", "Les relances sont désactivées en partie rapide.");
     if (!room || !player || room.phase !== "category_selection" || player.id !== room.categoryChooserPlayerId) return;
     if (player.isBot || !player.walletToken) return;
 
@@ -2993,7 +3026,6 @@ io.on("connection", socket => {
 
   socket.on("game:rerollLetter", payload => {
     const { room, player } = requireMember(socket, payload);
-    if (room?.mode === "quick") return socket.emit("toast", "Les relances sont désactivées en partie rapide.");
     if (!room || !player || room.phase !== "letter_selection") return;
     if (player.id !== room.letterChooserPlayerId || !room.pendingLetter) return;
     if (player.isBot || !player.walletToken) return;
