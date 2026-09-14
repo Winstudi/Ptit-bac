@@ -3,9 +3,9 @@
 
   const LOBBY_MAX_PLAYERS = 6;
   const DIFFICULTY_ICON_URLS = {
-    beginner: "/difficulty-easy.png?v=lobby-v5",
-    medium: "/difficulty-normal.png?v=lobby-v5",
-    hard: "/difficulty-hard.png?v=lobby-v5"
+    beginner: "/difficulty.png",
+    medium: "/difficulty.png",
+    hard: "/difficulty.png"
   };
 
   let lobbyOpenedPlayerId = "";
@@ -14,7 +14,7 @@
   let lobbyInviteOpen = false;
   let lobbyInviteFriends = [];
   let lobbyInviteLoading = false;
-  const lobbyInviteSocket = io({ forceNew: true });
+  const lobbyInviteSocket = socket;
 
   Object.values(DIFFICULTY_ICON_URLS).forEach(src => {
     const img = new Image();
@@ -726,6 +726,5 @@
   window.renderLobby = renderLobbyV5;
   try { renderLobby = renderLobbyV5; } catch {}
 })();
-
 
 

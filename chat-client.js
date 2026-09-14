@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const chatSocket = io({ forceNew: true });
+  const chatSocket = socket;
   let embedded = false, requestVersion = 0, pendingFriend = null;
   const target = () => embedded ? document.getElementById("friendsChatPanel") : document.getElementById("app");
   const visible = () => embedded ? !!document.getElementById("friendsChatPanel") : !!document.querySelector(".chat-v1");
@@ -504,5 +504,5 @@
     refresh
   };
 
-  bootstrap();
+  if (chatSocket.connected) bootstrap();
 })();

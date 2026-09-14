@@ -5,7 +5,7 @@
 (() => {
   "use strict";
 
-  const friendSocket = io({ forceNew: true });
+  const friendSocket = socket;
   let friendsState = {
     profile: null,
     friends: [],
@@ -889,5 +889,5 @@
     }
   };
 
-  bootstrap(true);
+  if (friendSocket.connected) bootstrap(true);
 })();
