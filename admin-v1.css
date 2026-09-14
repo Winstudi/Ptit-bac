@@ -1,162 +1,874 @@
-/* P'tit Bac — Admin V1 */
-.admin-v1-crown-btn{position:absolute;top:max(22px,env(safe-area-inset-top));right:24px;z-index:20;width:54px;height:54px;border:1.5px solid #a653ff;border-radius:15px;background:rgba(11,24,71,.82);box-shadow:0 0 12px #8d39ff88,inset 0 0 10px #9c4cff22;display:grid;place-items:center;padding:5px}
-.admin-v1-crown-btn img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 7px #a23cff)}
-.admin-v1-overlay{position:fixed;inset:0;z-index:9999;background:rgba(2,7,31,.78);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:18px}
-.admin-v1-modal{position:relative;width:min(92vw,430px);max-height:88dvh;overflow:auto;border:1.5px solid #8148e8;border-radius:26px;background:linear-gradient(160deg,#10245e,#071747 68%,#171052);box-shadow:0 0 35px #6c2fff55;padding:22px;color:#fff}
-.admin-v1-x{position:absolute;right:15px;top:13px;width:34px;height:34px;border:1px solid #744bd1;border-radius:11px;background:#101c52;color:#cbb7ff;font-size:24px}
-.admin-v1-brand{display:flex;align-items:center;gap:13px;padding-right:35px}.admin-v1-brand img{width:58px;height:58px;object-fit:contain}.admin-v1-brand small,.admin-v1-page header small{font-size:10px;letter-spacing:.18em;color:#bfa7ef;font-weight:800}.admin-v1-brand h2{margin:2px 0 0;font-size:27px}.admin-v1-sub{color:#a99fc9;font-size:13px;margin:8px 0 18px}
-.admin-v1-card{border:1px solid #3856a5;border-radius:19px;background:#0b2055aa;padding:15px;margin:12px 0}.admin-v1-card h3{margin:0 0 12px;font-size:15px}
-.admin-v1-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #ffffff0d}.admin-v1-toggle:first-of-type{border-top:0}.admin-v1-toggle span{display:flex;flex-direction:column}.admin-v1-toggle b{font-size:14px}.admin-v1-toggle small{font-size:11px;color:#9e96c4;margin-top:3px}.admin-v1-toggle input{display:none}.admin-v1-toggle i{width:46px;height:25px;border-radius:20px;background:#26376c;border:1px solid #4b5e9b;position:relative;transition:.2s}.admin-v1-toggle i:after{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#aaa;top:2px;left:3px;transition:.2s}.admin-v1-toggle input:checked+i{background:linear-gradient(90deg,#7938ff,#b73cff);box-shadow:0 0 12px #9b3dff77}.admin-v1-toggle input:checked+i:after{left:22px;background:white}
-.admin-v1-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}.admin-v1-fields label{font-size:10px;color:#a99fc9;font-weight:700}.admin-v1-fields input,.admin-v1-modal textarea{box-sizing:border-box;width:100%;margin-top:6px;border:1px solid #4a5fb0;border-radius:13px;background:#071a4b;color:white;padding:12px;font:inherit;outline:none}.admin-v1-fields input:focus,.admin-v1-modal textarea:focus{border-color:#a14cff;box-shadow:0 0 0 3px #9c42ff22}.admin-v1-primary{width:100%;margin-top:12px;border:1px solid #bd68ff;border-radius:14px;background:linear-gradient(90deg,#7b38f5,#b83cff);color:#fff;padding:12px;font-weight:900;font-size:14px;box-shadow:0 0 18px #8d35ff44}
-.admin-v1-reports{width:100%;display:grid;grid-template-columns:34px 1fr 20px;align-items:center;text-align:left;gap:8px;border:1px solid #7545d7;border-radius:17px;background:#15175a;color:white;padding:13px}.admin-v1-reports div{display:flex;flex-direction:column}.admin-v1-reports small{color:#a79fc8;font-size:11px;margin-top:2px}.admin-v1-reports strong{font-size:25px;color:#b66cff}
-.admin-v1-feedback-bubble{position:absolute;right:22px;bottom:118px;z-index:12;border:1px solid #7842dd;border-radius:999px;background:#0b1c52e8;color:#fff;padding:9px 13px;display:flex;gap:7px;align-items:center;box-shadow:0 0 16px #6d32e955;font-size:11px}.admin-v1-feedback-bubble span{color:#bd69ff}.admin-v1-feedback-icon{font-size:28px;color:#b55dff}.admin-v1-modal textarea{min-height:120px;resize:vertical}
-.admin-v1-answer-report{display:block;margin:12px auto 120px;border:1px solid #7146d5;border-radius:999px;background:#0b1d52;color:#cbb6ff;padding:9px 15px;font-weight:800}
-.admin-v1-page{min-height:100dvh;padding:24px 20px 160px;background:radial-gradient(circle at 20% 0,#27216f55,transparent 30%),#071747;color:#fff}.admin-v1-page header{display:grid;grid-template-columns:45px 1fr 52px;align-items:center;gap:10px}.admin-v1-page header h1{margin:0;font-size:28px}.admin-v1-page header img{width:50px;height:50px;object-fit:contain}.admin-v1-back{width:42px;height:42px;border:1px solid #7743df;border-radius:13px;background:#0b2055;color:#c263ff;font-size:32px}.admin-v1-tabs{display:flex;gap:7px;overflow:auto;margin:20px 0 13px;padding-bottom:3px}.admin-v1-tabs button{white-space:nowrap;border:1px solid #38539b;border-radius:999px;background:#0b2055;color:#a9a2c8;padding:8px 11px;font-weight:800;font-size:11px}.admin-v1-tabs button.active{background:linear-gradient(90deg,#7535ee,#a83cff);color:white;border-color:#b362ff}.admin-v1-list{display:grid;gap:10px}.admin-v1-report{border:1px solid #304c94;border-radius:17px;background:#0b2055b8;padding:14px}.admin-v1-report-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.admin-v1-report time{font-size:9px;color:#817da4}.admin-v1-badge{font-size:9px;font-weight:900;letter-spacing:.08em;border-radius:999px;padding:5px 8px;background:#6333c5}.admin-v1-badge.report-avis{background:#175e73}.admin-v1-badge.report-joueur{background:#6b2e62}.admin-v1-report h3{font-size:14px;margin:10px 0 5px}.admin-v1-report h3 small{color:#ad74ff}.admin-v1-report p{font-size:12px;color:#d7d2ea;margin:5px 0}.admin-v1-report .admin-v1-context{color:#b985ff;font-weight:700}.admin-v1-report>small{color:#77739b;font-size:9px}.admin-v1-empty{text-align:center;color:#8d88ad;padding:45px 10px}
-@media(max-width:390px){.admin-v1-crown-btn{right:16px;width:48px;height:48px}.admin-v1-fields{grid-template-columns:1fr}.admin-v1-feedback-bubble{right:14px;bottom:105px}}
-
-
 /* =========================================================
-   Admin V2 — activation intégrée et couronne profil
+   P'tit Bac — Admin V4
+   Outils / Reports / Joueurs dans une seule interface.
    ========================================================= */
 
-/* La couronne est uniquement une petite action de header, sans déplacer le titre. */
-.profile-v2-final .admin-v1-crown-btn {
-  top:max(15px,env(safe-area-inset-top)) !important;
-  right:14px !important;
-  width:45px !important;
-  height:45px !important;
-  padding:4px !important;
-  border:1px solid rgba(170,83,255,.72) !important;
-  border-radius:13px !important;
-  background:rgba(8,24,68,.72) !important;
+.admin-v1-overlay {
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  padding:
+    max(14px,env(safe-area-inset-top))
+    14px
+    max(14px,env(safe-area-inset-bottom));
+  background:rgba(2,7,31,.80);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+  display:grid;
+  place-items:center;
+}
+
+.admin-v1-modal {
+  position:relative;
+  box-sizing:border-box;
+  width:min(94vw,430px);
+  max-height:92dvh;
+  overflow:auto;
+  padding:20px;
+  border:1.5px solid #8249ef;
+  border-radius:27px;
+  background:
+    radial-gradient(circle at 8% 0,rgba(105,58,245,.18),transparent 30%),
+    radial-gradient(circle at 100% 55%,rgba(28,73,190,.10),transparent 38%),
+    linear-gradient(160deg,#10245e,#071747 67%,#151052);
+  color:#fff;
   box-shadow:
-    0 0 10px rgba(160,72,255,.38),
-    inset 0 0 9px rgba(136,67,255,.08) !important;
+    0 0 38px rgba(108,47,255,.34),
+    inset 0 0 28px rgba(100,73,255,.04);
+  font-family:"DM Sans",system-ui,sans-serif;
+  scrollbar-width:none;
 }
 
-.profile-v2-final .admin-v1-crown-btn img {
-  width:100% !important;
-  height:100% !important;
-  object-fit:contain !important;
+.admin-v1-modal::-webkit-scrollbar {
+  display:none;
 }
 
-.admin-v1-activation .admin-v1-modal {
-  width:min(90vw,370px);
-  overflow:hidden;
+.admin-v1-modal *,
+.admin-v1-modal *::before,
+.admin-v1-modal *::after {
+  box-sizing:border-box;
 }
 
-.admin-v1-activation-brand img {
+.admin-v1-modal button,
+.admin-v1-modal input,
+.admin-v1-modal textarea,
+.admin-v1-modal select {
+  font:inherit;
+}
+
+.admin-v1-x {
+  position:absolute;
+  z-index:4;
+  top:12px;
+  right:13px;
+  width:39px;
+  height:39px;
+  padding:0;
+  border:1.2px solid #7c4ee0;
+  border-radius:13px;
+  background:#101d54;
+  color:#d0bdff;
+  font-size:25px;
+  line-height:1;
+  display:grid;
+  place-items:center;
+}
+
+.admin-v4-head {
+  min-height:78px;
+  padding-right:43px;
+  display:grid;
+  grid-template-columns:65px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+}
+
+.admin-v4-head > img {
+  width:64px;
+  height:64px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 8px rgba(174,67,255,.54));
+}
+
+.admin-v4-head small,
+.admin-v1-brand small {
+  color:#bca0f0;
+  font-size:.59rem;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+
+.admin-v4-head h2,
+.admin-v1-brand h2 {
+  margin:2px 0 0;
+  font-size:1.72rem;
+  line-height:1;
+  letter-spacing:-.035em;
+  font-weight:900;
+}
+
+.admin-v4-head p {
+  margin:6px 0 0;
+  color:#aea3d0;
+  font-size:.70rem;
+  line-height:1.25;
+}
+
+.admin-v4-main-tabs {
+  margin:13px 0 14px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+
+.admin-v4-main-tabs button {
+  min-width:0;
+  min-height:48px;
+  padding:7px 5px;
+  border:1.2px solid #4260b5;
+  border-radius:16px;
+  background:linear-gradient(180deg,#0e285f,#0a1b4c);
+  color:#d0c5ed;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:.72rem;
+  font-weight:900;
+}
+
+.admin-v4-main-tabs button.active {
+  border-color:#d06fff;
+  background:linear-gradient(100deg,#7c36f5,#c03bfa);
+  color:#fff;
+  box-shadow:
+    0 0 15px rgba(162,61,255,.32),
+    inset 0 0 10px rgba(255,255,255,.10);
+}
+
+.admin-v4-icon {
+  width:22px;
+  height:22px;
+  flex:0 0 22px;
+  display:grid;
+  place-items:center;
+  color:#b86cff;
+}
+
+.admin-v4-main-tabs button.active .admin-v4-icon {
+  color:#fff;
+}
+
+.admin-v4-icon svg {
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.admin-v4-body {
+  display:grid;
+  gap:11px;
+}
+
+.admin-v4-card {
+  padding:14px;
+  border:1.1px solid #3d5da8;
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 0 0,rgba(89,69,215,.09),transparent 34%),
+    rgba(8,31,82,.86);
+}
+
+.admin-v4-card > h3,
+.admin-v4-section-head h3 {
+  margin:0 0 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:.92rem;
+  font-weight:900;
+}
+
+.admin-v1-toggle {
+  min-height:61px;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.065);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.admin-v1-toggle:first-of-type {
+  border-top:0;
+}
+
+.admin-v1-toggle > span {
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+
+.admin-v1-toggle b {
+  font-size:.80rem;
+}
+
+.admin-v1-toggle small {
+  color:#a39ac4;
+  font-size:.61rem;
+}
+
+.admin-v1-toggle input {
+  display:none;
+}
+
+.admin-v1-toggle > i {
+  position:relative;
+  width:49px;
+  height:27px;
+  flex:0 0 49px;
+  border:1px solid #51649d;
+  border-radius:999px;
+  background:#26376c;
+  transition:.18s ease;
+}
+
+.admin-v1-toggle > i::after {
+  content:"";
+  position:absolute;
+  top:3px;
+  left:4px;
+  width:19px;
+  height:19px;
+  border-radius:50%;
+  background:#b5b5bf;
+  transition:.18s ease;
+}
+
+.admin-v1-toggle input:checked + i {
+  border-color:#b75dff;
+  background:linear-gradient(90deg,#7436f3,#bd3df5);
+  box-shadow:0 0 11px rgba(155,61,255,.42);
+}
+
+.admin-v1-toggle input:checked + i::after {
+  left:24px;
+  background:#fff;
+}
+
+.admin-v4-choice-grid {
+  margin-bottom:12px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.admin-v4-choice-grid > div > small {
+  display:block;
+  margin:0 0 6px 2px;
+  color:#a99ecb;
+  font-size:.59rem;
+  font-weight:800;
+}
+
+.admin-v4-segment {
+  padding:2px;
+  border:1px solid #4360ac;
+  border-radius:12px;
+  background:#071948;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2px;
+}
+
+.admin-v4-segment button {
+  min-height:34px;
+  padding:4px 5px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:#aaa1ca;
+  font-size:.62rem;
+  font-weight:900;
+}
+
+.admin-v4-segment button.active {
+  color:#fff;
+  background:linear-gradient(90deg,#7738f4,#bb3df3);
+  box-shadow:0 0 9px rgba(151,58,255,.25);
+}
+
+.admin-v1-fields,
+.admin-v4-object-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+
+.admin-v4-object-grid {
+  grid-template-columns:1fr 1.35fr .58fr;
+}
+
+.admin-v1-fields label,
+.admin-v4-object-grid label,
+.admin-v4-player-search label {
+  color:#aaa0cc;
+  font-size:.59rem;
+  font-weight:800;
+}
+
+.admin-v1-fields input,
+.admin-v4-object-grid input,
+.admin-v4-object-grid select,
+.admin-v4-player-search input,
+.admin-v1-code-label input,
+.admin-v1-modal textarea {
+  width:100%;
+  min-height:44px;
+  margin-top:6px;
+  padding:0 12px;
+  border:1px solid #4b62af;
+  border-radius:13px;
+  outline:0;
+  background:#071a4b;
+  color:#fff;
+  font:inherit;
+  font-size:.72rem;
+}
+
+.admin-v4-object-grid select {
+  appearance:none;
+  padding-right:8px;
+}
+
+.admin-v1-fields input:focus,
+.admin-v4-object-grid input:focus,
+.admin-v4-object-grid select:focus,
+.admin-v4-player-search input:focus,
+.admin-v1-code-label input:focus,
+.admin-v1-modal textarea:focus {
+  border-color:#a553ff;
+  box-shadow:0 0 0 3px rgba(156,66,255,.12);
+}
+
+.admin-v1-primary {
+  width:100%;
+  min-height:45px;
+  margin-top:12px;
+  padding:9px 13px;
+  border:1px solid #c669ff;
+  border-radius:14px;
+  background:linear-gradient(90deg,#7837f4,#c23cf7);
+  color:#fff;
+  font-size:.74rem;
+  font-weight:900;
+  box-shadow:0 0 16px rgba(141,53,255,.28);
+}
+
+.admin-v1-primary:disabled {
+  opacity:.56;
+  pointer-events:none;
+}
+
+.admin-v4-note {
+  padding:12px 13px;
+  border:1px solid #3858a5;
+  border-radius:17px;
+  background:#0a2052cc;
+  display:grid;
+  grid-template-columns:29px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+}
+
+.admin-v4-note > span {
+  width:29px;
+  height:29px;
+  border-radius:9px;
+  background:linear-gradient(145deg,#5e4ce0,#a053ff);
+  display:grid;
+  place-items:center;
+  font-weight:900;
+}
+
+.admin-v4-note b {
+  display:block;
+  font-size:.67rem;
+}
+
+.admin-v4-note small {
+  display:block;
+  margin-top:3px;
+  color:#9d95bf;
+  font-size:.56rem;
+  line-height:1.3;
+}
+
+/* Reports */
+.admin-v4-section-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.admin-v4-section-head h3 {
+  margin-bottom:0;
+}
+
+.admin-v4-section-head > button {
+  border:0;
+  background:transparent;
+  color:#c174ff;
+  font-size:.60rem;
+  font-weight:900;
+}
+
+.admin-v4-report-filters {
+  margin:12px 0;
+  display:flex;
+  gap:6px;
+  overflow:auto;
+  scrollbar-width:none;
+}
+
+.admin-v4-report-filters::-webkit-scrollbar {
+  display:none;
+}
+
+.admin-v4-report-filters button {
+  flex:0 0 auto;
+  min-height:33px;
+  padding:5px 10px;
+  border:1px solid #40599d;
+  border-radius:999px;
+  background:#0b2055;
+  color:#aaa2c7;
+  font-size:.58rem;
+  font-weight:900;
+}
+
+.admin-v4-report-filters button.active {
+  border-color:#b15cff;
+  background:linear-gradient(90deg,#7033e9,#a63bf0);
+  color:#fff;
+}
+
+.admin-v1-list {
+  display:grid;
+  gap:9px;
+}
+
+.admin-v1-report {
+  padding:12px;
+  border:1px solid #314d93;
+  border-radius:16px;
+  background:#0b2055c7;
+}
+
+.admin-v1-report-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+}
+
+.admin-v1-report time {
+  color:#817da4;
+  font-size:.49rem;
+}
+
+.admin-v1-badge {
+  padding:5px 8px;
+  border-radius:999px;
+  background:#6534cb;
+  font-size:.50rem;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+
+.admin-v1-badge.report-avis {
+  background:#176278;
+}
+
+.admin-v1-badge.report-joueur {
+  background:#76326d;
+}
+
+.admin-v1-report h4 {
+  margin:9px 0 5px;
+  font-size:.78rem;
+}
+
+.admin-v1-report h4 small {
+  margin-left:4px;
+  color:#b575ff;
+}
+
+.admin-v1-report p {
+  margin:4px 0;
+  color:#d6d1e8;
+  font-size:.66rem;
+}
+
+.admin-v1-report .admin-v1-context {
+  color:#bb82ff;
+  font-weight:700;
+}
+
+.admin-v1-report > small {
+  color:#7c789d;
+  font-size:.50rem;
+}
+
+.admin-v4-report-valid {
+  margin-top:9px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.07);
+  color:#49e7af;
+  text-align:center;
+  font-size:.60rem;
+  font-weight:900;
+}
+
+.admin-v4-report-actions {
+  margin-top:9px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.07);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.admin-v4-report-actions button {
+  min-height:36px;
+  border-radius:10px;
+  color:#fff;
+  font-size:.61rem;
+  font-weight:900;
+}
+
+.adm-answer-validate {
+  border:1px solid #39dda2;
+  background:#0c604c;
+}
+
+.adm-answer-delete {
+  border:1px solid #e25478;
+  background:#642141;
+}
+
+.admin-v1-empty {
+  padding:35px 8px;
+  color:#918aaa;
+  text-align:center;
+  font-size:.68rem;
+}
+
+/* Joueurs */
+.admin-v4-player-search {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 118px;
+  align-items:end;
+  gap:8px;
+}
+
+.admin-v4-player-search .admin-v1-primary {
+  margin:0;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+}
+
+.admin-v4-player-search .admin-v4-icon {
+  width:18px;
+  height:18px;
+}
+
+.admin-v4-player-head {
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+}
+
+.admin-v4-player-avatar {
   width:52px;
   height:52px;
+  border:1.5px solid #a155ff;
+  border-radius:15px;
+  background:#151b5a;
+  display:grid;
+  place-items:center;
+  font-size:1.8rem;
+  box-shadow:0 0 11px rgba(145,64,255,.22);
+}
+
+.admin-v4-player-head h3 {
+  margin:0;
+  font-size:.90rem;
+}
+
+.admin-v4-player-head small {
+  color:#a98bd8;
+  font-size:.61rem;
+}
+
+.admin-v4-online {
+  padding:5px 7px;
+  border-radius:999px;
+  background:#2d315b;
+  color:#9d9cb1;
+  font-size:.50rem;
+  font-weight:900;
+}
+
+.admin-v4-online.is-online {
+  background:#0c5e49;
+  color:#62efbc;
+}
+
+.admin-v4-player-stats {
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+}
+
+.admin-v4-player-stats article {
+  min-width:0;
+  padding:8px 5px;
+  border:1px solid #364f94;
+  border-radius:11px;
+  background:#081b4d;
+  text-align:center;
+}
+
+.admin-v4-player-stats small {
+  display:block;
+  color:#9189b2;
+  font-size:.48rem;
+}
+
+.admin-v4-player-stats strong {
+  display:block;
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.62rem;
+}
+
+.admin-v4-player-meta {
+  margin-top:10px;
+  padding:8px 0;
+  border-top:1px solid rgba(255,255,255,.06);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.admin-v4-player-meta p {
+  margin:5px 0;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  color:#a39abe;
+  font-size:.57rem;
+}
+
+.admin-v4-player-meta b {
+  color:#ddd8ed;
+}
+
+.admin-v4-items {
+  margin-top:10px;
+}
+
+.admin-v4-items > b {
+  font-size:.65rem;
+}
+
+.admin-v4-items > small {
+  display:block;
+  margin-top:5px;
+  color:#8e87a9;
+  font-size:.56rem;
+}
+
+.admin-v4-items > div {
+  margin-top:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+.admin-v4-items > div span {
+  padding:5px 7px;
+  border:1px solid #4a49a7;
+  border-radius:8px;
+  background:#11164d;
+  color:#cfc4ed;
+  font-size:.54rem;
+}
+
+.admin-v4-secondary {
+  width:100%;
+  min-height:39px;
+  margin-top:11px;
+  border:1px solid #6250c8;
+  border-radius:11px;
+  background:#151958;
+  color:#d6cbf3;
+  font-size:.61rem;
+  font-weight:900;
+}
+
+/* Activation / feedback */
+.admin-v1-brand {
+  padding-right:38px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+
+.admin-v1-brand img {
+  width:55px;
+  height:55px;
+  object-fit:contain;
+}
+
+.admin-v1-sub {
+  margin:8px 0 16px;
+  color:#a99fc9;
+  font-size:.68rem;
+  line-height:1.35;
 }
 
 .admin-v1-code-label {
   display:block;
   color:#b8aed7;
-  font-size:11px;
+  font-size:.62rem;
   font-weight:800;
 }
 
-.admin-v1-code-label input {
-  box-sizing:border-box;
-  width:100%;
-  height:48px;
-  margin-top:7px;
-  padding:0 14px;
-  border:1.2px solid #4c5ca7;
-  border-radius:14px;
-  outline:none;
-  background:#071a49;
-  color:white;
-  font:inherit;
-  font-size:14px;
-}
-
-.admin-v1-code-label input:focus {
-  border-color:#a454ff;
-  box-shadow:0 0 0 3px rgba(157,70,255,.13);
-}
-
 .admin-v1-inline-error {
-  margin:9px 2px 0;
-  color:#ff6f91;
-  font-size:11px;
-  font-weight:750;
+  margin:8px 2px 0;
+  color:#ff7898;
+  font-size:.61rem;
+  font-weight:800;
 }
 
-.admin-v1-primary:disabled {
-  opacity:.55;
-  pointer-events:none;
+.admin-v1-feedback-icon {
+  font-size:1.7rem;
+  color:#b45fff;
 }
 
-@media(max-width:390px) {
-  .profile-v2-final .admin-v1-crown-btn {
-    right:10px !important;
-    width:42px !important;
-    height:42px !important;
-  }
+.admin-v1-modal textarea {
+  min-height:115px;
+  padding:11px;
+  resize:vertical;
 }
 
-
-/* =========================================================
-   Admin V3 — couronne visible uniquement sur Mon profil
-   ========================================================= */
-
-/* Aucun élément admin n'est injecté sur l'accueil. */
-.home-v129 .admin-v1-crown-btn,
-.home-v130 .admin-v1-crown-btn,
-.home-v150 .admin-v1-crown-btn,
-.home-plaque-v1 .admin-v1-crown-btn {
-  display:none !important;
+.admin-v1-answer-report {
+  display:block;
+  margin:12px auto 120px;
+  padding:9px 15px;
+  border:1px solid #7146d5;
+  border-radius:999px;
+  background:#0b1d52;
+  color:#cbb6ff;
+  font-weight:800;
 }
 
-/* Couronne profil : petit bouton propre dans le coin supérieur droit. */
-.profile-v2-final .admin-v1-crown-btn {
+/* Couronne profil */
+.admin-v1-crown-btn {
   position:absolute !important;
-  top:max(17px, env(safe-area-inset-top)) !important;
+  top:max(17px,env(safe-area-inset-top)) !important;
   right:18px !important;
   z-index:40 !important;
-
   width:46px !important;
   height:46px !important;
   min-width:46px !important;
   min-height:46px !important;
-
   padding:3px !important;
   margin:0 !important;
-
   border:1px solid rgba(173,83,255,.72) !important;
   border-radius:13px !important;
   background:rgba(7,22,63,.62) !important;
-
   box-shadow:
     0 0 9px rgba(168,77,255,.34),
     inset 0 0 8px rgba(158,74,255,.08) !important;
-
   display:grid !important;
   place-items:center !important;
 }
 
-.profile-v2-final .admin-v1-crown-btn img {
+.admin-v1-crown-btn img {
   width:40px !important;
   height:40px !important;
-  max-width:40px !important;
-  max-height:40px !important;
   object-fit:contain !important;
-  object-position:center !important;
-  display:block !important;
   pointer-events:none !important;
   filter:drop-shadow(0 0 5px rgba(185,74,255,.45)) !important;
 }
 
-/* Le titre Mon profil reste exactement centré malgré le bouton de droite. */
-.profile-v2-final .profile-v2-top {
-  position:relative !important;
-}
-
 @media (max-width:390px) {
-  .profile-v2-final .admin-v1-crown-btn {
-    top:max(14px, env(safe-area-inset-top)) !important;
+  .admin-v1-modal {
+    width:min(96vw,430px);
+    padding:16px;
+    border-radius:23px;
+  }
+
+  .admin-v4-head {
+    grid-template-columns:55px minmax(0,1fr);
+  }
+
+  .admin-v4-head > img {
+    width:54px;
+    height:54px;
+  }
+
+  .admin-v4-head h2 {
+    font-size:1.45rem;
+  }
+
+  .admin-v4-main-tabs {
+    gap:5px;
+  }
+
+  .admin-v4-main-tabs button {
+    min-height:44px;
+    font-size:.64rem;
+  }
+
+  .admin-v4-choice-grid {
+    grid-template-columns:1fr;
+  }
+
+  .admin-v1-fields {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .admin-v4-object-grid {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .admin-v4-object-grid label:last-child {
+    grid-column:2;
+  }
+
+  .admin-v4-player-search {
+    grid-template-columns:1fr 105px;
+  }
+
+  .admin-v4-player-stats {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .admin-v1-crown-btn {
     right:12px !important;
     width:42px !important;
     height:42px !important;
@@ -164,10 +876,24 @@
     min-height:42px !important;
   }
 
-  .profile-v2-final .admin-v1-crown-btn img {
+  .admin-v1-crown-btn img {
     width:36px !important;
     height:36px !important;
-    max-width:36px !important;
-    max-height:36px !important;
+  }
+}
+
+@media (max-width:335px) {
+  .admin-v4-main-tabs {
+    grid-template-columns:1fr;
+  }
+
+  .admin-v1-fields,
+  .admin-v4-object-grid,
+  .admin-v4-player-search {
+    grid-template-columns:1fr;
+  }
+
+  .admin-v4-object-grid label:last-child {
+    grid-column:auto;
   }
 }

@@ -314,40 +314,12 @@
   }
 
   function openHomeAdminMenu() {
-    // admin-v1.js garde volontairement son menu dans une closure.
-    // On crée brièvement sa cible historique pour lui laisser ouvrir
-    // son vrai menu admin, sans dupliquer toute la logique admin ici.
-    document.getElementById("homeAdminBridge")?.remove();
+    if (window.PtitBacAdmin?.open) {
+      window.PtitBacAdmin.open("tools");
+      return;
+    }
 
-    const bridge = document.createElement("div");
-    bridge.id = "homeAdminBridge";
-    bridge.className = "profile-v2-final";
-    bridge.hidden = true;
-    document.getElementById("app")?.appendChild(bridge);
-
-    let attempts = 0;
-
-    const tryOpen = () => {
-      const crown = bridge.querySelector(".admin-v1-crown-btn");
-
-      if (crown) {
-        crown.click();
-        setTimeout(() => bridge.remove(), 0);
-        return;
-      }
-
-      attempts += 1;
-
-      if (attempts < 24) {
-        setTimeout(tryOpen, 25);
-        return;
-      }
-
-      bridge.remove();
-      toast("Menu admin indisponible pour le moment.");
-    };
-
-    tryOpen();
+    toast("Menu admin indisponible pour le moment.");
   }
 
   function renderPlaquetteHome() {
