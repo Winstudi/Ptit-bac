@@ -1,0 +1,395 @@
+/* =========================================================
+   P'tit Bac — Letter Wheel FX V1
+   Effets auparavant injectés dynamiquement par letter-wheel-v1.js.
+   Le <link id="pbw1WheelFxStyles"> empêche l'ancienne injection JS,
+   tout en conservant exactement le même rendu.
+   ========================================================= */
+
+/* Supprime les anciennes petites étoiles violettes fixes du fond. */
+.pbw1-screen::before,
+.pbw1-screen::after{
+  content:none !important;
+  display:none !important;
+}
+
+.pbw1-wheel-zone{
+  overflow:visible !important;
+}
+
+.pbw1-wheel-shell{
+  z-index:4;
+}
+
+.pbw1-fx-layer{
+  position:absolute;
+  z-index:12;
+  inset:-14px;
+  pointer-events:none;
+  overflow:visible;
+}
+
+.pbw1-fx-spin,
+.pbw1-fx-land{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.pbw1-fx-star{
+  position:absolute;
+  left:var(--fx-x);
+  top:var(--fx-y);
+  width:var(--fx-size);
+  height:var(--fx-size);
+  margin:
+    calc(var(--fx-size) / -2)
+    0
+    0
+    calc(var(--fx-size) / -2);
+  opacity:0;
+  background:var(--fx-color);
+  clip-path:polygon(
+    50% 0%,
+    61% 38%,
+    100% 50%,
+    61% 62%,
+    50% 100%,
+    39% 62%,
+    0% 50%,
+    39% 38%
+  );
+  transform:
+    translate3d(0,0,0)
+    scale(.15)
+    rotate(0deg);
+  will-change:transform,opacity;
+}
+
+.pbw1-fx-spin-star{
+  box-shadow:
+    0 0 9px
+    color-mix(
+      in srgb,
+      var(--fx-color) 82%,
+      transparent
+    );
+}
+
+.pbw1-wheel-zone.is-spinning
+.pbw1-fx-spin-star{
+  animation:
+    pbw1SpinSpark
+    var(--fx-duration)
+    cubic-bezier(.22,.78,.36,1)
+    var(--fx-delay)
+    infinite;
+}
+
+@keyframes pbw1SpinSpark{
+  0%{
+    opacity:0;
+    transform:
+      translate3d(0,0,0)
+      scale(.15)
+      rotate(0deg);
+  }
+  18%{
+    opacity:.9;
+    transform:
+      translate3d(
+        calc(var(--fx-dx) * .25),
+        calc(var(--fx-dy) * .25),
+        0
+      )
+      scale(1.18)
+      rotate(calc(var(--fx-rot) * .35));
+  }
+  56%{
+    opacity:.72;
+    transform:
+      translate3d(
+        calc(var(--fx-dx) * .7),
+        calc(var(--fx-dy) * .7),
+        0
+      )
+      scale(.82)
+      rotate(calc(var(--fx-rot) * .72));
+  }
+  100%{
+    opacity:0;
+    transform:
+      translate3d(
+        var(--fx-dx),
+        var(--fx-dy),
+        0
+      )
+      scale(.12)
+      rotate(var(--fx-rot));
+  }
+}
+
+.pbw1-fx-land{
+  opacity:0;
+}
+
+.pbw1-fx-rays,
+.pbw1-fx-glow{
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:50%;
+  opacity:0;
+  transform:
+    translate(-50%,-50%)
+    scale(.45);
+  will-change:transform,opacity;
+}
+
+.pbw1-fx-rays{
+  width:132%;
+  height:132%;
+  background:
+    repeating-conic-gradient(
+      from -8deg,
+      rgba(172,78,255,0) 0deg 8deg,
+      rgba(183,86,255,.62) 8deg 13deg,
+      rgba(86,214,255,0) 13deg 27deg,
+      rgba(86,214,255,.46) 27deg 32deg,
+      rgba(255,103,203,0) 32deg 47deg
+    );
+  -webkit-mask:
+    radial-gradient(
+      circle,
+      transparent 0 43%,
+      #000 57% 100%
+    );
+  mask:
+    radial-gradient(
+      circle,
+      transparent 0 43%,
+      #000 57% 100%
+    );
+}
+
+.pbw1-fx-glow{
+  width:118%;
+  height:118%;
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,255,255,.58) 0 12%,
+      rgba(184,70,255,.48) 27%,
+      rgba(89,205,255,.28) 48%,
+      rgba(98,55,255,0) 72%
+    );
+}
+
+.pbw1-wheel-zone.is-landed
+.pbw1-fx-land{
+  opacity:1;
+}
+
+.pbw1-wheel-zone.is-landed
+.pbw1-fx-rays{
+  animation:
+    pbw1LandRays
+    .92s
+    cubic-bezier(.16,.76,.3,1)
+    both;
+}
+
+.pbw1-wheel-zone.is-landed
+.pbw1-fx-glow{
+  animation:
+    pbw1LandGlow
+    .82s
+    ease-out
+    both;
+}
+
+.pbw1-wheel-zone.is-landed
+.pbw1-fx-burst-star{
+  animation:
+    pbw1BurstStar
+    .82s
+    cubic-bezier(.16,.78,.3,1)
+    var(--fx-delay)
+    both;
+}
+
+@keyframes pbw1LandRays{
+  0%{
+    opacity:0;
+    transform:
+      translate(-50%,-50%)
+      scale(.42)
+      rotate(-14deg);
+  }
+  24%{
+    opacity:.8;
+  }
+  62%{
+    opacity:.42;
+  }
+  100%{
+    opacity:0;
+    transform:
+      translate(-50%,-50%)
+      scale(1.16)
+      rotate(16deg);
+  }
+}
+
+@keyframes pbw1LandGlow{
+  0%{
+    opacity:0;
+    transform:
+      translate(-50%,-50%)
+      scale(.45);
+  }
+  28%{
+    opacity:1;
+    transform:
+      translate(-50%,-50%)
+      scale(1.03);
+  }
+  100%{
+    opacity:0;
+    transform:
+      translate(-50%,-50%)
+      scale(1.13);
+  }
+}
+
+@keyframes pbw1BurstStar{
+  0%{
+    opacity:0;
+    transform:
+      translate3d(0,0,0)
+      scale(.15)
+      rotate(0deg);
+  }
+  28%{
+    opacity:1;
+    transform:
+      translate3d(
+        calc(var(--fx-dx) * .35),
+        calc(var(--fx-dy) * .35),
+        0
+      )
+      scale(1.48)
+      rotate(calc(var(--fx-rot) * .36));
+  }
+  68%{
+    opacity:.9;
+    transform:
+      translate3d(
+        calc(var(--fx-dx) * .78),
+        calc(var(--fx-dy) * .78),
+        0
+      )
+      scale(1.08)
+      rotate(calc(var(--fx-rot) * .78));
+  }
+  100%{
+    opacity:0;
+    transform:
+      translate3d(
+        var(--fx-dx),
+        var(--fx-dy),
+        0
+      )
+      scale(.12)
+      rotate(var(--fx-rot));
+  }
+}
+
+#pbw1CenterLetter.pbw1-letter-reveal{
+  animation:
+    pbw1LetterReveal
+    .74s
+    cubic-bezier(.12,.84,.22,1)
+    both;
+  transform-origin:center;
+  will-change:transform,opacity;
+}
+
+@keyframes pbw1LetterReveal{
+  0%{
+    opacity:0;
+    transform:
+      scale(.22)
+      rotate(-12deg);
+  }
+  44%{
+    opacity:1;
+    transform:
+      scale(1.40)
+      rotate(4deg);
+  }
+  70%{
+    transform:
+      scale(.88)
+      rotate(-2deg);
+  }
+  86%{
+    transform:
+      scale(1.08)
+      rotate(1deg);
+  }
+  100%{
+    opacity:1;
+    transform:
+      scale(1)
+      rotate(0deg);
+  }
+}
+
+.pbw1-wheel-zone.is-landed
+.pbw1-center{
+  animation:
+    pbw1CenterPulse
+    .62s
+    cubic-bezier(.16,.82,.25,1)
+    both;
+}
+
+@keyframes pbw1CenterPulse{
+  0%{
+    box-shadow:
+      0 4px 18px rgba(0,0,0,.45),
+      inset 0 0 18px rgba(255,255,255,.06);
+  }
+  36%{
+    box-shadow:
+      0 0 0 5px rgba(199,124,255,.18),
+      0 0 30px rgba(170,65,255,.62),
+      0 4px 18px rgba(0,0,0,.45),
+      inset 0 0 22px rgba(255,255,255,.12);
+  }
+  100%{
+    box-shadow:
+      0 4px 18px rgba(0,0,0,.45),
+      inset 0 0 18px rgba(255,255,255,.06);
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .pbw1-wheel-zone.is-spinning
+  .pbw1-fx-spin-star,
+  .pbw1-wheel-zone.is-landed
+  .pbw1-fx-rays,
+  .pbw1-wheel-zone.is-landed
+  .pbw1-fx-glow,
+  .pbw1-wheel-zone.is-landed
+  .pbw1-fx-burst-star,
+  #pbw1CenterLetter.pbw1-letter-reveal,
+  .pbw1-wheel-zone.is-landed
+  .pbw1-center{
+    animation:none !important;
+  }
+
+  .pbw1-fx-layer{
+    display:none !important;
+  }
+}
