@@ -7,9 +7,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>P'tit Bac</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/design-v2.css" />
   <link rel="stylesheet" href="/friends.css?v=friends-tabs-3" />
@@ -23,6 +25,7 @@
   <link rel="stylesheet" href="/quick-lobby-v1.css?v=quick-medium-2" />
   <link rel="stylesheet" href="/category-selection-v2.css" />
   <link rel="stylesheet" href="/category-position-fix-v1.css" />
+  <link rel="stylesheet" href="/category-chooser-card-v1.css?v=1" />
   <link rel="stylesheet" href="/shared-footer-v1.css" />
   <link rel="stylesheet" href="/avatar-fix-v2.css?v=cleanup-1" />
   <link rel="stylesheet" href="/avatar-system-v1.css?v=base-avatars-3-lobby-center" />
@@ -44,137 +47,19 @@
   <link rel="stylesheet" href="/category-prototype.css?v=1" />
   <link rel="stylesheet" href="/private-lobby.css?v=compact-2">
   <link rel="stylesheet" href="/avatar-pages-fix-v1.css?v=avatar-pages-1" />
-
-  <style id="categoryChooserExistingFix">
-    /* Sélection catégories — correction sans nouveau fichier */
-    .category-pick-screen.cat-v2 .cat-v2-copy{
-      padding:0!important;
-      min-height:0!important;
-      margin-bottom:-18px!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-v2-copy > h1,
-    .category-pick-screen.cat-v2 .cat-v2-copy > .cat-chooser{
-      display:none!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-v2-copy > p:first-of-type{
-      position:relative!important;
-      z-index:5!important;
-      margin:0!important;
-      transform:translateY(-4px)!important;
-      color:#b7a8dc!important;
-      font-size:.72rem!important;
-      font-weight:800!important;
-      line-height:1.2!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser{
-      position:relative!important;
-      z-index:5!important;
-      width:min(100%,230px)!important;
-      min-height:64px!important;
-      margin:-10px auto 3px!important;
-      padding:7px 12px!important;
-      border:1.2px solid #514995!important;
-      border-radius:16px!important;
-      background:linear-gradient(130deg,#152859,#171849)!important;
-      display:flex!important;
-      align-items:center!important;
-      justify-content:flex-start!important;
-      gap:10px!important;
-      box-shadow:
-        inset 0 0 16px rgba(116,72,220,.05),
-        0 0 12px rgba(104,63,231,.08)!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-avatar{
-      width:48px!important;
-      height:48px!important;
-      min-width:48px!important;
-      flex:0 0 48px!important;
-      border:2px solid #a94fff!important;
-      border-radius:11px!important;
-      overflow:hidden!important;
-      display:grid!important;
-      place-items:center!important;
-      background:#0a1d50!important;
-      box-shadow:0 0 10px rgba(167,72,255,.28)!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-avatar img{
-      width:100%!important;
-      height:100%!important;
-      display:block!important;
-      object-fit:cover!important;
-      object-position:center center!important;
-      border-radius:8px!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-copy{
-      min-width:0!important;
-      display:flex!important;
-      flex-direction:column!important;
-      align-items:flex-start!important;
-      justify-content:center!important;
-      text-align:left!important;
-      line-height:1.05!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-copy small{
-      color:#b8afd0!important;
-      font-size:.62rem!important;
-      font-weight:800!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-copy strong{
-      max-width:145px!important;
-      margin-top:1px!important;
-      color:#fff!important;
-      font-size:1rem!important;
-      font-weight:900!important;
-      line-height:1.05!important;
-      overflow:hidden!important;
-      text-overflow:ellipsis!important;
-      white-space:nowrap!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser-copy span{
-      margin-top:3px!important;
-      color:#b8afd0!important;
-      font-size:.57rem!important;
-      font-weight:800!important;
-    }
-
-    .category-pick-screen.cat-v2 .cat-existing-chooser + .cat-v2-grid{
-      margin-top:1px!important;
-    }
-
-    @media(max-width:380px){
-      .category-pick-screen.cat-v2 .cat-existing-chooser{
-        width:min(100%,215px)!important;
-        min-height:60px!important;
-        padding:6px 10px!important;
-      }
-
-      .category-pick-screen.cat-v2 .cat-existing-chooser-avatar{
-        width:44px!important;
-        height:44px!important;
-        min-width:44px!important;
-        flex-basis:44px!important;
-      }
-    }
-  </style>
-
 </head>
+
 <body>
   <div id="app"><p role="status" style="color:#fff;text-align:center;padding:3rem;font-family:sans-serif">Chargement de P’tit Bac…</p></div>
   <noscript>Active JavaScript pour jouer à P’tit Bac.</noscript>
   <div id="toast" class="toast" aria-live="polite"></div>
+
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/app.js?v=1.45.3"></script>
-  <script defer src="/runtime-compat-v1.js?v=cleanup-1"></script>
-  <script defer src="/avatar-system-v1.js?v=base-avatars-2-fix"></script>
+  <script defer src="/runtime-compat-v1.js?v=cleanup-2"></script>
+  <script defer src="/avatar-system-v1.js?v=base-avatars-4-unified"></script>
+  <script defer src="/inventory-client.js?v=1"></script>
+  <script defer src="/progression-client.js?v=1"></script>
   <script defer src="/icon-theme-v1.js"></script>
   <script defer src="/home-screen-v1.js?v=home-v16-base-avatars"></script>
   <script defer src="/profile-screen-v2.js?v=avatar-picker-2-base"></script>
@@ -186,6 +71,7 @@
   <script defer src="/lobby-screen-v4.js?v=1.45.3"></script>
   <script defer src="/quick-lobby-v1.js?v=quick-medium-2"></script>
   <script defer src="/category-selection-v2.js?v=categories-per-round-1"></script>
+  <script defer src="/category-chooser-card-v1.js?v=1"></script>
   <script defer src="/admin-v1.js?v=admin-v6-messages"></script>
   <script defer src="/inbox-v1.js?v=inbox-v2-badges"></script>
   <script defer src="/ui-fixes-v3.js"></script>
@@ -198,150 +84,6 @@
   <script defer src="/scoreboard-screen-v1.js?v=results-mobile-1"></script>
   <script defer src="/final-screen-v1.js?v=final-sound-confetti-3"></script>
   <script defer src="/wallet-client.js"></script>
-  <script defer src="/avatar-pages-fix-v1.js?v=avatar-pages-1"></script>
-
-  <script>
-  (() => {
-    "use strict";
-
-    const esc = value =>
-      String(value ?? "").replace(
-        /[&<>"']/g,
-        char => ({
-          "&":"&amp;",
-          "<":"&lt;",
-          ">":"&gt;",
-          '"':"&quot;",
-          "'":"&#039;"
-        })[char]
-      );
-
-    function stateNow(){
-      try{
-        return session?.state || null;
-      }catch{
-        return null;
-      }
-    }
-
-    function avatarFor(player){
-      const raw = player?.avatar || "";
-      const seed =
-        player?.id ||
-        player?.name ||
-        "category-chooser";
-
-      if(window.PtitBacAvatarPagesFix?.normalizeAvatar){
-        return window.PtitBacAvatarPagesFix.normalizeAvatar(raw, seed);
-      }
-
-      if(window.PtitBacAvatars?.normalize){
-        return window.PtitBacAvatars.normalize(raw);
-      }
-
-      return "/a1.webp";
-    }
-
-    function patchCategoryChooser(){
-      const screen =
-        document.querySelector(".category-pick-screen.cat-v2");
-
-      if(!screen) return;
-
-      const state = stateNow();
-
-      if(!state || state.phase !== "category_selection") return;
-
-      const copy =
-        screen.querySelector(".category-pick-copy.cat-v2-copy");
-
-      if(!copy) return;
-
-      copy.querySelector("h1")?.remove();
-      copy.querySelector(".cat-chooser")?.remove();
-
-      const chooser =
-        (state.players || []).find(
-          p =>
-            String(p.id) ===
-            String(state.categoryChooserPlayerId)
-        ) || null;
-
-      const existing =
-        screen.querySelector(".cat-existing-chooser");
-
-      const chooserId =
-        String(chooser?.id || "");
-
-      if(
-        existing &&
-        existing.dataset.chooserId === chooserId
-      ){
-        return;
-      }
-
-      existing?.remove();
-
-      const card =
-        document.createElement("section");
-
-      card.className = "cat-existing-chooser";
-      card.dataset.chooserId = chooserId;
-
-      const name =
-        chooser?.name || "Un joueur";
-
-      card.innerHTML = `
-        <div class="cat-existing-chooser-avatar">
-          <img
-            src="${esc(avatarFor(chooser))}"
-            alt=""
-            draggable="false"
-          >
-        </div>
-
-        <div class="cat-existing-chooser-copy">
-          <small>C’est à</small>
-          <strong>${esc(name)}</strong>
-          <span>de choisir les catégories</span>
-        </div>
-      `;
-
-      copy.insertAdjacentElement(
-        "afterend",
-        card
-      );
-    }
-
-    function schedule(){
-      requestAnimationFrame(patchCategoryChooser);
-    }
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        schedule();
-
-        const app = document.getElementById("app");
-
-        if(app){
-          new MutationObserver(schedule).observe(
-            app,
-            {
-              childList:true,
-              subtree:true
-            }
-          );
-        }
-
-        try{
-          socket?.on?.("room:state", schedule);
-        }catch{}
-      },
-      {once:true}
-    );
-  })();
-  </script>
-
+  <script defer src="/avatar-pages-fix-v1.js?v=quick-reroll-1"></script>
 </body>
 </html>

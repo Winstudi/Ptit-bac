@@ -19,46 +19,42 @@
 
   const DEFAULT_AVATAR = BASE_AVATARS[0];
 
-  function normalize(value) {
+  function hashSeed(value) {
+    const text = String(value || "ptitbac-avatar");
+    let hash = 2166136261;
+
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+
+    return Math.abs(hash >>> 0);
+  }
+
+  function normalize(value, seed = "") {
     const raw = String(value || "").trim();
 
-    if (BASE_AVATARS.includes(raw)) {
-      return raw;
-    }
+    if (BASE_AVATARS.includes(raw)) return raw;
+    if (LEGACY_AVATARS[raw]) return LEGACY_AVATARS[raw];
 
-    if (LEGACY_AVATARS[raw]) {
-      return LEGACY_AVATARS[raw];
-    }
-
-    return DEFAULT_AVATAR;
+    const key = seed || raw || "ptitbac-avatar";
+    return BASE_AVATARS[hashSeed(key) % BASE_AVATARS.length];
   }
 
   function isBaseAvatar(value) {
     const raw = String(value || "").trim();
-
-    return (
-      BASE_AVATARS.includes(raw) ||
-      Object.prototype.hasOwnProperty.call(
-        LEGACY_AVATARS,
-        raw
-      )
-    );
+    return BASE_AVATARS.includes(raw) ||
+      Object.prototype.hasOwnProperty.call(LEGACY_AVATARS, raw);
   }
 
   function isImageAvatar(value) {
     return isBaseAvatar(value);
   }
 
-  function markup(value, className = "", alt = "") {
-    const avatar = normalize(value);
-
-    const safeClass =
-      String(className || "")
-        .replace(/[^a-zA-Z0-9 _-]/g, "");
-
-    const safeAlt =
-      String(alt || "")
-        .replace(/"/g, "&quot;");
+  function markup(value, className = "", alt = "", seed = "") {
+    const avatar = normalize(value, seed);
+    const safeClass = String(className || "").replace(/[^a-zA-Z0-9 _-]/g, "");
+    const safeAlt = String(alt || "").replace(/"/g, "&quot;");
 
     return (
       `<img class="${safeClass}" ` +
@@ -72,49 +68,48 @@
     list: BASE_AVATARS,
     defaultAvatar: DEFAULT_AVATAR,
     normalize,
+    normalizeAvatar: normalize,
     isBaseAvatar,
     isImageAvatar,
     markup
   };
 
-  // Les écrans Amis / Chat / Lobby utilisent déjà ce hook.
+  // Compatibilité Amis / Chat / Lobby.
   window.PtitBacProfilePhoto = {
     ...(window.PtitBacProfilePhoto || {}),
     isImageAvatar
   };
 
-  // Migration du joueur local.
+  // Migration locale unique : ancien emoji/photo/ancien nom -> avatar de base.
   try {
-    const current =
-      localStorage.getItem("petitbac_profile_icon");
-
-    const migrated = normalize(current);
+    const current = localStorage.getItem("petitbac_profile_icon");
+    const name = localStorage.getItem("petitbac_profile_name") || "";
+    const migrated = normalize(current, name || current);
 
     if (current !== migrated) {
-      localStorage.setItem(
-        "petitbac_profile_icon",
-        migrated
-      );
+      localStorage.setItem("petitbac_profile_icon", migrated);
     }
   } catch {}
 
-  // Compatibilité avec les helpers historiques.
+  // Les helpers historiques restent utilisables mais passent désormais
+  // tous par le même normaliseur.
   try {
     const oldGetProfile =
       typeof getProfile === "function"
         ? getProfile
         : null;
 
-    if (oldGetProfile) {
-      getProfile = function() {
-        const profile =
-          oldGetProfile() || {};
-
+    if (oldGetProfile && !oldGetProfile.__ptbUnifiedAvatar) {
+      const unifiedGetProfile = function() {
+        const profile = oldGetProfile() || {};
         return {
           ...profile,
-          icon: normalize(profile.icon)
+          icon: normalize(profile.icon, profile.name || profile.icon)
         };
       };
+      unifiedGetProfile.__ptbUnifiedAvatar = true;
+      getProfile = unifiedGetProfile;
+      window.getProfile = unifiedGetProfile;
     }
   } catch {}
 
@@ -124,22 +119,20 @@
         ? saveProfile
         : null;
 
-    if (oldSaveProfile) {
-      saveProfile = function(name, icon) {
-        return oldSaveProfile(
-          name,
-          normalize(icon)
-        );
+    if (oldSaveProfile && !oldSaveProfile.__ptbUnifiedAvatar) {
+      const unifiedSaveProfile = function(name, icon) {
+        return oldSaveProfile(name, normalize(icon, name || icon));
       };
+      unifiedSaveProfile.__ptbUnifiedAvatar = true;
+      saveProfile = unifiedSaveProfile;
+      window.saveProfile = unifiedSaveProfile;
     }
   } catch {}
 
-  // Les anciens avatars peuvent encore exister dans des données déjà
-  // enregistrées en base. On ne les affiche plus : l'interface bascule
-  // automatiquement sur un avatar de base.
   const AVATAR_CONTAINERS = [
     ".hm-avatar",
     ".profile-v10-avatar-visual",
+    ".profile-avatar-choice",
     ".friends-v2-avatar",
     ".friends-v3-avatar",
     ".chat-list-avatar",
@@ -148,130 +141,199 @@
     ".lobby-v5-host-avatar",
     ".lobby-v5-profile-avatar",
     ".lobby-v5-invite-friend-avatar",
-    ".pl-avatar"
+    ".pl-avatar",
+    ".wsv1-avatar",
+    ".res-avatar",
+    ".fin-avatar",
+    ".ptb-avatar-photo",
+    ".avatar-emoji"
   ].join(",");
 
-  function upgradeContainer(container) {
-    if (!container) return;
+  function directAvatarValue(box) {
+    const img = box.querySelector(":scope > img");
+    if (img) return img.getAttribute("src") || "";
 
-    const image =
-      container.querySelector(":scope > img");
+    const span = box.querySelector(":scope > span");
+    if (span) return span.textContent || "";
 
-    if (image) {
-      const current =
-        image.getAttribute("src") || "";
+    if (box.matches(".avatar-emoji")) return box.textContent || "";
+    return "";
+  }
 
-      const next =
-        normalize(current);
+  function nearbyPlayerSeed(box) {
+    const row = box.closest(
+      ".wsv1-player," +
+      ".res-row," +
+      ".fin-row," +
+      ".fin-podium-card," +
+      ".lobby-v5-player," +
+      ".pl-player," +
+      ".friends-v4-card," +
+      ".friends-v2-card," +
+      ".chat-conversation-row," +
+      ".chat-new-row"
+    );
 
-      if (current !== next) {
-        image.setAttribute("src", next);
-      }
+    const name = row?.querySelector(
+      ".wsv1-player > strong," +
+      ".res-player > strong," +
+      ".fin-player > strong," +
+      ".fin-podium-card > strong," +
+      ".lobby-v5-player-copy strong," +
+      ".pl-player-copy > strong," +
+      ".friends-v2-card-main > strong," +
+      ".chat-row-copy > strong," +
+      "strong"
+    )?.textContent || "";
 
-      image.setAttribute(
-        "draggable",
-        "false"
-      );
+    return String(name).trim();
+  }
 
+  function setAvatarImage(box, src) {
+    const image = document.createElement("img");
+    image.src = src;
+    image.alt = "";
+    image.draggable = false;
+
+    const oldImg = box.querySelector(":scope > img");
+    const oldSpan = box.querySelector(":scope > span");
+
+    if (oldImg) {
+      oldImg.replaceWith(image);
+    } else if (oldSpan) {
+      oldSpan.replaceWith(image);
+    } else if (box.matches(".avatar-emoji")) {
+      box.replaceChildren(image);
+      box.classList.remove("avatar-emoji");
+      box.classList.add("ptb-avatar-photo");
+    } else {
+      box.prepend(image);
+    }
+
+    box.classList.add("ptb-base-avatar");
+  }
+
+  function upgradeAvatarBox(box) {
+    if (!(box instanceof Element)) return;
+
+    const raw = directAvatarValue(box);
+    const seed = nearbyPlayerSeed(box) || raw || box.className;
+    const src = normalize(raw, seed);
+    const existing = box.querySelector(":scope > img");
+
+    if (existing && existing.getAttribute("src") === src) {
+      existing.draggable = false;
+      box.classList.add("ptb-base-avatar");
       return;
     }
 
-    const legacy =
-      container.querySelector(":scope > span");
-
-    if (!legacy) return;
-
-    const imageNode =
-      document.createElement("img");
-
-    imageNode.src =
-      normalize(legacy.textContent);
-
-    imageNode.alt = "";
-    imageNode.draggable = false;
-
-    legacy.replaceWith(imageNode);
+    setAvatarImage(box, src);
   }
 
-  function upgradeAvatars(root = document) {
+  function chooserPlayer() {
+    try {
+      const state = session?.state;
+      if (!state) return null;
+
+      return state.players?.find(
+        player =>
+          String(player.id) ===
+          String(state.letterChooserPlayerId)
+      ) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function upgradeWheelChooser() {
+    const box = document.querySelector(
+      ".pbw1-screen .pbw1-chooser .pbw1-lightning"
+    );
+    if (!box) return;
+
+    const chooser = chooserPlayer();
+    const seed = chooser?.id || chooser?.name || "letter-chooser";
+    const src = normalize(chooser?.avatar, seed);
+    const current = box.querySelector(":scope > img");
+
     if (
-      root instanceof Element &&
-      root.matches(AVATAR_CONTAINERS)
+      current &&
+      current.getAttribute("src") === src &&
+      box.classList.contains("pbw1-chooser-avatar")
     ) {
-      upgradeContainer(root);
+      return;
     }
 
-    root
-      .querySelectorAll?.(AVATAR_CONTAINERS)
-      .forEach(upgradeContainer);
+    box.classList.add("pbw1-chooser-avatar");
+    box.innerHTML = `<img src="${src}" alt="" draggable="false">`;
   }
 
-  function startUpgradeObserver() {
-    upgradeAvatars(document);
+  function upgradeAll(root = document) {
+    if (root instanceof Element && root.matches(AVATAR_CONTAINERS)) {
+      upgradeAvatarBox(root);
+    }
 
-    const observer =
-      new MutationObserver(records => {
-        for (const record of records) {
-          for (const node of record.addedNodes) {
-            if (!(node instanceof Element)) {
-              continue;
-            }
+    root.querySelectorAll?.(AVATAR_CONTAINERS).forEach(upgradeAvatarBox);
+    upgradeWheelChooser();
+  }
 
-            upgradeAvatars(node);
-          }
+  function start() {
+    upgradeAll(document);
+
+    const observer = new MutationObserver(records => {
+      let shouldCheckWheel = false;
+
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          upgradeAll(node);
+          shouldCheckWheel = true;
         }
-      });
-
-    observer.observe(
-      document.documentElement,
-      {
-        childList:true,
-        subtree:true
       }
-    );
+
+      if (shouldCheckWheel) upgradeWheelChooser();
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    try {
+      socket?.on?.("room:state", () =>
+        requestAnimationFrame(upgradeWheelChooser)
+      );
+    } catch {}
   }
 
-  // Les écrans de partie définis dans app.js utilisent ce helper global.
-  // On convertit aussi leurs anciens avatars sans toucher au reste du rendu.
+  // Alias temporaire pour d'anciens appels. Aucun second observer n'est créé.
+  window.PtitBacAvatarPagesFix = {
+    normalizeAvatar: normalize,
+    upgradeAll,
+    upgradeWheelChooser
+  };
+
+  // Les écrans historiques de app.js passent aussi par ce moteur.
   try {
     if (typeof avatarMarkup === "function") {
-      avatarMarkup =
-        function(player, index = 0, extra = "") {
-          const safeExtra =
-            String(extra || "")
-              .replace(
-                /[^a-zA-Z0-9 _-]/g,
-                ""
-              );
+      avatarMarkup = function(player, index = 0, extra = "") {
+        const safeExtra = String(extra || "").replace(/[^a-zA-Z0-9 _-]/g, "");
+        const seed = player?.id || player?.name || player?.avatar || "";
+        const avatar = normalize(player?.avatar, seed);
 
-          const avatar =
-            normalize(player?.avatar);
-
-          return `
-            <div
-              class="avatar avatar-${index % 6}
-                     ptb-avatar-photo ${safeExtra}"
-            >
-              <img
-                src="${avatar}"
-                alt=""
-                draggable="false"
-              >
-            </div>
-          `;
-        };
+        return `
+          <div class="avatar avatar-${index % 6} ptb-avatar-photo ${safeExtra}">
+            <img src="${avatar}" alt="" draggable="false">
+          </div>
+        `;
+      };
+      window.avatarMarkup = avatarMarkup;
     }
   } catch {}
 
-  if (
-    document.readyState === "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      startUpgradeObserver,
-      { once:true }
-    );
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
   } else {
-    startUpgradeObserver();
+    start();
   }
 })();
