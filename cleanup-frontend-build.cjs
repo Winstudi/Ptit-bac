@@ -8,6 +8,8 @@ const wheelPath = path.join(root, "letter-wheel-v1.js");
 const soundPath = path.join(root, "letter-wheel-spin.wav");
 const appPath = path.join(root, "app.js");
 const stylePath = path.join(root, "style.css");
+const indexPath = path.join(root, "index.html");
+const publicFilesPath = path.join(root, "public-files.json");
 
 function log(message) {
   console.log(`[Frontend cleanup] ${message}`);
@@ -1154,10 +1156,505 @@ function cleanupStyle() {
   );
 }
 
+
+/* =========================================================
+   D4 — bundles légers
+   Réduit le nombre de requêtes sans changer l'ordre logique.
+   Les gros écrans restent séparés.
+   ========================================================= */
+
+const D4_BUNDLES = Object.freeze([
+  {
+    type:"css",
+    output:"ptb-category-avatar-patches.css",
+    id:"",
+    files:[
+      "category-position-fix-v1.css",
+      "category-chooser-card-v1.css",
+      "shared-footer-v1.css",
+      "avatar-fix-v2.css",
+      "avatar-system-v1.css"
+    ]
+  },
+  {
+    type:"css",
+    output:"ptb-ui-wheel-patches.css",
+    id:"pbw1WheelFxStyles",
+    files:[
+      "ui-fixes-v3.css",
+      "lobby-polish-v1.css",
+      "letter-wheel-fx-v1.css"
+    ]
+  },
+  {
+    type:"css",
+    output:"ptb-late-patches.css",
+    id:"",
+    files:[
+      "category-prototype.css",
+      "private-lobby.css",
+      "avatar-pages-fix-v1.css"
+    ]
+  },
+  {
+    type:"js",
+    output:"ptb-core-client.js",
+    files:[
+      "runtime-compat-v1.js",
+      "avatar-system-v1.js",
+      "inventory-client.js",
+      "progression-client.js",
+      "icon-theme-v1.js"
+    ]
+  },
+  {
+    type:"js",
+    output:"ptb-ui-patches.js",
+    files:[
+      "ui-fixes-v3.js",
+      "lobby-polish-v1.js"
+    ]
+  },
+  {
+    type:"js",
+    output:"ptb-late-client.js",
+    files:[
+      "wallet-client.js",
+      "avatar-pages-fix-v1.js"
+    ]
+  }
+]);
+
+function bundleBuildVersion() {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(
+        path.join(root, "package.json"),
+        "utf8"
+      )
+    );
+
+    if (pkg?.version) {
+      return String(pkg.version);
+    }
+  } catch {}
+
+  return "1.45.0";
+}
+
+function htmlAssetPath(tag, type) {
+  const attribute =
+    type === "css"
+      ? "href"
+      : "src";
+
+  const match =
+    tag.match(
+      new RegExp(
+        `${attribute}=["']([^"']+)["']`,
+        "i"
+      )
+    );
+
+  if (!match) return "";
+
+  return String(match[1])
+    .split("?")[0]
+    .replace(/^\/+/, "");
+}
+
+function findHtmlAssetTags(html, type) {
+  const pattern =
+    type === "css"
+      ? /<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi
+      : /<script\b[^>]*src=["'][^"']+["'][^>]*>\s*<\/script>/gi;
+
+  const tags = [];
+  let match;
+
+  while ((match = pattern.exec(html))) {
+    const assetPath =
+      htmlAssetPath(
+        match[0],
+        type
+      );
+
+    if (!assetPath) continue;
+
+    tags.push({
+      start:match.index,
+      end:match.index + match[0].length,
+      tag:match[0],
+      path:assetPath
+    });
+  }
+
+  return tags;
+}
+
+function concatBundleFiles(config) {
+  const chunks = [];
+
+  for (const file of config.files) {
+    const filePath =
+      path.join(root, file);
+
+    if (!fs.existsSync(filePath)) {
+      return {
+        ok:false,
+        error:`${file} absent`
+      };
+    }
+
+    const content =
+      fs.readFileSync(
+        filePath,
+        "utf8"
+      );
+
+    chunks.push(
+      config.type === "css"
+        ? `/* ===== ${file} ===== */\n${content.trim()}\n`
+        : `/* ===== ${file} ===== */\n${content.trim()}\n;\n`
+    );
+  }
+
+  const content =
+    chunks.join("\n");
+
+  if (config.type === "js") {
+    try {
+      // Parse uniquement : aucun code navigateur n'est exécuté.
+      new Function(content);
+    } catch (error) {
+      return {
+        ok:false,
+        error:
+          `bundle JS invalide (${error?.message || error})`
+      };
+    }
+  }
+
+  return {
+    ok:true,
+    content
+  };
+}
+
+function createBundleTag(config, version) {
+  const url =
+    `/${config.output}?v=${encodeURIComponent(version)}`;
+
+  if (config.type === "css") {
+    const id =
+      config.id
+        ? ` id="${config.id}"`
+        : "";
+
+    return (
+      `<link${id} rel="stylesheet" href="${url}" />`
+    );
+  }
+
+  return (
+    `<script defer src="${url}"></script>`
+  );
+}
+
+function applyBundleToHtml(html, config, version) {
+  const tags =
+    findHtmlAssetTags(
+      html,
+      config.type
+    );
+
+  const selected = [];
+
+  for (const file of config.files) {
+    const matches =
+      tags.filter(
+        entry =>
+          entry.path === file
+      );
+
+    if (matches.length !== 1) {
+      return {
+        ok:false,
+        html,
+        error:
+          `${file} doit apparaître exactement une fois dans index.html`
+      };
+    }
+
+    selected.push(matches[0]);
+  }
+
+  for (let i = 1; i < selected.length; i += 1) {
+    if (
+      selected[i].start <=
+      selected[i - 1].start
+    ) {
+      return {
+        ok:false,
+        html,
+        error:
+          `ordre inattendu pour ${config.output}`
+      };
+    }
+  }
+
+  // Vérifie qu'aucun autre stylesheet/script du même type
+  // ne s'intercale entre les fichiers à fusionner.
+  const selectedSet =
+    new Set(
+      selected.map(
+        item => item.path
+      )
+    );
+
+  const between =
+    tags.filter(
+      entry =>
+        entry.start >= selected[0].start &&
+        entry.end <= selected[selected.length - 1].end &&
+        !selectedSet.has(entry.path)
+    );
+
+  if (between.length) {
+    return {
+      ok:false,
+      html,
+      error:
+        `assets intercalés dans ${config.output}: ` +
+        between.map(item => item.path).join(", ")
+    };
+  }
+
+  const replacement =
+    createBundleTag(
+      config,
+      version
+    );
+
+  let next = html;
+
+  // Retirer de la fin vers le début pour garder les offsets valides.
+  for (
+    let i = selected.length - 1;
+    i >= 0;
+    i -= 1
+  ) {
+    const item =
+      selected[i];
+
+    next =
+      next.slice(0, item.start) +
+      (
+        i === 0
+          ? replacement
+          : ""
+      ) +
+      next.slice(item.end);
+  }
+
+  return {
+    ok:true,
+    html:next
+  };
+}
+
+function updatePublicFiles(generated) {
+  if (!fs.existsSync(publicFilesPath)) {
+    return false;
+  }
+
+  let list;
+
+  try {
+    list =
+      JSON.parse(
+        fs.readFileSync(
+          publicFilesPath,
+          "utf8"
+        )
+      );
+  } catch {
+    return false;
+  }
+
+  if (!Array.isArray(list)) {
+    return false;
+  }
+
+  let changed = false;
+
+  for (const file of generated) {
+    const route = `/${file}`;
+
+    if (!list.includes(route)) {
+      list.push(route);
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    fs.writeFileSync(
+      publicFilesPath,
+      JSON.stringify(
+        list,
+        null,
+        2
+      ) + "\n",
+      "utf8"
+    );
+  }
+
+  return true;
+}
+
+function bundleFrontendAssets() {
+  if (!fs.existsSync(indexPath)) {
+    log(
+      "D4 ignoré : index.html absent."
+    );
+    return;
+  }
+
+  const originalHtml =
+    fs.readFileSync(
+      indexPath,
+      "utf8"
+    );
+
+  let html =
+    originalHtml;
+
+  const version =
+    bundleBuildVersion();
+
+  const generated = [];
+  const reports = [];
+
+  for (const config of D4_BUNDLES) {
+    const bundle =
+      concatBundleFiles(
+        config
+      );
+
+    if (!bundle.ok) {
+      reports.push(
+        `${config.output} ignoré : ${bundle.error}`
+      );
+      continue;
+    }
+
+    const htmlResult =
+      applyBundleToHtml(
+        html,
+        config,
+        version
+      );
+
+    if (!htmlResult.ok) {
+      reports.push(
+        `${config.output} ignoré : ${htmlResult.error}`
+      );
+      continue;
+    }
+
+    const outputPath =
+      path.join(
+        root,
+        config.output
+      );
+
+    fs.writeFileSync(
+      outputPath,
+      bundle.content,
+      "utf8"
+    );
+
+    html =
+      htmlResult.html;
+
+    generated.push(
+      config.output
+    );
+
+    reports.push(
+      `${config.output}: ${config.files.length} -> 1`
+    );
+  }
+
+  if (!generated.length) {
+    log(
+      "D4 : aucun bundle généré."
+    );
+    return;
+  }
+
+  if (!updatePublicFiles(generated)) {
+    // Sans allowlist, le serveur ne pourrait pas servir les bundles.
+    // On annule donc la réécriture HTML.
+    for (const file of generated) {
+      try {
+        fs.unlinkSync(
+          path.join(
+            root,
+            file
+          )
+        );
+      } catch {}
+    }
+
+    log(
+      "D4 annulé : public-files.json indisponible ou invalide."
+    );
+    return;
+  }
+
+  fs.writeFileSync(
+    indexPath,
+    html,
+    "utf8"
+  );
+
+  const beforeRequests =
+    findHtmlAssetTags(
+      originalHtml,
+      "css"
+    ).length +
+    findHtmlAssetTags(
+      originalHtml,
+      "js"
+    ).length;
+
+  const afterRequests =
+    findHtmlAssetTags(
+      html,
+      "css"
+    ).length +
+    findHtmlAssetTags(
+      html,
+      "js"
+    ).length;
+
+  log(
+    "D4 : " +
+    `${beforeRequests} fichiers CSS/JS -> ` +
+    `${afterRequests} (-${beforeRequests - afterRequests} requêtes).`
+  );
+
+  for (const report of reports) {
+    log(`D4 : ${report}`);
+  }
+}
+
 function main() {
   cleanupWheel();
   cleanupApp();
   cleanupStyle();
+  bundleFrontendAssets();
 }
 
 main();
