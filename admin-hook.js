@@ -65,6 +65,43 @@ function learnedAnswerKey(category, answer) {
   return `${normalizeLearningValue(category)}|${normalizeLearningValue(answer)}`;
 }
 
+
+async function ensureUserModerationColumns() {
+  if (!pool) return;
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_banned boolean NOT NULL DEFAULT false"
+  ).catch(()=>{});
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_ban_reason text"
+  ).catch(()=>{});
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_banned_at timestamptz"
+  ).catch(()=>{});
+}
+
+async function ensureReportModerationColumns() {
+  if (!pool) return;
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS ptitbac_feedback_reports ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending'"
+  ).catch(()=>{});
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS ptitbac_feedback_reports ADD COLUMN IF NOT EXISTS treated_at timestamptz"
+  ).catch(()=>{});
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS ptitbac_player_reports ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending'"
+  ).catch(()=>{});
+
+  await pool.query(
+    "ALTER TABLE IF EXISTS ptitbac_player_reports ADD COLUMN IF NOT EXISTS treated_at timestamptz"
+  ).catch(()=>{});
+}
+
 async function schema() {
   if (!pool) throw new Error("DATABASE_URL manquant");
   if (schemaPromise) return schemaPromise;
@@ -153,6 +190,20 @@ async function schema() {
         created_at timestamptz NOT NULL DEFAULT now()
       )
     `);
+
+    await ensureUserModerationColumns();
+    await ensureReportModerationColumns();
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ptitbac_player_warnings(
+        id text PRIMARY KEY,
+        wallet_token text NOT NULL,
+        friend_code text,
+        message text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        delivered_at timestamptz
+      )
+    `);
   })();
 
   return schemaPromise;
@@ -231,9 +282,12 @@ async function findUserByCode(code) {
   code = friendCode(code);
   if (!code) return null;
 
+  await ensureUserModerationColumns();
+
   const q = await pool.query(
     `SELECT id,friend_code,username,avatar,wallet_token,lives,
-            created_at,last_seen,updated_at
+            created_at,last_seen,updated_at,
+            admin_banned,admin_ban_reason,admin_banned_at
      FROM public.users
      WHERE friend_code=$1 OR friend_code=$2
      LIMIT 1`,
@@ -273,6 +327,84 @@ function emitToWallet(io, targetToken, payload = {}) {
     socket.emit("economy:update", payload);
   }
 }
+
+function socketsForWallet(io, targetToken) {
+  return [...io.sockets.sockets.values()].filter(
+    client =>
+      String(client.data?.walletToken || "") ===
+      String(targetToken || "")
+  );
+}
+
+function emitWalletEvent(io, targetToken, eventName, payload = {}) {
+  const sockets = socketsForWallet(io, targetToken);
+
+  for (const client of sockets) {
+    client.emit(eventName, payload);
+  }
+
+  return sockets;
+}
+
+async function playerSnapshot(io, code) {
+  const safeCode = friendCode(code);
+  if (!safeCode) throw new Error("ID joueur invalide.");
+
+  const user = await findUserByCode(safeCode);
+  if (!user?.wallet_token) throw new Error("Joueur introuvable.");
+
+  const wallet = await getWallet(user.wallet_token);
+
+  const items = await pool.query(
+    `SELECT item_key,quantity,updated_at
+     FROM ptitbac_player_items
+     WHERE wallet_token=$1
+     ORDER BY updated_at DESC`,
+    [user.wallet_token]
+  ).catch(() => ({ rows:[] }));
+
+  const reportCount = await pool.query(
+    `SELECT COUNT(*)::int AS count
+     FROM ptitbac_player_reports
+     WHERE reported_friend_code=$1`,
+    [safeCode]
+  ).catch(() => ({ rows:[{count:0}] }));
+
+  const feedbackCount = await pool.query(
+    `SELECT COUNT(*)::int AS count
+     FROM ptitbac_feedback_reports
+     WHERE friend_code=$1`,
+    [safeCode]
+  ).catch(() => ({ rows:[{count:0}] }));
+
+  const online = socketsForWallet(io, user.wallet_token).length > 0;
+
+  return {
+    friendCode:user.friend_code,
+    name:user.username || "Joueur",
+    avatar:user.avatar || "🧠",
+    lives:Number(user.lives ?? 0),
+    coins:Number(wallet.coins || 0),
+    gems:Number(wallet.gems || 0),
+    createdAt:user.created_at,
+    lastSeen:user.last_seen,
+    online,
+    banned:!!user.admin_banned,
+    banReason:user.admin_ban_reason || "",
+    bannedAt:user.admin_banned_at || null,
+    reports:
+      Number(reportCount.rows[0]?.count || 0) +
+      Number(feedbackCount.rows[0]?.count || 0),
+    items:items.rows.map(row => ({
+      key:row.item_key,
+      quantity:Number(row.quantity || 0),
+      label:
+        ITEM_CATALOG.find(item => item.key === row.item_key)?.label ||
+        row.item_key
+    }))
+  };
+}
+
 
 async function updateResource(io, {
   adminToken,
@@ -399,22 +531,92 @@ function installAdmin(io) {
     socket.on("admin:status", async (payload={}, cb=()=>{}) => {
       try {
         const token = walletToken(payload.walletToken);
-        const admin = await isAdmin(token);
 
-        if (!admin) {
-          return cb({
-            ok:true,
-            admin:false
-          });
+        if (token) {
+          socket.data.walletToken = token;
+          await ensureUserModerationColumns();
+
+          const userQuery = await pool.query(
+            `SELECT friend_code,username,admin_banned,admin_ban_reason
+             FROM public.users
+             WHERE wallet_token=$1
+             LIMIT 1`,
+            [token]
+          ).catch(() => ({ rows:[] }));
+
+          const user = userQuery.rows[0];
+
+          if (user?.username) {
+            socket.emit("admin:profile-sync", {
+              name:user.username,
+              friendCode:user.friend_code || ""
+            });
+          }
+
+          const warningQuery = await pool.query(
+            `SELECT id,message
+             FROM ptitbac_player_warnings
+             WHERE wallet_token=$1
+               AND delivered_at IS NULL
+             ORDER BY created_at ASC
+             LIMIT 1`,
+            [token]
+          ).catch(() => ({ rows:[] }));
+
+          const warning = warningQuery.rows[0];
+
+          if (warning) {
+            socket.emit("admin:player-warning", {
+              message:warning.message
+            });
+
+            await pool.query(
+              `UPDATE ptitbac_player_warnings
+               SET delivered_at=now()
+               WHERE id=$1`,
+              [warning.id]
+            ).catch(()=>{});
+          }
+
+          const admin = await isAdmin(token);
+
+          if (user?.admin_banned && !admin) {
+            const reason =
+              String(user.admin_ban_reason || "Compte suspendu.");
+
+            cb({
+              ok:true,
+              admin:false,
+              banned:true,
+              reason
+            });
+
+            socket.emit("admin:account-banned", {
+              reason
+            });
+
+            setTimeout(() => {
+              if (socket.connected) socket.disconnect(true);
+            }, 250);
+
+            return;
+          }
+
+          if (admin) {
+            const s = await applyFlags(token);
+
+            return cb({
+              ok:true,
+              admin:true,
+              infiniteCoins:!!s.infinite_coins,
+              infiniteLives:!!s.infinite_lives
+            });
+          }
         }
-
-        const s = await applyFlags(token);
 
         cb({
           ok:true,
-          admin:true,
-          infiniteCoins:!!s.infinite_coins,
-          infiniteLives:!!s.infinite_lives
+          admin:false
         });
       } catch {
         cb({
@@ -730,82 +932,223 @@ function installAdmin(io) {
           });
         }
 
-        const code = friendCode(payload.friendCode);
+        const player = await playerSnapshot(
+          io,
+          payload.friendCode
+        );
 
-        if (!code) {
+        cb({
+          ok:true,
+          player
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Impossible de charger le joueur."
+        });
+      }
+    });
+
+    socket.on("admin:playerModeration", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
           return cb({
             ok:false,
-            error:"ID joueur invalide."
+            error:"Accès refusé."
           });
         }
 
+        await ensureUserModerationColumns();
+
+        const code = friendCode(payload.friendCode);
+        const action = String(payload.action || "").trim();
         const user = await findUserByCode(code);
 
-        if (!user?.wallet_token) {
+        if (!code || !user?.wallet_token) {
           return cb({
             ok:false,
             error:"Joueur introuvable."
           });
         }
 
-        const wallet = await getWallet(user.wallet_token);
+        if (
+          user.wallet_token === token &&
+          ["ban","unban"].includes(action)
+        ) {
+          return cb({
+            ok:false,
+            error:"Tu ne peux pas te bannir toi-même."
+          });
+        }
 
-        const items = await pool.query(
-          `SELECT item_key,quantity,updated_at
-           FROM ptitbac_player_items
-           WHERE wallet_token=$1
-           ORDER BY updated_at DESC`,
-          [user.wallet_token]
-        ).catch(() => ({ rows:[] }));
+        if (action === "warn") {
+          const message =
+            String(payload.message || "")
+              .trim()
+              .slice(0,300);
 
-        const reportCount = await pool.query(
-          `SELECT COUNT(*)::int AS count
-           FROM ptitbac_player_reports
-           WHERE reported_friend_code=$1`,
-          [code]
-        ).catch(() => ({ rows:[{count:0}] }));
-
-        const feedbackCount = await pool.query(
-          `SELECT COUNT(*)::int AS count
-           FROM ptitbac_feedback_reports
-           WHERE friend_code=$1`,
-          [code]
-        ).catch(() => ({ rows:[{count:0}] }));
-
-        const online = [...io.sockets.sockets.values()].some(
-          client =>
-            String(client.data?.walletToken || "") ===
-            String(user.wallet_token)
-        );
-
-        cb({
-          ok:true,
-          player:{
-            friendCode:user.friend_code,
-            name:user.username || "Joueur",
-            avatar:user.avatar || "🧠",
-            lives:Number(user.lives ?? 0),
-            coins:Number(wallet.coins || 0),
-            gems:Number(wallet.gems || 0),
-            createdAt:user.created_at,
-            lastSeen:user.last_seen,
-            online,
-            reports:
-              Number(reportCount.rows[0]?.count || 0) +
-              Number(feedbackCount.rows[0]?.count || 0),
-            items:items.rows.map(row => ({
-              key:row.item_key,
-              quantity:Number(row.quantity || 0),
-              label:
-                ITEM_CATALOG.find(item => item.key === row.item_key)?.label ||
-                row.item_key
-            }))
+          if (message.length < 3) {
+            return cb({
+              ok:false,
+              error:"Écris un avertissement."
+            });
           }
-        });
-      } catch {
+
+          const warningId = id();
+
+          await pool.query(
+            `INSERT INTO ptitbac_player_warnings
+             (id,wallet_token,friend_code,message)
+             VALUES($1,$2,$3,$4)`,
+            [
+              warningId,
+              user.wallet_token,
+              code,
+              message
+            ]
+          );
+
+          const targets = emitWalletEvent(
+            io,
+            user.wallet_token,
+            "admin:player-warning",
+            { message }
+          );
+
+          if (targets.length) {
+            await pool.query(
+              `UPDATE ptitbac_player_warnings
+               SET delivered_at=now()
+               WHERE id=$1`,
+              [warningId]
+            ).catch(()=>{});
+          }
+
+          await audit(token, "player_warn", code, {
+            message
+          });
+
+          return cb({
+            ok:true,
+            message:"Avertissement envoyé.",
+            player:await playerSnapshot(io, code)
+          });
+        }
+
+        if (action === "rename") {
+          const name =
+            String(payload.name || "")
+              .trim()
+              .replace(/\s+/g, " ")
+              .slice(0,16);
+
+          if (name.length < 2) {
+            return cb({
+              ok:false,
+              error:"Pseudo invalide."
+            });
+          }
+
+          await pool.query(
+            `UPDATE public.users
+             SET username=$2,updated_at=now()
+             WHERE wallet_token=$1`,
+            [user.wallet_token,name]
+          );
+
+          emitWalletEvent(
+            io,
+            user.wallet_token,
+            "admin:profile-sync",
+            {
+              name,
+              friendCode:code,
+              moderated:true
+            }
+          );
+
+          await audit(token, "player_rename", code, {
+            previousName:user.username,
+            newName:name
+          });
+
+          return cb({
+            ok:true,
+            message:"Pseudo modifié.",
+            player:await playerSnapshot(io, code)
+          });
+        }
+
+        if (action === "ban") {
+          const reason =
+            String(payload.reason || "Compte suspendu par la modération.")
+              .trim()
+              .slice(0,240);
+
+          await pool.query(
+            `UPDATE public.users
+             SET admin_banned=true,
+                 admin_ban_reason=$2,
+                 admin_banned_at=now(),
+                 updated_at=now()
+             WHERE wallet_token=$1`,
+            [user.wallet_token,reason]
+          );
+
+          const targets = emitWalletEvent(
+            io,
+            user.wallet_token,
+            "admin:account-banned",
+            { reason }
+          );
+
+          setTimeout(() => {
+            for (const target of targets) {
+              if (target.connected) target.disconnect(true);
+            }
+          }, 300);
+
+          await audit(token, "player_ban", code, {
+            reason
+          });
+
+          return cb({
+            ok:true,
+            message:"Joueur banni.",
+            player:await playerSnapshot(io, code)
+          });
+        }
+
+        if (action === "unban") {
+          await pool.query(
+            `UPDATE public.users
+             SET admin_banned=false,
+                 admin_ban_reason=NULL,
+                 admin_banned_at=NULL,
+                 updated_at=now()
+             WHERE wallet_token=$1`,
+            [user.wallet_token]
+          );
+
+          await audit(token, "player_unban", code);
+
+          return cb({
+            ok:true,
+            message:"Joueur débanni.",
+            player:await playerSnapshot(io, code)
+          });
+        }
+
         cb({
           ok:false,
-          error:"Impossible de charger le joueur."
+          error:"Action inconnue."
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Action impossible."
         });
       }
     });
@@ -870,11 +1213,13 @@ function installAdmin(io) {
         }
 
         await schema();
+        await ensureReportModerationColumns();
 
         const feedback = await pool.query(
           `SELECT id,report_type AS type,friend_code,player_name,message,
                   room_code,category,answer,NULL::text AS letter,
-                  NULL::text AS status,created_at
+                  COALESCE(status,'pending') AS status,
+                  treated_at,created_at,'feedback'::text AS source
            FROM ptitbac_feedback_reports
            ORDER BY created_at DESC
            LIMIT 250`
@@ -886,7 +1231,9 @@ function installAdmin(io) {
                   reported_name AS player_name,
                   reason AS message,room_code,
                   NULL::text AS category,NULL::text AS answer,
-                  NULL::text AS letter,NULL::text AS status,created_at
+                  NULL::text AS letter,
+                  COALESCE(status,'pending') AS status,
+                  treated_at,created_at,'player'::text AS source
            FROM ptitbac_player_reports
            ORDER BY created_at DESC
            LIMIT 250`
@@ -897,9 +1244,13 @@ function installAdmin(io) {
                   'Réponse signalée' AS player_name,
                   COALESCE(original_reason,'Réponse contestée') AS message,
                   room_code,category,answer,letter,status,
-                  to_timestamp(created_at/1000.0) AS created_at
+                  CASE
+                    WHEN reviewed_at IS NULL THEN NULL
+                    ELSE to_timestamp(reviewed_at/1000.0)
+                  END AS treated_at,
+                  to_timestamp(created_at/1000.0) AS created_at,
+                  'answer'::text AS source
            FROM ptitbac_answer_reports
-           WHERE status <> 'admin_deleted'
            ORDER BY created_at DESC
            LIMIT 250`
         ).catch(() => ({ rows:[] }));
@@ -924,6 +1275,70 @@ function installAdmin(io) {
         cb({
           ok:false,
           error:"Impossible de charger les reports."
+        });
+      }
+    });
+
+    socket.on("admin:reportMarkTreated", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
+          return cb({
+            ok:false,
+            error:"Accès refusé."
+          });
+        }
+
+        await ensureReportModerationColumns();
+
+        const reportId =
+          String(payload.reportId || "").trim();
+
+        const source =
+          String(payload.source || "").trim();
+
+        if (!reportId) {
+          return cb({
+            ok:false,
+            error:"Report invalide."
+          });
+        }
+
+        if (source === "feedback") {
+          await pool.query(
+            `UPDATE ptitbac_feedback_reports
+             SET status='admin_treated',treated_at=now()
+             WHERE id=$1`,
+            [reportId]
+          );
+        } else if (source === "player") {
+          await pool.query(
+            `UPDATE ptitbac_player_reports
+             SET status='admin_treated',treated_at=now()
+             WHERE id=$1`,
+            [reportId]
+          );
+        } else {
+          return cb({
+            ok:false,
+            error:"Type de report invalide."
+          });
+        }
+
+        await audit(token, "report_treated", null, {
+          reportId,
+          source
+        });
+
+        cb({
+          ok:true,
+          treated:true
+        });
+      } catch {
+        cb({
+          ok:false,
+          error:"Impossible de traiter ce report."
         });
       }
     });

@@ -610,40 +610,71 @@
     return "RÉPONSE / BUG";
   }
 
+  function isReportTreated(report) {
+    return [
+      "admin_treated",
+      "admin_validated",
+      "admin_deleted"
+    ].includes(String(report?.status || ""));
+  }
+
   function reportActions(report) {
-    if (
-      report.type !== "report-bug" ||
-      !report.letter ||
-      !report.category ||
-      !report.answer
-    ) {
-      return "";
+    if (isReportTreated(report)) {
+      if (report.status === "admin_validated") {
+        return `
+          <div class="admin-v4-report-valid">
+            ✓ VALIDÉ — APPRIS PAR L’IA
+          </div>
+        `;
+      }
+
+      if (report.status === "admin_deleted") {
+        return `
+          <div class="admin-v5-report-treated is-deleted">
+            ✓ TRAITÉ — REPORT SUPPRIMÉ
+          </div>
+        `;
+      }
+
+      return `
+        <div class="admin-v5-report-treated">
+          ✓ REPORT TRAITÉ
+        </div>
+      `;
     }
 
-    const validated =
-      report.status === "admin_validated";
-
-    if (validated) {
+    if (
+      report.source === "answer" &&
+      report.type === "report-bug" &&
+      report.letter &&
+      report.category &&
+      report.answer
+    ) {
       return `
-        <div class="admin-v4-report-valid">
-          ✓ VALIDÉ — APPRIS PAR L’IA
+        <div class="admin-v4-report-actions">
+          <button
+            type="button"
+            class="adm-answer-validate"
+            data-id="${esc(report.id)}"
+          >✓ Valider</button>
+
+          <button
+            type="button"
+            class="adm-answer-delete"
+            data-id="${esc(report.id)}"
+          >Supprimer</button>
         </div>
       `;
     }
 
     return `
-      <div class="admin-v4-report-actions">
+      <div class="admin-v4-report-actions single">
         <button
           type="button"
-          class="adm-answer-validate"
+          class="adm-report-treated"
           data-id="${esc(report.id)}"
-        >✓ Valider</button>
-
-        <button
-          type="button"
-          class="adm-answer-delete"
-          data-id="${esc(report.id)}"
-        >Supprimer</button>
+          data-source="${esc(report.source || "")}"
+        >✓ Marquer comme traité</button>
       </div>
     `;
   }
@@ -686,6 +717,7 @@
           <button data-filter="report-avis">Avis</button>
           <button data-filter="report-bug">Réponses / bugs</button>
           <button data-filter="report-joueur">Joueurs</button>
+          <button data-filter="treated">Traités</button>
         </div>
 
         <div id="admReportList" class="admin-v1-list">
@@ -700,11 +732,23 @@
 
       if (!listNode) return;
 
-      const list = state.reports.filter(
-        report =>
-          state.reportFilter === "all" ||
-          report.type === state.reportFilter
-      );
+      const list = state.reports.filter(report => {
+        const treated = isReportTreated(report);
+
+        if (state.reportFilter === "treated") {
+          return treated;
+        }
+
+        if (treated) {
+          return false;
+        }
+
+        if (state.reportFilter === "all") {
+          return true;
+        }
+
+        return report.type === state.reportFilter;
+      });
 
       body
         .querySelectorAll("[data-filter]")
@@ -839,6 +883,38 @@
             renderList();
           });
         });
+
+      listNode
+        .querySelectorAll(".adm-report-treated")
+        .forEach(button => {
+          button.addEventListener("click",async () => {
+            button.disabled = true;
+            button.textContent = "Traitement…";
+
+            const response = await emit(
+              "admin:reportMarkTreated",
+              {
+                reportId:button.dataset.id,
+                source:button.dataset.source
+              }
+            );
+
+            if (!response.ok) {
+              button.disabled = false;
+              button.textContent = "✓ Marquer comme traité";
+
+              return toast(
+                response.error ||
+                "Erreur."
+              );
+            }
+
+            toast("Report marqué comme traité.");
+
+            await loadReports(true);
+            renderList();
+          });
+        });
     };
 
     body
@@ -915,9 +991,17 @@
               <small>#${esc(player.friendCode || "-----")}</small>
             </div>
 
-            <span class="admin-v4-online ${player.online ? "is-online" : ""}">
-              ${player.online ? "En ligne" : "Hors ligne"}
-            </span>
+            <div class="admin-v5-player-statuses">
+              <span class="admin-v4-online ${player.online ? "is-online" : ""}">
+                ${player.online ? "En ligne" : "Hors ligne"}
+              </span>
+
+              ${
+                player.banned
+                  ? `<span class="admin-v5-banned-pill">Banni</span>`
+                  : ""
+              }
+            </div>
           </div>
 
           <div class="admin-v4-player-stats">
@@ -952,6 +1036,15 @@
               <b>Dernière activité</b>
               <span>${player.lastSeen ? new Date(player.lastSeen).toLocaleString("fr-FR") : "—"}</span>
             </p>
+
+            ${
+              player.banned
+                ? `<p class="admin-v5-ban-reason">
+                    <b>Motif du ban</b>
+                    <span>${esc(player.banReason || "Non précisé")}</span>
+                  </p>`
+                : ""
+            }
           </div>
 
           <div class="admin-v4-items">
@@ -965,6 +1058,74 @@
             }
           </div>
 
+          <section class="admin-v5-player-moderation">
+            <h4>Modération du joueur</h4>
+
+            <div class="admin-v5-mod-block">
+              <label>
+                Modifier le pseudo
+                <div class="admin-v5-inline-action">
+                  <input
+                    id="admRenameInput"
+                    maxlength="16"
+                    value="${esc(player.name || "")}"
+                    placeholder="Nouveau pseudo"
+                  >
+                  <button id="admRenameBtn" type="button">Modifier</button>
+                </div>
+              </label>
+            </div>
+
+            <div class="admin-v5-mod-block">
+              <label>
+                Avertir le joueur
+                <textarea
+                  id="admWarningText"
+                  maxlength="300"
+                  placeholder="Écris l’avertissement qui sera affiché au joueur…"
+                ></textarea>
+              </label>
+
+              <button
+                id="admWarnBtn"
+                class="admin-v5-warning-btn"
+                type="button"
+              >Envoyer l’avertissement</button>
+            </div>
+
+            <div class="admin-v5-mod-block admin-v5-ban-block">
+              ${
+                player.banned
+                  ? `
+                    <p>Ce joueur est actuellement banni.</p>
+                    <button
+                      id="admBanToggle"
+                      class="admin-v5-unban-btn"
+                      type="button"
+                      data-action="unban"
+                    >Débannir le joueur</button>
+                  `
+                  : `
+                    <label>
+                      Motif du bannissement
+                      <input
+                        id="admBanReason"
+                        maxlength="240"
+                        placeholder="Ex. insultes répétées, triche…"
+                      >
+                    </label>
+
+                    <button
+                      id="admBanToggle"
+                      class="admin-v5-ban-btn"
+                      type="button"
+                      data-action="ban"
+                    >Bannir le joueur</button>
+                  `
+              }
+            </div>
+          </section>
+
           <button
             id="admPlayerReports"
             class="admin-v4-secondary"
@@ -972,6 +1133,110 @@
           >Voir les reports de ce joueur</button>
         </section>
       `;
+
+      const runModeration = async (action,payload={}) => {
+        const response = await emit(
+          "admin:playerModeration",
+          {
+            friendCode:player.friendCode,
+            action,
+            ...payload
+          }
+        );
+
+        if (!response.ok) {
+          toast(
+            response.error ||
+            "Action impossible."
+          );
+          return null;
+        }
+
+        if (response.message) {
+          toast(response.message);
+        }
+
+        if (response.player) {
+          state.player = response.player;
+          renderPlayer(response.player);
+        }
+
+        return response;
+      };
+
+      resultNode
+        .querySelector("#admRenameBtn")
+        ?.addEventListener("click",async () => {
+          const name =
+            resultNode
+              .querySelector("#admRenameInput")
+              ?.value || "";
+
+          await runModeration(
+            "rename",
+            { name }
+          );
+        });
+
+      resultNode
+        .querySelector("#admWarnBtn")
+        ?.addEventListener("click",async () => {
+          const message =
+            resultNode
+              .querySelector("#admWarningText")
+              ?.value || "";
+
+          const response =
+            await runModeration(
+              "warn",
+              { message }
+            );
+
+          if (response) {
+            const field =
+              resultNode.querySelector("#admWarningText");
+
+            if (field) field.value = "";
+          }
+        });
+
+      resultNode
+        .querySelector("#admBanToggle")
+        ?.addEventListener("click",async event => {
+          const action =
+            event.currentTarget.dataset.action;
+
+          if (action === "ban") {
+            const reason =
+              resultNode
+                .querySelector("#admBanReason")
+                ?.value || "";
+
+            if (
+              !window.confirm(
+                `Bannir ${player.name} ?`
+              )
+            ) {
+              return;
+            }
+
+            await runModeration(
+              "ban",
+              { reason }
+            );
+            return;
+          }
+
+          if (
+            !window.confirm(
+              `Débannir ${player.name} ?`
+            )
+          ) {
+            return;
+          }
+
+          await runModeration("unban");
+        });
 
       resultNode
         .querySelector("#admPlayerReports")
@@ -1293,6 +1558,135 @@
         ?.appendChild(button);
     }
   }
+
+  socket.on("admin:profile-sync", payload => {
+    const name =
+      String(payload?.name || "")
+        .trim()
+        .slice(0,16);
+
+    if (!name) return;
+
+    const current =
+      typeof getProfile === "function"
+        ? getProfile()
+        : { name:"", icon:"🧠" };
+
+    if (current.name === name) return;
+
+    try {
+      if (typeof saveProfile === "function") {
+        saveProfile(
+          name,
+          current.icon || "🧠"
+        );
+      } else {
+        localStorage.setItem(
+          "petitbac_profile_name",
+          name
+        );
+      }
+
+      const homeName =
+        document.querySelector(
+          ".hm-profile-copy b"
+        );
+
+      if (homeName) {
+        homeName.textContent = name;
+      }
+
+      const profileInput =
+        document.getElementById(
+          "profileV10Name"
+        );
+
+      if (profileInput) {
+        profileInput.value = name;
+      }
+
+      if (payload?.moderated) {
+        toast("Ton pseudo a été modifié par la modération.");
+      }
+    } catch {}
+  });
+
+  socket.on("admin:player-warning", payload => {
+    const message =
+      String(payload?.message || "")
+        .trim();
+
+    if (!message) return;
+
+    const overlay = modal(
+      `
+        <button
+          class="admin-v1-x"
+          type="button"
+          aria-label="Fermer"
+        >×</button>
+
+        <div class="admin-v5-warning-modal-icon">!</div>
+
+        <h2>Avertissement</h2>
+
+        <p class="admin-v1-sub">
+          Un administrateur t’a envoyé cet avertissement :
+        </p>
+
+        <div class="admin-v5-warning-message">
+          ${esc(message)}
+        </div>
+
+        <button
+          id="admWarningAcknowledge"
+          class="admin-v1-primary"
+          type="button"
+        >J’ai compris</button>
+      `,
+      "admin-v5-player-warning-overlay"
+    );
+
+    const close = () => overlay.remove();
+
+    overlay
+      .querySelector(".admin-v1-x")
+      ?.addEventListener("click",close);
+
+    overlay
+      .querySelector("#admWarningAcknowledge")
+      ?.addEventListener("click",close);
+  });
+
+  socket.on("admin:account-banned", payload => {
+    const reason =
+      String(payload?.reason || "Compte suspendu.")
+        .trim();
+
+    document
+      .querySelector(".admin-v5-ban-screen")
+      ?.remove();
+
+    const screen =
+      document.createElement("div");
+
+    screen.className =
+      "admin-v5-ban-screen";
+
+    screen.innerHTML = `
+      <div>
+        <img src="/admin-crown.png" alt="">
+        <small>MODÉRATION</small>
+        <h1>Compte suspendu</h1>
+        <p>${esc(reason)}</p>
+        <span>
+          Tu pourras rejouer lorsque ton compte aura été débanni.
+        </span>
+      </div>
+    `;
+
+    document.body.appendChild(screen);
+  });
 
   const observer =
     new MutationObserver(() => decorate());

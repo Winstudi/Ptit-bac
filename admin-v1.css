@@ -897,3 +897,245 @@
     grid-column:auto;
   }
 }
+
+
+/* =========================================================
+   Admin V5 — modération joueurs + reports traités
+   ========================================================= */
+
+.admin-v4-report-actions.single {
+  grid-template-columns:1fr;
+}
+
+.adm-report-treated {
+  border:1px solid #5b74d8;
+  background:#172c6d;
+}
+
+.admin-v5-report-treated {
+  margin-top:9px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.07);
+  color:#55e6b2;
+  text-align:center;
+  font-size:.59rem;
+  font-weight:900;
+}
+
+.admin-v5-report-treated.is-deleted {
+  color:#d09ac6;
+}
+
+.admin-v5-player-statuses {
+  display:grid;
+  justify-items:end;
+  gap:4px;
+}
+
+.admin-v5-banned-pill {
+  padding:5px 7px;
+  border-radius:999px;
+  background:#68213e;
+  color:#ff8eac;
+  font-size:.49rem;
+  font-weight:900;
+}
+
+.admin-v5-ban-reason {
+  color:#ff9bb4 !important;
+}
+
+.admin-v5-player-moderation {
+  margin-top:12px;
+  padding-top:11px;
+  border-top:1px solid rgba(255,255,255,.07);
+}
+
+.admin-v5-player-moderation > h4 {
+  margin:0 0 9px;
+  font-size:.72rem;
+}
+
+.admin-v5-mod-block {
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.055);
+}
+
+.admin-v5-mod-block:first-of-type {
+  border-top:0;
+}
+
+.admin-v5-mod-block label {
+  color:#aaa0cc;
+  font-size:.58rem;
+  font-weight:800;
+}
+
+.admin-v5-inline-action {
+  margin-top:6px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 84px;
+  gap:6px;
+}
+
+.admin-v5-inline-action input,
+.admin-v5-mod-block > label > input,
+.admin-v5-mod-block textarea {
+  width:100%;
+  border:1px solid #4b62af;
+  border-radius:11px;
+  outline:0;
+  background:#071a4b;
+  color:#fff;
+  font:inherit;
+}
+
+.admin-v5-inline-action input,
+.admin-v5-mod-block > label > input {
+  min-height:39px;
+  padding:0 10px;
+  font-size:.66rem;
+}
+
+.admin-v5-mod-block > label > input {
+  margin-top:6px;
+}
+
+.admin-v5-mod-block textarea {
+  min-height:74px;
+  margin-top:6px;
+  padding:9px 10px;
+  resize:vertical;
+  font-size:.64rem;
+  line-height:1.35;
+}
+
+.admin-v5-inline-action button,
+.admin-v5-warning-btn,
+.admin-v5-ban-btn,
+.admin-v5-unban-btn {
+  min-height:39px;
+  border-radius:11px;
+  color:#fff;
+  font-size:.59rem;
+  font-weight:900;
+}
+
+.admin-v5-inline-action button {
+  border:1px solid #7e58e7;
+  background:#3e2a92;
+}
+
+.admin-v5-warning-btn {
+  width:100%;
+  margin-top:7px;
+  border:1px solid #d9a44f;
+  background:#715020;
+}
+
+.admin-v5-ban-block > p {
+  margin:0 0 8px;
+  color:#ff9bb4;
+  font-size:.61rem;
+}
+
+.admin-v5-ban-btn {
+  width:100%;
+  margin-top:7px;
+  border:1px solid #e05e80;
+  background:#6b203e;
+}
+
+.admin-v5-unban-btn {
+  width:100%;
+  border:1px solid #49d69f;
+  background:#0f604b;
+}
+
+.admin-v5-warning-modal-icon {
+  width:46px;
+  height:46px;
+  margin-bottom:10px;
+  border:1px solid #e3af50;
+  border-radius:14px;
+  background:#6b4c1c;
+  color:#ffd989;
+  display:grid;
+  place-items:center;
+  font-size:1.35rem;
+  font-weight:900;
+}
+
+.admin-v5-warning-message {
+  padding:12px;
+  border:1px solid #5669af;
+  border-radius:13px;
+  background:#081a4b;
+  color:#f1ecff;
+  font-size:.70rem;
+  line-height:1.45;
+}
+
+.admin-v5-ban-screen {
+  position:fixed;
+  inset:0;
+  z-index:200000;
+  padding:24px;
+  background:
+    radial-gradient(circle at 50% 0,rgba(103,42,190,.32),transparent 33%),
+    #060d31;
+  color:#fff;
+  font-family:"DM Sans",system-ui,sans-serif;
+  display:grid;
+  place-items:center;
+  text-align:center;
+}
+
+.admin-v5-ban-screen > div {
+  width:min(100%,360px);
+  padding:24px 20px;
+  border:1.3px solid #834ce8;
+  border-radius:24px;
+  background:#0b1d53;
+  box-shadow:0 0 28px rgba(110,52,231,.28);
+}
+
+.admin-v5-ban-screen img {
+  width:72px;
+  height:72px;
+  margin:0 auto 8px;
+  object-fit:contain;
+}
+
+.admin-v5-ban-screen small {
+  color:#bd9cec;
+  font-size:.60rem;
+  font-weight:900;
+  letter-spacing:.16em;
+}
+
+.admin-v5-ban-screen h1 {
+  margin:7px 0 10px;
+  font-size:1.5rem;
+}
+
+.admin-v5-ban-screen p {
+  margin:0;
+  color:#ffadc2;
+  font-size:.76rem;
+  font-weight:800;
+}
+
+.admin-v5-ban-screen span {
+  display:block;
+  margin-top:12px;
+  color:#aaa0c7;
+  font-size:.64rem;
+  line-height:1.4;
+}
+
+@media (max-width:390px) {
+  .admin-v5-inline-action {
+    grid-template-columns:minmax(0,1fr) 74px;
+  }
+}
