@@ -24,6 +24,14 @@ const DEFAULT_OWNED = Object.freeze({
   tags: Object.freeze(Object.values(CATALOG.tag).filter(item => item.defaultOwned).map(item => item.id))
 });
 
+const LEGACY_AVATAR_IDS = Object.freeze({
+  "/avatar-base-01.webp": "/a1.webp",
+  "/avatar-base-02.webp": "/a2.webp",
+  "/avatar-base-03.webp": "/a3.webp",
+  "/avatar-base-04.webp": "/a4.webp",
+  "/avatar-base-05.webp": "/a5.webp"
+});
+
 function validWalletToken(value) {
   const token = String(value || "").trim();
   return /^[a-f0-9]{48}$/i.test(token) ? token : "";
@@ -43,7 +51,9 @@ function normalizeItemId(type, value, { allowEmpty = false } = {}) {
 }
 
 function normalizeAvatarId(value) {
-  return normalizeItemId("avatar", value) || DEFAULT_OWNED.avatars[0];
+  const raw = String(value || "").trim();
+  const migrated = LEGACY_AVATAR_IDS[raw] || raw;
+  return normalizeItemId("avatar", migrated) || DEFAULT_OWNED.avatars[0];
 }
 
 function normalizeLegacyEquipped(raw = {}) {

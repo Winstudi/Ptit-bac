@@ -1,5 +1,4 @@
 "use strict";
-require("./ai-runtime-fix.js");
 require("./friend-code-v2-hook.js");
 const express = require("express");
 const http = require("http");
@@ -63,7 +62,7 @@ const servePublicFile = express.static(__dirname, {
   index: false,
   redirect: false,
   setHeaders(res, filePath) {
-    res.setHeader("Cache-Control", /\.(?:png|wav)$/i.test(filePath)
+    res.setHeader("Cache-Control", /\.(?:png|webp|wav)$/i.test(filePath)
       ? "public, max-age=86400" : "public, max-age=0, must-revalidate");
   }
 });
@@ -93,13 +92,13 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_VALIDATION_MODEL = process.env.OPENAI_VALIDATION_MODEL || "gpt-5-mini";
 const OPENAI_VALIDATION_REVIEW_MODEL = process.env.OPENAI_VALIDATION_REVIEW_MODEL || OPENAI_VALIDATION_MODEL;
 const OPENAI_VALIDATION_WEB_SEARCH = String(process.env.OPENAI_VALIDATION_WEB_SEARCH || "false").toLowerCase() === "true";
-const AUTO_VALIDATION_TIMEOUT_MS = Math.max(8000, Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 30000);
+const AUTO_VALIDATION_TIMEOUT_MS = Math.max(60000, Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 60000);
 // IA des joueurs test : moteur séparé de l'arbitre de correction.
 // Elle peut utiliser le même compte API, mais possède son propre modèle, prompt, timeout et logique.
 const BOT_AI_ENABLED = String(process.env.BOT_AI_ENABLED || "true").toLowerCase() !== "false";
 const OPENAI_BOT_MODEL = process.env.OPENAI_BOT_MODEL || "gpt-5-mini";
 const OPENAI_BOT_API_KEY = process.env.OPENAI_BOT_API_KEY || OPENAI_API_KEY;
-const BOT_AI_TIMEOUT_MS = Math.max(4000, Number(process.env.BOT_AI_TIMEOUT_MS) || 9000);
+const BOT_AI_TIMEOUT_MS = Math.max(30000, Number(process.env.BOT_AI_TIMEOUT_MS) || 30000);
 const VALIDATION_CACHE_FILE = path.join(__dirname, "validation-cache-v2.json");
 const VALIDATION_LEARNING_FILE = path.join(__dirname, "validation-learning-v1.json");
 const VALIDATION_REPORTS_FILE = path.join(__dirname, "validation-reports-v1.json");
@@ -1675,7 +1674,7 @@ function shouldCacheDecision(item) {
 
 async function validateInBatches(items, letter, options = {}) {
   const all = [];
-  const batchSize = Math.max(1, Math.min(30, Number(process.env.OPENAI_VALIDATION_BATCH_SIZE) || 30));
+  const batchSize = Math.max(1, Math.min(15, Number(process.env.OPENAI_VALIDATION_BATCH_SIZE) || 15));
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     let results = null;
