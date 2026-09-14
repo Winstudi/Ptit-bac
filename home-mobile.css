@@ -619,6 +619,11 @@ body:has(.home-mobile) .economy-hud {
   stroke-linejoin:round;
 }
 
+/* Les flèches des 3 modes sont remontées sans toucher aux autres chevrons. */
+.hm-mode-grid > button .hm-chevron {
+  top:calc(50% - 25px);
+}
+
 .hm-ranked {
   width:100%;
   min-height:50px;
