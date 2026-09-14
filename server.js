@@ -1504,8 +1504,7 @@ async function callValidationModel(items, letter, { review = false } = {}) {
   const payloadItems = makeValidationPayload(items, letter);
 
   const reviewInstructions = review
-    ? `${VALIDATION_SYSTEM_PROMPT}\
-SECONDE VÉRIFICATION : tu réexamines uniquement des cas ambigus. Cherche activement les faux positifs. Une réponse inconnue ou dont l'existence n'est pas établie doit rester invalide/incertaine. Ne confirme "valid" que si l'appartenance à la catégorie est réellement solide.`
+    ? `${VALIDATION_SYSTEM_PROMPT}\nSECONDE VÉRIFICATION : tu réexamines uniquement des cas ambigus. Cherche activement les faux positifs. Une réponse inconnue ou dont l'existence n'est pas établie doit rester invalide/incertaine. Ne confirme "valid" que si l'appartenance à la catégorie est réellement solide.`
     : VALIDATION_SYSTEM_PROMPT;
 
   const body = {
@@ -2191,21 +2190,7 @@ async function generateBotPlansWithAI(room, bots, roundIndex, letter) {
       const persona = botPersonaFor(bot, index);
       return { id: bot.id, name: bot.name, persona: persona.label, instruction: persona.instruction };
     });
-    const prompt = `Tu incarnes plusieurs joueurs DISTINCTS d'une partie de P'tit Bac. Tu n'es PAS l'arbitre et tu ne dois jamais évaluer les réponses : ton seul rôle est de proposer ce que chaque joueur taperait pendant la manche.\
-\
-Lettre: ${letter}\
-Catégories: ${JSON.stringify(room.categories)}\
-Joueurs simulés: ${JSON.stringify(botDescriptions)}\
-\
-Règles de génération:\
-- Chaque réponse non vide doit commencer par la lettre ${letter} (accents tolérés).\
-- Utilise de vrais mots, noms, marques, lieux ou références existantes adaptées à la catégorie. N'invente pas de faux mots.\
-- Les joueurs doivent avoir des réponses DIFFÉRENTES entre eux dès qu'une alternative raisonnable existe. Évite absolument de copier la même grille d'un joueur à l'autre.\
-- Un joueur peut laisser quelques réponses vides.\
-- Les personnalités doivent se ressentir légèrement : certains choisissent des évidences, d'autres des réponses plus originales.\
-- Ne cherche pas à provoquer volontairement des doublons. Un doublon occasionnel reste possible, mais ne doit pas être systématique.\
-- Retourne exactement une entrée par catégorie et par joueur, dans le même ordre que les catégories.\
-- Ne fais aucun commentaire et n'ajoute aucun verdict de validité.`;
+    const prompt = `Tu incarnes plusieurs joueurs DISTINCTS d'une partie de P'tit Bac. Tu n'es PAS l'arbitre et tu ne dois jamais évaluer les réponses : ton seul rôle est de proposer ce que chaque joueur taperait pendant la manche.\n\nLettre: ${letter}\nCatégories: ${JSON.stringify(room.categories)}\nJoueurs simulés: ${JSON.stringify(botDescriptions)}\n\nRègles de génération:\n- Chaque réponse non vide doit commencer par la lettre ${letter} (accents tolérés).\n- Utilise de vrais mots, noms, marques, lieux ou références existantes adaptées à la catégorie. N'invente pas de faux mots.\n- Les joueurs doivent avoir des réponses DIFFÉRENTES entre eux dès qu'une alternative raisonnable existe. Évite absolument de copier la même grille d'un joueur à l'autre.\n- Un joueur peut laisser quelques réponses vides.\n- Les personnalités doivent se ressentir légèrement : certains choisissent des évidences, d'autres des réponses plus originales.\n- Ne cherche pas à provoquer volontairement des doublons. Un doublon occasionnel reste possible, mais ne doit pas être systématique.\n- Retourne exactement une entrée par catégorie et par joueur, dans le même ordre que les catégories.\n- Ne fais aucun commentaire et n'ajoute aucun verdict de validité.`;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
