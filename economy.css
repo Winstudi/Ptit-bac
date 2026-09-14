@@ -38,25 +38,22 @@
 }
 
 /* =========================================================
-   P'tit Bac — Accueil : bloc niveau / XP
-   Le moteur de progression injecte déjà le niveau et la barre
-   dans le profil. On les présente ici comme une carte autonome
-   entre le profil et les boutons Quêtes / Magasin.
+   P'tit Bac — Accueil : bloc niveau / XP compact
    ========================================================= */
 
 .home-mobile .hm-profile-copy > small{
   position:absolute !important;
   z-index:8 !important;
-  top:47px !important;
+  top:43px !important;
   left:-1px !important;
-  width:88px !important;
-  height:36px !important;
+  width:92px !important;
+  height:32px !important;
   margin:0 !important;
-  padding:6px 8px 16px !important;
+  padding:5px 8px 14px !important;
   display:block !important;
   overflow:hidden !important;
   border:1.2px solid #7957ff !important;
-  border-radius:12px !important;
+  border-radius:11px !important;
   background:
     radial-gradient(circle at 28% 0%,rgba(145,76,255,.20),transparent 62%),
     linear-gradient(145deg,rgba(35,22,91,.98),rgba(8,20,63,.98)) !important;
@@ -64,7 +61,7 @@
     inset 0 0 12px rgba(127,92,255,.10),
     0 5px 14px rgba(1,5,31,.22) !important;
   color:#f7f2ff !important;
-  font-size:.55rem !important;
+  font-size:.53rem !important;
   font-weight:900 !important;
   line-height:1 !important;
   text-align:left !important;
@@ -75,10 +72,10 @@
 .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
   position:absolute !important;
   z-index:9 !important;
-  top:69px !important;
+  top:61px !important;
   left:7px !important;
-  width:72px !important;
-  height:6px !important;
+  width:76px !important;
+  height:5px !important;
   margin:0 !important;
   overflow:hidden !important;
   border:1px solid rgba(164,117,255,.62) !important;
@@ -99,68 +96,88 @@
   transition:width .45s ease !important;
 }
 
-/* Laisse une vraie place au bloc XP avant Quêtes. */
-body .home-mobile .hm-left{
+/* =========================================================
+   Alignement parfait des raccourcis latéraux
+   Quêtes <-> Info
+   Magasin <-> Amis
+   ========================================================= */
+
+body .home-mobile .hm-side{
   top:72px !important;
 }
 
+body .home-mobile .hm-left,
+body .home-mobile .hm-right{
+  top:72px !important;
+}
+
+/* Petits écrans */
 @media(max-width:370px){
   .home-mobile .hm-profile-copy > small{
-    width:82px !important;
-    height:34px !important;
-    top:45px !important;
-    padding:5px 7px 15px !important;
-    font-size:.52rem !important;
+    top:41px !important;
+    left:-1px !important;
+    width:84px !important;
+    height:30px !important;
+    padding:4px 7px 13px !important;
+    border-radius:10px !important;
+    font-size:.50rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:65px !important;
+    top:58px !important;
     left:6px !important;
-    width:68px !important;
+    width:70px !important;
     height:5px !important;
   }
 
-  body .home-mobile .hm-left{
+  body .home-mobile .hm-side,
+  body .home-mobile .hm-left,
+  body .home-mobile .hm-right{
     top:67px !important;
   }
 }
 
+/* Écrans moins hauts */
 @media(max-height:760px){
   .home-mobile .hm-profile-copy > small{
-    top:43px !important;
-    height:33px !important;
-    padding-top:5px !important;
+    top:41px !important;
+    height:30px !important;
+    padding-top:4px !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:63px !important;
+    top:58px !important;
     height:5px !important;
   }
 
-  body .home-mobile .hm-left{
-    top:62px !important;
+  body .home-mobile .hm-side,
+  body .home-mobile .hm-left,
+  body .home-mobile .hm-right{
+    top:64px !important;
   }
 }
 
 @media(max-height:670px){
   .home-mobile .hm-profile-copy > small{
-    top:40px !important;
+    top:39px !important;
     width:80px !important;
-    height:30px !important;
-    padding:4px 6px 13px !important;
-    border-radius:10px !important;
-    font-size:.49rem !important;
+    height:28px !important;
+    padding:4px 6px 12px !important;
+    border-radius:9px !important;
+    font-size:.47rem !important;
   }
 
   .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:57px !important;
+    top:55px !important;
     left:5px !important;
     width:68px !important;
-    height:5px !important;
+    height:4px !important;
   }
 
-  body .home-mobile .hm-left{
-    top:53px !important;
+  body .home-mobile .hm-side,
+  body .home-mobile .hm-left,
+  body .home-mobile .hm-right{
+    top:58px !important;
   }
 }
 
