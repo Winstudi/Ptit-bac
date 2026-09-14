@@ -287,7 +287,11 @@
 
       const response =
         await new Promise(resolve => {
-          if (!window.socket || !walletToken) {
+          if (
+            typeof socket === "undefined" ||
+            !socket ||
+            !walletToken
+          ) {
             resolve({
               ok:false,
               error:"Profil indisponible."
