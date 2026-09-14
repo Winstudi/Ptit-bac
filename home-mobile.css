@@ -621,7 +621,7 @@ body:has(.home-mobile) .economy-hud {
 
 /* Les flèches des 3 modes sont remontées sans toucher aux autres chevrons. */
 .hm-mode-grid > button .hm-chevron {
-  top:calc(50% - 25px);
+  top:calc(50% - 50px);
 }
 
 .hm-ranked {
@@ -1461,4 +1461,11 @@ body:has(.home-mobile) .economy-hud {
 
 .home-mobile .hm-resource-word {
   font-size:1em;
+}
+
+
+/* Accueil V12 — mini-fenêtre vies */
+.home-mobile .home-resource-popup-lives small {
+  font-size:1.23rem;
+  line-height:1.32;
 }
