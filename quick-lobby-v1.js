@@ -125,15 +125,29 @@
       root.classList.add("quick-lobby-v1");
 
       const title = root.querySelector(".lobby-v5-title");
+      const backButton = root.querySelector("#lobbyV5Leave");
+
+      if (backButton) {
+        backButton.classList.add("quick-lobby-back");
+
+        const backIcon = backButton.querySelector("img");
+
+        if (backIcon) {
+          backIcon.src = "/back-arrow.png";
+        }
+      }
+
+      // Même en-tête visuel que le salon privé.
+      root.querySelector(".lobby-v5-coin-pill")?.remove();
 
       if (title) {
         title.querySelector(".lobby-v5-code")?.remove();
+        title.querySelector(".quick-lobby-subtitle")?.remove();
 
-        if (!title.querySelector(".quick-lobby-subtitle")) {
-          title.insertAdjacentHTML(
-            "beforeend",
-            '<div class="quick-lobby-subtitle">Partie rapide</div>'
-          );
+        const heading = title.querySelector("h1");
+
+        if (heading) {
+          heading.textContent = "Salon rapide";
         }
       }
 
@@ -155,8 +169,15 @@
           );
         });
 
-        // Toujours six emplacements visibles.
+        // Toujours six emplacements visibles, comme dans le salon privé.
         const count = currentRows.length;
+        const playersHeading =
+          root.querySelector(".lobby-v5-players-section h2");
+
+        if (playersHeading) {
+          playersHeading.innerHTML =
+            `Joueurs <span>${count}/6</span>`;
+        }
 
         list.querySelectorAll(".lobby-v5-empty-player").forEach(el => {
           el.remove();
@@ -168,8 +189,7 @@
             `
               <div class="lobby-v5-empty-player readonly quick-empty-player">
                 <span class="lobby-v5-empty-plus">＋</span>
-                <span>En attente d’un joueur…</span>
-                <span class="quick-slot-dots">•••</span>
+                <span>Place libre</span>
               </div>
             `
           );
@@ -190,6 +210,19 @@
           const myReady = readyByPlayerId.get(mePlayerId) === true;
 
           meRow.classList.add("quick-self-row");
+
+          const nameRow =
+            meRow.querySelector(".lobby-v5-player-name-row");
+
+          if (
+            nameRow &&
+            !nameRow.querySelector(".quick-you-tag")
+          ) {
+            nameRow.insertAdjacentHTML(
+              "beforeend",
+              '<span class="quick-you-tag">Toi</span>'
+            );
+          }
 
           meRow.insertAdjacentHTML(
             "beforeend",
