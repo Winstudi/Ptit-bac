@@ -105,40 +105,6 @@ module.exports = function installQuickMatch({
     broadcast(group);
   }
 
-  function startMediumQuickMatch(selected) {
-    const roomCode =
-      String(selected?.[0]?.code || "");
-
-    const originalGet =
-      Map.prototype.get;
-
-    Map.prototype.get =
-      function quickMatchRoomGet(key) {
-        const value =
-          originalGet.call(this, key);
-
-        if (
-          roomCode &&
-          String(key) === roomCode &&
-          value &&
-          typeof value === "object" &&
-          value.mode === "quick"
-        ) {
-          value.categoryDifficulty =
-            "medium";
-        }
-
-        return value;
-      };
-
-    try {
-      return match(selected);
-    } finally {
-      Map.prototype.get =
-        originalGet;
-    }
-  }
-
   async function flush(group) {
     group.timer = null;
 
@@ -162,7 +128,7 @@ module.exports = function installQuickMatch({
     broadcast(group);
 
     try {
-      await startMediumQuickMatch(selected);
+      await match(selected);
     } catch (err) {
       for (const entry of selected) {
         entry.socket.emit("quick:error", {
@@ -291,14 +257,6 @@ module.exports = function installQuickMatch({
           };
 
         const result = admit(entry, [...group.entries]);
-
-        if (
-          result?.state &&
-          result.state.mode === "quick"
-        ) {
-          result.state.categoryDifficulty =
-            "medium";
-        }
 
         entry.group = group;
         group.entries.add(entry);

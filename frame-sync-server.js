@@ -13,17 +13,19 @@ const fs = require("fs");
 const path = require("path");
 
 /*
- * Partie rapide V5 :
+ * Correctif transitoire des règles serveur :
  * - les relances lettre/catégories sont autorisées aussi en mode quick ;
- * - leur coût réel serveur passe de 10 à 20 pièces.
+ * - leur coût réel serveur est de 20 pièces ;
+ * - la difficulté de la partie rapide est "medium".
  *
- * server.js reste intact dans le dépôt : ce préchargeur transforme uniquement
- * ces trois règles au moment où Node compile server.js.
+ * Ces transformations restent temporaires : elles seront supprimées lors
+ * de l'étape suivante, quand les règles seront intégrées directement
+ * dans server.js.
  */
 const nativeJsLoader = Module._extensions[".js"];
 const targetServer = path.resolve(__dirname, "server.js");
 
-Module._extensions[".js"] = function ptbV5ServerRules(module, filename) {
+Module._extensions[".js"] = function ptbServerRules(module, filename) {
   if (path.resolve(filename) !== targetServer) {
     return nativeJsLoader(module, filename);
   }
@@ -42,6 +44,10 @@ Module._extensions[".js"] = function ptbV5ServerRules(module, filename) {
     .replace(
       /\s*if \(room\?\.mode === ["']quick["']\) return socket\.emit\(["']toast["'], ["']Les relances sont désactivées en partie rapide\.["']\);/g,
       ""
+    )
+    .replace(
+      /(rounds\s*:\s*1\s*,\s*duration\s*:\s*60\s*,\s*categoryCount\s*:\s*6\s*,\s*categoryDifficulty\s*:\s*)["']beginner["']/,
+      '$1"medium"'
     );
 
   return module._compile(source, filename);
