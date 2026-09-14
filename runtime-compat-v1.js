@@ -3,6 +3,102 @@
 
   const DEFAULT_AVATAR = "🧠";
 
+  /*
+   * Compatibilité réseau transitoire
+   * --------------------------------
+   * app.js crée déjà la socket principale avec `const socket = io();`.
+   * Plusieurs anciens modules demandent encore `io({ forceNew:true })`.
+   *
+   * Tant que ces modules ne sont pas consolidés individuellement, on renvoie
+   * une façade vers la socket principale au lieu d'ouvrir 4 connexions réseau
+   * supplémentaires.
+   */
+  function installSharedSocketCompatibility() {
+    let primarySocket = null;
+
+    try {
+      primarySocket = typeof socket !== "undefined" ? socket : null;
+    } catch {
+      primarySocket = null;
+    }
+
+    const nativeIo = window.io;
+
+    if (
+      !primarySocket ||
+      typeof nativeIo !== "function" ||
+      nativeIo.__ptbSharedSocketCompat === true
+    ) {
+      return;
+    }
+
+    const makeFacade = () => {
+      let facade = null;
+
+      facade = new Proxy(primarySocket, {
+        get(target, property) {
+          if (property === "__ptbSharedSocketFacade") return true;
+
+          if (property === "on") {
+            return (event, handler) => {
+              target.on(event, handler);
+
+              // Avec forceNew, l'ancien code recevait forcément un futur
+              // événement "connect". Avec une socket partagée, cet événement
+              // a pu se produire avant le chargement du module.
+              if (
+                event === "connect" &&
+                target.connected &&
+                typeof handler === "function"
+              ) {
+                queueMicrotask(() => {
+                  if (target.connected) handler();
+                });
+              }
+
+              return facade;
+            };
+          }
+
+          const value = Reflect.get(target, property, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+
+        set(target, property, value) {
+          return Reflect.set(target, property, value, target);
+        }
+      });
+
+      return facade;
+    };
+
+    const sharedIo = new Proxy(nativeIo, {
+      apply(target, thisArg, args) {
+        const onlyOptions =
+          args.length === 1 &&
+          args[0] &&
+          typeof args[0] === "object" &&
+          !Array.isArray(args[0]);
+
+        if (onlyOptions && args[0].forceNew === true) {
+          return makeFacade();
+        }
+
+        return Reflect.apply(target, thisArg, args);
+      },
+
+      get(target, property, receiver) {
+        if (property === "__ptbSharedSocketCompat") return true;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+
+    window.io = sharedIo;
+    window.PtitBacSharedSocket = primarySocket;
+  }
+
+  installSharedSocketCompatibility();
+
   function isLegacyPhotoAvatar(value) {
     const avatar = String(value || "").trim();
     return /^data:image\//i.test(avatar) || /^blob:/i.test(avatar);
@@ -78,6 +174,7 @@
 
   window.PtitBacRuntimeCompat = Object.freeze({
     sanitizeAvatar,
-    isLegacyPhotoAvatar
+    isLegacyPhotoAvatar,
+    sharedSocket: () => window.PtitBacSharedSocket || null
   });
 })();
