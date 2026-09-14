@@ -204,6 +204,38 @@ async function schema() {
         delivered_at timestamptz
       )
     `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ptitbac_inbox_messages(
+        id text PRIMARY KEY,
+        sender_wallet_token text,
+        recipient_wallet_token text,
+        recipient_friend_code text,
+        message_type text NOT NULL DEFAULT 'message',
+        title text NOT NULL,
+        body text NOT NULL,
+        image_data text,
+        reward_type text NOT NULL DEFAULT 'none',
+        reward_key text,
+        reward_amount integer NOT NULL DEFAULT 0,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ptitbac_inbox_receipts(
+        message_id text NOT NULL REFERENCES ptitbac_inbox_messages(id) ON DELETE CASCADE,
+        wallet_token text NOT NULL,
+        read_at timestamptz,
+        claimed_at timestamptz,
+        PRIMARY KEY(message_id,wallet_token)
+      )
+    `);
+
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_ptitbac_inbox_recipient
+       ON ptitbac_inbox_messages(recipient_wallet_token,created_at DESC)`
+    );
   })();
 
   return schemaPromise;
@@ -406,6 +438,180 @@ async function playerSnapshot(io, code) {
 }
 
 
+function normalizeInboxImage(value) {
+  const image = String(value || "").trim();
+
+  if (!image) return "";
+
+  if (
+    !/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(image) ||
+    image.length > 650000
+  ) {
+    throw new Error("Image jointe invalide ou trop lourde.");
+  }
+
+  return image;
+}
+
+function normalizeReward(type, key, amount) {
+  const safeType =
+    ["none","coins","gems","item"].includes(String(type || ""))
+      ? String(type)
+      : "none";
+
+  if (safeType === "none") {
+    return {
+      type:"none",
+      key:"",
+      amount:0
+    };
+  }
+
+  if (safeType === "item") {
+    const item =
+      ITEM_CATALOG.find(
+        entry => entry.key === String(key || "")
+      );
+
+    if (!item) {
+      throw new Error("Objet invalide.");
+    }
+
+    return {
+      type:"item",
+      key:item.key,
+      amount:Math.max(
+        1,
+        Math.min(
+          99,
+          Math.floor(Number(amount) || 1)
+        )
+      )
+    };
+  }
+
+  return {
+    type:safeType,
+    key:"",
+    amount:Math.max(
+      1,
+      Math.min(
+        999999,
+        Math.floor(Number(amount) || 0)
+      )
+    )
+  };
+}
+
+async function createInboxMessage(io, {
+  senderToken = "",
+  recipientToken = "",
+  recipientFriendCode = "",
+  type = "message",
+  title,
+  body,
+  imageData = "",
+  rewardType = "none",
+  rewardKey = "",
+  rewardAmount = 0
+}) {
+  await schema();
+
+  const safeTitle =
+    String(title || "")
+      .trim()
+      .slice(0,80);
+
+  const safeBody =
+    String(body || "")
+      .trim()
+      .slice(0,1800);
+
+  if (!safeTitle) {
+    throw new Error("Ajoute un titre.");
+  }
+
+  if (!safeBody) {
+    throw new Error("Écris un message.");
+  }
+
+  const safeImage =
+    normalizeInboxImage(imageData);
+
+  const reward =
+    normalizeReward(
+      rewardType,
+      rewardKey,
+      rewardAmount
+    );
+
+  const messageId = id();
+
+  await pool.query(
+    `INSERT INTO ptitbac_inbox_messages
+     (id,sender_wallet_token,recipient_wallet_token,recipient_friend_code,
+      message_type,title,body,image_data,reward_type,reward_key,reward_amount)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    [
+      messageId,
+      walletToken(senderToken) || null,
+      walletToken(recipientToken) || null,
+      friendCode(recipientFriendCode) || null,
+      String(type || "message").slice(0,30),
+      safeTitle,
+      safeBody,
+      safeImage || null,
+      reward.type,
+      reward.key || null,
+      reward.amount
+    ]
+  );
+
+  const notification = {
+    id:messageId,
+    type:String(type || "message"),
+    title:safeTitle,
+    hasReward:reward.type !== "none"
+  };
+
+  if (recipientToken) {
+    emitWalletEvent(
+      io,
+      recipientToken,
+      "inbox:new",
+      notification
+    );
+  } else {
+    io.emit(
+      "inbox:new",
+      notification
+    );
+  }
+
+  return {
+    id:messageId,
+    title:safeTitle,
+    reward
+  };
+}
+
+async function accessibleInboxMessage(messageId, targetToken) {
+  const q = await pool.query(
+    `SELECT id,sender_wallet_token,recipient_wallet_token,recipient_friend_code,
+            message_type,title,body,image_data,reward_type,reward_key,
+            reward_amount,created_at
+     FROM ptitbac_inbox_messages
+     WHERE id=$1
+       AND (recipient_wallet_token IS NULL OR recipient_wallet_token=$2)
+     LIMIT 1`,
+    [String(messageId || ""),targetToken]
+  );
+
+  return q.rows[0] || null;
+}
+
+
+
 async function updateResource(io, {
   adminToken,
   code,
@@ -551,31 +757,6 @@ function installAdmin(io) {
               name:user.username,
               friendCode:user.friend_code || ""
             });
-          }
-
-          const warningQuery = await pool.query(
-            `SELECT id,message
-             FROM ptitbac_player_warnings
-             WHERE wallet_token=$1
-               AND delivered_at IS NULL
-             ORDER BY created_at ASC
-             LIMIT 1`,
-            [token]
-          ).catch(() => ({ rows:[] }));
-
-          const warning = warningQuery.rows[0];
-
-          if (warning) {
-            socket.emit("admin:player-warning", {
-              message:warning.message
-            });
-
-            await pool.query(
-              `UPDATE ptitbac_player_warnings
-               SET delivered_at=now()
-               WHERE id=$1`,
-              [warning.id]
-            ).catch(()=>{});
           }
 
           const admin = await isAdmin(token);
@@ -996,35 +1177,14 @@ function installAdmin(io) {
             });
           }
 
-          const warningId = id();
-
-          await pool.query(
-            `INSERT INTO ptitbac_player_warnings
-             (id,wallet_token,friend_code,message)
-             VALUES($1,$2,$3,$4)`,
-            [
-              warningId,
-              user.wallet_token,
-              code,
-              message
-            ]
-          );
-
-          const targets = emitWalletEvent(
-            io,
-            user.wallet_token,
-            "admin:player-warning",
-            { message }
-          );
-
-          if (targets.length) {
-            await pool.query(
-              `UPDATE ptitbac_player_warnings
-               SET delivered_at=now()
-               WHERE id=$1`,
-              [warningId]
-            ).catch(()=>{});
-          }
+          await createInboxMessage(io, {
+            senderToken:token,
+            recipientToken:user.wallet_token,
+            recipientFriendCode:code,
+            type:"warning",
+            title:"Avertissement de la modération",
+            body:message
+          });
 
           await audit(token, "player_warn", code, {
             message
@@ -1032,7 +1192,7 @@ function installAdmin(io) {
 
           return cb({
             ok:true,
-            message:"Avertissement envoyé.",
+            message:"Avertissement ajouté à la boîte de réception.",
             player:await playerSnapshot(io, code)
           });
         }
@@ -1150,6 +1310,503 @@ function installAdmin(io) {
           ok:false,
           error:error.message || "Action impossible."
         });
+      }
+    });
+
+    socket.on("admin:messageSend", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
+          return cb({
+            ok:false,
+            error:"Accès refusé."
+          });
+        }
+
+        const target =
+          payload.target === "all"
+            ? "all"
+            : "player";
+
+        let recipientToken = "";
+        let recipientCode = "";
+
+        if (target === "player") {
+          recipientCode =
+            friendCode(payload.friendCode);
+
+          if (!recipientCode) {
+            return cb({
+              ok:false,
+              error:"ID joueur invalide."
+            });
+          }
+
+          const user =
+            await findUserByCode(recipientCode);
+
+          if (!user?.wallet_token) {
+            return cb({
+              ok:false,
+              error:"Joueur introuvable."
+            });
+          }
+
+          recipientToken =
+            walletToken(user.wallet_token);
+        }
+
+        const created =
+          await createInboxMessage(io, {
+            senderToken:token,
+            recipientToken,
+            recipientFriendCode:recipientCode,
+            type:"admin",
+            title:payload.title,
+            body:payload.message,
+            imageData:payload.imageData,
+            rewardType:payload.rewardType,
+            rewardKey:payload.rewardKey,
+            rewardAmount:payload.rewardAmount
+          });
+
+        await audit(
+          token,
+          "inbox_message_send",
+          recipientCode || null,
+          {
+            target,
+            title:created.title,
+            rewardType:created.reward.type,
+            rewardKey:created.reward.key,
+            rewardAmount:created.reward.amount
+          }
+        );
+
+        cb({
+          ok:true,
+          messageId:created.id
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Envoi impossible."
+        });
+      }
+    });
+
+    socket.on("inbox:count", async (payload={}, cb=()=>{}) => {
+      try {
+        const token =
+          walletToken(payload.walletToken);
+
+        if (!token) {
+          return cb({
+            ok:true,
+            unread:0
+          });
+        }
+
+        await schema();
+
+        const q = await pool.query(
+          `SELECT COUNT(*)::int AS count
+           FROM ptitbac_inbox_messages m
+           LEFT JOIN ptitbac_inbox_receipts r
+             ON r.message_id=m.id
+            AND r.wallet_token=$1
+           WHERE (m.recipient_wallet_token IS NULL OR m.recipient_wallet_token=$1)
+             AND r.read_at IS NULL`,
+          [token]
+        );
+
+        cb({
+          ok:true,
+          unread:Number(q.rows[0]?.count || 0)
+        });
+      } catch {
+        cb({
+          ok:false,
+          unread:0
+        });
+      }
+    });
+
+    socket.on("inbox:list", async (payload={}, cb=()=>{}) => {
+      try {
+        const token =
+          walletToken(payload.walletToken);
+
+        if (!token) {
+          return cb({
+            ok:false,
+            error:"Profil indisponible."
+          });
+        }
+
+        await schema();
+
+        const q = await pool.query(
+          `SELECT m.id,m.message_type,m.title,m.body,m.reward_type,
+                  m.reward_key,m.reward_amount,m.created_at,
+                  (m.image_data IS NOT NULL) AS has_image,
+                  r.read_at,r.claimed_at
+           FROM ptitbac_inbox_messages m
+           LEFT JOIN ptitbac_inbox_receipts r
+             ON r.message_id=m.id
+            AND r.wallet_token=$1
+           WHERE (m.recipient_wallet_token IS NULL OR m.recipient_wallet_token=$1)
+           ORDER BY m.created_at DESC
+           LIMIT 100`,
+          [token]
+        );
+
+        const messages =
+          q.rows.map(row => ({
+            id:row.id,
+            type:row.message_type,
+            title:row.title,
+            excerpt:
+              String(row.body || "")
+                .slice(0,140),
+            rewardType:row.reward_type || "none",
+            rewardKey:row.reward_key || "",
+            rewardAmount:Number(row.reward_amount || 0),
+            hasImage:!!row.has_image,
+            read:!!row.read_at,
+            claimed:!!row.claimed_at,
+            createdAt:row.created_at
+          }));
+
+        cb({
+          ok:true,
+          unread:messages.filter(item => !item.read).length,
+          messages
+        });
+      } catch {
+        cb({
+          ok:false,
+          error:"Impossible de charger la boîte de réception."
+        });
+      }
+    });
+
+    socket.on("inbox:get", async (payload={}, cb=()=>{}) => {
+      try {
+        const token =
+          walletToken(payload.walletToken);
+
+        if (!token) {
+          return cb({
+            ok:false,
+            error:"Profil indisponible."
+          });
+        }
+
+        const message =
+          await accessibleInboxMessage(
+            payload.messageId,
+            token
+          );
+
+        if (!message) {
+          return cb({
+            ok:false,
+            error:"Message introuvable."
+          });
+        }
+
+        await pool.query(
+          `INSERT INTO ptitbac_inbox_receipts
+           (message_id,wallet_token,read_at)
+           VALUES($1,$2,now())
+           ON CONFLICT(message_id,wallet_token) DO UPDATE SET
+             read_at=COALESCE(ptitbac_inbox_receipts.read_at,now())`,
+          [message.id,token]
+        );
+
+        const receipt = await pool.query(
+          `SELECT read_at,claimed_at
+           FROM ptitbac_inbox_receipts
+           WHERE message_id=$1 AND wallet_token=$2
+           LIMIT 1`,
+          [message.id,token]
+        );
+
+        const item =
+          ITEM_CATALOG.find(
+            entry => entry.key === message.reward_key
+          );
+
+        cb({
+          ok:true,
+          message:{
+            id:message.id,
+            type:message.message_type,
+            title:message.title,
+            body:message.body,
+            imageData:message.image_data || "",
+            rewardType:message.reward_type || "none",
+            rewardKey:message.reward_key || "",
+            rewardLabel:item?.label || "",
+            rewardIcon:item?.icon || "",
+            rewardAmount:Number(message.reward_amount || 0),
+            read:true,
+            claimed:!!receipt.rows[0]?.claimed_at,
+            createdAt:message.created_at
+          }
+        });
+      } catch {
+        cb({
+          ok:false,
+          error:"Impossible d’ouvrir ce message."
+        });
+      }
+    });
+
+    socket.on("inbox:markAllRead", async (payload={}, cb=()=>{}) => {
+      try {
+        const token =
+          walletToken(payload.walletToken);
+
+        if (!token) {
+          return cb({
+            ok:false,
+            error:"Profil indisponible."
+          });
+        }
+
+        await schema();
+
+        await pool.query(
+          `INSERT INTO ptitbac_inbox_receipts
+           (message_id,wallet_token,read_at)
+           SELECT m.id,$1,now()
+           FROM ptitbac_inbox_messages m
+           WHERE m.recipient_wallet_token IS NULL
+              OR m.recipient_wallet_token=$1
+           ON CONFLICT(message_id,wallet_token) DO UPDATE SET
+             read_at=COALESCE(ptitbac_inbox_receipts.read_at,now())`,
+          [token]
+        );
+
+        cb({ ok:true });
+      } catch {
+        cb({
+          ok:false,
+          error:"Action impossible."
+        });
+      }
+    });
+
+    socket.on("inbox:claim", async (payload={}, cb=()=>{}) => {
+      const token =
+        walletToken(payload.walletToken);
+
+      if (!token || !pool) {
+        return cb({
+          ok:false,
+          error:"Profil indisponible."
+        });
+      }
+
+      const client =
+        await pool.connect();
+
+      try {
+        await client.query("BEGIN");
+
+        const q = await client.query(
+          `SELECT id,recipient_wallet_token,reward_type,reward_key,reward_amount
+           FROM ptitbac_inbox_messages
+           WHERE id=$1
+             AND (recipient_wallet_token IS NULL OR recipient_wallet_token=$2)
+           FOR UPDATE`,
+          [String(payload.messageId || ""),token]
+        );
+
+        const message = q.rows[0];
+
+        if (!message) {
+          await client.query("ROLLBACK");
+          return cb({
+            ok:false,
+            error:"Message introuvable."
+          });
+        }
+
+        if (
+          !message.reward_type ||
+          message.reward_type === "none"
+        ) {
+          await client.query("ROLLBACK");
+          return cb({
+            ok:false,
+            error:"Ce message ne contient aucune récompense."
+          });
+        }
+
+        await client.query(
+          `INSERT INTO ptitbac_inbox_receipts
+           (message_id,wallet_token,read_at)
+           VALUES($1,$2,now())
+           ON CONFLICT(message_id,wallet_token) DO NOTHING`,
+          [message.id,token]
+        );
+
+        const claim = await client.query(
+          `UPDATE ptitbac_inbox_receipts
+           SET read_at=COALESCE(read_at,now()),
+               claimed_at=now()
+           WHERE message_id=$1
+             AND wallet_token=$2
+             AND claimed_at IS NULL
+           RETURNING claimed_at`,
+          [message.id,token]
+        );
+
+        if (!claim.rowCount) {
+          await client.query("ROLLBACK");
+          return cb({
+            ok:false,
+            error:"Récompense déjà récupérée."
+          });
+        }
+
+        const amount =
+          Math.max(
+            1,
+            Math.floor(
+              Number(message.reward_amount) || 1
+            )
+          );
+
+        let coins = null;
+        let gems = null;
+        let itemLabel = "";
+
+        if (
+          message.reward_type === "coins" ||
+          message.reward_type === "gems"
+        ) {
+          const walletQuery =
+            await client.query(
+              `SELECT coins,gems
+               FROM ptitbac_wallets
+               WHERE token=$1
+               LIMIT 1
+               FOR UPDATE`,
+              [token]
+            );
+
+          const currentCoins =
+            Number(walletQuery.rows[0]?.coins || 0);
+
+          const currentGems =
+            Number(walletQuery.rows[0]?.gems || 0);
+
+          coins =
+            message.reward_type === "coins"
+              ? clampResource(currentCoins + amount)
+              : currentCoins;
+
+          gems =
+            message.reward_type === "gems"
+              ? clampResource(currentGems + amount)
+              : currentGems;
+
+          const now = Date.now();
+
+          await client.query(
+            `INSERT INTO ptitbac_wallets
+             (token,coins,gems,created_at,updated_at,history)
+             VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
+             ON CONFLICT(token) DO UPDATE SET
+               coins=$2,
+               gems=$3,
+               updated_at=$4`,
+            [token,coins,gems,now]
+          );
+
+          await client.query(
+            `UPDATE public.users
+             SET coins=$2,updated_at=now()
+             WHERE wallet_token=$1`,
+            [token,coins]
+          ).catch(()=>{});
+        }
+
+        if (message.reward_type === "item") {
+          const item =
+            ITEM_CATALOG.find(
+              entry =>
+                entry.key === message.reward_key
+            );
+
+          if (!item) {
+            await client.query("ROLLBACK");
+            return cb({
+              ok:false,
+              error:"Objet introuvable."
+            });
+          }
+
+          itemLabel = item.label;
+
+          await client.query(
+            `INSERT INTO ptitbac_player_items
+             (wallet_token,item_key,quantity,updated_at)
+             VALUES($1,$2,$3,now())
+             ON CONFLICT(wallet_token,item_key) DO UPDATE SET
+               quantity=ptitbac_player_items.quantity + EXCLUDED.quantity,
+               updated_at=now()`,
+            [token,item.key,amount]
+          );
+        }
+
+        await client.query("COMMIT");
+
+        if (Number.isFinite(coins)) {
+          global.__ptbAdminSetCoins?.(
+            token,
+            coins
+          );
+        }
+
+        if (Number.isFinite(gems)) {
+          gemOverrides.set(token,gems);
+        }
+
+        if (
+          Number.isFinite(coins) ||
+          Number.isFinite(gems)
+        ) {
+          emitToWallet(io,token,{
+            ...(Number.isFinite(coins) ? { coins } : {}),
+            ...(Number.isFinite(gems) ? { gems } : {})
+          });
+        }
+
+        cb({
+          ok:true,
+          rewardType:message.reward_type,
+          amount,
+          itemLabel,
+          coins,
+          gems
+        });
+      } catch {
+        try {
+          await client.query("ROLLBACK");
+        } catch {}
+
+        cb({
+          ok:false,
+          error:"Impossible de récupérer la récompense."
+        });
+      } finally {
+        client.release();
       }
     });
 

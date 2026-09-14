@@ -117,7 +117,7 @@
 .admin-v4-main-tabs {
   margin:13px 0 14px;
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:7px;
 }
 
@@ -133,7 +133,7 @@
   align-items:center;
   justify-content:center;
   gap:6px;
-  font-size:.72rem;
+  font-size:.64rem;
   font-weight:900;
 }
 
@@ -1137,5 +1137,225 @@
 @media (max-width:390px) {
   .admin-v5-inline-action {
     grid-template-columns:minmax(0,1fr) 74px;
+  }
+}
+
+
+/* =========================================================
+   Admin V6 — onglet Messages
+   ========================================================= */
+
+.admin-v6-message-card {
+  display:grid;
+  gap:11px;
+}
+
+.admin-v6-message-target > small,
+.admin-v6-field,
+.admin-v6-image-field > span {
+  color:#aaa0cc;
+  font-size:.59rem;
+  font-weight:800;
+}
+
+.admin-v6-field {
+  display:block;
+}
+
+.admin-v6-field input,
+.admin-v6-field textarea,
+.admin-v6-field select {
+  width:100%;
+  margin-top:6px;
+  border:1px solid #4b62af;
+  border-radius:13px;
+  outline:0;
+  background:#071a4b;
+  color:#fff;
+  font:inherit;
+}
+
+.admin-v6-field input,
+.admin-v6-field select {
+  min-height:43px;
+  padding:0 11px;
+  font-size:.69rem;
+}
+
+.admin-v6-field textarea {
+  min-height:108px;
+  padding:10px 11px;
+  resize:vertical;
+  font-size:.67rem;
+  line-height:1.4;
+}
+
+.admin-v6-field input:focus,
+.admin-v6-field textarea:focus,
+.admin-v6-field select:focus {
+  border-color:#a553ff;
+  box-shadow:0 0 0 3px rgba(156,66,255,.12);
+}
+
+.admin-v6-image-field {
+  display:grid;
+  gap:7px;
+}
+
+.admin-v6-image-field > span small {
+  color:#8179a4;
+  font-weight:600;
+}
+
+.admin-v6-upload {
+  min-height:42px;
+  border:1px dashed #7657d7;
+  border-radius:13px;
+  background:#0a1d52;
+  color:#c7b7ef;
+  display:grid;
+  place-items:center;
+  font-size:.64rem;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.admin-v6-upload input {
+  display:none;
+}
+
+.admin-v6-image-preview {
+  position:relative;
+  overflow:hidden;
+  min-height:120px;
+  border:1px solid #3c559f;
+  border-radius:14px;
+  background:#071744;
+}
+
+.admin-v6-image-preview img {
+  width:100%;
+  max-height:220px;
+  object-fit:cover;
+  display:block;
+}
+
+.admin-v6-image-preview button {
+  position:absolute;
+  top:8px;
+  right:8px;
+  min-height:30px;
+  padding:4px 9px;
+  border:1px solid #dc6685;
+  border-radius:9px;
+  background:rgba(82,22,49,.88);
+  color:#fff;
+  font-size:.55rem;
+  font-weight:900;
+}
+
+.admin-v6-reward-types {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;
+}
+
+.admin-v6-reward-types button {
+  min-height:37px;
+  padding:5px 3px;
+  border:1px solid #405ba6;
+  border-radius:10px;
+  background:#091d50;
+  color:#aca2cb;
+  font-size:.55rem;
+  font-weight:900;
+}
+
+.admin-v6-reward-types button.active {
+  border-color:#b15cff;
+  background:linear-gradient(90deg,#7134ea,#a93af0);
+  color:#fff;
+}
+
+#admMessageRewardItemWrap {
+  grid-template-columns:minmax(0,1fr) 86px;
+  gap:8px;
+}
+
+#admMessageRewardItemWrap:not([hidden]) {
+  display:grid;
+}
+
+.admin-v6-message-preview {
+  padding:13px;
+  border:1px solid #4d4ea8;
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 90% 0,rgba(137,68,255,.13),transparent 42%),
+    #0a1c50;
+}
+
+.admin-v6-message-preview > small {
+  color:#9e83d6;
+  font-size:.52rem;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+
+.admin-v6-message-preview > strong {
+  display:block;
+  margin-top:6px;
+  font-size:.80rem;
+}
+
+.admin-v6-message-preview > p {
+  margin:5px 0 0;
+  color:#bdb5d3;
+  font-size:.64rem;
+  line-height:1.4;
+}
+
+#admMessagePreviewReward {
+  margin-top:9px;
+  padding:7px 9px;
+  border:1px solid #5a55c2;
+  border-radius:10px;
+  background:#141858;
+  color:#e3d6ff;
+  font-size:.60rem;
+  font-weight:900;
+}
+
+.admin-v6-send-message {
+  margin-top:0;
+}
+
+@media (max-width:390px) {
+  .admin-v4-main-tabs {
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .admin-v4-main-tabs button {
+    min-height:42px;
+    padding-inline:3px;
+    font-size:.56rem;
+    gap:4px;
+  }
+
+  .admin-v4-main-tabs .admin-v4-icon {
+    width:18px;
+    height:18px;
+    flex-basis:18px;
+  }
+
+  .admin-v6-reward-types {
+    grid-template-columns:1fr 1fr;
+  }
+}
+
+@media (max-width:335px) {
+  .admin-v4-main-tabs {
+    grid-template-columns:1fr 1fr;
   }
 }

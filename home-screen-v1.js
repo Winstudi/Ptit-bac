@@ -401,7 +401,11 @@
           <nav id="homeMenu" class="hm-menu" aria-label="Menu" hidden>
             <button id="homeSettings" type="button">${img("settings")}<span>Paramètres</span></button>
             <button id="homeGameJournal" type="button">${img("task")}<span>Journal de partie</span></button>
-            <button id="homeInbox" type="button">${img("info")}<span>Boîte de réception</span></button>
+            <button id="homeInbox" type="button">
+              ${img("info")}
+              <span>Boîte de réception</span>
+              <i id="homeInboxBadge" class="hm-menu-inbox-badge" hidden>0</i>
+            </button>
             <button id="homeAdminMenu" class="hm-menu-admin" type="button" hidden>
               ${img("admin-crown")}
               <span>Menu admin</span>
@@ -615,10 +619,14 @@
     });
 
     document.getElementById("homeInbox")?.addEventListener("click", () => {
-      showDetails(`
-        <h2>Boîte de réception</h2>
-        <p>Tes messages, récompenses et notifications apparaîtront ici.</p>
-      `);
+      closeMenu();
+
+      if (window.PtitBacInbox?.open) {
+        window.PtitBacInbox.open();
+        return;
+      }
+
+      toast("Boîte de réception indisponible.");
     });
 
     document.getElementById("homeAdminMenu")?.addEventListener("click", () => {
@@ -627,6 +635,7 @@
     });
 
     refreshHomeAdminEntry();
+    window.PtitBacInbox?.refreshCount?.();
 
     document.getElementById("homeSettings")?.addEventListener("click", () => {
       showDetails(`

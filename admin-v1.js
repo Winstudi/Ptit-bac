@@ -9,7 +9,8 @@
     activeTab:"tools",
     reportFilter:"all",
     itemCatalog:[],
-    player:null
+    player:null,
+    messageImageData:""
   };
 
   const token = () =>
@@ -104,6 +105,11 @@
           <circle cx="17" cy="9" r="2.3"></circle>
           <path d="M15.5 14.5c2.7.1 4.7 1.4 5 3.7"></path>
         </svg>`,
+      messages:`
+        <svg viewBox="0 0 24 24">
+          <path d="M4 5h16v12H8l-4 4V5Z"></path>
+          <path d="M8 9h8M8 13h5"></path>
+        </svg>`,
       coins:`
         <svg viewBox="0 0 24 24">
           <ellipse cx="12" cy="6" rx="7" ry="3"></ellipse>
@@ -157,6 +163,11 @@
         <button data-admin-tab="players" class="${state.activeTab === "players" ? "active" : ""}">
           ${icon("users")}
           <span>Joueurs</span>
+        </button>
+
+        <button data-admin-tab="messages" class="${state.activeTab === "messages" ? "active" : ""}">
+          ${icon("messages")}
+          <span>Messages</span>
         </button>
       </nav>
 
@@ -247,6 +258,10 @@
 
     if (state.activeTab === "players") {
       return renderPlayersTab(overlay);
+    }
+
+    if (state.activeTab === "messages") {
+      return renderMessagesTab(overlay);
     }
 
     return renderToolsTab(overlay);
@@ -1310,6 +1325,520 @@
     }
   }
 
+  async function compressAdminImage(file) {
+    if (!file) return "";
+
+    if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type)) {
+      throw new Error("Choisis une image JPG, PNG ou WebP.");
+    }
+
+    const dataUrl =
+      await new Promise((resolve,reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Lecture de l’image impossible."));
+        reader.readAsDataURL(file);
+      });
+
+    const image =
+      await new Promise((resolve,reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Image invalide."));
+        img.src = dataUrl;
+      });
+
+    const maxWidth = 900;
+    const maxHeight = 540;
+    const ratio =
+      Math.min(
+        1,
+        maxWidth / image.width,
+        maxHeight / image.height
+      );
+
+    const canvas =
+      document.createElement("canvas");
+
+    canvas.width =
+      Math.max(
+        1,
+        Math.round(image.width * ratio)
+      );
+
+    canvas.height =
+      Math.max(
+        1,
+        Math.round(image.height * ratio)
+      );
+
+    const ctx =
+      canvas.getContext("2d");
+
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    let result =
+      canvas.toDataURL(
+        "image/webp",
+        .76
+      );
+
+    if (result.length > 600000) {
+      result =
+        canvas.toDataURL(
+          "image/jpeg",
+          .58
+        );
+    }
+
+    if (result.length > 650000) {
+      throw new Error("Image trop lourde. Choisis une image plus petite.");
+    }
+
+    return result;
+  }
+
+  async function renderMessagesTab(overlay) {
+    const body =
+      overlay.querySelector("#adminV4Body");
+
+    if (!body) return;
+
+    if (!state.itemCatalog.length) {
+      const catalog =
+        await emit("admin:itemCatalog");
+
+      if (catalog.ok) {
+        state.itemCatalog =
+          catalog.items || [];
+      }
+    }
+
+    state.messageImageData = "";
+
+    body.innerHTML = `
+      <section class="admin-v4-card admin-v6-message-card">
+        <h3>${icon("messages")}<span>Envoyer un message</span></h3>
+
+        <div class="admin-v6-message-target">
+          <small>Destinataire</small>
+
+          <div class="admin-v4-segment" id="admMessageTarget">
+            <button class="active" data-target="player" type="button">
+              Un joueur
+            </button>
+
+            <button data-target="all" type="button">
+              Tous les joueurs
+            </button>
+          </div>
+        </div>
+
+        <label id="admMessagePlayerWrap" class="admin-v6-field">
+          ID du joueur
+          <input
+            id="admMessagePlayer"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="#84251"
+          >
+        </label>
+
+        <label class="admin-v6-field">
+          Titre
+          <input
+            id="admMessageTitle"
+            maxlength="80"
+            placeholder="Ex. Récompense de bienvenue"
+          >
+        </label>
+
+        <label class="admin-v6-field">
+          Message
+          <textarea
+            id="admMessageBody"
+            maxlength="1800"
+            placeholder="Écris le message qui apparaîtra dans la boîte de réception…"
+          ></textarea>
+        </label>
+
+        <div class="admin-v6-image-field">
+          <span>Image jointe <small>(facultatif)</small></span>
+
+          <label class="admin-v6-upload">
+            <input
+              id="admMessageImage"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            >
+            <span>＋ Choisir une image</span>
+          </label>
+
+          <div id="admMessageImagePreview" class="admin-v6-image-preview" hidden>
+            <img alt="Aperçu de l’image jointe">
+            <button id="admMessageImageRemove" type="button">Retirer</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-v4-card">
+        <h3>${icon("gift")}<span>Objet / récompense</span></h3>
+
+        <div class="admin-v6-reward-types" id="admMessageRewardType">
+          <button class="active" data-reward="none" type="button">Aucune</button>
+          <button data-reward="coins" type="button">🪙 Pièces</button>
+          <button data-reward="gems" type="button">💎 Gemmes</button>
+          <button data-reward="item" type="button">🎁 Objet</button>
+        </div>
+
+        <div id="admMessageRewardAmountWrap" class="admin-v6-field" hidden>
+          <label>
+            Quantité
+            <input
+              id="admMessageRewardAmount"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="999999"
+              value="100"
+            >
+          </label>
+        </div>
+
+        <div id="admMessageRewardItemWrap" class="admin-v6-field" hidden>
+          <label>
+            Objet
+            <select id="admMessageRewardItem">
+              ${
+                state.itemCatalog
+                  .map(item => `
+                    <option value="${esc(item.key)}">
+                      ${esc(item.icon || "🎁")} ${esc(item.label)}
+                    </option>
+                  `)
+                  .join("")
+              }
+            </select>
+          </label>
+
+          <label>
+            Quantité
+            <input
+              id="admMessageRewardItemAmount"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="99"
+              value="1"
+            >
+          </label>
+        </div>
+      </section>
+
+      <section class="admin-v6-message-preview">
+        <small>APERÇU</small>
+        <strong id="admMessagePreviewTitle">Ton titre apparaîtra ici</strong>
+        <p id="admMessagePreviewBody">Ton message apparaîtra ici.</p>
+        <div id="admMessagePreviewReward" hidden></div>
+      </section>
+
+      <button
+        id="admMessageSend"
+        class="admin-v1-primary admin-v6-send-message"
+        type="button"
+      >Envoyer le message</button>
+    `;
+
+    let target = "player";
+    let rewardType = "none";
+
+    const playerWrap =
+      body.querySelector("#admMessagePlayerWrap");
+
+    const amountWrap =
+      body.querySelector("#admMessageRewardAmountWrap");
+
+    const itemWrap =
+      body.querySelector("#admMessageRewardItemWrap");
+
+    const previewTitle =
+      body.querySelector("#admMessagePreviewTitle");
+
+    const previewBody =
+      body.querySelector("#admMessagePreviewBody");
+
+    const previewReward =
+      body.querySelector("#admMessagePreviewReward");
+
+    const updatePreview = () => {
+      const title =
+        String(
+          body.querySelector("#admMessageTitle")?.value ||
+          ""
+        ).trim();
+
+      const message =
+        String(
+          body.querySelector("#admMessageBody")?.value ||
+          ""
+        ).trim();
+
+      previewTitle.textContent =
+        title || "Ton titre apparaîtra ici";
+
+      previewBody.textContent =
+        message || "Ton message apparaîtra ici.";
+
+      let rewardText = "";
+
+      if (rewardType === "coins") {
+        rewardText =
+          `🪙 ${Number(body.querySelector("#admMessageRewardAmount")?.value || 0)} pièces`;
+      } else if (rewardType === "gems") {
+        rewardText =
+          `💎 ${Number(body.querySelector("#admMessageRewardAmount")?.value || 0)} gemmes`;
+      } else if (rewardType === "item") {
+        const select =
+          body.querySelector("#admMessageRewardItem");
+
+        const label =
+          select?.selectedOptions?.[0]?.textContent || "Objet";
+
+        rewardText =
+          `${label} ×${Number(body.querySelector("#admMessageRewardItemAmount")?.value || 1)}`;
+      }
+
+      previewReward.hidden = !rewardText;
+      previewReward.textContent = rewardText;
+    };
+
+    body
+      .querySelectorAll("#admMessageTarget button")
+      .forEach(button => {
+        button.addEventListener("click",() => {
+          target = button.dataset.target;
+
+          body
+            .querySelectorAll("#admMessageTarget button")
+            .forEach(item => {
+              item.classList.toggle(
+                "active",
+                item === button
+              );
+            });
+
+          playerWrap.hidden =
+            target === "all";
+        });
+      });
+
+    body
+      .querySelectorAll("#admMessageRewardType button")
+      .forEach(button => {
+        button.addEventListener("click",() => {
+          rewardType =
+            button.dataset.reward;
+
+          body
+            .querySelectorAll("#admMessageRewardType button")
+            .forEach(item => {
+              item.classList.toggle(
+                "active",
+                item === button
+              );
+            });
+
+          amountWrap.hidden =
+            !["coins","gems"].includes(rewardType);
+
+          itemWrap.hidden =
+            rewardType !== "item";
+
+          updatePreview();
+        });
+      });
+
+    body
+      .querySelector("#admMessageTitle")
+      ?.addEventListener("input",updatePreview);
+
+    body
+      .querySelector("#admMessageBody")
+      ?.addEventListener("input",updatePreview);
+
+    body
+      .querySelector("#admMessageRewardAmount")
+      ?.addEventListener("input",updatePreview);
+
+    body
+      .querySelector("#admMessageRewardItem")
+      ?.addEventListener("change",updatePreview);
+
+    body
+      .querySelector("#admMessageRewardItemAmount")
+      ?.addEventListener("input",updatePreview);
+
+    body
+      .querySelector("#admMessageImage")
+      ?.addEventListener("change",async event => {
+        const file =
+          event.target.files?.[0];
+
+        if (!file) return;
+
+        const preview =
+          body.querySelector("#admMessageImagePreview");
+
+        const image =
+          preview?.querySelector("img");
+
+        try {
+          state.messageImageData =
+            await compressAdminImage(file);
+
+          if (image) {
+            image.src =
+              state.messageImageData;
+          }
+
+          if (preview) {
+            preview.hidden = false;
+          }
+        } catch (error) {
+          event.target.value = "";
+          state.messageImageData = "";
+          toast(error.message || "Image invalide.");
+        }
+      });
+
+    body
+      .querySelector("#admMessageImageRemove")
+      ?.addEventListener("click",() => {
+        state.messageImageData = "";
+
+        const input =
+          body.querySelector("#admMessageImage");
+
+        const preview =
+          body.querySelector("#admMessageImagePreview");
+
+        if (input) input.value = "";
+        if (preview) preview.hidden = true;
+      });
+
+    body
+      .querySelector("#admMessageSend")
+      ?.addEventListener("click",async event => {
+        const button =
+          event.currentTarget;
+
+        const playerCode =
+          String(
+            body.querySelector("#admMessagePlayer")?.value ||
+            ""
+          )
+            .replace("#","")
+            .trim();
+
+        const title =
+          String(
+            body.querySelector("#admMessageTitle")?.value ||
+            ""
+          ).trim();
+
+        const message =
+          String(
+            body.querySelector("#admMessageBody")?.value ||
+            ""
+          ).trim();
+
+        if (
+          target === "player" &&
+          !/^\d{5}$/.test(playerCode)
+        ) {
+          return toast("Entre un ID joueur valide.");
+        }
+
+        if (!title) {
+          return toast("Ajoute un titre.");
+        }
+
+        if (!message) {
+          return toast("Écris un message.");
+        }
+
+        let rewardKey = "";
+        let rewardAmount = 0;
+
+        if (
+          rewardType === "coins" ||
+          rewardType === "gems"
+        ) {
+          rewardAmount =
+            Number(
+              body.querySelector("#admMessageRewardAmount")?.value ||
+              0
+            );
+        }
+
+        if (rewardType === "item") {
+          rewardKey =
+            body.querySelector("#admMessageRewardItem")?.value ||
+            "";
+
+          rewardAmount =
+            Number(
+              body.querySelector("#admMessageRewardItemAmount")?.value ||
+              1
+            );
+        }
+
+        button.disabled = true;
+        button.textContent = "Envoi…";
+
+        const response =
+          await emit(
+            "admin:messageSend",
+            {
+              target,
+              friendCode:playerCode,
+              title,
+              message,
+              imageData:state.messageImageData,
+              rewardType,
+              rewardKey,
+              rewardAmount
+            }
+          );
+
+        button.disabled = false;
+        button.textContent = "Envoyer le message";
+
+        if (!response.ok) {
+          return toast(
+            response.error ||
+            "Envoi impossible."
+          );
+        }
+
+        toast(
+          target === "all"
+            ? "Message envoyé à tous les joueurs."
+            : "Message envoyé au joueur."
+        );
+
+        await renderMessagesTab(overlay);
+      });
+
+    updatePreview();
+  }
+
   function feedbackModal(type="report-avis") {
     const isBug = type === "report-bug";
 
@@ -1609,53 +2138,6 @@
         toast("Ton pseudo a été modifié par la modération.");
       }
     } catch {}
-  });
-
-  socket.on("admin:player-warning", payload => {
-    const message =
-      String(payload?.message || "")
-        .trim();
-
-    if (!message) return;
-
-    const overlay = modal(
-      `
-        <button
-          class="admin-v1-x"
-          type="button"
-          aria-label="Fermer"
-        >×</button>
-
-        <div class="admin-v5-warning-modal-icon">!</div>
-
-        <h2>Avertissement</h2>
-
-        <p class="admin-v1-sub">
-          Un administrateur t’a envoyé cet avertissement :
-        </p>
-
-        <div class="admin-v5-warning-message">
-          ${esc(message)}
-        </div>
-
-        <button
-          id="admWarningAcknowledge"
-          class="admin-v1-primary"
-          type="button"
-        >J’ai compris</button>
-      `,
-      "admin-v5-player-warning-overlay"
-    );
-
-    const close = () => overlay.remove();
-
-    overlay
-      .querySelector(".admin-v1-x")
-      ?.addEventListener("click",close);
-
-    overlay
-      .querySelector("#admWarningAcknowledge")
-      ?.addEventListener("click",close);
   });
 
   socket.on("admin:account-banned", payload => {
