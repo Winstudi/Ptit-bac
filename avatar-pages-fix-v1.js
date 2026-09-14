@@ -750,6 +750,11 @@
         }
 
         renderInto(dialog);
+        document.dispatchEvent(
+          new CustomEvent("ptitbac:inventory-changed", {
+            detail: { type, id }
+          })
+        );
       });
     });
   }
@@ -808,6 +813,258 @@
     openInventory();
   }, true);
 
+  /* =========================================================
+     Cadre équipé — propagation sur les autres écrans
+     ---------------------------------------------------------
+     Le cadre reste un calque séparé de l'avatar. On ne touche
+     jamais à l'image elle-même : cela évite le bug où le cadre
+     remplaçait / masquait l'avatar.
+     ========================================================= */
+  const GLOBAL_FRAME_AVATARS = [
+    ".hm-avatar",
+    ".profile-v10-avatar-visual",
+    ".lobby-v5-avatar",
+    ".lobby-v5-host-avatar",
+    ".lobby-v5-profile-avatar",
+    ".pl-avatar",
+    ".wsv1-avatar",
+    ".res-avatar",
+    ".fin-avatar",
+    ".ptb-avatar-photo",
+    ".cat-existing-chooser-avatar",
+    ".pbw1-chooser-avatar"
+  ].join(",");
+
+  const PLAYER_ROWS = [
+    "[data-player-id]",
+    ".wsv1-player",
+    ".res-row",
+    ".fin-row",
+    ".fin-podium-card",
+    ".lobby-v5-player",
+    ".lobby-v5-host",
+    ".lobby-v5-host-card",
+    ".pl-player"
+  ].join(",");
+
+  function liveSession() {
+    try {
+      if (window.session) return window.session;
+    } catch {}
+
+    try {
+      if (typeof session !== "undefined") return session;
+    } catch {}
+
+    return null;
+  }
+
+  function liveState() {
+    return liveSession()?.state || null;
+  }
+
+  function localPlayerId() {
+    const live = liveSession();
+    return String(live?.playerId || "");
+  }
+
+  function localRoomPlayer() {
+    const state = liveState();
+    const playerId = localPlayerId();
+
+    if (!state || !playerId) return null;
+
+    return (state.players || []).find(
+      player => String(player?.id || "") === playerId
+    ) || null;
+  }
+
+  function rowPlayerName(row) {
+    if (!row) return "";
+
+    const nameNode = row.querySelector(
+      ".wsv1-player > strong," +
+      ".res-player > strong," +
+      ".fin-player > strong," +
+      ".fin-podium-card > strong," +
+      ".lobby-v5-player-copy strong," +
+      ".lobby-v5-host-copy strong," +
+      ".pl-player-copy > strong," +
+      "[data-player-name]," +
+      "strong"
+    );
+
+    return String(
+      nameNode?.dataset?.playerName ||
+      nameNode?.textContent ||
+      ""
+    ).trim();
+  }
+
+  function isLocalPlayerAvatar(box) {
+    if (!(box instanceof Element)) return false;
+
+    // L'inventaire gère déjà son propre calque de cadre.
+    if (box.closest(".inventory-v1")) return false;
+
+    // Ces emplacements représentent toujours le joueur local.
+    if (box.matches(
+      ".hm-avatar," +
+      ".profile-v10-avatar-visual," +
+      ".lobby-v5-profile-avatar"
+    )) {
+      return true;
+    }
+
+    // Les avatars d'amis / conversations / invitations sont ceux
+    // d'autres joueurs : on ne leur applique jamais notre cadre local.
+    if (box.closest(
+      ".friends-v2-card," +
+      ".friends-v4-card," +
+      ".chat-conversation-row," +
+      ".chat-new-row," +
+      ".lobby-v5-invite-friend"
+    )) {
+      return false;
+    }
+
+    const state = liveState();
+    const playerId = localPlayerId();
+
+    // Choix de lettre / catégories : uniquement si le joueur local
+    // est réellement le joueur affiché dans la carte "C'est à...".
+    if (box.matches(".pbw1-chooser-avatar")) {
+      return !!playerId &&
+        String(state?.letterChooserPlayerId || "") === playerId;
+    }
+
+    if (box.matches(".cat-existing-chooser-avatar")) {
+      return !!playerId &&
+        String(state?.categoryChooserPlayerId || "") === playerId;
+    }
+
+    const row = box.closest(PLAYER_ROWS);
+
+    if (row) {
+      const rowId = String(
+        row.dataset?.playerId ||
+        row.getAttribute?.("data-player-id") ||
+        ""
+      );
+
+      if (rowId && playerId) {
+        return rowId === playerId;
+      }
+
+      const localPlayer = localRoomPlayer();
+      const expectedName = String(
+        localPlayer?.name ||
+        profileNow().name ||
+        ""
+      ).trim();
+      const visibleName = rowPlayerName(row);
+
+      if (expectedName && visibleName) {
+        return expectedName === visibleName;
+      }
+
+      if (box.matches(".lobby-v5-host-avatar")) {
+        return localPlayer?.isHost === true;
+      }
+
+      return false;
+    }
+
+    // Dernier filet de sécurité pour les vues solo qui affichent
+    // uniquement le profil local sans carte joueur autour.
+    const image = box.querySelector(":scope > img");
+    const equippedAvatar = normalizeAvatar(loadState().equipped.avatar);
+    const visibleAvatar = normalizeAvatar(image?.getAttribute("src") || "");
+
+    return visibleAvatar === equippedAvatar &&
+      !box.matches(".profile-avatar-choice");
+  }
+
+  function removeEquippedFrame(box) {
+    box
+      .querySelectorAll(":scope > .ptb-equipped-frame-overlay")
+      .forEach(node => node.remove());
+
+    box.classList.remove("ptb-has-equipped-frame");
+    box.removeAttribute("data-ptb-frame");
+  }
+
+  function applyEquippedFrame(box, frameId) {
+    if (!(box instanceof Element)) return;
+
+    removeEquippedFrame(box);
+
+    const frame = FRAMES[frameId];
+    if (!frame || !isLocalPlayerAvatar(box)) return;
+
+    const overlay = document.createElement("span");
+    overlay.className =
+      `inv-frame ${frame.className} ptb-equipped-frame-overlay`;
+    overlay.setAttribute("aria-hidden", "true");
+
+    box.classList.add("ptb-has-equipped-frame");
+    box.dataset.ptbFrame = frameId;
+    box.appendChild(overlay);
+  }
+
+  function refreshGlobalFrames(root = document) {
+    const frameId = loadState().equipped.frame || "";
+
+    if (
+      root instanceof Element &&
+      root.matches(GLOBAL_FRAME_AVATARS)
+    ) {
+      applyEquippedFrame(root, frameId);
+    }
+
+    root
+      .querySelectorAll?.(GLOBAL_FRAME_AVATARS)
+      .forEach(box => applyEquippedFrame(box, frameId));
+  }
+
+  let globalFrameObserver = null;
+
+  function startGlobalFrameSync() {
+    refreshGlobalFrames(document);
+
+    if (globalFrameObserver) return;
+
+    globalFrameObserver = new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          refreshGlobalFrames(node);
+        }
+      }
+    });
+
+    globalFrameObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    try {
+      socket?.on?.("room:state", () => {
+        requestAnimationFrame(() => refreshGlobalFrames(document));
+      });
+    } catch {}
+
+    window.addEventListener("storage", event => {
+      if (event.key === STORAGE_KEY) {
+        requestAnimationFrame(() => refreshGlobalFrames(document));
+      }
+    });
+
+    document.addEventListener("ptitbac:inventory-changed", () => {
+      requestAnimationFrame(() => refreshGlobalFrames(document));
+    });
+  }
+
   window.PtitBacInventory = {
     open: openInventory,
     state: loadState,
@@ -815,6 +1072,17 @@
     hasItem,
     equipItem,
     frames: FRAMES,
-    tags: TAGS
+    tags: TAGS,
+    refreshFrames: refreshGlobalFrames
   };
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      startGlobalFrameSync,
+      { once: true }
+    );
+  } else {
+    startGlobalFrameSync();
+  }
 })();

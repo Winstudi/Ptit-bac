@@ -772,3 +772,75 @@
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
 }
+
+/* =========================================================
+   P'tit Bac — cadre équipé visible sur tous les écrans
+   Le calque reste transparent et ne remplace jamais l'avatar.
+   ========================================================= */
+
+.ptb-base-avatar.ptb-has-equipped-frame,
+.ptb-has-equipped-frame {
+  position:relative !important;
+  overflow:visible !important;
+  isolation:isolate !important;
+}
+
+.ptb-has-equipped-frame > img {
+  position:relative !important;
+  z-index:1 !important;
+}
+
+.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
+  position:absolute !important;
+  z-index:7 !important;
+  inset:-4px !important;
+  width:auto !important;
+  height:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  pointer-events:none !important;
+  box-sizing:border-box !important;
+}
+
+/* Version globale du cadre violet : suffisamment fine pour les petits
+   avatars (home/lobby/classement) et toujours transparente au centre. */
+.ptb-equipped-frame-overlay.inv-frame-purple-flame::before {
+  inset:2px !important;
+  border-width:3px !important;
+  border-radius:18% !important;
+  background:transparent !important;
+  box-shadow:
+    0 0 5px #a638ff,
+    0 0 10px rgba(232,64,255,.48),
+    inset 0 0 4px rgba(205,74,255,.34) !important;
+}
+
+.ptb-equipped-frame-overlay.inv-frame-purple-flame::after {
+  inset:-1px !important;
+  border-radius:20% !important;
+  opacity:.92 !important;
+}
+
+/* Sur les très petits avatars on évite que la bordure mange le visage. */
+.hm-avatar > .ptb-equipped-frame-overlay,
+.chat-header-avatar > .ptb-equipped-frame-overlay,
+.pl-avatar > .ptb-equipped-frame-overlay,
+.wsv1-avatar > .ptb-equipped-frame-overlay,
+.res-avatar > .ptb-equipped-frame-overlay,
+.fin-avatar > .ptb-equipped-frame-overlay,
+.cat-existing-chooser-avatar > .ptb-equipped-frame-overlay,
+.pbw1-chooser-avatar > .ptb-equipped-frame-overlay {
+  inset:-3px !important;
+}
+
+.hm-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.pl-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.wsv1-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.res-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.fin-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.cat-existing-chooser-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before,
+.pbw1-chooser-avatar > .ptb-equipped-frame-overlay.inv-frame-purple-flame::before {
+  border-width:2px !important;
+}
