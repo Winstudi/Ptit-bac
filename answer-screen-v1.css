@@ -1,275 +1,615 @@
-/* P'tit Bac — Page réponses V1 */
-body:has(.asv1-screen){background:#061642!important;}
-body:has(.asv1-screen) .economy-hud{display:none!important}
-.asv1-screen,.asv1-screen *{box-sizing:border-box}
-.asv1-screen{
- width:min(100%,430px);min-height:100dvh;margin:auto;padding:max(12px,env(safe-area-inset-top)) 15px max(112px,calc(env(safe-area-inset-bottom) + 96px));
- color:#fff;font-family:"DM Sans",system-ui,sans-serif;
- background:radial-gradient(circle at 7% 4%,rgba(83,42,220,.24),transparent 23%),linear-gradient(180deg,#06143d,#071d52 52%,#06143d);
-}
-.asv1-header{display:flex;justify-content:space-between;align-items:flex-start;min-height:68px}
-.asv1-quit{height:51px;padding:0 15px 0 10px;border:1.3px solid #9147ff;border-radius:18px;background:#0a2054;color:#fff;display:flex;align-items:center;gap:8px;font:800 .72rem/1.08 "DM Sans";box-shadow:0 0 14px rgba(151,57,255,.15)}
-.asv1-quit img{width:30px;height:30px;object-fit:contain}
-.asv1-status{width:105px;border:1px solid #3155a4;border-radius:16px;overflow:hidden;background:#091f55;text-align:center}
-.asv1-coins{height:36px;display:flex;align-items:center;justify-content:center;gap:8px;border-bottom:1px solid #274889}
-.asv1-coins img{width:24px;height:24px}.asv1-coins b{font-size:.9rem}
-.asv1-round{padding:8px 4px;font-size:.66rem;font-weight:800}.asv1-round b{color:#a943ff;font-size:.91rem}
-.asv1-hero{display:grid;grid-template-columns:1fr 1.05fr 1fr;align-items:center;gap:9px;margin:14px 0 17px}
-.asv1-letter-card,.asv1-tip{min-height:105px;border:1px solid #3155a4;border-radius:17px;background:#081e52}
-.asv1-letter-card{padding:12px 7px;text-align:center}.asv1-letter-card small{display:block;color:#c9b8e6;font-size:.53rem;font-weight:700}
-.asv1-letter-card>strong{width:59px;height:59px;margin:9px auto 0;border:1.4px solid #8541ee;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#38177b,#151857);font-size:2.35rem;color:#c25dff;text-shadow:0 0 12px #a43dff}
-.asv1-timer{aspect-ratio:1;border-radius:50%;padding:7px;background:conic-gradient(#b23cff 0 var(--progress),#40398c var(--progress) 100%);box-shadow:0 0 17px rgba(172,52,255,.2)}
-.asv1-timer>div{width:100%;height:100%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#071a4b}
-.asv1-timer strong{font-size:2rem;line-height:1}.asv1-timer span{margin-top:3px;font-size:.52rem;font-weight:800;color:#d1c5e9}
-.asv1-timer.danger{filter:drop-shadow(0 0 8px rgba(184,53,255,.45))}
-.asv1-tip{padding:12px 8px;display:flex;align-items:center;justify-content:center;gap:6px}.asv1-tip img{width:29px;height:42px;object-fit:contain}.asv1-tip p{margin:0;font-size:.56rem;line-height:1.45;color:#ddd3ef;font-weight:700}
-.asv1-list{display:grid;gap:7px}
-.asv1-row{min-height:62px;padding:7px 8px;border:1px solid #3155a4;border-radius:16px;background:#081f55;display:grid;grid-template-columns:130px 1fr;align-items:center;gap:8px}
-.asv1-category{min-width:0;display:flex;align-items:center;gap:10px}.asv1-category>span{flex:0 0 39px;width:39px;height:39px;border:1px solid #6437cc;border-radius:11px;background:#151b61;display:grid;place-items:center;font-size:1.25rem}.asv1-category strong{font-size:.68rem;line-height:1.08}
-.asv1-input-wrap{height:43px;border:1px solid #3b66bb;border-radius:13px;display:grid;grid-template-columns:1fr 40px;overflow:hidden;background:#071a49}
-.asv1-input{min-width:0;width:100%;height:100%;padding:0 10px;border:0!important;outline:0!important;background:transparent!important;color:#fff!important;font:600 .65rem "DM Sans"!important;box-shadow:none!important}
-.asv1-input::placeholder{color:#817aa4}.asv1-clear{border:0;border-left:1px solid #284b92;background:#10255e;color:#fff;font-size:1.15rem;font-weight:800}
-.asv1-submit{width:100%;min-height:61px;margin:15px 0 12px;border:0;border-radius:17px;background:linear-gradient(100deg,#8e35ff,#5d13f1);color:#fff;font:900 .82rem "DM Sans";box-shadow:0 0 19px rgba(137,48,255,.2)}.asv1-submit span{margin-right:9px}
-.asv1-rule{min-height:66px;padding:11px 13px;border:1px solid #3155a4;border-radius:16px;background:#081e52;display:flex;align-items:center;gap:12px}.asv1-rule>span{flex:0 0 35px;width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#6430ec;font-weight:900}.asv1-rule p{margin:0;color:#c8bfdc;font-size:.55rem;line-height:1.45}.asv1-rule b{color:#b143ff}
-.asv1-footer{margin-top:28px!important}
-@media(max-width:370px){.asv1-screen{padding-left:11px;padding-right:11px}.asv1-row{grid-template-columns:112px 1fr}.asv1-category strong{font-size:.62rem}.asv1-hero{gap:6px}.asv1-tip p{font-size:.5rem}}
-@media(max-height:760px){.asv1-header{min-height:56px}.asv1-hero{margin:8px 0 11px}.asv1-letter-card,.asv1-tip{min-height:92px}.asv1-row{min-height:55px}.asv1-footer{margin-top:18px!important}}
-
-
 /* =========================================================
-   Page réponses V2 — proportions compactes
+   P'tit Bac — Page réponses V6
+   Layout mobile stable avec clavier iPhone / Android.
    ========================================================= */
 
-/* Exit : uniquement l'icône, sans cadre ni texte */
-.asv1-quit{
-  width:42px !important;
-  height:42px !important;
-  padding:5px !important;
-  border:0 !important;
-  border-radius:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  gap:0 !important;
-}
-.asv1-quit img{
-  width:32px !important;
-  height:32px !important;
-}
-.asv1-quit span{display:none !important;}
-
-/* En-tête plus léger */
-.asv1-header{
-  min-height:50px !important;
-  align-items:flex-start !important;
-}
-.asv1-status{
-  width:91px !important;
-  border-radius:14px !important;
-}
-.asv1-coins{
-  height:31px !important;
-  gap:6px !important;
-}
-.asv1-coins img{
-  width:21px !important;
-  height:21px !important;
-}
-.asv1-coins b{font-size:.82rem !important;}
-.asv1-round{
-  padding:6px 3px !important;
-  font-size:.58rem !important;
-}
-.asv1-round b{font-size:.78rem !important;}
-
-/* Lettre / timer / consigne : moins gros et moins étirés */
-.asv1-hero{
-  width:min(100%,365px) !important;
-  margin:10px auto 14px !important;
-  grid-template-columns:92px 118px 112px !important;
-  justify-content:space-between !important;
-  gap:10px !important;
+html:has(.asv1-screen),
+body:has(.asv1-screen) {
+  width:100%;
+  height:100%;
+  margin:0;
+  overflow:hidden !important;
+  background:#061642 !important;
 }
 
-.asv1-letter-card,
-.asv1-tip{
-  min-height:88px !important;
-  height:88px !important;
-  border-radius:15px !important;
+body:has(.asv1-screen) {
+  position:fixed;
+  inset:0;
 }
 
-/* Suppression du cadre autour de la lettre elle-même */
-.asv1-letter-card{
-  padding:10px 5px 6px !important;
-}
-.asv1-letter-card small{
-  font-size:.47rem !important;
-}
-.asv1-letter-card > strong,
-.asv1-letter-plain{
-  width:auto !important;
-  height:auto !important;
-  margin:7px auto 0 !important;
-  border:0 !important;
-  border-radius:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  display:block !important;
-  color:#c15cff !important;
-  font-size:2.15rem !important;
-  line-height:1 !important;
-  text-shadow:0 0 12px rgba(192,81,255,.58) !important;
+body:has(.asv1-screen) #app {
+  width:100%;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
 }
 
-/* Timer réduit */
-.asv1-timer{
-  width:112px !important;
-  height:112px !important;
-  justify-self:center !important;
-  padding:6px !important;
-}
-.asv1-timer strong{
-  font-size:1.75rem !important;
-}
-.asv1-timer span{
-  font-size:.46rem !important;
-}
-
-/* Consigne compacte */
-.asv1-tip{
-  padding:8px 7px !important;
-  gap:5px !important;
-}
-.asv1-tip img{
-  width:25px !important;
-  height:35px !important;
-}
-.asv1-tip p{
-  font-size:.50rem !important;
-  line-height:1.35 !important;
-}
-
-/* Écrans plus étroits */
-@media(max-width:390px){
-  .asv1-hero{
-    width:100% !important;
-    grid-template-columns:84px 105px 103px !important;
-    gap:7px !important;
-  }
-  .asv1-timer{
-    width:105px !important;
-    height:105px !important;
-  }
-  .asv1-letter-card,
-  .asv1-tip{
-    min-height:82px !important;
-    height:82px !important;
-  }
-  .asv1-letter-card > strong,
-  .asv1-letter-plain{
-    font-size:1.95rem !important;
-  }
-}
-
-
-/* =========================================================
-   Page réponses V3 — ajustements haut de page
-   ========================================================= */
-
-/* Textes plus lisibles */
-.asv1-letter-card small{
-  font-size:.58rem !important;
-  font-weight:800 !important;
-}
-.asv1-timer span{
-  font-size:.58rem !important;
-  font-weight:800 !important;
-}
-
-/* Cadre Lettre plus petit, lettre toujours sans cadre intérieur */
-.asv1-hero{
-  grid-template-columns:78px 112px 96px !important;
-  justify-content:center !important;
-  gap:14px !important;
-}
-.asv1-letter-card{
-  width:78px !important;
-  height:78px !important;
-  min-height:78px !important;
-  padding:9px 3px 5px !important;
-  border-radius:14px !important;
-}
-.asv1-letter-card > strong,
-.asv1-letter-plain{
-  margin-top:5px !important;
-  font-size:1.9rem !important;
-}
-
-/* Bloc conseil plus petit */
-.asv1-tip{
-  width:96px !important;
-  height:78px !important;
-  min-height:78px !important;
-  padding:7px 6px !important;
-  border-radius:14px !important;
-  gap:4px !important;
-}
-.asv1-tip img{
-  width:21px !important;
-  height:31px !important;
-}
-.asv1-tip p{
-  font-size:.47rem !important;
-  line-height:1.28 !important;
-}
-
-/* Timer légèrement recentré entre les deux petits cadres */
-.asv1-timer{
-  width:112px !important;
-  height:112px !important;
-}
-
-@media(max-width:390px){
-  .asv1-hero{
-    grid-template-columns:74px 105px 91px !important;
-    gap:10px !important;
-  }
-  .asv1-letter-card{
-    width:74px !important;
-    height:76px !important;
-    min-height:76px !important;
-  }
-  .asv1-tip{
-    width:91px !important;
-    height:76px !important;
-    min-height:76px !important;
-  }
-  .asv1-timer{
-    width:105px !important;
-    height:105px !important;
-  }
-}
-
-.asv1-exit-modal-backdrop{position:fixed;inset:0;z-index:9999;background:rgba(2,8,31,.78);backdrop-filter:blur(7px);display:grid;place-items:center;padding:20px}
-.asv1-exit-modal{width:min(100%,340px);padding:20px;border:1px solid #7d3eea;border-radius:22px;background:linear-gradient(145deg,#0b2057,#081746);box-shadow:0 0 35px rgba(145,53,255,.3);color:#fff;font-family:"DM Sans",system-ui,sans-serif;text-align:center}
-.asv1-exit-modal h2{margin:0 0 17px;font-size:1.15rem;font-weight:900}
-.asv1-exit-modal-actions{display:grid;gap:9px}
-.asv1-exit-modal-actions button{min-height:47px;border:1px solid #7041d8;border-radius:14px;background:#10245d;color:#fff;font:800 .72rem "DM Sans",system-ui,sans-serif}
-.asv1-exit-modal-actions button.danger{background:linear-gradient(100deg,#8d35ff,#5e17ed);border-color:#a251ff}
-
-
-/* =========================================================
-   Réponses V5 — suppression pièces/manche en haut à droite
-   ========================================================= */
-
-.asv1-status{
+body:has(.asv1-screen) .economy-hud {
   display:none !important;
 }
 
-.asv1-header{
-  min-height:46px !important;
-  justify-content:flex-start !important;
+.asv1-screen,
+.asv1-screen *,
+.asv1-screen *::before,
+.asv1-screen *::after {
+  box-sizing:border-box;
 }
 
-.asv1-hero{
-  margin-top:8px !important;
+.asv1-screen {
+  --asv1-vh:100dvh;
+  position:relative;
+  width:min(100%,430px);
+  height:var(--asv1-vh);
+  min-height:320px;
+  margin:0 auto;
+  padding:
+    max(8px,env(safe-area-inset-top))
+    12px
+    max(10px,env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-rows:38px auto minmax(0,1fr) auto;
+  gap:8px;
+  overflow:hidden;
+  color:#fff;
+  font-family:"DM Sans",system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 7% 4%,rgba(83,42,220,.24),transparent 23%),
+    linear-gradient(180deg,#06143d,#071d52 52%,#06143d);
+}
+
+.asv1-screen button,
+.asv1-screen input {
+  font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.asv1-screen button {
+  touch-action:manipulation;
+}
+
+.asv1-header {
+  position:relative;
+  z-index:6;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.asv1-quit {
+  width:36px;
+  height:36px;
+  padding:4px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  display:grid;
+  place-items:center;
+}
+
+.asv1-quit img {
+  width:29px;
+  height:29px;
+  object-fit:contain;
+}
+
+.asv1-round-mini {
+  padding:5px 8px;
+  border:1px solid rgba(82,109,191,.55);
+  border-radius:999px;
+  background:rgba(8,29,78,.78);
+  color:#a99ec8;
+  font-size:.55rem;
+  line-height:1;
+  font-weight:800;
+}
+
+.asv1-hero {
+  min-height:102px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:25px;
+  padding:0 0 4px;
+}
+
+.asv1-letter-card {
+  width:82px;
+  height:82px;
+  flex:0 0 82px;
+  padding:9px 4px 5px;
+  border:1.2px solid #3155a4;
+  border-radius:15px;
+  background:#081e52;
+  display:grid;
+  align-content:center;
+  justify-items:center;
+  text-align:center;
+}
+
+.asv1-letter-card small {
+  color:#c9b8e6;
+  font-size:.58rem;
+  line-height:1.05;
+  font-weight:800;
+}
+
+.asv1-letter-card strong {
+  margin-top:5px;
+  color:#c15cff;
+  font-size:2.1rem;
+  line-height:1;
+  font-weight:900;
+  text-shadow:0 0 12px rgba(192,81,255,.58);
+}
+
+.asv1-timer {
+  width:106px;
+  height:106px;
+  flex:0 0 106px;
+  padding:6px;
+  border-radius:50%;
+  background:
+    conic-gradient(
+      #b23cff 0 var(--progress),
+      #40398c var(--progress) 100%
+    );
+  box-shadow:
+    0 0 17px rgba(172,52,255,.20);
+}
+
+.asv1-timer > div {
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:#071a4b;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.asv1-timer strong {
+  font-size:1.85rem;
+  line-height:1;
+  font-weight:900;
+}
+
+.asv1-timer span {
+  margin-top:3px;
+  color:#d1c5e9;
+  font-size:.58rem;
+  line-height:1;
+  font-weight:800;
+}
+
+.asv1-timer.danger {
+  filter:
+    drop-shadow(
+      0 0 8px rgba(184,53,255,.52)
+    );
+}
+
+.asv1-list {
+  min-height:0;
+  padding:2px 2px 6px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-padding:
+    8px
+    0
+    12px;
+  display:grid;
+  align-content:start;
+  gap:7px;
+  scrollbar-width:none;
+}
+
+.asv1-list::-webkit-scrollbar {
+  display:none;
+}
+
+.asv1-row {
+  min-height:64px;
+  padding:6px 7px;
+  border:1px solid #3155a4;
+  border-radius:16px;
+  background:#081f55;
+  display:grid;
+  grid-template-columns:minmax(118px,40%) minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  transition:
+    border-color .16s ease,
+    box-shadow .16s ease,
+    background .16s ease;
+}
+
+.asv1-row.is-active {
+  border-color:#8056ed;
+  background:#0a225c;
+  box-shadow:
+    0 0 0 2px rgba(126,74,236,.10),
+    0 0 13px rgba(122,63,224,.10);
+}
+
+.asv1-category {
+  min-width:0;
+  display:grid;
+  grid-template-columns:39px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+}
+
+.asv1-category > span {
+  width:39px;
+  height:39px;
+  border:1px solid #6437cc;
+  border-radius:11px;
+  background:#151b61;
+  display:grid;
+  place-items:center;
+  font-size:1.2rem;
+  line-height:1;
+}
+
+.asv1-category strong {
+  min-width:0;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  color:#fff;
+  font-size:.75rem;
+  line-height:1.12;
+  font-weight:800;
+}
+
+.asv1-input-wrap {
+  min-width:0;
+  height:45px;
+  border:1px solid #3b66bb;
+  border-radius:13px;
+  overflow:hidden;
+  background:#071a49;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 38px;
+  transition:
+    border-color .16s ease,
+    box-shadow .16s ease;
+}
+
+.asv1-row.is-active .asv1-input-wrap {
+  border-color:#8c5bf1;
+  box-shadow:
+    0 0 0 2px rgba(135,82,239,.10);
+}
+
+.asv1-input {
+  min-width:0;
+  width:100%;
+  height:100%;
+  padding:0 10px;
+  border:0 !important;
+  outline:0 !important;
+  background:transparent !important;
+  color:#fff !important;
+  box-shadow:none !important;
+  font-size:16px !important;
+  line-height:1 !important;
+  font-weight:600 !important;
+  text-overflow:ellipsis;
+}
+
+.asv1-input::placeholder {
+  color:#817aa4;
+  opacity:1;
+}
+
+.asv1-clear {
+  width:38px;
+  height:100%;
+  padding:0;
+  border:0;
+  border-left:1px solid #284b92;
+  background:#10255e;
+  color:#fff;
+  font-size:1.15rem;
+  line-height:1;
+  font-weight:800;
+}
+
+.asv1-row:not(.has-value):not(.is-active) .asv1-clear {
+  color:#8e89a8;
+}
+
+.asv1-submit-wrap {
+  position:relative;
+  z-index:5;
+  padding-top:2px;
+}
+
+.asv1-submit {
+  width:100%;
+  min-height:56px;
+  padding:10px 14px;
+  border:0;
+  border-radius:17px;
+  background:
+    linear-gradient(
+      100deg,
+      #8e35ff,
+      #5d13f1
+    );
+  color:#fff;
+  box-shadow:
+    0 0 19px rgba(137,48,255,.20);
+  font-size:.86rem;
+  line-height:1;
+  font-weight:900;
+}
+
+.asv1-submit span {
+  margin-right:9px;
+}
+
+.asv1-submit:disabled {
+  opacity:.55;
+}
+
+/* Quand le clavier est ouvert :
+   - la page ne se déplace pas ;
+   - seule la liste reste scrollable ;
+   - le gros bouton disparaît pour laisser de la place. */
+.asv1-screen.is-keyboard-open {
+  padding-top:
+    max(5px,env(safe-area-inset-top));
+  padding-bottom:5px;
+  grid-template-rows:32px auto minmax(0,1fr);
+  gap:5px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-submit-wrap {
+  display:none;
+}
+
+.asv1-screen.is-keyboard-open .asv1-header {
+  min-height:32px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-quit {
+  width:31px;
+  height:31px;
+  padding:3px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-quit img {
+  width:25px;
+  height:25px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-round-mini {
+  padding:4px 7px;
+  font-size:.49rem;
+}
+
+.asv1-screen.is-keyboard-open .asv1-hero {
+  min-height:76px;
+  gap:20px;
+  padding-bottom:1px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-letter-card {
+  width:64px;
+  height:64px;
+  flex-basis:64px;
+  padding:6px 3px 4px;
+  border-radius:12px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-letter-card small {
+  font-size:.47rem;
+}
+
+.asv1-screen.is-keyboard-open .asv1-letter-card strong {
+  margin-top:3px;
+  font-size:1.62rem;
+}
+
+.asv1-screen.is-keyboard-open .asv1-timer {
+  width:79px;
+  height:79px;
+  flex-basis:79px;
+  padding:5px;
+}
+
+.asv1-screen.is-keyboard-open .asv1-timer strong {
+  font-size:1.42rem;
+}
+
+.asv1-screen.is-keyboard-open .asv1-timer span {
+  font-size:.47rem;
+}
+
+.asv1-screen.is-keyboard-open .asv1-row {
+  min-height:58px;
+  padding-top:5px;
+  padding-bottom:5px;
+}
+
+/* Fenêtre de sortie */
+.asv1-exit-modal-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  padding:20px;
+  background:rgba(2,8,31,.78);
+  backdrop-filter:blur(7px);
+  display:grid;
+  place-items:center;
+}
+
+.asv1-exit-modal {
+  width:min(100%,340px);
+  padding:20px;
+  border:1px solid #7d3eea;
+  border-radius:22px;
+  background:
+    linear-gradient(
+      145deg,
+      #0b2057,
+      #081746
+    );
+  box-shadow:
+    0 0 35px rgba(145,53,255,.30);
+  color:#fff;
+  font-family:"DM Sans",system-ui,sans-serif;
+  text-align:center;
+}
+
+.asv1-exit-modal h2 {
+  margin:0 0 17px;
+  font-size:1.15rem;
+  font-weight:900;
+}
+
+.asv1-exit-modal-actions {
+  display:grid;
+  gap:9px;
+}
+
+.asv1-exit-modal-actions button {
+  min-height:47px;
+  border:1px solid #7041d8;
+  border-radius:14px;
+  background:#10245d;
+  color:#fff;
+  font-size:.72rem;
+  font-weight:800;
+}
+
+.asv1-exit-modal-actions button.danger {
+  border-color:#a251ff;
+  background:
+    linear-gradient(
+      100deg,
+      #8d35ff,
+      #5e17ed
+    );
+}
+
+@media (max-width:390px) {
+  .asv1-screen {
+    padding-left:10px;
+    padding-right:10px;
+  }
+
+  .asv1-hero {
+    min-height:96px;
+    gap:20px;
+  }
+
+  .asv1-letter-card {
+    width:76px;
+    height:76px;
+    flex-basis:76px;
+  }
+
+  .asv1-timer {
+    width:100px;
+    height:100px;
+    flex-basis:100px;
+  }
+
+  .asv1-row {
+    grid-template-columns:minmax(110px,39%) minmax(0,1fr);
+    gap:6px;
+  }
+
+  .asv1-category {
+    grid-template-columns:36px minmax(0,1fr);
+    gap:7px;
+  }
+
+  .asv1-category > span {
+    width:36px;
+    height:36px;
+    font-size:1.08rem;
+  }
+
+  .asv1-category strong {
+    font-size:.70rem;
+  }
+}
+
+@media (max-width:350px) {
+  .asv1-row {
+    grid-template-columns:minmax(100px,38%) minmax(0,1fr);
+    padding-left:5px;
+    padding-right:5px;
+  }
+
+  .asv1-category {
+    grid-template-columns:33px minmax(0,1fr);
+    gap:5px;
+  }
+
+  .asv1-category > span {
+    width:33px;
+    height:33px;
+  }
+
+  .asv1-category strong {
+    font-size:.64rem;
+  }
+
+  .asv1-input-wrap {
+    grid-template-columns:minmax(0,1fr) 34px;
+  }
+
+  .asv1-clear {
+    width:34px;
+  }
+}
+
+@media (max-height:700px) and (min-width:351px) {
+  .asv1-screen:not(.is-keyboard-open) {
+    grid-template-rows:34px auto minmax(0,1fr) auto;
+    gap:6px;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-hero {
+    min-height:84px;
+    gap:18px;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-letter-card {
+    width:68px;
+    height:68px;
+    flex-basis:68px;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-letter-card strong {
+    font-size:1.72rem;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-timer {
+    width:86px;
+    height:86px;
+    flex-basis:86px;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-timer strong {
+    font-size:1.55rem;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-row {
+    min-height:58px;
+  }
+
+  .asv1-screen:not(.is-keyboard-open) .asv1-submit {
+    min-height:51px;
+  }
 }
