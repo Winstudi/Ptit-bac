@@ -71,6 +71,7 @@ html .final-mobile .fin-heading h1 {
   font-size:clamp(26px,7vw,34px) !important;
   line-height:1.12 !important;
   margin:0 !important;
+  transform:translateY(-6px);
 }
 
 .fin-heading h1 span {
@@ -84,6 +85,7 @@ html .final-mobile .fin-heading h1 {
   font-weight:800;
   line-height:1.2;
   overflow-wrap:anywhere;
+  transform:translateY(-12px);
 }
 
 /* ---------- Podium ---------- */
