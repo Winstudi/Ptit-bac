@@ -735,7 +735,6 @@ function installAdmin(io) {
 
   io.on("connection", socket => {
     socket.on("profile:update", async (payload={}, cb=()=>{}) => {
-      const PROFILE_NAME_COST = 20;
       let client = null;
 
       try {
@@ -803,62 +802,9 @@ function installAdmin(io) {
           return cb({
             ok:true,
             name:currentName,
-            charged:false,
-            gems:null
+            charged:false
           });
         }
-
-        const walletQuery =
-          await client.query(
-            `SELECT coins,gems,created_at,updated_at
-             FROM ptitbac_wallets
-             WHERE token=$1
-             LIMIT 1
-             FOR UPDATE`,
-            [token]
-          );
-
-        const currentCoins =
-          Number(
-            walletQuery.rows[0]?.coins || 0
-          );
-
-        const currentGems =
-          Number(
-            walletQuery.rows[0]?.gems || 0
-          );
-
-        if (currentGems < PROFILE_NAME_COST) {
-          await client.query("ROLLBACK");
-
-          return cb({
-            ok:false,
-            error:`Il te faut ${PROFILE_NAME_COST} gemmes pour changer de pseudo.`,
-            insufficientGems:true,
-            required:PROFILE_NAME_COST,
-            gems:currentGems
-          });
-        }
-
-        const nextGems =
-          currentGems - PROFILE_NAME_COST;
-
-        const now = Date.now();
-
-        await client.query(
-          `INSERT INTO ptitbac_wallets
-           (token,coins,gems,created_at,updated_at,history)
-           VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
-           ON CONFLICT(token) DO UPDATE SET
-             gems=$3,
-             updated_at=$4`,
-          [
-            token,
-            currentCoins,
-            nextGems,
-            now
-          ]
-        );
 
         const updated =
           await client.query(
@@ -878,20 +824,6 @@ function installAdmin(io) {
 
         socket.data.walletToken = token;
 
-        gemOverrides.set(
-          token,
-          nextGems
-        );
-
-        emitToWallet(
-          io,
-          token,
-          {
-            coins:currentCoins,
-            gems:nextGems
-          }
-        );
-
         emitWalletEvent(
           io,
           token,
@@ -907,9 +839,7 @@ function installAdmin(io) {
         cb({
           ok:true,
           name:updated.rows[0].username,
-          charged:true,
-          cost:PROFILE_NAME_COST,
-          gems:nextGems
+          charged:false
         });
       } catch (error) {
         if (client) {

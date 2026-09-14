@@ -173,19 +173,13 @@
             aria-label="Fermer"
           >×</button>
 
-          <div class="profile-v16-confirm-gem">
-            <img src="/gem.png" alt="">
-            <strong>20</strong>
-          </div>
-
           <h2 id="profileV16ConfirmTitle">
             Changer de pseudo ?
           </h2>
 
           <p>
             Voulez-vous changer votre pseudo en
-            <strong>« ${esc(nextName)} »</strong>
-            pour <b>20 gemmes</b> ?
+            <strong>« ${esc(nextName)} »</strong> ?
           </p>
 
           <div class="profile-v16-confirm-actions">
@@ -456,17 +450,7 @@
         nameInput.value = saved;
         lastSavedName = saved;
 
-        if (
-          Number.isFinite(
-            Number(response.gems)
-          )
-        ) {
-          toast(
-            `Pseudo modifié ! ${Number(response.gems)} gemmes restantes.`
-          );
-        } else {
-          toast("Pseudo modifié !");
-        }
+        toast("Pseudo modifié !");
 
         return true;
       } catch {
