@@ -935,6 +935,12 @@ function startsWithLetter(answer, letter) {
   return first === letter.toUpperCase();
 }
 
+function privateLobbyReady(room) {
+  return room.players.length >= 2 && room.players.every(p => p.isBot || (p.connected && p.lobbyReady === true));
+}
+function resetPrivateReady(room) {
+  if (room.mode !== "quick") room.players.forEach(p => { p.lobbyReady = false; });
+}
 function publicPlayer(p) {
   return {
     id: p.id,
@@ -943,6 +949,7 @@ function publicPlayer(p) {
     score: p.score,
     isHost: p.isHost,
     isBot: !!p.isBot,
+    lobbyReady: !!p.isBot || (p.connected && p.lobbyReady === true),
     submitted: p.submitted,
     avatar: p.avatar || "",
     friendCode: p.friendCode || ""
@@ -1026,6 +1033,7 @@ function setPlayerSocket(room, player, socket) {
       delete previousSocket.data.playerId;
     }
   }
+  if (room.mode !== "quick" && player.socketId !== socket.id) player.lobbyReady = false;
   player.socketId = socket.id;
   player.connected = true;
   socket.join(room.code);
@@ -2561,6 +2569,7 @@ async function startGame(socket, payload, automatic = false) {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player?.isHost || room.phase !== "lobby" || room.economyStartPending) return;
     if (room.mode === "quick" && !automatic) return false;
+    if (room.mode !== "quick" && !privateLobbyReady(room)) return socket.emit("toast", "Tous les joueurs doivent être prêts.");
     if (room.players.length < 2) {
       return socket.emit("toast", "Il faut au moins 2 joueurs.");
     }
@@ -2750,6 +2759,7 @@ io.on("connection", socket => {
       return cb({ ok: false, error: "Il faut au moins 2 joueurs." });
     }
 
+    if (room.mode !== "quick" && !privateLobbyReady(room)) return cb({ok:false,error:"Tous les joueurs doivent être prêts."});
     const now = Date.now();
     if (room.ptbCountdownUntil && room.ptbCountdownUntil > now) {
       return cb({ ok: false, error: "Le compte à rebours est déjà lancé." });
@@ -2799,6 +2809,15 @@ io.on("connection", socket => {
     createGameRoom(socket, payload, cb);
   });
 
+  socket.on("lobby:setReady", (payload = {}, cb = () => {}) => {
+    const { room, player } = requireMember(socket, payload);
+    if (!room || !player || player.isBot || room.mode === "quick" || room.phase !== "lobby")
+      return cb({ok:false,error:"Action indisponible."});
+    if (typeof payload.ready !== "boolean") return cb({ok:false,error:"État invalide."});
+    player.lobbyReady = payload.ready;
+    emitRoom(room);
+    cb({ok:true});
+  });
   socket.on("room:updateSettings", ({ code, playerId, rounds, duration, categoryCount, categoryDifficulty }, cb = () => {}) => {
     const { room, player } = requireMember(socket, { code, playerId });
     if (!room || !player?.isHost) return cb({ ok: false, error: "Seul l’hôte peut modifier les paramètres." });
@@ -2810,6 +2829,7 @@ io.on("connection", socket => {
     const safeCategoryCount = [5, 6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : (room.categoryCount || room.categories.length || 6);
     const safeCategoryDifficulty = ["beginner", "medium", "hard"].includes(categoryDifficulty) ? categoryDifficulty : (room.categoryDifficulty || "beginner");
 
+    resetPrivateReady(room);
     room.rounds = safeRounds;
     room.duration = safeDuration;
     room.categoryCount = safeCategoryCount;
@@ -3033,6 +3053,7 @@ io.on("connection", socket => {
     if (!["category_selection", "letter_selection"].includes(room.phase) || room.roundIndex >= 0) return;
     refundPreGameEntry(room);
     room.phase = "lobby";
+    resetPrivateReady(room);
     room.categories = pickCategories(room.categoryDifficulty || "beginner", room.categoryCount || 6);
     room.letters = []; room.letterChooserPlayerId = null; room.pendingLetter = null; room.letterSpinVersion = 0;
     room.roundIndex = -1; room.roundEndsAt = null; room.validation = null; room.lastRoundScores = {}; room.lastRoundResults = null;
@@ -3090,6 +3111,7 @@ io.on("connection", socket => {
     if (!room || !player?.isHost) return;
 
     room.phase = "lobby";
+    resetPrivateReady(room);
     room.categories = pickCategories(room.categoryDifficulty || "beginner", room.categoryCount || 6);
     room.letters = [];
     room.letterChooserPlayerId = null;
@@ -3121,6 +3143,7 @@ io.on("connection", socket => {
     if (!room || !player) return;
 
     player.connected = false;
+    player.lobbyReady = false;
     ensureCategoryChooser(room);
     if (room.phase === "letter_selection" && room.letterChooserPlayerId === player.id) {
       const chooser = chooseLetterPlayer(room);
@@ -3162,4 +3185,6 @@ initWalletPersistence()
       console.log(`Admin pièces: ${ADMIN_COIN_CODE ? "activé par variable d’environnement" : "désactivé"}`);
     });
   });
+
+
 

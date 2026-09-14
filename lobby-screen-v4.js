@@ -303,6 +303,43 @@
     });
   }
 
+
+  function privateMarkup(state, user) {
+    const difficulty = difficultyInfo(state.categoryDifficulty);
+    const allReady = state.players.length >= 2 && state.players.every(p => p.isBot || (p.connected && p.lobbyReady));
+    const cards = state.players.map(p => `
+      <article class="pl-player" data-lobby-player-profile="${escapeHtml(p.id)}" role="button" tabindex="0">
+        <div class="pl-avatar">${avatarMarkup(p)}</div>
+        <div class="pl-player-copy"><strong>${escapeHtml(p.name || "Joueur")}</strong>
+          <div class="pl-tags">${p.isHost ? '<span>♛ Hôte</span>' : ''}${p.id === session.playerId ? '<span>Toi</span>' : ''}${p.isBot ? '<span>Bot</span>' : ''}</div>
+          <small class="${p.lobbyReady || p.isBot ? 'pl-is-ready' : ''}">${p.isBot || (p.connected && p.lobbyReady) ? '✓ Prêt' : p.connected ? 'Pas prêt' : 'Hors ligne'}</small>
+        </div>
+        ${user?.isHost && !p.isHost ? '<button class="pl-kick" data-kick-id="'+escapeHtml(p.id)+'" aria-label="Retirer ce joueur">×</button>' : ''}
+      </article>`).join("");
+    return `<main class="screen lobby-v5 pl-private" data-mode="private">
+      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button><h1>Salon privé</h1><img src="/ptitbac.logo.png" alt="P’tit Bac"></header>
+      <section class="pl-code"><button id="copyCode" aria-label="Copier le code du salon">Code : <strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button><button id="plShare">Partager</button></section>
+      <section class="pl-settings"><h2><img src="/settings.png" alt="">Paramètres de la partie${user?.isHost ? '<button id="lobbySettingsShortcut" aria-label="Modifier les paramètres"><img src="/settings.png" alt=""></button>':''}</h2>
+        <div class="pl-setting-grid">
+          ${settingCard({label:"Manches",value:state.rounds,icon:"/lightning.png"})}
+          ${settingCard({label:"Catégories",value:state.categoryCount || 6,icon:"/lobby-categories.png"})}
+          ${settingCard({label:"Temps",value:state.duration+"s",icon:"/lobby-clock.png"})}
+          ${settingCard({label:"Difficulté",value:difficulty.label,icon:difficulty.icon,difficulty:true})}
+        </div>
+      </section>
+      <section class="pl-players"><h2>Joueurs <span>${state.players.length}/6</span></h2><div class="pl-grid">${cards}${Array.from({length:Math.max(0,6-state.players.length)},()=>'<div class="pl-empty"><b>＋</b><span>Place libre</span></div>').join("")}</div></section>
+      <div class="pl-actions">
+        <button id="inviteFriendsBtn" class="pl-invite"><img src="/friends.png" alt="">Inviter des amis</button>
+        <div class="pl-launch">
+          <button id="plReady" class="${user?.lobbyReady ? 'selected' : ''}" aria-pressed="${!!user?.lobbyReady}">${user?.lobbyReady ? 'Annuler' : '✓ Prêt'}</button>
+          ${user?.isHost ? '<button id="startBtn" '+(allReady?'':'disabled')+'>▶ Lancer la partie</button>' : '<span class="pl-wait">L’hôte lancera la partie.</span>'}
+        </div>
+        ${user?.isHost ? '<button class="pl-test" data-add-bot="0" '+(state.players.length>=6?'disabled':'')+'>Ajouter un bot de test</button>' : ''}
+      </div>
+      ${playerProfileModal(state)}${lobbySettingsOverlay(state,user)}${lobbyInviteOverlay(state)}
+    </main>`;
+  }
+
   function renderLobbyV5() {
     clearInterval(session.timerHandle);
     session.localAnswers = {};
@@ -327,7 +364,7 @@
         ? emptyPlayerRow(!!user?.isHost && state.mode !== "quick", 0)
         : "";
 
-    setScreen(`
+    setScreen(state.mode !== "quick" ? privateMarkup(state, user) : `
       <main class="screen lobby-v5" data-mode="${state.mode === "quick" ? "quick" : "private"}">
         <header class="lobby-v5-header">
           <button id="lobbyV5Leave" class="lobby-v5-back" type="button" aria-label="Quitter le salon">
@@ -437,6 +474,20 @@
       </main>
     `);
 
+    document.getElementById("plShare")?.addEventListener("click", async () => {
+      try {
+        if (navigator.share) await navigator.share({title:"P’tit Bac", text:"Rejoins mon salon P’tit Bac avec le code "+state.code});
+        else document.getElementById("copyCode")?.click();
+      } catch (err) { if (err.name !== "AbortError") toast("Partage indisponible. Copie le code du salon."); }
+    });
+    document.getElementById("plReady")?.addEventListener("click", event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      socket.timeout(8000).emit("lobby:setReady", {code:state.code,playerId:session.playerId,ready:!user?.lobbyReady}, (err,res) => {
+        button.disabled = false;
+        if (err || !res?.ok) toast(res?.error || "Connexion interrompue. Réessaie.");
+      });
+    });
     const leave = () => {
       lobbySettingsOpen = false;
       lobbyInviteOpen = false;
@@ -676,3 +727,5 @@
   window.renderLobby = renderLobbyV5;
   try { renderLobby = renderLobbyV5; } catch {}
 })();
+
+

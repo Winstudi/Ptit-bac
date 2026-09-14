@@ -1,0 +1,59 @@
+/* Privé seulement : ne change pas le salon rapide. */
+body:has(.pl-private) #app {display:block!important;width:100%!important;max-width:none!important;padding:0!important;margin:0!important;}
+body:has(.pl-private) .economy-hud {display:none!important;}
+main.lobby-v5.pl-private {box-sizing:border-box!important;width:100%!important;max-width:520px!important;min-height:100svh!important;height:auto!important;margin:0 auto!important;padding:max(12px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))!important;display:flex!important;flex-direction:column!important;gap:12px!important;overflow:visible!important;background:radial-gradient(ellipse at top left,#182852,#081632 65%)!important;color:#fff!important;}
+.pl-private *, .pl-private *:before, .pl-private *:after {box-sizing:border-box;}
+.pl-private:before,.pl-private:after {display:none!important;}
+.pl-private button {font:inherit;color:inherit;cursor:pointer;letter-spacing:normal;text-transform:none;min-width:0;}
+.pl-private button:disabled {opacity:.4;cursor:default;}
+.pl-private button:focus-visible {outline:3px solid #d5b0ff;outline-offset:3px;}
+.pl-private img {object-fit:contain;}
+.pl-header {display:grid;grid-template-columns:44px 1fr 65px;align-items:center;gap:8px;}
+.pl-header button {border:0;background:none;padding:5px;width:44px;height:44px;}
+.pl-header button img {width:30px;height:30px;}
+.pl-header>img {width:65px;height:55px;}
+.pl-header h1 {font-size:clamp(23px,6vw,30px);margin:0;text-align:center;line-height:1.2;}
+.pl-code {display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid #344d83;border-radius:13px;padding:8px;}
+.pl-code button {min-height:40px;border:0;background:transparent;display:flex;align-items:center;gap:6px;padding:4px;font-size:13px;}
+.pl-code strong {font-size:17px;letter-spacing:1px;}
+.pl-code img {width:23px;height:23px;}
+.pl-code #plShare {padding:8px 12px;border:1px solid #8e7bfa;border-radius:10px;background:linear-gradient(#6766ef,#4530d1);font-weight:700;}
+.pl-settings {border:1px solid #344d83;border-radius:14px;padding:10px;}
+.pl-settings h2 {display:flex;align-items:center;gap:7px;margin:0 0 9px;font-size:15px;}
+.pl-settings h2>img {width:24px;height:24px;}
+.pl-settings h2 button {margin-left:auto;display:grid;place-items:center;border:1px solid #3e5886;background:#142449;border-radius:8px;min-width:36px;height:36px;padding:4px;}
+.pl-settings h2 button img {width:25px;height:25px;}
+.pl-setting-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;}
+.pl-private .pl-setting-grid .lobby-v5-setting-card {display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;height:95px!important;min-height:0!important;padding:6px 2px!important;border:1px solid #39578b!important;border-radius:12px!important;background:#0c2148!important;}
+.pl-private .pl-setting-grid .lobby-v5-setting-icon {width:34px!important;height:34px!important;margin:0!important;}
+.pl-private .pl-setting-grid small {font-size:10px!important;color:#adbbe1!important;}
+.pl-private .pl-setting-grid strong {font-size:17px!important;}
+.pl-private .pl-setting-grid .is-difficulty strong {color:#63e8c9!important;font-size:14px!important;}
+.pl-private .pl-setting-grid .lobby-v5-setting-value {margin:0!important;}
+.pl-players h2 {display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:23px;}
+.pl-players h2 span {color:#a7b9ee;font-size:18px;}
+.pl-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.pl-player {position:relative;display:flex;align-items:center;gap:8px;min-width:0;min-height:96px;border:1px solid #385083;border-radius:13px;background:#102143;padding:9px;}
+.pl-avatar {width:54px;height:62px;flex:none;display:grid;place-items:center;border:2px solid #ad5fff;border-radius:14px;background:#231849;box-shadow:0 0 8px #9a40ee40;overflow:hidden;font-size:35px;}
+.pl-avatar img {width:100%;height:100%;object-fit:cover;}
+.pl-player-copy {min-width:0;}
+.pl-player-copy>strong {display:block;overflow-wrap:anywhere;font-size:15px;line-height:1.2;}
+.pl-tags {display:flex;flex-wrap:wrap;gap:3px;margin:5px 0;}
+.pl-tags span {font-size:9px;border:1px solid #7050b8;border-radius:5px;padding:2px 4px;color:#d4c3ff;}
+.pl-player-copy small {font-size:10px;color:#a2afd2;}
+.pl-player-copy .pl-is-ready {color:#65dfb7;}
+.pl-kick {position:absolute;right:1px;top:0;border:0;background:transparent;font-size:18px!important;padding:0 5px;}
+.pl-empty {min-height:96px;border:1px dashed #5975a7;border-radius:13px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;color:#9bb3e6;}
+.pl-empty b {border:1px solid #647fbc;border-radius:50%;font-size:22px;font-weight:400;width:31px;height:31px;line-height:29px;text-align:center;}
+.pl-empty span {font-size:12px;}
+.pl-actions {display:grid;gap:10px;margin-top:auto;padding-top:3px;}
+.pl-invite {display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;padding:8px;border:1px solid #8699ff;border-radius:12px;background:#142348;font-weight:700!important;}
+.pl-invite img {width:29px;height:29px;}
+.pl-launch {display:flex;gap:8px;align-items:stretch;}
+.pl-launch button {border:1px solid #aa7cfd;border-radius:12px;min-height:48px;padding:10px;font-weight:800;}
+.pl-launch #plReady {flex:1;background:#443080;}
+.pl-launch #plReady.selected {background:#154f47;border-color:#62dcb2;}
+.pl-launch #startBtn {flex:2;background:linear-gradient(135deg,#a352fa,#6327ef);font-size:15px;}
+.pl-wait {flex:2;display:flex;align-items:center;justify-content:center;font-size:12px;color:#b2bce0;}
+.pl-test {justify-self:center;border:0;background:transparent;padding:4px;font-size:10px!important;color:#9aabd0!important;}
+@media(max-width:360px){main.lobby-v5.pl-private{padding-left:10px!important;padding-right:10px!important;gap:9px!important;}.pl-avatar{width:43px;height:50px;font-size:28px;}.pl-player{padding:7px;gap:6px;}.pl-player-copy>strong{font-size:13px;}.pl-code strong{font-size:15px;}.pl-code #plShare{padding:7px;font-size:12px;}}
