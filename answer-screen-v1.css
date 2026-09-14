@@ -37,7 +37,9 @@ body:has(.asv1-screen) .economy-hud {
 
 .asv1-screen {
   --asv1-vh:100dvh;
+  --asv1-vv-top:0px;
   position:relative;
+  transform:translateY(var(--asv1-vv-top));
   width:min(100%,430px);
   height:var(--asv1-vh);
   min-height:320px;
@@ -70,7 +72,12 @@ body:has(.asv1-screen) .economy-hud {
 .asv1-header {
   position:relative;
   z-index:6;
+  width:100% !important;
+  min-width:100% !important;
+  max-width:none !important;
   min-height:38px;
+  justify-self:stretch !important;
+  align-self:stretch !important;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -94,14 +101,27 @@ body:has(.asv1-screen) .economy-hud {
 }
 
 .asv1-round-mini {
-  padding:5px 8px;
-  border:1px solid rgba(82,109,191,.55);
-  border-radius:999px;
-  background:rgba(8,29,78,.78);
-  color:#a99ec8;
-  font-size:.55rem;
+  margin-left:auto;
+  min-width:76px;
+  min-height:38px;
+  padding:5px 10px;
+  border:1px solid rgba(82,109,191,.68);
+  border-radius:13px;
+  background:rgba(8,29,78,.88);
+  color:#c8bde0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  font-size:.63rem;
   line-height:1;
   font-weight:800;
+}
+
+.asv1-round-mini strong {
+  color:#fff;
+  font-size:.78rem;
+  font-weight:900;
 }
 
 .asv1-hero {
@@ -360,83 +380,27 @@ body:has(.asv1-screen) .economy-hud {
 }
 
 /* Quand le clavier est ouvert :
-   - la page ne se déplace pas ;
-   - seule la liste reste scrollable ;
-   - le gros bouton disparaît pour laisser de la place. */
+   le haut de la page garde exactement les mêmes dimensions.
+   Seule la liste perd de la hauteur et reste scrollable.
+   Le bouton Valider est masqué jusqu'à la fermeture du clavier. */
 .asv1-screen.is-keyboard-open {
   padding-top:
-    max(5px,env(safe-area-inset-top));
+    max(8px,env(safe-area-inset-top));
   padding-bottom:5px;
-  grid-template-rows:32px auto minmax(0,1fr);
-  gap:5px;
+  grid-template-rows:38px auto minmax(0,1fr);
+  gap:8px;
 }
 
 .asv1-screen.is-keyboard-open .asv1-submit-wrap {
   display:none;
 }
 
-.asv1-screen.is-keyboard-open .asv1-header {
-  min-height:32px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-quit {
-  width:31px;
-  height:31px;
-  padding:3px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-quit img {
-  width:25px;
-  height:25px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-round-mini {
-  padding:4px 7px;
-  font-size:.49rem;
-}
-
-.asv1-screen.is-keyboard-open .asv1-hero {
-  min-height:76px;
-  gap:20px;
-  padding-bottom:1px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-letter-card {
-  width:64px;
-  height:64px;
-  flex-basis:64px;
-  padding:6px 3px 4px;
-  border-radius:12px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-letter-card small {
-  font-size:.47rem;
-}
-
-.asv1-screen.is-keyboard-open .asv1-letter-card strong {
-  margin-top:3px;
-  font-size:1.62rem;
-}
-
-.asv1-screen.is-keyboard-open .asv1-timer {
-  width:79px;
-  height:79px;
-  flex-basis:79px;
-  padding:5px;
-}
-
-.asv1-screen.is-keyboard-open .asv1-timer strong {
-  font-size:1.42rem;
-}
-
-.asv1-screen.is-keyboard-open .asv1-timer span {
-  font-size:.47rem;
-}
-
+.asv1-screen.is-keyboard-open .asv1-header,
+.asv1-screen.is-keyboard-open .asv1-hero,
+.asv1-screen.is-keyboard-open .asv1-letter-card,
+.asv1-screen.is-keyboard-open .asv1-timer,
 .asv1-screen.is-keyboard-open .asv1-row {
-  min-height:58px;
-  padding-top:5px;
-  padding-bottom:5px;
+  /* volontairement aucune réduction : évite tout saut visuel */
 }
 
 /* Fenêtre de sortie */
@@ -612,4 +576,20 @@ body:has(.asv1-screen) .economy-hud {
   .asv1-screen:not(.is-keyboard-open) .asv1-submit {
     min-height:51px;
   }
+}
+
+
+/* Safari iOS — verrouillage supplémentaire du document pendant la saisie */
+body:has(.asv1-screen.is-keyboard-open),
+html:has(.asv1-screen.is-keyboard-open) {
+  overflow:hidden !important;
+  overscroll-behavior:none !important;
+}
+
+body:has(.asv1-screen.is-keyboard-open) #app {
+  position:fixed !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  overflow:hidden !important;
 }

@@ -62,22 +62,55 @@
           document.documentElement.clientHeight;
 
         if (!activeAnswerInput()) {
-          baselineHeight = Math.max(baselineHeight, height);
+          baselineHeight = Math.max(
+            baselineHeight,
+            height
+          );
         }
 
         const keyboardOpen =
           activeAnswerInput() &&
           baselineHeight - height > 100;
 
+        const offsetTop =
+          keyboardOpen
+            ? Math.max(
+                0,
+                Math.round(
+                  viewport?.offsetTop || 0
+                )
+              )
+            : 0;
+
         screen.style.setProperty(
           "--asv1-vh",
           `${Math.max(320, Math.round(height))}px`
+        );
+
+        screen.style.setProperty(
+          "--asv1-vv-top",
+          `${offsetTop}px`
         );
 
         screen.classList.toggle(
           "is-keyboard-open",
           keyboardOpen
         );
+
+        /* iOS Safari peut déplacer le viewport complet pour garder
+           l'input actif visible. On garde la page à 0 : seule la liste
+           des réponses a le droit de défiler. */
+        if (window.scrollY !== 0) {
+          window.scrollTo(0,0);
+        }
+
+        if (document.documentElement.scrollTop) {
+          document.documentElement.scrollTop = 0;
+        }
+
+        if (document.body.scrollTop) {
+          document.body.scrollTop = 0;
+        }
       });
     };
 
@@ -219,7 +252,8 @@
           </button>
 
           <span class="asv1-round-mini">
-            Manche ${Number(state.roundIndex || 0) + 1}/${Number(state.rounds || 1)}
+            <span>Manche</span>
+            <strong>${Number(state.roundIndex || 0) + 1}/${Number(state.rounds || 1)}</strong>
           </span>
         </header>
 
@@ -279,13 +313,59 @@
 
     const keepInputVisible = input => {
       setTimeout(() => {
-        if (!input?.isConnected) return;
+        if (
+          !input?.isConnected ||
+          !list?.isConnected
+        ) {
+          return;
+        }
 
-        input.closest(".asv1-row")?.scrollIntoView({
-          block:"nearest",
-          behavior:"smooth"
-        });
-      }, 260);
+        const row =
+          input.closest(".asv1-row");
+
+        if (!row) return;
+
+        const rowTop =
+          row.offsetTop;
+
+        const rowBottom =
+          rowTop + row.offsetHeight;
+
+        const viewTop =
+          list.scrollTop;
+
+        const viewBottom =
+          viewTop + list.clientHeight;
+
+        const margin = 8;
+
+        if (rowTop < viewTop + margin) {
+          list.scrollTo({
+            top:Math.max(
+              0,
+              rowTop - margin
+            ),
+            behavior:"auto"
+          });
+        } else if (
+          rowBottom >
+          viewBottom - margin
+        ) {
+          list.scrollTo({
+            top:Math.max(
+              0,
+              rowBottom -
+              list.clientHeight +
+              margin
+            ),
+            behavior:"auto"
+          });
+        }
+
+        if (window.scrollY !== 0) {
+          window.scrollTo(0,0);
+        }
+      }, 280);
     };
 
     inputs.forEach((input, index) => {
