@@ -21,13 +21,21 @@
   }
 
   function safeAvatar(value) {
-    const avatar = String(value || "").trim();
-    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) return "🧠";
-    return avatar;
+    if (window.PtitBacAvatars?.normalize) {
+      return window.PtitBacAvatars.normalize(value);
+    }
+
+    return "/avatar-base-01.webp";
   }
 
   function avatarMarkup(value) {
-    return `<span>${esc(safeAvatar(value))}</span>`;
+    const avatar = safeAvatar(value);
+
+    if (window.PtitBacAvatars?.isBaseAvatar?.(avatar)) {
+      return `<img src="${esc(avatar)}" alt="" draggable="false">`;
+    }
+
+    return `<span>${esc(avatar)}</span>`;
   }
 
   function readStat(keys, fallback = 0) {
@@ -241,7 +249,7 @@
       ? getProfile()
       : {
           name: localStorage.getItem("petitbac_profile_name") || "Joueur",
-          icon: localStorage.getItem("petitbac_profile_icon") || "🧠"
+          icon: localStorage.getItem("petitbac_profile_icon") || "/avatar-base-01.webp"
         };
 
     const stats = getProfileStats();

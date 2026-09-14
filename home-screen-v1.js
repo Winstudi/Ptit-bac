@@ -27,9 +27,21 @@
   }
 
   function safeAvatar(value) {
-    const avatar = String(value || "").trim();
-    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) return "🧠";
-    return avatar;
+    if (window.PtitBacAvatars?.normalize) {
+      return window.PtitBacAvatars.normalize(value);
+    }
+
+    return "/avatar-base-01.webp";
+  }
+
+  function homeAvatarMarkup(value) {
+    const avatar = safeAvatar(value);
+
+    if (window.PtitBacAvatars?.isBaseAvatar?.(avatar)) {
+      return `<img src="${avatar}" alt="" draggable="false">`;
+    }
+
+    return escapeHtml(avatar);
   }
 
   function refreshHomeResources() {
@@ -404,7 +416,7 @@
       <main class="home-mobile">
         <header class="hm-header">
           <button id="homePlaqueAvatar" class="hm-profile" type="button" aria-label="Mon profil">
-            <span class="hm-avatar">${escapeHtml(avatar)}</span>
+            <span class="hm-avatar">${homeAvatarMarkup(avatar)}</span>
             <span class="hm-profile-copy">
               <b>${escapeHtml(profile.name || "Mon profil")}</b>
               <small title="Système de niveau à venir">Niv. —</small>

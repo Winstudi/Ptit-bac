@@ -1,16 +1,24 @@
 (() => {
   "use strict";
 
-  const PROFILE_AVATARS = [
-    "🧠", "🐼", "🦊", "🐯", "🐸",
-    "🦁", "🐨", "🐙", "🦄", "🤖",
-    "😎", "⭐", "🎮", "⚽"
-  ];
+  const PROFILE_AVATARS =
+    window.PtitBacAvatars?.list || [
+      "/avatar-base-01.webp",
+      "/avatar-base-02.webp",
+      "/avatar-base-03.webp",
+      "/avatar-base-04.webp",
+      "/avatar-base-05.webp"
+    ];
 
   function safeAvatar(value) {
+    if (window.PtitBacAvatars?.normalize) {
+      return window.PtitBacAvatars.normalize(value);
+    }
+
     const avatar = String(value || "").trim();
-    if (!avatar || /^data:image\//i.test(avatar) || /^blob:/i.test(avatar)) return "🧠";
-    return avatar;
+    return PROFILE_AVATARS.includes(avatar)
+      ? avatar
+      : PROFILE_AVATARS[0];
   }
 
   function esc(value = "") {
@@ -42,7 +50,7 @@
       ? getProfile()
       : {
           name: localStorage.getItem("petitbac_profile_name") || "Joueur",
-          icon: localStorage.getItem("petitbac_profile_icon") || "🧠"
+          icon: localStorage.getItem("petitbac_profile_icon") || PROFILE_AVATARS[0]
         };
 
     const selectedAvatar = safeAvatar(current.icon);
@@ -64,14 +72,14 @@
         <p class="profile-avatar-picker-subtitle">Appuie sur un avatar pour le sélectionner.</p>
 
         <div class="profile-avatar-picker-grid">
-          ${PROFILE_AVATARS.map(icon => `
+          ${PROFILE_AVATARS.map((icon, index) => `
             <button
               type="button"
               class="profile-avatar-choice ${icon === selectedAvatar ? "is-selected" : ""}"
               data-avatar="${esc(icon)}"
-              aria-label="Choisir ${esc(icon)}"
+              aria-label="Choisir l’avatar ${index + 1}"
             >
-              <span>${esc(icon)}</span>
+              <img src="${esc(icon)}" alt="" draggable="false">
               <i aria-hidden="true">✓</i>
             </button>
           `).join("")}

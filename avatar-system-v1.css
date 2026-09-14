@@ -1,0 +1,57 @@
+/* =========================================================
+   P'tit Bac — 5 avatars de base
+   ========================================================= */
+
+.hm-avatar > img,
+.profile-v10-avatar-visual > img,
+.profile-avatar-choice > img,
+.friends-v2-avatar > img,
+.friends-v3-avatar > img,
+.chat-list-avatar > img,
+.chat-header-avatar > img,
+.lobby-v5-avatar > img,
+.lobby-v5-host-avatar > img,
+.lobby-v5-profile-avatar > img,
+.lobby-v5-invite-friend-avatar > img,
+.pl-avatar > img,
+.ptb-avatar-photo > img {
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+.hm-avatar > img {
+  border-radius:8px;
+}
+
+.profile-v10-avatar-visual > img {
+  border-radius:22px;
+}
+
+.profile-avatar-choice {
+  overflow:hidden;
+}
+
+.profile-avatar-choice > img {
+  border-radius:14px;
+}
+
+.friends-v2-avatar > img,
+.friends-v3-avatar > img,
+.chat-list-avatar > img,
+.chat-header-avatar > img,
+.lobby-v5-avatar > img,
+.lobby-v5-host-avatar > img,
+.lobby-v5-profile-avatar > img,
+.lobby-v5-invite-friend-avatar > img,
+.pl-avatar > img,
+.ptb-avatar-photo > img {
+  border-radius:inherit;
+}
+
+@media (max-width:370px) {
+  .profile-v10-avatar-visual > img {
+    border-radius:19px;
+  }
+}
