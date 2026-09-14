@@ -317,8 +317,7 @@
         ${user?.isHost && !p.isHost ? '<button class="pl-kick" data-kick-id="'+escapeHtml(p.id)+'" aria-label="Retirer ce joueur">×</button>' : ''}
       </article>`).join("");
     return `<main class="screen lobby-v5 pl-private" data-mode="private">
-      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button><h1>Salon privé</h1><img src="/ptitbac.logo.png" alt="P’tit Bac"></header>
-      <section class="pl-code"><button id="copyCode" aria-label="Copier le code du salon">Code : <strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button><button id="plShare">Partager</button></section>
+      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button><h1>Salon privé</h1><button id="copyCode" class="pl-header-code" aria-label="Copier le code du salon"><small>Code</small><strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button></header>
       <section class="pl-settings"><h2><img src="/settings.png" alt="">Paramètres de la partie${user?.isHost ? '<button id="lobbySettingsShortcut" aria-label="Modifier les paramètres"><img src="/settings.png" alt=""></button>':''}</h2>
         <div class="pl-setting-grid">
           ${settingCard({label:"Manches",value:state.rounds,icon:"/lightning.png"})}
@@ -329,7 +328,7 @@
       </section>
       <section class="pl-players"><h2>Joueurs <span>${state.players.length}/6</span></h2><div class="pl-grid">${cards}${Array.from({length:Math.max(0,6-state.players.length)},()=>'<div class="pl-empty"><b>＋</b><span>Place libre</span></div>').join("")}</div></section>
       <div class="pl-actions">
-        <button id="inviteFriendsBtn" class="pl-invite"><img src="/friends.png" alt="">Inviter des amis</button>
+        <div class="pl-social"><button id="inviteFriendsBtn" class="pl-invite"><img src="/friends.png" alt="">Inviter des amis</button><button id="plShare" class="pl-share" aria-label="Partager le code du salon">Partager</button></div>
         <div class="pl-launch">
           <button id="plReady" class="${user?.lobbyReady ? 'selected' : ''}" aria-pressed="${!!user?.lobbyReady}">${user?.lobbyReady ? 'Annuler' : '✓ Prêt'}</button>
           ${user?.isHost ? '<button id="startBtn" '+(allReady?'':'disabled')+'>▶ Lancer la partie</button>' : '<span class="pl-wait">L’hôte lancera la partie.</span>'}
@@ -727,5 +726,6 @@
   window.renderLobby = renderLobbyV5;
   try { renderLobby = renderLobbyV5; } catch {}
 })();
+
 
 
