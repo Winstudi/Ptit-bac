@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const installQuickMatch = require("../quick-match.js");
+const installQuickMatch = require("./quick-match.js");
 
 class FakeIO {
   constructor() {
