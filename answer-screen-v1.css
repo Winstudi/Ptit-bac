@@ -103,7 +103,7 @@ body:has(.asv1-screen) .economy-hud {
 .asv1-round-mini {
   position:absolute;
   top:0;
-  right:0;
+  right:20px;
   width:88px;
   min-width:88px;
   max-width:88px;
