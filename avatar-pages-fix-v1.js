@@ -475,9 +475,11 @@
         frame: ownedFrames.includes(raw?.equipped?.frame)
           ? raw.equipped.frame
           : "",
-        tag: ownedTags.includes(raw?.equipped?.tag)
-          ? raw.equipped.tag
-          : (ownedTags[0] || "")
+        tag: raw?.equipped?.tag === ""
+          ? ""
+          : ownedTags.includes(raw?.equipped?.tag)
+            ? raw.equipped.tag
+            : (ownedTags[0] || "")
       }
     };
   }
@@ -607,14 +609,7 @@
     const equippedAvatar = normalizeAvatar(state.equipped.avatar);
 
     return `
-      <section class="inventory-v1" aria-labelledby="inventoryV1Title">
-        <header class="inventory-v1-head">
-          <div>
-            <h2 id="inventoryV1Title">Inventaire</h2>
-            <p>Personnalise ton profil</p>
-          </div>
-        </header>
-
+      <section class="inventory-v1" aria-label="Inventaire">
         <section class="inventory-v1-preview" aria-label="Aperçu du joueur">
           <div class="inventory-v1-preview-avatar">
             <img src="${esc(equippedAvatar)}" alt="" draggable="false">
@@ -632,7 +627,7 @@
 
         <section class="inventory-v1-section">
           <div class="inventory-v1-section-head">
-            <div><span>👤</span><h3>Choix de l’avatar</h3></div>
+            <div><span class="inventory-v1-section-icon"><img src="/profile-icon.png" alt="" draggable="false"></span><h3>Choix de l’avatar</h3></div>
             <small>${state.owned.avatars.length} possédés</small>
           </div>
 
@@ -657,7 +652,7 @@
 
         <section class="inventory-v1-section">
           <div class="inventory-v1-section-head">
-            <div><span>▣</span><h3>Choix du cadre</h3></div>
+            <div><span class="inventory-v1-section-icon"><img src="/inventaire.png" alt="" draggable="false"></span><h3>Choix du cadre</h3></div>
             <small>${state.owned.frames.length} possédé${state.owned.frames.length > 1 ? "s" : ""}</small>
           </div>
 
@@ -702,7 +697,7 @@
 
         <section class="inventory-v1-section inventory-v1-tags">
           <div class="inventory-v1-section-head">
-            <div><span>🏷</span><h3>Choix du tag</h3></div>
+            <div><span class="inventory-v1-section-icon"><img src="/rewards.png" alt="" draggable="false"></span><h3>Choix du tag</h3></div>
             <small>${state.owned.tags.length} possédé${state.owned.tags.length > 1 ? "s" : ""}</small>
           </div>
 
@@ -776,12 +771,27 @@
     }
 
     dialog.classList.add("inventory-v1-dialog");
+
+    const backButton = dialog.querySelector(".hm-close");
+    if (backButton) {
+      backButton.classList.add("inventory-v1-back");
+      backButton.setAttribute("aria-label", "Retour");
+      backButton.innerHTML = '<img src="/back-arrow.png" alt="" draggable="false">';
+    }
+
     renderInto(dialog);
 
     if (!dialog.open) dialog.showModal();
 
     const onClose = () => {
       dialog.classList.remove("inventory-v1-dialog");
+
+      if (backButton) {
+        backButton.classList.remove("inventory-v1-back");
+        backButton.setAttribute("aria-label", "Fermer");
+        backButton.textContent = "×";
+      }
+
       dialog.removeEventListener("close", onClose);
     };
     dialog.addEventListener("close", onClose);

@@ -102,13 +102,14 @@
 }
 
 /* =========================================================
-   P'tit Bac — Inventaire V1
+   P'tit Bac — Inventaire V2
+   Correctifs : retour, avatars, cadres, tags, icônes GitHub
    ========================================================= */
 
 #homeDetailDialog.inventory-v1-dialog {
   width:min(92vw,560px) !important;
   max-width:560px !important;
-  max-height:min(86dvh,780px) !important;
+  max-height:min(88dvh,800px) !important;
   padding:0 !important;
   overflow:hidden !important;
   border:1.5px solid rgba(169,78,255,.9) !important;
@@ -129,34 +130,48 @@
   -webkit-backdrop-filter:blur(9px) !important;
 }
 
+/* Le bouton natif du dialogue devient la petite flèche retour du jeu. */
 #homeDetailDialog.inventory-v1-dialog > form[method="dialog"] {
   position:absolute !important;
-  z-index:20 !important;
-  top:17px !important;
-  right:17px !important;
+  z-index:40 !important;
+  top:12px !important;
+  left:12px !important;
+  right:auto !important;
   margin:0 !important;
+  padding:0 !important;
 }
 
-#homeDetailDialog.inventory-v1-dialog .hm-close {
-  width:44px !important;
-  height:44px !important;
+#homeDetailDialog.inventory-v1-dialog .hm-close.inventory-v1-back {
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  min-height:34px !important;
   display:grid !important;
   place-items:center !important;
   padding:0 !important;
-  border:2px solid rgba(203,145,255,.92) !important;
-  border-radius:14px !important;
-  background:#14184c !important;
-  color:#fff !important;
-  font-size:1.6rem !important;
-  font-weight:500 !important;
+  overflow:visible !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:transparent !important;
+  box-shadow:none !important;
   line-height:1 !important;
-  box-shadow:
-    0 0 0 3px rgba(123,61,214,.26),
-    inset 0 0 13px rgba(148,70,255,.08) !important;
+  cursor:pointer !important;
+  -webkit-tap-highlight-color:transparent !important;
+}
+
+#homeDetailDialog.inventory-v1-dialog .hm-close.inventory-v1-back > img {
+  width:34px !important;
+  height:34px !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  object-fit:contain !important;
+  pointer-events:none !important;
 }
 
 #homeDetailDialog.inventory-v1-dialog #homeDetailContent {
-  max-height:min(86dvh,780px) !important;
+  max-height:min(88dvh,800px) !important;
   overflow-y:auto !important;
   overscroll-behavior:contain !important;
   scrollbar-width:none !important;
@@ -167,40 +182,20 @@
 }
 
 .inventory-v1 {
-  padding:28px 24px 26px !important;
+  padding:56px 24px 26px !important;
 }
 
-.inventory-v1-head {
-  min-height:52px;
-  padding-right:58px;
-  display:flex;
-  align-items:flex-start;
-}
-
-.inventory-v1-head h2 {
-  margin:0 !important;
-  color:#fff !important;
-  font-size:clamp(1.8rem,7vw,2.45rem) !important;
-  font-weight:900 !important;
-  line-height:1 !important;
-  letter-spacing:-.04em !important;
-}
-
-.inventory-v1-head p {
-  margin:7px 0 0 !important;
-  color:#b8a6e4 !important;
-  font-size:.86rem !important;
-  font-weight:700 !important;
-}
-
+/* -------------------------
+   Aperçu du joueur
+   ------------------------- */
 .inventory-v1-preview {
   position:relative;
-  min-height:150px;
-  margin-top:18px;
-  padding:18px 18px;
+  min-height:142px;
+  margin:0;
+  padding:17px 18px;
   display:flex;
   align-items:center;
-  gap:20px;
+  gap:18px;
   overflow:hidden;
   border:1px solid rgba(133,76,245,.46);
   border-radius:20px;
@@ -222,24 +217,33 @@
 }
 
 .inventory-v1-preview-avatar {
-  position:relative;
-  z-index:2;
-  width:112px;
-  height:112px;
-  flex:0 0 112px;
-  display:grid;
-  place-items:center;
+  position:relative !important;
+  z-index:2 !important;
+  width:112px !important;
+  height:112px !important;
+  flex:0 0 112px !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:visible !important;
 }
 
-.inventory-v1-preview-avatar > img {
-  position:relative;
-  z-index:1;
-  width:92px;
-  height:92px;
-  display:block;
-  object-fit:cover;
-  border-radius:16px;
-  box-shadow:0 9px 24px rgba(0,0,0,.32);
+/* Important : neutralise les règles globales des images dans les dialogs. */
+#homeDetailDialog.inventory-v1-dialog .inventory-v1-preview-avatar > img {
+  position:relative !important;
+  z-index:2 !important;
+  width:92px !important;
+  height:92px !important;
+  min-width:92px !important;
+  min-height:92px !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  object-fit:cover !important;
+  object-position:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-radius:16px !important;
+  box-shadow:0 9px 24px rgba(0,0,0,.32) !important;
 }
 
 .inventory-v1-preview-copy {
@@ -253,7 +257,7 @@
 
 .inventory-v1-preview-copy > small {
   color:#a99ad4;
-  font-size:.68rem;
+  font-size:.66rem;
   font-weight:800;
   text-transform:uppercase;
   letter-spacing:.08em;
@@ -264,7 +268,7 @@
   margin-top:3px;
   overflow:hidden;
   color:#fff;
-  font-size:1.55rem;
+  font-size:1.5rem;
   font-weight:900;
   line-height:1.05;
   text-overflow:ellipsis;
@@ -272,12 +276,35 @@
 }
 
 .inventory-v1-no-tag {
-  margin-top:10px;
+  margin-top:8px;
   color:#8e86bb;
-  font-size:.74rem;
+  font-size:.68rem;
   font-weight:700;
 }
 
+/* Tag de l'aperçu volontairement plus compact. */
+.inv-tag.inv-tag-preview {
+  min-height:25px !important;
+  margin-top:8px !important;
+  padding:4px 9px !important;
+  gap:5px !important;
+  border-radius:8px !important;
+  font-size:.59rem !important;
+  line-height:1 !important;
+}
+
+.inv-tag.inv-tag-preview > span {
+  font-size:.67rem !important;
+}
+
+.inv-tag.inv-tag-preview > strong {
+  font-size:.59rem !important;
+  line-height:1 !important;
+}
+
+/* -------------------------
+   Sections
+   ------------------------- */
 .inventory-v1-section {
   margin-top:14px;
   padding:14px 14px 15px;
@@ -301,18 +328,27 @@
   gap:8px;
 }
 
-.inventory-v1-section-head > div > span {
-  width:30px;
-  height:30px;
-  display:grid;
-  place-items:center;
-  flex:0 0 30px;
-  border:1px solid rgba(158,96,255,.55);
-  border-radius:9px;
-  background:linear-gradient(145deg,#32226f,#171e55);
-  color:#d8caff;
-  font-size:.86rem;
-  font-weight:900;
+.inventory-v1-section-head .inventory-v1-section-icon {
+  width:31px !important;
+  height:31px !important;
+  display:grid !important;
+  place-items:center !important;
+  flex:0 0 31px !important;
+  overflow:hidden !important;
+  border:1px solid rgba(158,96,255,.55) !important;
+  border-radius:9px !important;
+  background:linear-gradient(145deg,#32226f,#171e55) !important;
+}
+
+#homeDetailDialog.inventory-v1-dialog .inventory-v1-section-icon > img {
+  width:25px !important;
+  height:25px !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  object-fit:contain !important;
+  margin:0 !important;
+  padding:0 !important;
 }
 
 .inventory-v1-section-head h3 {
@@ -330,6 +366,9 @@
   white-space:nowrap;
 }
 
+/* -------------------------
+   Avatars
+   ------------------------- */
 .inventory-v1-avatar-grid {
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
@@ -340,19 +379,34 @@
   position:relative;
   aspect-ratio:1;
   width:100%;
-  padding:0;
-  overflow:hidden;
+  min-width:0;
+  padding:0 !important;
+  overflow:hidden !important;
   border:2px solid rgba(91,95,170,.58);
   border-radius:13px;
   background:#111b49;
   box-shadow:0 4px 12px rgba(0,0,0,.18);
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 
-.inventory-v1-avatar-choice img {
-  width:100%;
-  height:100%;
-  display:block;
-  object-fit:cover;
+#homeDetailDialog.inventory-v1-dialog .inventory-v1-avatar-choice > img {
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:100% !important;
+  min-height:100% !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  object-fit:cover !important;
+  object-position:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:10px !important;
 }
 
 .inventory-v1-avatar-choice.is-selected {
@@ -364,7 +418,7 @@
 
 .inventory-v1-check {
   position:absolute;
-  z-index:6;
+  z-index:8;
   right:-4px;
   top:-4px;
   width:23px;
@@ -378,12 +432,16 @@
   font-size:.72rem;
   font-weight:1000;
   box-shadow:0 0 10px rgba(145,67,255,.6);
+  pointer-events:none;
 }
 
 .is-selected > .inventory-v1-check {
   display:grid;
 }
 
+/* -------------------------
+   Cadres
+   ------------------------- */
 .inventory-v1-frame-grid {
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
@@ -402,6 +460,9 @@
   border-radius:14px;
   background:#111942;
   color:#ddd9f7;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 
 .inventory-v1-frame-choice strong {
@@ -420,24 +481,35 @@
 }
 
 .inventory-v1-frame-swatch {
-  position:relative;
-  width:62px;
-  height:62px;
-  display:grid;
-  place-items:center;
+  position:relative !important;
+  width:62px !important;
+  height:62px !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:visible !important;
 }
 
-.inventory-v1-frame-swatch > img {
-  width:48px;
-  height:48px;
-  display:block;
-  object-fit:cover;
-  border-radius:9px;
+#homeDetailDialog.inventory-v1-dialog .inventory-v1-frame-swatch > img {
+  position:relative !important;
+  z-index:2 !important;
+  width:48px !important;
+  height:48px !important;
+  min-width:48px !important;
+  min-height:48px !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  object-fit:cover !important;
+  object-position:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-radius:9px !important;
 }
 
 .inventory-v1-frame-choice.is-empty .inventory-v1-frame-swatch {
   border:2px dashed rgba(113,111,174,.72);
   border-radius:12px;
+  overflow:hidden !important;
 }
 
 .inventory-v1-frame-choice.is-empty .inventory-v1-frame-swatch i {
@@ -449,6 +521,89 @@
   transform:rotate(-42deg);
 }
 
+/* Le cadre ne possède JAMAIS de fond plein : il laisse l'avatar visible. */
+.inv-frame {
+  position:absolute !important;
+  z-index:5 !important;
+  inset:0 !important;
+  display:block !important;
+  border-radius:22px !important;
+  background:transparent !important;
+  pointer-events:none !important;
+}
+
+.inv-frame-purple-flame {
+  filter:drop-shadow(0 0 5px rgba(203,73,255,.88));
+}
+
+.inv-frame-purple-flame::before {
+  content:"";
+  position:absolute;
+  inset:5px;
+  border:5px solid #b84dff;
+  border-radius:22px;
+  background:transparent !important;
+  box-shadow:
+    0 0 8px #a638ff,
+    0 0 15px rgba(232,64,255,.52),
+    inset 0 0 7px rgba(205,74,255,.42);
+}
+
+.inv-frame-purple-flame::after {
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius:24px;
+  background:
+    radial-gradient(ellipse at 13% 8%,#ff7aff 0 5%,transparent 6%),
+    radial-gradient(ellipse at 46% 0%,#b945ff 0 4.5%,transparent 5.5%),
+    radial-gradient(ellipse at 89% 14%,#ff64f3 0 5%,transparent 6%),
+    radial-gradient(ellipse at 100% 52%,#7b30ff 0 4.5%,transparent 5.5%),
+    radial-gradient(ellipse at 87% 92%,#ff6cf4 0 5%,transparent 6%),
+    radial-gradient(ellipse at 50% 100%,#a130ff 0 4.5%,transparent 5.5%),
+    radial-gradient(ellipse at 11% 89%,#f357ff 0 5%,transparent 6%),
+    radial-gradient(ellipse at 0% 47%,#7f36ff 0 4.5%,transparent 5.5%);
+  opacity:.92;
+}
+
+.inv-frame-ice::before,
+.inv-frame-gold::before,
+.inv-frame-nature::before {
+  content:"";
+  position:absolute;
+  inset:5px;
+  border:5px solid;
+  border-radius:21px;
+  background:transparent !important;
+}
+
+.inv-frame-ice::before {
+  border-color:#6feaff;
+  box-shadow:0 0 12px #2fcfff,inset 0 0 7px rgba(128,236,255,.55);
+}
+
+.inv-frame-gold::before {
+  border-color:#ffcf43;
+  box-shadow:0 0 12px #ffad21,inset 0 0 7px rgba(255,218,77,.45);
+}
+
+.inv-frame-nature::before {
+  border-color:#57d971;
+  box-shadow:0 0 11px #2dbb52,inset 0 0 7px rgba(92,231,119,.42);
+}
+
+.inv-frame-mini {
+  inset:0 !important;
+  transform:scale(.94);
+}
+
+.inv-frame-preview {
+  inset:0 !important;
+}
+
+/* -------------------------
+   Tags
+   ------------------------- */
 .inventory-v1-tag-grid {
   display:flex;
   flex-wrap:wrap;
@@ -457,18 +612,22 @@
 
 .inventory-v1-tag-choice {
   position:relative;
-  min-height:38px;
-  padding:8px 14px;
+  min-height:34px;
+  padding:6px 11px;
   display:inline-flex;
   align-items:center;
-  gap:7px;
+  gap:6px;
   border:1.5px solid rgba(111,109,177,.6);
-  border-radius:12px;
+  border-radius:11px;
   background:#111943;
   color:#e8e5ff;
-  font-size:.72rem;
+  font-size:.64rem;
   font-weight:800;
+  line-height:1;
   white-space:nowrap;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 
 .inventory-v1-tag-choice strong {
@@ -527,134 +686,44 @@
   background:linear-gradient(180deg,#3c4154,#23283b);
 }
 
-/* Cadres : overlay indépendant au-dessus de l'avatar. */
-.inv-frame {
-  position:absolute;
-  z-index:4;
-  inset:0;
-  display:block;
-  border-radius:22px;
-  pointer-events:none;
-}
-
-.inv-frame-purple-flame {
-  filter:drop-shadow(0 0 5px rgba(203,73,255,.88));
-}
-
-.inv-frame-purple-flame::before,
-.inv-frame-purple-flame::after {
-  content:"";
-  position:absolute;
-  inset:5px;
-  border-radius:22px;
-  pointer-events:none;
-}
-
-.inv-frame-purple-flame::before {
-  border:5px solid transparent;
-  background:
-    linear-gradient(#17123e,#17123e) padding-box,
-    conic-gradient(
-      from 15deg,
-      #5a16dd,
-      #ff54ff 13%,
-      #7c24ff 24%,
-      #f06cff 37%,
-      #4d13c6 50%,
-      #ff55ef 63%,
-      #7620ff 76%,
-      #f44eff 88%,
-      #5a16dd
-    ) border-box;
-  box-shadow:
-    0 0 8px #a638ff,
-    inset 0 0 8px rgba(205,74,255,.45);
-}
-
-.inv-frame-purple-flame::after {
-  inset:-2px;
-  background:
-    radial-gradient(ellipse at 13% 10%,#ff7aff 0 6%,transparent 7%),
-    radial-gradient(ellipse at 45% 0%,#b945ff 0 5%,transparent 6%),
-    radial-gradient(ellipse at 88% 15%,#ff64f3 0 6%,transparent 7%),
-    radial-gradient(ellipse at 100% 52%,#7b30ff 0 5%,transparent 6%),
-    radial-gradient(ellipse at 86% 91%,#ff6cf4 0 6%,transparent 7%),
-    radial-gradient(ellipse at 50% 100%,#a130ff 0 5%,transparent 6%),
-    radial-gradient(ellipse at 11% 88%,#f357ff 0 6%,transparent 7%),
-    radial-gradient(ellipse at 0% 47%,#7f36ff 0 5%,transparent 6%);
-  opacity:.95;
-}
-
-.inv-frame-ice::before,
-.inv-frame-gold::before,
-.inv-frame-nature::before {
-  content:"";
-  position:absolute;
-  inset:5px;
-  border:5px solid;
-  border-radius:21px;
-}
-
-.inv-frame-ice::before {
-  border-color:#6feaff;
-  box-shadow:0 0 12px #2fcfff,inset 0 0 7px rgba(128,236,255,.55);
-}
-
-.inv-frame-gold::before {
-  border-color:#ffcf43;
-  box-shadow:0 0 12px #ffad21,inset 0 0 7px rgba(255,218,77,.45);
-}
-
-.inv-frame-nature::before {
-  border-color:#57d971;
-  box-shadow:0 0 11px #2dbb52,inset 0 0 7px rgba(92,231,119,.42);
-}
-
-.inv-frame-mini {
-  inset:0;
-  transform:scale(.94);
-}
-
-.inv-frame-preview {
-  inset:0;
-}
-
 @media (max-width:430px) {
   #homeDetailDialog.inventory-v1-dialog {
     width:calc(100vw - 28px) !important;
-    max-height:88dvh !important;
+    max-height:90dvh !important;
     border-radius:24px !important;
   }
 
   #homeDetailDialog.inventory-v1-dialog #homeDetailContent {
-    max-height:88dvh !important;
+    max-height:90dvh !important;
   }
 
   .inventory-v1 {
-    padding:24px 16px 22px !important;
+    padding:52px 16px 22px !important;
   }
 
   .inventory-v1-preview {
-    min-height:132px;
-    padding:15px;
-    gap:15px;
+    min-height:126px;
+    padding:14px;
+    gap:14px;
   }
 
   .inventory-v1-preview-avatar {
-    width:96px;
-    height:96px;
-    flex-basis:96px;
+    width:94px !important;
+    height:94px !important;
+    flex-basis:94px !important;
   }
 
-  .inventory-v1-preview-avatar > img {
-    width:80px;
-    height:80px;
-    border-radius:14px;
+  #homeDetailDialog.inventory-v1-dialog .inventory-v1-preview-avatar > img {
+    width:78px !important;
+    height:78px !important;
+    min-width:78px !important;
+    min-height:78px !important;
+    border-radius:13px !important;
   }
 
   .inventory-v1-preview-copy > strong {
     max-width:165px;
-    font-size:1.25rem;
+    font-size:1.22rem;
   }
 
   .inventory-v1-avatar-grid {
@@ -671,20 +740,28 @@
   }
 
   .inventory-v1-frame-swatch {
-    width:55px;
-    height:55px;
+    width:55px !important;
+    height:55px !important;
   }
 
-  .inventory-v1-frame-swatch > img {
-    width:43px;
-    height:43px;
+  #homeDetailDialog.inventory-v1-dialog .inventory-v1-frame-swatch > img {
+    width:43px !important;
+    height:43px !important;
+    min-width:43px !important;
+    min-height:43px !important;
+  }
+
+  .inventory-v1-tag-choice {
+    min-height:32px;
+    padding:6px 10px;
+    font-size:.61rem;
   }
 }
 
 @media (max-width:360px) {
   .inventory-v1-preview-copy > strong {
     max-width:135px;
-    font-size:1.1rem;
+    font-size:1.08rem;
   }
 
   .inventory-v1-section-head > small {
