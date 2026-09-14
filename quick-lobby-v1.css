@@ -222,16 +222,6 @@ body:has(.quick-lobby-v1) {
   white-space:nowrap;
 }
 
-.quick-you-tag {
-  order:2;
-  padding:2px 4px;
-  border:1px solid #7050b8;
-  border-radius:5px;
-  color:#d4c3ff;
-  font-size:9px;
-  line-height:1.1;
-}
-
 .quick-player-state {
   order:3;
   flex:0 0 100%;
@@ -256,9 +246,52 @@ body:has(.quick-lobby-v1) {
   display:none !important;
 }
 
-/* Le bouton Prêt reste dans la carte du joueur local. */
+/* Carte du joueur local : nom/statut bien positionnés + bouton Prêt en bas. */
 .quick-lobby-v1 .quick-self-row {
-  padding-bottom:31px !important;
+  padding:7px !important;
+}
+
+.quick-lobby-v1
+.quick-self-row
+.lobby-v5-player-copy {
+  position:absolute !important;
+  left:63px !important;
+  right:7px !important;
+  top:11px !important;
+  min-width:0 !important;
+  overflow:visible !important;
+  align-self:auto !important;
+}
+
+.quick-lobby-v1
+.quick-self-row
+.lobby-v5-player-name-row {
+  display:flex !important;
+  flex-direction:column !important;
+  flex-wrap:nowrap !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:4px !important;
+  min-width:0 !important;
+}
+
+.quick-lobby-v1
+.quick-self-row
+.lobby-v5-player-copy strong {
+  order:1 !important;
+  width:100% !important;
+  max-width:100% !important;
+  line-height:1.15 !important;
+}
+
+.quick-lobby-v1
+.quick-self-row
+.quick-player-state {
+  order:2 !important;
+  flex:0 0 auto !important;
+  width:100% !important;
+  margin-top:0 !important;
+  line-height:1.15 !important;
 }
 
 .quick-ready-btn {
@@ -510,6 +543,13 @@ body:has(.quick-lobby-v1) {
 
   .quick-lobby-v1 .lobby-v5-player-copy strong {
     font-size:13px !important;
+  }
+
+  .quick-lobby-v1
+  .quick-self-row
+  .lobby-v5-player-copy {
+    left:56px !important;
+    top:9px !important;
   }
 
   .quick-ready-btn {

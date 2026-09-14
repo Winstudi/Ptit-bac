@@ -211,19 +211,6 @@
 
           meRow.classList.add("quick-self-row");
 
-          const nameRow =
-            meRow.querySelector(".lobby-v5-player-name-row");
-
-          if (
-            nameRow &&
-            !nameRow.querySelector(".quick-you-tag")
-          ) {
-            nameRow.insertAdjacentHTML(
-              "beforeend",
-              '<span class="quick-you-tag">Toi</span>'
-            );
-          }
-
           meRow.insertAdjacentHTML(
             "beforeend",
             `
