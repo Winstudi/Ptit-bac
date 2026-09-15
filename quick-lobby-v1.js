@@ -1,7 +1,6 @@
 (() => {
   "use strict";
 
-  let observer = null;
   let scheduled = false;
   let quickStarting = false;
 
@@ -364,15 +363,19 @@
     scheduleEnhance();
   });
 
-  function startObserver() {
-    observer?.disconnect();
+  function startRuntime() {
+    document.addEventListener(
+      "ptitbac:screen-rendered",
+      scheduleEnhance
+    );
+    document.addEventListener(
+      "ptitbac:dom-updated",
+      scheduleEnhance
+    );
 
-    observer = new MutationObserver(scheduleEnhance);
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+    try {
+      socket?.on?.("room:state", scheduleEnhance);
+    } catch {}
 
     scheduleEnhance();
   }
@@ -380,11 +383,11 @@
   if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
-      startObserver,
+      startRuntime,
       { once: true }
     );
   } else {
-    startObserver();
+    startRuntime();
   }
 })();
 

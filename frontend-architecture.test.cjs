@@ -127,6 +127,16 @@ test("les relances Quick ne dépendent plus de avatar-pages-fix-v1.js", () => {
   assert.match(quick, /game:confirmCategories/);
 });
 
+
+test("le salon Quick utilise les événements partagés au lieu d'un MutationObserver", () => {
+  const source = read("quick-lobby-v1.js");
+
+  assert.doesNotMatch(source, /new MutationObserver\s*\(/);
+  assert.match(source, /ptitbac:screen-rendered/);
+  assert.match(source, /ptitbac:dom-updated/);
+  assert.match(source, /socket\?\.on\?\.\("room:state", scheduleEnhance\)/);
+});
+
 test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
   const html = read("index.html");
   const { BUNDLES } = require("./frontend-assets.cjs");

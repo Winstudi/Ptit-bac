@@ -320,6 +320,7 @@ function checkIntegratedFrontend() {
   const observerModules = [
     "avatar-system-v1.js",
     "progression-client.js",
+    "quick-lobby-v1.js",
     "lobby-runtime-v1.js",
     "ui-runtime-v1.js"
   ];
