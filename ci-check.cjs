@@ -35,7 +35,8 @@ const LEGACY_FILES = Object.freeze([
   "lobby-polish-v1.css",
   "lobby-polish-v1.js",
   "ui-fixes-v3.css",
-  "ui-fixes-v3.js"
+  "ui-fixes-v3.js",
+  "category-position-fix-v1.css"
 ]);
 
 function fail(message) {

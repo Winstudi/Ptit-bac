@@ -91,6 +91,22 @@ test("les anciens scripts de transformation ont disparu du dépôt", () => {
   }
 });
 
+
+test("le correctif de position des catégories est absorbé dans le CSS canonique", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const assets = BUNDLES.flatMap(bundle => bundle.files);
+  const css = read("category-selection-v2.css");
+
+  assert.equal(exists("category-position-fix-v1.css"), false);
+  assert.doesNotMatch(html, /category-position-fix-v1\.css/);
+  assert.ok(!publicFiles.includes("/category-position-fix-v1.css"));
+  assert.ok(!assets.includes("category-position-fix-v1.css"));
+  assert.match(css, /Sélection catégories V7/);
+  assert.match(css, /Ancien correctif de position absorbé dans ce fichier canonique/);
+});
+
 test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
   const html = read("index.html");
   const { BUNDLES } = require("./frontend-assets.cjs");

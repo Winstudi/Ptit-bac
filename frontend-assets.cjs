@@ -30,7 +30,6 @@ const BUNDLES = Object.freeze([
     id: "pbw1WheelFxStyles",
     files: Object.freeze([
       "category-selection-v2.css",
-      "category-position-fix-v1.css",
       "category-chooser-card-v1.css",
       "shared-footer-v1.css",
       "avatar-system-v2.css",
