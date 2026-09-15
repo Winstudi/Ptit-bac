@@ -62,7 +62,74 @@ require("./admin-hook.js")(io);
 
 const PORT = process.env.PORT || 3000;
 const BUILD_VERSION = require("./package.json").version;
-app.get("/health", (req, res) => res.status(200).json({ ok: true, version: BUILD_VERSION }));
+const IS_RENDER = String(process.env.RENDER || "").toLowerCase() === "true";
+const RENDER_GIT_COMMIT = String(process.env.RENDER_GIT_COMMIT || "").trim();
+const PROCESS_STARTED_AT = Date.now();
+let startupReady = false;
+
+async function checkDatabaseHealth(timeoutMs = 1500) {
+  if (!pgPool) {
+    return { ready:false, latencyMs:null };
+  }
+
+  const startedAt = Date.now();
+  let timer = null;
+
+  try {
+    await Promise.race([
+      pgPool.query("SELECT 1"),
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("PostgreSQL health timeout")),
+          timeoutMs
+        );
+      })
+    ]);
+
+    return {
+      ready:true,
+      latencyMs:Date.now() - startedAt
+    };
+  } catch {
+    return {
+      ready:false,
+      latencyMs:Date.now() - startedAt
+    };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+app.get("/health", async (req, res) => {
+  const database = await checkDatabaseHealth();
+  const databaseRequired = IS_RENDER;
+  const ok =
+    startupReady &&
+    (!databaseRequired || database.ready);
+
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  res.status(ok ? 200 : 503).json({
+    ok,
+    version:BUILD_VERSION,
+    commit:RENDER_GIT_COMMIT || null,
+    commitShort:RENDER_GIT_COMMIT
+      ? RENDER_GIT_COMMIT.slice(0, 12)
+      : null,
+    environment:IS_RENDER ? "render" : "local",
+    database:database.ready
+      ? "postgres"
+      : walletStorageMode,
+    databaseReady:database.ready,
+    databaseLatencyMs:database.latencyMs,
+    storage:walletStorageMode,
+    uptimeSeconds:Math.max(
+      0,
+      Math.floor((Date.now() - PROCESS_STARTED_AT) / 1000)
+    )
+  });
+});
 // Only explicitly public files may be downloaded. Never expose server data.
 const PUBLIC_FILES = new Set(require("./public-files.json"));
 const OPTIMIZED_ASSET_DIR = path.join(__dirname, ".ptb-assets");
@@ -188,7 +255,7 @@ const validationServiceState = {
 
 const wallets = new Map();
 let pgPool = null;
-let walletStorageMode = "json";
+let walletStorageMode = "initializing";
 const inventoryService = createInventoryService({
   getPool: () => pgPool,
   ensureSchema: ensureDatabaseSchema
@@ -234,17 +301,33 @@ function saveWalletsToFile() {
 
 async function initWalletPersistence() {
   if (!DATABASE_URL) {
+    if (IS_RENDER) {
+      walletStorageMode = "unavailable";
+      throw new Error(
+        "DATABASE_URL est obligatoire sur Render. " +
+        "Démarrage refusé pour protéger les données des joueurs."
+      );
+    }
+
     walletStorageMode = "json";
     loadWalletsFromFile();
-    console.warn("Portefeuilles: stockage JSON local. Configure DATABASE_URL pour une persistance durable.");
+    console.warn(
+      "Portefeuilles: stockage JSON local de développement. " +
+      "Configure DATABASE_URL pour une persistance durable."
+    );
     return;
   }
 
   try {
     pgPool = getDbPool();
     if (!pgPool) throw new Error("DATABASE_URL manquant");
+
     await ensureDatabaseSchema();
-    const { rows } = await pgPool.query("SELECT token, coins, gems, created_at, updated_at, history FROM ptitbac_wallets");
+
+    const { rows } = await pgPool.query(
+      "SELECT token, coins, gems, created_at, updated_at, history FROM ptitbac_wallets"
+    );
+
     for (const row of rows) {
       wallets.set(row.token, normalizeWalletRecord({
         coins: row.coins,
@@ -254,10 +337,23 @@ async function initWalletPersistence() {
         history: row.history
       }));
     }
+
     walletStorageMode = "postgres";
-    console.log(`Portefeuilles: PostgreSQL actif (${rows.length} portefeuille(s) chargé(s)).`);
+    console.log(
+      `Portefeuilles: PostgreSQL actif (${rows.length} portefeuille(s) chargé(s)).`
+    );
   } catch (err) {
-    console.error("PostgreSQL indisponible, repli sur wallets.json:", err.message);
+    if (IS_RENDER) {
+      walletStorageMode = "unavailable";
+      throw new Error(
+        `PostgreSQL requis sur Render: ${err.message}`
+      );
+    }
+
+    console.error(
+      "PostgreSQL indisponible en local, repli sur wallets.json:",
+      err.message
+    );
     pgPool = null;
     walletStorageMode = "json";
     loadWalletsFromFile();
@@ -700,7 +796,13 @@ async function initLearningPersistence() {
     const reports = await pgPool.query("SELECT id, room_code, player_id, round_index, category, answer, letter, original_reason, status, review_verdict, review_confidence, created_at, reviewed_at FROM ptitbac_answer_reports ORDER BY created_at DESC LIMIT 1000");
     answerReports.clear();
     for (const row of reports.rows) answerReports.set(row.id, { id: row.id, roomCode: row.room_code, playerId: row.player_id, roundIndex: Number(row.round_index), category: row.category, answer: row.answer, letter: row.letter, originalReason: row.original_reason, status: row.status, reviewVerdict: row.review_verdict || "", reviewConfidence: Number(row.review_confidence || 0), createdAt: Number(row.created_at), reviewedAt: Number(row.reviewed_at || 0) });
-  } catch (err) { console.error("Initialisation mémoire IA PostgreSQL impossible:", err.message); }
+  } catch (err) {
+    console.error(
+      "Initialisation mémoire IA PostgreSQL impossible:",
+      err.message
+    );
+    if (IS_RENDER) throw err;
+  }
 }
 
 function persistLearnedAnswer(key) {
@@ -3488,19 +3590,73 @@ app.get("/", (req, res) => {
 });
 app.use((req, res) => res.sendStatus(404));
 
-initWalletPersistence()
-  .then(() => initLearningPersistence())
-  .catch(err => console.error("Initialisation stockage persistant:", err.message))
-  .finally(() => {
+async function startApplication() {
+  try {
+    await initWalletPersistence();
+    await initLearningPersistence();
+
+    if (IS_RENDER && walletStorageMode !== "postgres") {
+      throw new Error(
+        "Stockage PostgreSQL non prêt sur Render."
+      );
+    }
+
+    startupReady = true;
+
     server.listen(PORT, "0.0.0.0", () => {
-      console.log(`Petit Bac V${BUILD_VERSION} lancé sur http://localhost:${server.address().port}`);
-      console.log(`Validation IA: ${OPENAI_API_KEY ? `configurée (${OPENAI_VALIDATION_MODEL})` : "non configurée"}`);
-      console.log(`IA joueurs test: ${BOT_AI_ENABLED && OPENAI_BOT_API_KEY ? `activée (${OPENAI_BOT_MODEL})` : "générateur local"}`);
+      console.log(
+        `Petit Bac V${BUILD_VERSION} lancé sur ` +
+        `http://localhost:${server.address().port}`
+      );
+      if (RENDER_GIT_COMMIT) {
+        console.log(
+          `Commit déployé: ${RENDER_GIT_COMMIT.slice(0, 12)}`
+        );
+      }
+      console.log(
+        `Validation IA: ${
+          OPENAI_API_KEY
+            ? `configurée (${OPENAI_VALIDATION_MODEL})`
+            : "non configurée"
+        }`
+      );
+      console.log(
+        `IA joueurs test: ${
+          BOT_AI_ENABLED && OPENAI_BOT_API_KEY
+            ? `activée (${OPENAI_BOT_MODEL})`
+            : "générateur local"
+        }`
+      );
       console.log(`Stockage portefeuille: ${walletStorageMode}`);
-      console.log(`Mémoire IA: ${pgPool ? "PostgreSQL" : "JSON local"} (${learnedAnswers.size} réponse(s) apprise(s))`);
-      console.log(`Diagnostic admin: ${ADMIN_DIAGNOSTIC_CODE ? "protégé par variable d’environnement" : "désactivé"}`);
+      console.log(
+        `Mémoire IA: ${pgPool ? "PostgreSQL" : "JSON local"} ` +
+        `(${learnedAnswers.size} réponse(s) apprise(s))`
+      );
+      console.log(
+        `Diagnostic admin: ${
+          ADMIN_DIAGNOSTIC_CODE
+            ? "protégé par variable d’environnement"
+            : "désactivé"
+        }`
+      );
     });
-  });
+  } catch (err) {
+    startupReady = false;
+    console.error(
+      "Démarrage P'tit Bac refusé:",
+      err?.message || err
+    );
+
+    try {
+      await pgPool?.end?.();
+    } catch {}
+
+    process.exitCode = 1;
+    setImmediate(() => process.exit(1));
+  }
+}
+
+startApplication();
 
 
 

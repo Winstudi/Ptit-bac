@@ -94,6 +94,7 @@ test(
           OPENAI_API_KEY: "",
           OPENAI_BOT_API_KEY: "",
           BOT_AI_ENABLED: "false",
+          RENDER: "false",
           PTITBAC_WALLET_FILE: walletFile
         },
         stdio: ["ignore", "pipe", "pipe"]
@@ -120,6 +121,12 @@ test(
       assert.equal(health?.ok, true);
       assert.equal(typeof health?.version, "string");
       assert.match(health.version, /^\d+\.\d+\.\d+$/);
+      assert.equal(health?.environment, "local");
+      assert.equal(health?.databaseReady, false);
+      assert.equal(health?.storage, "json");
+      assert.equal(health?.database, "json");
+      assert.equal(health?.commit, null);
+      assert.equal(typeof health?.uptimeSeconds, "number");
     } catch (error) {
       throw new Error(
         `${error.message}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`
@@ -131,5 +138,64 @@ test(
         force: true
       });
     }
+  }
+);
+
+
+test(
+  "sur Render le serveur refuse de démarrer sans PostgreSQL",
+  { timeout: 12_000 },
+  async () => {
+    const port = await freePort();
+
+    const child = spawn(
+      process.execPath,
+      ["server.js"],
+      {
+        cwd: __dirname,
+        env: {
+          ...process.env,
+          PORT: String(port),
+          RENDER: "true",
+          RENDER_GIT_COMMIT: "0123456789abcdef0123456789abcdef01234567",
+          DATABASE_URL: "",
+          OPENAI_API_KEY: "",
+          OPENAI_BOT_API_KEY: "",
+          BOT_AI_ENABLED: "false"
+        },
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", chunk => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", chunk => {
+      stderr += chunk.toString();
+    });
+
+    const exitCode = await Promise.race([
+      new Promise(resolve => child.once("exit", resolve)),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Le serveur Render n'a pas refusé le démarrage.")),
+          7000
+        )
+      )
+    ]);
+
+    if (child.exitCode === null) {
+      child.kill("SIGKILL");
+    }
+
+    assert.notEqual(exitCode, 0);
+    assert.match(
+      `${stdout}\n${stderr}`,
+      /DATABASE_URL est obligatoire sur Render|Démarrage P'tit Bac refusé/
+    );
   }
 );

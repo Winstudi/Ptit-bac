@@ -4,7 +4,7 @@ Jeu multijoueur mobile-first de Petit Bac, développé en Node.js avec Express, 
 
 ## État actuel
 
-Version applicative : **1.45.0**
+Version applicative : **1.45.1**
 
 Le dépôt contient désormais directement le code réellement exécuté en production. Les anciennes transformations E2, E3, E4 et E5 ne sont plus nécessaires au déploiement.
 
@@ -115,6 +115,25 @@ Sans clé pour les bots, le jeu utilise son générateur local.
 - `REWARDED_AD_DEV_MODE`
 
 Ne jamais stocker de clé privée directement dans GitHub.
+
+
+## Santé du service
+
+`GET /health` permet au site et à la future application mobile de vérifier le
+backend. La réponse contient notamment :
+
+- la version applicative ;
+- le commit Render réellement déployé (`RENDER_GIT_COMMIT`) ;
+- l'état PostgreSQL ;
+- le type de stockage actif ;
+- l'uptime du processus.
+
+Sur Render, PostgreSQL est obligatoire. Si `DATABASE_URL` est absent ou si
+l'initialisation PostgreSQL échoue, le serveur refuse désormais de démarrer au
+lieu de basculer silencieusement sur un fichier JSON local.
+
+Le fallback JSON reste disponible uniquement pour le développement local et
+les tests.
 
 ## Tests
 

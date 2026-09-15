@@ -189,6 +189,62 @@ function checkCoreFiles() {
   if (missing.length) fail(`fichiers cœur manquants: ${missing.join(", ")}`);
 }
 
+
+function checkVersionConsistency() {
+  const pkg = JSON.parse(read("package.json"));
+  const lock = JSON.parse(read("package-lock.json"));
+  const version = String(pkg.version || "");
+
+  if (!version) fail("version package.json absente.");
+
+  if (String(lock.version || "") !== version) {
+    fail("package-lock.json n'a pas la même version que package.json.");
+  }
+
+  if (String(lock.packages?.[""]?.version || "") !== version) {
+    fail("package-lock.json packages[''].version incohérent.");
+  }
+
+  if (!read("app.js").includes(`const CLIENT_BUILD = "${version}";`)) {
+    fail("CLIENT_BUILD dans app.js n'est pas aligné avec package.json.");
+  }
+
+  const index = read("index.html");
+  const versions = [
+    ...index.matchAll(/[?&]v=(\d+\.\d+\.\d+)/g)
+  ].map(match => match[1]);
+
+  if (versions.some(value => value !== version)) {
+    fail("index.html contient une version d'asset différente de package.json.");
+  }
+}
+
+function checkDeploymentReliability() {
+  const server = read("server.js");
+  const smoke = read("server-smoke.test.cjs");
+
+  for (const marker of [
+    "RENDER_GIT_COMMIT",
+    "databaseReady",
+    "checkDatabaseHealth",
+    "DATABASE_URL est obligatoire sur Render",
+    "Démarrage P'tit Bac refusé",
+    "startApplication()"
+  ]) {
+    if (!server.includes(marker)) {
+      fail(`fiabilité déploiement absente de server.js: ${marker}`);
+    }
+  }
+
+  if (/\.finally\(\(\) => \{\s*server\.listen/.test(server)) {
+    fail("server.js démarre encore dans finally() après une erreur de stockage.");
+  }
+
+  if (!smoke.includes("sur Render le serveur refuse de démarrer sans PostgreSQL")) {
+    fail("test fail-closed Render manquant.");
+  }
+}
+
 function checkIntegratedBackend() {
   const server = read("server.js");
 
@@ -418,6 +474,8 @@ function main() {
   checkGitignore();
   checkCoreFiles();
   checkPackage();
+  checkVersionConsistency();
+  checkDeploymentReliability();
   checkGeneratedPublicFiles();
   checkRenderChain();
   checkIntegratedBackend();
