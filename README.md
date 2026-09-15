@@ -1,52 +1,155 @@
-# P’tit Bac — portefeuille et parties rapides 1.45.0
+# P'tit Bac
 
-Jeu multijoueur web, base pour une future application mobile.
+Jeu multijoueur mobile-first de Petit Bac, développé en Node.js avec Express, Socket.IO et PostgreSQL.
 
-## Démarrage
+## État actuel
 
-Node.js 22, puis :
+Version applicative : **1.45.0**
 
-```sh
-npm ci
+Le dépôt contient désormais directement le code réellement exécuté en production. Les anciennes transformations E2, E3, E4 et E5 ne sont plus nécessaires au déploiement.
+
+Les principaux systèmes actifs sont :
+
+- salons privés, salons publics et partie rapide ;
+- profils, avatars, cadres et tags ;
+- amis, invitations, messagerie et signalements ;
+- portefeuille pièces/gemmes et vies rechargeables ;
+- progression XP sur 50 niveaux ;
+- validation automatique des réponses ;
+- bots de test ;
+- administration serveur ;
+- sécurité Socket.IO avec rate limiting ;
+- tests automatiques avant déploiement.
+
+## Modes de jeu
+
+### Partie rapide
+
+Format fixe :
+
+- 1 manche ;
+- 6 catégories ;
+- 60 secondes ;
+- difficulté `medium` ;
+- recherche automatique de joueurs ;
+- économie et XP activées.
+
+### Salon public
+
+Salon créé par un joueur, visible par la recherche rapide lorsqu'il est rejoignable.
+
+- économie activée ;
+- XP activée ;
+- 1 vie consommée au lancement réel ;
+- bots interdits.
+
+### Salon privé
+
+Salon sur invitation/code.
+
+- aucune vie consommée ;
+- aucun gain de pièces ;
+- aucun gain d'XP ;
+- bots de test autorisés.
+
+## Architecture
+
+### Backend
+
+- `server.js` : serveur HTTP, Socket.IO et logique principale de partie ;
+- `db.js` : Pool PostgreSQL partagé ;
+- `socket-security.js` : sécurité et limites de fréquence ;
+- `inventory-service.js` : inventaire serveur ;
+- `progression-service.js` : XP et niveaux ;
+- `quick-match.js` : recherche de partie rapide ;
+- `game-economy.js` : récompenses de fin de partie ;
+- `friends-hook.js`, `chat-hook.js`, `admin-hook.js`, `player-report-hook.js` : modules serveur spécialisés.
+
+### Frontend
+
+`app.js` contient le noyau client. Les écrans modernes sont séparés dans leurs propres modules (`home-screen-v1.js`, `lobby-screen-v4.js`, `answer-screen-v1.js`, etc.).
+
+Le rendu dynamique utilise un bus commun :
+
+- `ptitbac:screen-rendered`
+- `ptitbac:dom-updated`
+
+Cela évite plusieurs `MutationObserver` concurrents.
+
+## Base de données
+
+Configurer `DATABASE_URL` sur Render.
+
+Un seul Pool PostgreSQL est créé dans `db.js` puis partagé par les modules serveur.
+
+Certaines migrations SQL historiques sont encore créées par les modules eux-mêmes. Leur centralisation dans un dossier de migrations dédié reste une amélioration future.
+
+## OpenAI
+
+Variables principales :
+
+- `OPENAI_API_KEY`
+- `OPENAI_VALIDATION_MODEL` (optionnel)
+- `OPENAI_VALIDATION_REVIEW_MODEL` (optionnel)
+- `OPENAI_BOT_API_KEY` (optionnel)
+- `OPENAI_BOT_MODEL` (optionnel)
+- `BOT_AI_ENABLED` (`true` / `false`)
+
+Sans clé pour les bots, le jeu utilise son générateur local.
+
+## Autres variables utiles
+
+- `DATABASE_URL`
+- `PTITBAC_ADMIN_CODE`
+- `SOCKET_CORS_ORIGIN`
+- `PTITBAC_DB_POOL_MAX`
+- `REWARDED_AD_DEV_MODE`
+
+Ne jamais stocker de clé privée directement dans GitHub.
+
+## Tests
+
+```bash
 npm test
-npm start
+npm run check
 ```
 
-En développement : `npm run dev`. Les tests nécessitent les dépendances de développement.
+`npm test` lance les fichiers `*.test.cjs`.
 
-Sur Render : commande de build `npm ci`, commande de démarrage `npm start`, contrôle de santé `/health`. Le fichier render.yaml décrit ces valeurs ; pour un service existant configuré manuellement, modifier ses paramètres dans Render si nécessaire.
+Les tests couvrent notamment :
 
-## Configuration existante
+- quick-match ;
+- modes public/privé/rapide ;
+- inventaire ;
+- progression ;
+- économie ;
+- sécurité Socket.IO ;
+- démarrage réel du serveur via `/health`.
 
-- `DATABASE_URL` : PostgreSQL, nécessaire aux parties rapides avec vies, aux amis et au chat.
-- `OPENAI_API_KEY` : validation sémantique ; `OPENAI_BOT_API_KEY` facultative pour une clé distincte.
-- `OPENAI_VALIDATION_MODEL`, `OPENAI_VALIDATION_REVIEW_MODEL`, `OPENAI_BOT_MODEL` : modèles configurables.
-- `BOT_AI_ENABLED=false` : réponses locales des bots.
-- `PTITBAC_ADMIN_CODE` : accès administrateur selon le mécanisme existant.
-- `PTITBAC_WALLET_FILE` : chemin du repli JSON des portefeuilles.
-- `PORT` : 3000 par défaut.
-- `SOCKET_CORS_ORIGIN` : origines autorisées, séparées par des virgules, si nécessaire.
+## Déploiement Render
 
-Sans PostgreSQL, les salons privés peuvent démarrer. Les parties rapides sont refusées : le JSON local ne remplace pas le stockage des vies. La correction sémantique dépend toujours de la configuration IA.
+Le build actuel suit cette chaîne :
 
-Les secrets doivent rester dans les variables d’environnement. Les données existantes n’ont pas été migrées par cette livraison.
+```text
+npm ci
+→ npm test
+→ npm run check
+→ cleanup-frontend-build.cjs
+→ npm run check:production
+→ optimisation WebP
+→ npm start
+```
 
-## Organisation
+`cleanup-frontend-build.cjs` ne réécrit plus la logique du jeu. Il regroupe seulement certains fichiers frontend en bundles de production.
 
-- `server.js` : démarrage, règles du jeu, économie et correction des réponses. Les anciens correctifs économie/salon y sont intégrés.
-- `friends-hook.js`, `chat-hook.js`, `player-report-hook.js`, `admin-hook.js` : modules enregistrés explicitement auprès de Socket.IO.
-- `friend-code-v2-hook.js` : migration PostgreSQL existante des codes amis.
-- `ai-runtime-fix.js` : réglages des délais IA, chargé explicitement par le serveur.
-- `app.js` : état client, fonctions partagées et rendu de base.
-- Scripts d’écrans : personnalisation des vues. Leur ordre dans index.html reste significatif.
-- `public-files.json` : liste des seuls fichiers téléchargeables. Ajouter à cette liste tout nouvel asset public.
-- `tests/` : tests HTTP, Socket.IO, récompenses, recherche rapide et lancement. Les opérations PostgreSQL sont simulées dans les tests de lancement.
-- `game-economy.js` : règles des gains selon le mode.
-- `quick-match.js` : file de recherche automatique.
-- `wallet-client.js`, `wallet.css` : recherche et historique du portefeuille.
+## Assets
 
-## Règles 1.45
+Les fichiers publics sont explicitement listés dans `public-files.json`.
 
-50 pièces à la création d’un nouveau portefeuille, sans remise à zéro des comptes existants. Salons privés : aucune vie consommée, aucun gain. Parties rapides : 2 à 6 humains, 5 manches, 6 catégories, 60 secondes ; 1 vie au lancement. Gains fixes à la fin : 60 / 40 / 25 / 10 selon le rang, mêmes gains pour un rang ex æquo (1er, 1er, 3e…). Aucun gain de forfait. Pas de bots ni de relances payantes en mode rapide. Voir MISE-A-JOUR-1.45.md.
+Les gros PNG sont convertis en WebP pendant le build lorsque `sharp` est disponible. Les URL PNG restent compatibles grâce au serveur.
 
-Les styles sont encore en plusieurs couches. Une suppression globale des anciennes classes sans tester les écrans dynamiques risquerait de casser des vues. Voir OPTIMISATION.md pour les travaux effectués et les priorités restantes.
+## Règle de maintenance
+
+Le code présent dans GitHub doit rester la source de vérité.
+
+Ne pas réintroduire de système qui modifie `server.js`, `app.js`, `style.css` ou les modules fonctionnels pendant le build.

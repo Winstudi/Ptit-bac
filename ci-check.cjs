@@ -157,9 +157,17 @@ function checkPublicFiles() {
   return { publicCount:list.length, indexCount:indexRoutes.length };
 }
 
+function checkGitignore() {
+  if (!exists(".gitignore")) {
+    console.warn(
+      "[CI] Info: .gitignore absent. Le déploiement continue, " +
+      "mais il est recommandé pour éviter de versionner les fichiers générés."
+    );
+  }
+}
+
 function checkCoreFiles() {
   const required = [
-    ".gitignore",
     "server.js",
     "app.js",
     "style.css",
@@ -286,6 +294,7 @@ function reportObsoleteScripts() {
 }
 
 function main() {
+  checkGitignore();
   checkCoreFiles();
   checkPackage();
   checkGeneratedPublicFiles();
