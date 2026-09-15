@@ -79,3 +79,65 @@ test("les transitions critiques récupèrent après une perte réseau", () => {
     /Le passage à la suite n’a pas été confirmé\. Réessaie\./
   );
 });
+
+test("la préparation catégories puis lettre récupère après une perte réseau", () => {
+  const categories = source("category-selection-v2.js");
+  const wheel = source("letter-wheel-v1.js");
+  const quick = source("quick-lobby-v1.js");
+
+  assert.match(
+    categories,
+    /state\.categoryRerollCost \|\| 20/
+  );
+  assert.match(
+    categories,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:rerollCategories"/
+  );
+  assert.match(
+    categories,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:confirmCategories"/
+  );
+  assert.match(
+    categories,
+    /Le passage à la lettre n’a pas été confirmé\. Réessaie\./
+  );
+
+  assert.match(
+    wheel,
+    /state\.letterRerollCost \|\| 20/
+  );
+  assert.match(
+    wheel,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:spinLetter"/
+  );
+  assert.match(
+    wheel,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:rerollLetter"/
+  );
+  assert.match(
+    wheel,
+    /socket\.timeout\(10000\)\.emit\(\s*"game:confirmLetter"/
+  );
+  assert.match(
+    wheel,
+    /Le lancement de la manche n’a pas été confirmé\. Réessaie\./
+  );
+
+  assert.match(
+    quick,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:rerollLetter"/
+  );
+  assert.match(
+    quick,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:rerollCategories"/
+  );
+  assert.match(
+    quick,
+    /socket\.timeout\(8000\)\.emit\(\s*"game:confirmCategories"/
+  );
+  assert.match(
+    quick,
+    /La relance de la lettre n’a pas été confirmée\. Réessaie\./
+  );
+});
+

@@ -481,19 +481,41 @@
         return showToast(`Il te faut ${cost} pièces pour relancer.`);
       }
 
+      if (!socket?.connected) {
+        return showToast("Connexion interrompue. Attends la reconnexion.");
+      }
+
+      const requestedVersion = Number(state.letterSpinVersion || 0);
+      const requestedLetter = String(state.pendingLetter || "").slice(0, 1);
+
       button.disabled = true;
       const confirm = document.getElementById("pbw1Confirm");
       if (confirm) confirm.disabled = true;
 
-      try {
-        socket.emit("game:rerollLetter", {
+      socket.timeout(8000).emit(
+        "game:rerollLetter",
+        {
           code: state.code,
           playerId
-        });
-      } catch {
-        button.disabled = false;
-        if (confirm) confirm.disabled = false;
-      }
+        },
+        error => {
+          if (!error) return;
+
+          const current = stateNow();
+          const stillSameLetter =
+            current?.phase === "letter_selection" &&
+            current?.mode === "quick" &&
+            String(current?.letterChooserPlayerId || "") === playerId &&
+            Number(current?.letterSpinVersion || 0) === requestedVersion &&
+            String(current?.pendingLetter || "").slice(0, 1) === requestedLetter;
+
+          if (button.isConnected && stillSameLetter) {
+            button.disabled = coinBalance() < cost;
+            if (confirm?.isConnected) confirm.disabled = false;
+            showToast("La relance de la lettre n’a pas été confirmée. Réessaie.");
+          }
+        }
+      );
     });
   }
 
@@ -562,20 +584,43 @@
           return showToast(`Il te faut ${cost} pièces pour relancer le tirage.`);
         }
 
+        if (!socket?.connected) {
+          return showToast("Connexion interrompue. Attends la reconnexion.");
+        }
+
+        const originalCategories =
+          JSON.stringify(Array.isArray(current.categories) ? current.categories : []);
+
         reroll.disabled = true;
         reroll.classList.add("is-loading");
         if (confirm) confirm.disabled = true;
 
-        try {
-          socket.emit("game:rerollCategories", {
+        socket.timeout(8000).emit(
+          "game:rerollCategories",
+          {
             code: current.code,
             playerId: playerIdNow()
-          });
-        } catch {
-          reroll.disabled = false;
-          reroll.classList.remove("is-loading");
-          if (confirm) confirm.disabled = false;
-        }
+          },
+          error => {
+            if (!error) return;
+
+            const latest = stateNow();
+            const stillSameDraw =
+              latest?.phase === "category_selection" &&
+              latest?.mode === "quick" &&
+              String(latest?.categoryChooserPlayerId || "") === playerIdNow() &&
+              JSON.stringify(
+                Array.isArray(latest?.categories) ? latest.categories : []
+              ) === originalCategories;
+
+            if (reroll.isConnected && stillSameDraw) {
+              reroll.disabled = coinBalance() < cost;
+              reroll.classList.remove("is-loading");
+              if (confirm?.isConnected) confirm.disabled = false;
+              showToast("La relance des catégories n’a pas été confirmée. Réessaie.");
+            }
+          }
+        );
       });
     }
 
@@ -596,13 +641,38 @@
           return;
         }
 
+        if (!socket?.connected) {
+          return showToast("Connexion interrompue. Attends la reconnexion.");
+        }
+
         confirm.disabled = true;
         if (reroll) reroll.disabled = true;
 
-        socket.emit("game:confirmCategories", {
-          code: current.code,
-          playerId: playerIdNow()
-        });
+        socket.timeout(8000).emit(
+          "game:confirmCategories",
+          {
+            code: current.code,
+            playerId: playerIdNow()
+          },
+          error => {
+            if (!error) return;
+
+            const latest = stateNow();
+            const stillChoosing =
+              latest?.phase === "category_selection" &&
+              latest?.mode === "quick" &&
+              String(latest?.categoryChooserPlayerId || "") === playerIdNow();
+
+            if (confirm.isConnected && stillChoosing) {
+              confirm.disabled = false;
+              if (reroll?.isConnected) {
+                reroll.disabled = coinBalance() < costFromState("category");
+                reroll.classList.remove("is-loading");
+              }
+              showToast("Le passage à la lettre n’a pas été confirmé. Réessaie.");
+            }
+          }
+        );
       }, true);
     }
   }

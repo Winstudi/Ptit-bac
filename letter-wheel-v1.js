@@ -616,7 +616,7 @@
 
     const rerollCost =
       Number(
-        state.letterRerollCost || 10
+        state.letterRerollCost || 20
       );
 
     const canReroll =
@@ -995,6 +995,12 @@
           return;
         }
 
+        if (!socket.connected) {
+          return toast(
+            "Connexion interrompue. Attends la reconnexion."
+          );
+        }
+
         startSpinSoundFromGesture();
 
         zone.classList.add(
@@ -1012,12 +1018,51 @@
             "Lancement…";
         }
 
-        socket.emit(
+        socket.timeout(8000).emit(
           "game:spinLetter",
           {
             code:state.code,
             playerId:
               session.playerId
+          },
+          error => {
+            if (!error) return;
+
+            const current =
+              session.state;
+
+            const stillWaitingForSpin =
+              current?.phase ===
+                "letter_selection" &&
+              String(
+                current?.letterChooserPlayerId ||
+                ""
+              ) === String(
+                session.playerId ||
+                ""
+              ) &&
+              !current?.pendingLetter;
+
+            if (
+              zone.isConnected &&
+              stillWaitingForSpin
+            ) {
+              zone.classList.remove(
+                "is-requesting"
+              );
+
+              stopSpinSound();
+
+              if (button?.isConnected) {
+                button.disabled = false;
+                button.innerHTML =
+                  'Lancer la roue <span>↻</span>';
+              }
+
+              toast(
+                "Le lancement de la roue n’a pas été confirmé. Réessaie."
+              );
+            }
           }
         );
       };
@@ -1190,12 +1235,77 @@
             confirm.disabled = true;
           }
 
-          socket.emit(
+          if (!socket.connected) {
+            if (reroll) {
+              reroll.disabled = !canReroll;
+            }
+            if (confirm) {
+              confirm.disabled = false;
+            }
+            stopSpinSound();
+            return toast(
+              "Connexion interrompue. Attends la reconnexion."
+            );
+          }
+
+          const requestedVersion =
+            version;
+
+          const requestedLetter =
+            selectedLetter;
+
+          socket.timeout(8000).emit(
             "game:rerollLetter",
             {
               code:state.code,
               playerId:
                 session.playerId
+            },
+            error => {
+              if (!error) return;
+
+              const current =
+                session.state;
+
+              const stillSameLetter =
+                current?.phase ===
+                  "letter_selection" &&
+                String(
+                  current?.letterChooserPlayerId ||
+                  ""
+                ) === String(
+                  session.playerId ||
+                  ""
+                ) &&
+                Number(
+                  current?.letterSpinVersion ||
+                  0
+                ) === requestedVersion &&
+                String(
+                  current?.pendingLetter ||
+                  ""
+                ).slice(0,1) ===
+                  requestedLetter;
+
+              if (stillSameLetter) {
+                stopSpinSound();
+
+                if (reroll?.isConnected) {
+                  reroll.disabled =
+                    typeof getCoins ===
+                      "function" &&
+                    getCoins() <
+                      rerollCost;
+                }
+
+                if (confirm?.isConnected) {
+                  confirm.disabled = false;
+                }
+
+                toast(
+                  "La relance de la lettre n’a pas été confirmée. Réessaie."
+                );
+              }
             }
           );
         }
@@ -1234,12 +1344,64 @@
             confirm.disabled = true;
           }
 
-          socket.emit(
+          if (!socket.connected) {
+            if (reroll) {
+              reroll.disabled = !canReroll;
+            }
+            if (confirm) {
+              confirm.disabled = false;
+            }
+            return toast(
+              "Connexion interrompue. Attends la reconnexion."
+            );
+          }
+
+          socket.timeout(10000).emit(
             "game:confirmLetter",
             {
               code:state.code,
               playerId:
                 session.playerId
+            },
+            error => {
+              if (!error) return;
+
+              const current =
+                session.state;
+
+              const stillWaitingForConfirm =
+                current?.phase ===
+                  "letter_selection" &&
+                String(
+                  current?.letterChooserPlayerId ||
+                  ""
+                ) === String(
+                  session.playerId ||
+                  ""
+                ) &&
+                String(
+                  current?.pendingLetter ||
+                  ""
+                ).slice(0,1) ===
+                  selectedLetter;
+
+              if (stillWaitingForConfirm) {
+                if (reroll?.isConnected) {
+                  reroll.disabled =
+                    typeof getCoins ===
+                      "function" &&
+                    getCoins() <
+                      rerollCost;
+                }
+
+                if (confirm?.isConnected) {
+                  confirm.disabled = false;
+                }
+
+                toast(
+                  "Le lancement de la manche n’a pas été confirmé. Réessaie."
+                );
+              }
             }
           );
         }

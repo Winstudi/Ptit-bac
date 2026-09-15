@@ -143,7 +143,7 @@
     session.localAnswers = {};
     const user = me();
     const categories = Array.isArray(state.categories) ? state.categories : [];
-    const categoryRerollCost = Number(state.categoryRerollCost || 10);
+    const categoryRerollCost = Number(state.categoryRerollCost || 20);
     const balance = getCoins();
     const chooser = state.players.find(p => p.id === state.categoryChooserPlayerId);
     const host = !!user && user.id === state.categoryChooserPlayerId;
@@ -243,11 +243,35 @@
       const buttons = document.querySelectorAll(".cat-v2-exit-actions button");
       buttons.forEach(button => { button.disabled = true; });
 
+      if (!socket.connected) {
+        buttons.forEach(button => { button.disabled = false; });
+        categoryExitMenuOpen = true;
+        return toast("Connexion interrompue. Attends la reconnexion.");
+      }
+
       categoryExitMenuOpen = false;
-      socket.emit("game:returnLobby", {
-        code: state.code,
-        playerId: session.playerId
-      });
+
+      socket.timeout(8000).emit(
+        "game:returnLobby",
+        {
+          code: state.code,
+          playerId: session.playerId
+        },
+        error => {
+          if (!error) return;
+
+          const current = session.state;
+          const stillInPreparation =
+            current?.phase === "category_selection" &&
+            String(current?.code || "") === String(state.code || "");
+
+          if (stillInPreparation) {
+            buttons.forEach(button => { button.disabled = false; });
+            categoryExitMenuOpen = true;
+            toast("Le retour au salon n’a pas été confirmé. Réessaie.");
+          }
+        }
+      );
     });
 
     document.getElementById("categoryExitHome")?.addEventListener("click", () => {
@@ -285,25 +309,86 @@
       if (rerollBtn) {
         rerollBtn.onclick = () => {
           if (rerollBtn.disabled) return;
+          if (!socket.connected) {
+            return toast("Connexion interrompue. Attends la reconnexion.");
+          }
+
+          const requestedDrawKey = drawKey;
+
           rerollBtn.classList.add("is-loading");
           rerollBtn.disabled = true;
           if (confirmBtn) confirmBtn.disabled = true;
 
-          socket.emit("game:rerollCategories", {
-            code: state.code,
-            playerId: session.playerId
-          });
+          socket.timeout(8000).emit(
+            "game:rerollCategories",
+            {
+              code: state.code,
+              playerId: session.playerId
+            },
+            error => {
+              if (!error) return;
+
+              const current = session.state;
+              const currentDrawKey = current
+                ? JSON.stringify([
+                    current.code,
+                    current.gameSessionId,
+                    current.roundIndex,
+                    Array.isArray(current.categories) ? current.categories : []
+                  ])
+                : "";
+
+              const stillSameDraw =
+                current?.phase === "category_selection" &&
+                String(current?.categoryChooserPlayerId || "") ===
+                  String(session.playerId || "") &&
+                currentDrawKey === requestedDrawKey;
+
+              if (rerollBtn.isConnected && stillSameDraw) {
+                rerollBtn.classList.remove("is-loading");
+                rerollBtn.disabled = getCoins() < categoryRerollCost;
+                if (confirmBtn?.isConnected) confirmBtn.disabled = false;
+                toast("La relance n’a pas été confirmée. Réessaie.");
+              }
+            }
+          );
         };
       }
 
       if (confirmBtn) {
         confirmBtn.onclick = () => {
+          if (!socket.connected) {
+            return toast("Connexion interrompue. Attends la reconnexion.");
+          }
+
           confirmBtn.disabled = true;
           if (rerollBtn) rerollBtn.disabled = true;
-          socket.emit("game:confirmCategories", {
-            code: state.code,
-            playerId: session.playerId
-          });
+
+          socket.timeout(8000).emit(
+            "game:confirmCategories",
+            {
+              code: state.code,
+              playerId: session.playerId
+            },
+            error => {
+              if (!error) return;
+
+              const current = session.state;
+              const stillChoosingCategories =
+                current?.phase === "category_selection" &&
+                String(current?.categoryChooserPlayerId || "") ===
+                  String(session.playerId || "");
+
+              if (confirmBtn.isConnected && stillChoosingCategories) {
+                confirmBtn.disabled = false;
+                if (rerollBtn?.isConnected) {
+                  rerollBtn.disabled = getCoins() < categoryRerollCost;
+                  rerollBtn.classList.remove("is-loading");
+                }
+                toast("Le passage à la lettre n’a pas été confirmé. Réessaie.");
+              }
+            }
+          );
         };
       }
     }
