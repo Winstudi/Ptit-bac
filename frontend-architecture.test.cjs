@@ -53,3 +53,61 @@ test("le module profil expose les points d'entrée attendus", () => {
   assert.match(source, /window\.openProfileAvatarPicker\s*=\s*openProfileAvatarPicker/);
   assert.doesNotMatch(source, /new MutationObserver\s*\(/);
 });
+
+
+test("les anciens patchs lobby et UI ne sont plus chargés", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const assets = BUNDLES.flatMap(bundle => bundle.files);
+
+  for (const legacy of [
+    "ui-fixes-v3.js",
+    "ui-fixes-v3.css",
+    "lobby-polish-v1.js",
+    "lobby-polish-v1.css",
+    "avatar-fix-v2.css",
+    "avatar-system-v1.css"
+  ]) {
+    assert.doesNotMatch(html, new RegExp(legacy.replace(".", "\\.")));
+    assert.ok(!publicFiles.includes(`/${legacy}`));
+    assert.ok(!assets.includes(legacy));
+  }
+});
+
+test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
+  const html = read("index.html");
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const assets = BUNDLES.flatMap(bundle => bundle.files);
+
+  for (const canonical of [
+    "ui-runtime-v1.js",
+    "ui-runtime-v1.css",
+    "lobby-runtime-v1.js",
+    "lobby-runtime-v1.css",
+    "avatar-system-v2.css"
+  ]) {
+    assert.equal(
+      assets.filter(file => file === canonical).length,
+      1,
+      `${canonical} doit apparaître exactement une fois dans les bundles`
+    );
+    assert.match(html, new RegExp(`/${canonical.replace(".", "\\.")}`));
+  }
+});
+
+test("le compte à rebours lobby utilise l'horloge serveur quand elle existe", () => {
+  const source = read("lobby-runtime-v1.js");
+
+  assert.match(source, /typeof serverNowMs === "function"/);
+  assert.match(source, /const remaining = deadline - runtimeNow\(\)/);
+  assert.match(source, /window\.PtitBacLobbyRuntime/);
+});
+
+test("le runtime UI tolère une socket absente ou déconnectée", () => {
+  const source = read("ui-runtime-v1.js");
+
+  assert.match(source, /typeof socket === "undefined"/);
+  assert.match(source, /!socket\?\.connected/);
+  assert.match(source, /window\.PtitBacUiRuntime/);
+});

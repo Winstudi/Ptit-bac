@@ -1,0 +1,203 @@
+/* =========================================================
+   P'tit Bac — Avatar system V2
+   Source canonique du layout des avatars de base.
+   ========================================================= */
+
+.home-plaque-avatar {
+  width:54px !important;
+  height:54px !important;
+  min-width:54px !important;
+  min-height:54px !important;
+  flex:0 0 54px !important;
+  position:relative !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:hidden !important;
+  border:1.5px solid #9b55ff !important;
+  border-radius:11px !important;
+  background:linear-gradient(145deg,rgba(26,22,78,.96),rgba(9,23,66,.98)) !important;
+  box-shadow:
+    0 0 7px rgba(158,76,255,.72),
+    0 0 18px rgba(118,58,255,.24),
+    inset 0 0 8px rgba(139,73,255,.10) !important;
+}
+
+.home-plaque-avatar > span {
+  width:88% !important;
+  height:88% !important;
+  display:grid !important;
+  place-items:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  line-height:1 !important;
+}
+
+.home-plaque-avatar > i {
+  display:none !important;
+}
+
+.friends-v2-avatar,
+.friends-v3-avatar,
+.chat-list-avatar,
+.chat-header-avatar,
+.lobby-v5-avatar,
+.lobby-v5-host-avatar,
+.lobby-v5-profile-avatar {
+  display:grid !important;
+  place-items:center !important;
+}
+
+.friends-v2-avatar > span,
+.friends-v3-avatar > span,
+.chat-list-avatar > span,
+.chat-header-avatar > span,
+.lobby-v5-avatar > span,
+.lobby-v5-host-avatar > span,
+.lobby-v5-profile-avatar > span {
+  display:grid !important;
+  place-items:center !important;
+  width:100% !important;
+  height:100% !important;
+  margin:0 !important;
+  line-height:1 !important;
+}
+
+.hm-avatar > img,
+.profile-v10-avatar-visual > img,
+.profile-avatar-choice > img,
+.friends-v2-avatar > img,
+.friends-v3-avatar > img,
+.chat-list-avatar > img,
+.chat-header-avatar > img,
+.lobby-v5-avatar > img,
+.lobby-v5-host-avatar > img,
+.lobby-v5-profile-avatar > img,
+.lobby-v5-invite-friend-avatar > img,
+.pl-avatar > img,
+.ptb-avatar-photo > img {
+  width:100% !important;
+  height:100% !important;
+  display:block;
+  object-fit:cover !important;
+  object-position:center center !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.hm-avatar > img {
+  border-radius:8px;
+}
+
+.profile-v10-avatar-visual > img {
+  border-radius:22px;
+}
+
+.profile-avatar-choice {
+  overflow:hidden;
+}
+
+.profile-avatar-choice > img {
+  border-radius:14px;
+}
+
+.friends-v2-avatar > img,
+.friends-v3-avatar > img,
+.chat-list-avatar > img,
+.chat-header-avatar > img,
+.lobby-v5-avatar > img,
+.lobby-v5-host-avatar > img,
+.lobby-v5-profile-avatar > img,
+.lobby-v5-invite-friend-avatar > img,
+.pl-avatar > img,
+.ptb-avatar-photo > img {
+  border-radius:inherit;
+}
+
+.lobby-v5-avatar,
+.lobby-v5-host-avatar,
+.lobby-v5-profile-avatar,
+.lobby-v5-invite-friend-avatar,
+.pl-avatar,
+.ptb-avatar-photo {
+  position:relative !important;
+  overflow:hidden !important;
+  display:grid !important;
+  place-items:center !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+  line-height:1 !important;
+  flex-shrink:0 !important;
+}
+
+.lobby-v5-avatar,
+.lobby-v5-host-avatar,
+.lobby-v5-profile-avatar {
+  width:58px !important;
+  height:58px !important;
+  min-width:58px !important;
+  min-height:58px !important;
+}
+
+.lobby-v5-avatar > span,
+.lobby-v5-host-avatar > span,
+.lobby-v5-profile-avatar > span,
+.lobby-v5-invite-friend-avatar > span,
+.pl-avatar > span,
+.ptb-avatar-photo > span {
+  width:100% !important;
+  height:100% !important;
+  display:grid !important;
+  place-items:center !important;
+  margin:0 !important;
+  padding:0 !important;
+  line-height:1 !important;
+}
+
+.quick-lobby-v1 .lobby-v5-avatar {
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  min-height:44px !important;
+  align-self:center !important;
+  justify-self:start !important;
+}
+
+.quick-lobby-v1 .lobby-v5-avatar > img {
+  width:100% !important;
+  height:100% !important;
+}
+
+@media (max-height:680px) {
+  .home-plaque-avatar {
+    width:50px !important;
+    height:50px !important;
+    min-width:50px !important;
+    min-height:50px !important;
+    flex-basis:50px !important;
+  }
+}
+
+@media (max-width:390px) {
+  .lobby-v5-avatar,
+  .lobby-v5-host-avatar,
+  .lobby-v5-profile-avatar {
+    width:54px !important;
+    height:54px !important;
+    min-width:54px !important;
+    min-height:54px !important;
+  }
+
+  .quick-lobby-v1 .lobby-v5-avatar {
+    width:42px !important;
+    height:42px !important;
+    min-width:42px !important;
+    min-height:42px !important;
+  }
+}
+
+@media (max-width:370px) {
+  .profile-v10-avatar-visual > img {
+    border-radius:19px;
+  }
+}

@@ -33,12 +33,11 @@ const BUNDLES = Object.freeze([
       "category-position-fix-v1.css",
       "category-chooser-card-v1.css",
       "shared-footer-v1.css",
-      "avatar-fix-v2.css",
-      "avatar-system-v1.css",
+      "avatar-system-v2.css",
       "admin-v1.css",
       "inbox-v1.css",
-      "ui-fixes-v3.css",
-      "lobby-polish-v1.css",
+      "ui-runtime-v1.css",
+      "lobby-runtime-v1.css",
       "letter-wheel-fx-v1.css",
       "letter-wheel-v1.css"
     ])
@@ -87,8 +86,8 @@ const BUNDLES = Object.freeze([
       "category-chooser-card-v1.js",
       "admin-v1.js",
       "inbox-v1.js",
-      "ui-fixes-v3.js",
-      "lobby-polish-v1.js",
+      "ui-runtime-v1.js",
+      "lobby-runtime-v1.js",
       "letter-wheel-v1.js"
     ])
   }),
