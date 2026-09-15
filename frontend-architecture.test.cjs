@@ -107,6 +107,26 @@ test("le correctif de position des catégories est absorbé dans le CSS canoniqu
   assert.match(css, /Ancien correctif de position absorbé dans ce fichier canonique/);
 });
 
+
+
+test("les relances Quick ne dépendent plus de avatar-pages-fix-v1.js", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const jsFiles = BUNDLES.filter(bundle => bundle.type === "js").flatMap(bundle => bundle.files);
+  const quick = read("quick-lobby-v1.js");
+
+  assert.equal(exists("avatar-pages-fix-v1.js"), false);
+  assert.doesNotMatch(html, /avatar-pages-fix-v1\.js/);
+  assert.ok(!publicFiles.includes("/avatar-pages-fix-v1.js"));
+  assert.ok(!jsFiles.includes("avatar-pages-fix-v1.js"));
+
+  assert.match(quick, /QUICK_REROLL_FALLBACK_COST = 20/);
+  assert.match(quick, /game:rerollLetter/);
+  assert.match(quick, /game:rerollCategories/);
+  assert.match(quick, /game:confirmCategories/);
+});
+
 test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
   const html = read("index.html");
   const { BUNDLES } = require("./frontend-assets.cjs");

@@ -36,7 +36,8 @@ const LEGACY_FILES = Object.freeze([
   "lobby-polish-v1.js",
   "ui-fixes-v3.css",
   "ui-fixes-v3.js",
-  "category-position-fix-v1.css"
+  "category-position-fix-v1.css",
+  "avatar-pages-fix-v1.js"
 ]);
 
 function fail(message) {
@@ -318,7 +319,6 @@ function checkIntegratedFrontend() {
 
   const observerModules = [
     "avatar-system-v1.js",
-    "avatar-pages-fix-v1.js",
     "progression-client.js",
     "lobby-runtime-v1.js",
     "ui-runtime-v1.js"

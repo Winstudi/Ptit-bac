@@ -100,8 +100,7 @@ const BUNDLES = Object.freeze([
       "validation-screen-v1.js",
       "scoreboard-screen-v1.js",
       "final-screen-v1.js",
-      "wallet-client.js",
-      "avatar-pages-fix-v1.js"
+      "wallet-client.js"
     ])
   })
 ]);
