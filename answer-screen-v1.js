@@ -510,7 +510,11 @@
         Math.max(
           0,
           Number(state.roundEndsAt || 0) -
-          Date.now()
+          (
+            typeof serverNowMs === "function"
+              ? serverNowMs()
+              : Date.now()
+          )
         );
 
       const seconds =

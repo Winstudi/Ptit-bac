@@ -35,6 +35,7 @@
       progress: Math.max(0, Math.min(1, Number(value.progress) || 0)),
       progressPercent: clampPercent(value.progressPercent),
       maxLevel: value.maxLevel === true || level >= 50,
+      trophies: Math.max(0, Math.floor(Number(value.trophies) || 0)),
       completedGames: Math.max(0, Math.floor(Number(value.completedGames) || 0)),
       wins: Math.max(0, Math.floor(Number(value.wins) || 0))
     };
@@ -108,6 +109,14 @@
       .ptb-final-xp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
       .ptb-final-xp-head strong{color:#fff;font-size:.9rem;font-weight:900}
       .ptb-final-xp-gain{color:#c995ff;font-size:.76rem;font-weight:900}
+      .ptb-final-trophy-row{
+        display:flex;align-items:center;justify-content:space-between;gap:10px;
+        margin-top:10px;padding-top:9px;border-top:1px solid rgba(155,107,255,.2);
+        color:#fff;font-size:.76rem;font-weight:900
+      }
+      .ptb-final-trophy-row span{display:flex;align-items:center;gap:7px}
+      .ptb-final-trophy-row img{width:22px;height:22px;object-fit:contain}
+      .ptb-final-trophy-gain{color:#ffd980}
       .ptb-final-xp-track{
         height:9px;overflow:hidden;border:1px solid rgba(155,107,255,.45);
         border-radius:999px;background:#09133b;box-shadow:inset 0 2px 5px rgba(0,0,0,.34)
@@ -252,10 +261,16 @@
       ? Math.max(0, Number(award?.gainedXp) || 0)
       : 0;
 
+    const gainedTrophies = progressionEnabled
+      ? Math.max(0, Number(award?.gainedTrophies) || 0)
+      : 0;
+
     const signature = [
       current.level,
       Math.round(current.progressPercent * 100) / 100,
+      current.trophies,
       gainedXp,
+      gainedTrophies,
       award?.eventKey || "private"
     ].join(":");
 
@@ -273,6 +288,13 @@
              aria-valuemin="0" aria-valuemax="100"
              aria-valuenow="${Math.round(current.progressPercent)}">
           <i class="ptb-final-xp-fill"></i>
+        </div>
+        <div class="ptb-final-trophy-row">
+          <span>
+            <img src="/scoreboard-trophy.png" alt="">
+            ${current.trophies} trophées
+          </span>
+          <strong class="ptb-final-trophy-gain">+${gainedTrophies}</strong>
         </div>`;
     }
 

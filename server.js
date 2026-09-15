@@ -237,7 +237,20 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_VALIDATION_MODEL = process.env.OPENAI_VALIDATION_MODEL || "gpt-5-mini";
 const OPENAI_VALIDATION_REVIEW_MODEL = process.env.OPENAI_VALIDATION_REVIEW_MODEL || OPENAI_VALIDATION_MODEL;
 const OPENAI_VALIDATION_WEB_SEARCH = String(process.env.OPENAI_VALIDATION_WEB_SEARCH || "false").toLowerCase() === "true";
-const AUTO_VALIDATION_TIMEOUT_MS = Math.max(60000, Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 60000);
+const AUTO_VALIDATION_TIMEOUT_MS = Math.max(
+  5000,
+  Math.min(
+    15000,
+    Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 9000
+  )
+);
+const AUTO_VALIDATION_HARD_LIMIT_MS = Math.max(
+  10000,
+  Math.min(
+    25000,
+    Number(process.env.AUTO_VALIDATION_HARD_LIMIT_MS) || 18000
+  )
+);
 // IA des joueurs test : moteur séparé de l'arbitre de correction.
 // Elle peut utiliser le même compte API, mais possède son propre modèle, prompt, timeout et logique.
 const BOT_AI_ENABLED = String(process.env.BOT_AI_ENABLED || "true").toLowerCase() !== "false";
@@ -477,7 +490,6 @@ function emitWallet(player) {
   io.to(player.socketId).emit("wallet:update", { balance: walletBalance(player.walletToken) });
 }
 
-const { calculateRewards } = require("./game-economy.js");
 async function ensureEconomySchema() {
   await ensureDatabaseSchema();
 }
@@ -1102,7 +1114,16 @@ function inventoryTokenForSocket(socket, payload = {}) {
 }
 
 function publicRoom(room, viewerPlayerId = null) {
+  const viewerPlayer = viewerPlayerId
+    ? getPlayer(room, viewerPlayerId)
+    : null;
+  const viewerRoundAnswers =
+    viewerPlayer && room.roundIndex >= 0
+      ? { ...(viewerPlayer.answers?.[room.roundIndex] || {}) }
+      : {};
+
   return {
+    serverNow: Date.now(),
     code: room.code,
     mode: room.mode || "private",
     economyEnabled: isEconomyMode(room.mode),
@@ -1143,10 +1164,11 @@ function publicRoom(room, viewerPlayerId = null) {
     lastRoundScores: room.lastRoundScores || {},
     lastRoundResults: room.lastRoundResults || null,
     pot: room.pot || 0,
-    myReward: viewerPlayerId ? (room.rewardsByPlayerId?.[viewerPlayerId] || 0) : 0,
-    rewardsByPlayerId: room.rewardsDistributed ? (room.rewardsByPlayerId || {}) : {},
-    rewardsDistributed: !!room.rewardsDistributed,
-    myProgression: viewerPlayerId ? (room.progressionByPlayerId?.[viewerPlayerId] || null) : null,
+    myAnswers: viewerRoundAnswers,
+    mySubmitted: !!viewerPlayer?.submitted,
+    myProgression: viewerPlayerId
+      ? (room.progressionByPlayerId?.[viewerPlayerId] || null)
+      : null,
     progressionDistributed: !!room.progressionDistributed
   };
 }
@@ -1796,6 +1818,64 @@ async function validateInBatches(items, letter, options = {}) {
   return all;
 }
 
+function completeValidationFallback(
+  room,
+  roundAtStart,
+  {
+    code = "validation_fallback",
+    message = "Certaines réponses n’ont pas pu être vérifiées à temps."
+  } = {}
+) {
+  const current = rooms.get(room?.code);
+  if (
+    !current ||
+    current !== room ||
+    current.phase !== "validation" ||
+    current.roundIndex !== roundAtStart ||
+    !current.validation
+  ) {
+    return false;
+  }
+
+  const validation = current.validation;
+
+  for (const item of validation.items || []) {
+    if (item.status !== "pending") continue;
+    item.status = "invalid";
+    item.reason = code;
+    item.validationSource = "fallback";
+    item.aiConfidence = 0;
+    item.correction = "";
+  }
+
+  validation.status = "complete";
+  validation.error = {
+    code,
+    status:null,
+    message
+  };
+
+  if (validation.watchdogId) {
+    clearTimeout(validation.watchdogId);
+    validation.watchdogId = null;
+  }
+
+  emitRoom(current);
+
+  setTimeout(() => {
+    const latest = rooms.get(current.code);
+    if (
+      latest === current &&
+      latest.phase === "validation" &&
+      latest.roundIndex === roundAtStart
+    ) {
+      finalizeRound(latest);
+    }
+  }, 650);
+
+  return true;
+}
+
 async function runAutomaticValidation(room, roundAtStart) {
   const validation = room.validation;
   if (!validation || room.phase !== "validation") return;
@@ -1847,9 +1927,10 @@ async function runAutomaticValidation(room, roundAtStart) {
   emitRoom(room);
 
   if (unresolved.length && !OPENAI_API_KEY) {
-    validation.status = "unavailable";
-    validation.error = { code: "not_configured", message: "La validation IA n’est pas configurée." };
-    emitRoom(room);
+    completeValidationFallback(room, roundAtStart, {
+      code:"ai_not_configured",
+      message:"Validation IA indisponible : la partie continue automatiquement."
+    });
     return;
   }
 
@@ -1913,14 +1994,14 @@ async function runAutomaticValidation(room, roundAtStart) {
       }
     }
   } catch (err) {
-    console.error(`Validation IA indisponible [${err?.status || "réseau"}/${err?.code || "erreur"}]:`, sanitizeOpenAIErrorMessage(err?.message));
-    validation.status = "unavailable";
-    validation.error = {
-      code: String(err?.code || "ai_unavailable").slice(0, 80),
-      status: Number(err?.status) || null,
-      message: sanitizeOpenAIErrorMessage(err?.message || "Vérification temporairement indisponible")
-    };
-    emitRoom(room);
+    console.error(
+      `Validation IA indisponible [${err?.status || "réseau"}/${err?.code || "erreur"}]:`,
+      sanitizeOpenAIErrorMessage(err?.message)
+    );
+    completeValidationFallback(room, roundAtStart, {
+      code:String(err?.code || "ai_unavailable").slice(0, 80),
+      message:"Validation IA trop lente ou indisponible : la partie continue."
+    });
     return;
   }
 
@@ -1953,6 +2034,10 @@ async function runAutomaticValidation(room, roundAtStart) {
   if (!current || current !== room || current.phase !== "validation" || current.roundIndex !== roundAtStart) return;
   validation.status = "complete";
   validation.error = null;
+  if (validation.watchdogId) {
+    clearTimeout(validation.watchdogId);
+    validation.watchdogId = null;
+  }
   emitRoom(room);
   setTimeout(() => {
     const latest = rooms.get(room.code);
@@ -2071,27 +2156,6 @@ function shuffled(arr) {
   return copy;
 }
 
-function distributeRewards(room) {
-  if (room.rewardsDistributed) return;
-  room.rewardsDistributed = true;
-  room.rewardsByPlayerId = calculateRewards(room);
-  room.rewardsDistributedAt = Date.now();
-
-  room.players.forEach(player => {
-    if (player.isBot || !player.walletToken) return;
-    const reward = Math.max(0, Math.floor(room.rewardsByPlayerId[player.id] || 0));
-    if (!reward) return;
-    walletTransaction(
-      player.walletToken,
-      reward,
-      "GAME_REWARD",
-      { roomCode: room.code, note: `Récompense de fin de partie (+${reward})` },
-      `reward:${room.code}:${room.gameSessionId || "session"}:${player.id}`
-    );
-  });
-  room.players.forEach(emitWallet);
-}
-
 async function distributeProgression(room) {
   if (room.progressionDistributed || room.progressionDistributionPending) return;
 
@@ -2111,6 +2175,7 @@ async function distributeProgression(room) {
         result: {
           eventKey: result.eventKey,
           gainedXp: result.gainedXp,
+          gainedTrophies: result.gainedTrophies,
           rank: result.rank,
           validAnswers: result.validAnswers,
           rounds: result.rounds,
@@ -2208,6 +2273,12 @@ function finalizeRound(room) {
 
   room.lastRoundScores = scores;
   room.lastRoundResults = buildRoundResults(room);
+
+  if (room.validation?.watchdogId) {
+    clearTimeout(room.validation.watchdogId);
+    room.validation.watchdogId = null;
+  }
+
   room.phase = "scoreboard";
   room.roundEndsAt = null;
   room.validation = null;
@@ -2226,6 +2297,14 @@ function endRound(room) {
   room.roundEndsAt = null;
   room.validation = buildValidation(room);
   const roundAtStart = room.roundIndex;
+
+  room.validation.watchdogId = setTimeout(() => {
+    completeValidationFallback(room, roundAtStart, {
+      code:"validation_timeout",
+      message:"La correction a dépassé le délai maximal. La partie continue."
+    });
+  }, AUTO_VALIDATION_HARD_LIMIT_MS);
+  room.validation.watchdogId.unref?.();
 
   if (!room.validation.items.length) {
     finalizeRound(room);
@@ -2628,7 +2707,6 @@ async function finishGameRoom(room) {
     room.phase = "finished";
   }
 
-  distributeRewards(room);
   await distributeProgression(room);
   emitRoom(room);
 }
@@ -2867,9 +2945,6 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
       entryDebited: false,
       paidPlayerIds: [],
       pot: 0,
-      rewardsDistributed: false,
-      rewardsByPlayerId: {},
-      rewardsDistributedAt: null,
       progressionDistributed: false,
       progressionDistributionPending: false,
       progressionByPlayerId: {},
@@ -3335,9 +3410,6 @@ io.on("connection", socket => {
     if (room.mode !== nextMode) {
       room.mode = nextMode;
       room.players.forEach(p => { p.lobbyReady = false; });
-      room.rewardsDistributed = false;
-      room.rewardsByPlayerId = {};
-      room.rewardsDistributedAt = null;
       room.progressionDistributed = false;
       room.progressionDistributionPending = false;
       room.progressionByPlayerId = {};
@@ -3749,9 +3821,6 @@ io.on("connection", socket => {
     room.entryDebited = false;
     room.paidPlayerIds = [];
     room.pot = 0;
-    room.rewardsDistributed = false;
-    room.rewardsByPlayerId = {};
-    room.rewardsDistributedAt = null;
     room.progressionDistributed = false;
     room.progressionDistributionPending = false;
     room.progressionByPlayerId = {};

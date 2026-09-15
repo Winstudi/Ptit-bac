@@ -1,4 +1,4 @@
-const CLIENT_BUILD = "1.46.0";
+const CLIENT_BUILD = "1.46.1";
 const socket = io();
 const app = document.getElementById("app");
 const toastEl = document.getElementById("toast");
@@ -11,6 +11,7 @@ const session = {
   timerHandle: null,
   walletToken: localStorage.getItem("petitbac_walletToken") || "",
   walletBalance: Number(localStorage.getItem("petitbac_walletBalance") || "0"),
+  serverTimeOffsetMs: 0,
 };
 
 const GAME_COST = 0;
@@ -56,6 +57,32 @@ function initWallet(cb = () => {}) {
   });
 }
 
+function syncServerClock(state) {
+  const serverNow = Number(state?.serverNow);
+  if (!Number.isFinite(serverNow) || serverNow <= 0) return;
+  session.serverTimeOffsetMs = serverNow - Date.now();
+}
+
+function serverNowMs() {
+  return Date.now() + (Number(session.serverTimeOffsetMs) || 0);
+}
+
+function syncLocalAnswersFromState(state, { overwrite = false } = {}) {
+  if (!state || state.phase !== "round") return;
+  if (!state.myAnswers || typeof state.myAnswers !== "object") return;
+
+  for (const category of state.categories || []) {
+    const key = `${Number(state.roundIndex || 0)}:${category}`;
+    if (
+      !overwrite &&
+      Object.prototype.hasOwnProperty.call(session.localAnswers, key)
+    ) {
+      continue;
+    }
+    session.localAnswers[key] = String(state.myAnswers[category] || "");
+  }
+}
+
 function toast(message) {
   toastEl.textContent = message;
   toastEl.classList.add("show");
@@ -94,6 +121,10 @@ socket.on("room:closed", payload => {
 });
 socket.on("room:state", state => {
   const previous = session.state;
+  syncServerClock(state);
+  syncLocalAnswersFromState(state, {
+    overwrite: previous?.phase !== "round"
+  });
   session.state = state;
   // Keep the actual input nodes (and the mobile keyboard) during peer updates.
   if (state.phase === "round" && previous?.phase === "round" &&
@@ -108,6 +139,8 @@ socket.on("connect", () => {
       socket.emit("room:reconnect", { code: session.code, playerId: session.playerId, walletToken: session.walletToken }, res => {
         if (res?.ok) {
           setWalletState(session.walletToken, res.balance);
+          syncServerClock(res.state);
+          syncLocalAnswersFromState(res.state, { overwrite:true });
           session.state = res.state;
           render();
         } else {

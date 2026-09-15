@@ -36,6 +36,8 @@ test("toutes les tables principales sont créées par le module central", async 
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_messages/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_inventory_items/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_progression/);
+  assert.match(sql, /trophies integer NOT NULL DEFAULT 0/);
+  assert.match(sql, /trophy_delta integer NOT NULL DEFAULT 0/);
   assert.match(sql, /ptitbac_assign_friend_code_5/);
 });
 

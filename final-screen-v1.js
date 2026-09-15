@@ -658,18 +658,6 @@
     const quick =
       state.mode === "quick";
 
-    const gain =
-      Math.max(
-        0,
-        Number(
-          state.myReward ??
-          state.rewardsByPlayerId?.[
-            session.playerId
-          ] ??
-          0
-        ) || 0
-      );
-
     setScreen(
       '<main class="fsv1-screen final-mobile">' +
 
@@ -746,11 +734,11 @@
 
         '<p class="fin-mode">' +
           (
-            quick
-              ? "Partie rapide · +" +
-                gain +
-                " pièces"
-              : "Salon privé · Partie sans gain de pièces"
+            state.mode === "private"
+              ? "Salon privé · Aucun gain de progression"
+              : quick
+                ? "Partie rapide · XP + trophées"
+                : "Salon public · XP + trophées"
           ) +
         '</p>' +
 

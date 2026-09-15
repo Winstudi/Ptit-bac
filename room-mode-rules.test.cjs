@@ -51,7 +51,7 @@ test("un salon privé, plein, en lancement ou avec bot n'est pas découvrable", 
   }), now), false);
 });
 
-test("les récompenses sont actives en public mais pas en privé", () => {
+test("aucun mode ne distribue désormais de pièces en fin de partie", () => {
   const base = {
     phase: "finished",
     entryDebited: true,
@@ -65,6 +65,6 @@ test("les récompenses sont actives en public mais pas en privé", () => {
   };
 
   assert.deepEqual(calculateRewards({ ...base, mode: "private" }), { a: 0, b: 0 });
-  assert.deepEqual(calculateRewards({ ...base, mode: "public" }), { a: 60, b: 40 });
-  assert.deepEqual(calculateRewards({ ...base, mode: "quick" }), { a: 60, b: 40 });
+  assert.deepEqual(calculateRewards({ ...base, mode: "public" }), { a: 0, b: 0 });
+  assert.deepEqual(calculateRewards({ ...base, mode: "quick" }), { a: 0, b: 0 });
 });

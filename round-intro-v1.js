@@ -5,6 +5,12 @@ const INTRO_MS = 5000;
 const introByRound = new Map();
 const originalRenderRound = window.renderRound;
 
+function nowServer() {
+  return typeof serverNowMs === "function"
+    ? serverNowMs()
+    : Date.now();
+}
+
 if (typeof originalRenderRound !== "function") {
   console.warn("P'tit Bac: renderRound introuvable, intro de manche désactivée.");
   return;
@@ -21,14 +27,14 @@ function getIntroState(state) {
     for (const old of introByRound.values()) clearTimeout(old.timeoutId);
     introByRound.clear();
     const endsAt = Number(state.roundStartsAt) || (Number(state.roundEndsAt) - Number(state.duration) * 1000);
-    entry = { startedAt: Date.now(), endsAt: Number.isFinite(endsAt) ? endsAt : Date.now(), finished:false, timeoutId:null };
+    entry = { startedAt: nowServer(), endsAt: Number.isFinite(endsAt) ? endsAt : nowServer(), finished:false, timeoutId:null };
     entry.timeoutId = window.setTimeout(() => {
       if (entry.finished) return;
       entry.finished = true;
       const live = session?.state;
       if (!live || live.phase !== "round" || roundKey(live) !== key) return;
       originalRenderRound();
-    }, Math.max(0, entry.endsAt - Date.now()));
+    }, Math.max(0, entry.endsAt - nowServer()));
     introByRound.set(key, entry);
   }
   return entry;
@@ -119,7 +125,7 @@ function renderRoundIntro(state, entry) {
 
   const tick = () => {
     if (!countdown || !countdown.isConnected || entry.finished) return;
-    const remaining = entry.endsAt - Date.now();
+    const remaining = entry.endsAt - nowServer();
     if (remaining <= 0) { finishIntro(); return; }
     countdown.textContent = String(Math.ceil(remaining / 1000));
     const ring = countdown.closest(".pri-countdown-ring");
@@ -133,7 +139,7 @@ function wrappedRenderRound() {
   const state = session?.state;
   if (!state || state.phase !== "round") return originalRenderRound();
   const entry = getIntroState(state);
-  if (entry.finished || Date.now() >= entry.endsAt) { entry.finished = true; return originalRenderRound(); }
+  if (entry.finished || nowServer() >= entry.endsAt) { entry.finished = true; return originalRenderRound(); }
   renderRoundIntro(state, entry);
 }
 

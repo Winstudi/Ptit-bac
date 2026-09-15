@@ -6,6 +6,7 @@ const MAX_LEVEL = 50;
 const ROUND_XP = 10;
 const VALID_ANSWER_XP = 2;
 const RANK_BONUS = Object.freeze({ 1: 20, 2: 12, 3: 6 });
+const TROPHY_REWARDS = Object.freeze({ 1: 10, 2: 6, 3: 3, default: 1 });
 
 function validWalletToken(value) {
   const token = String(value || "").trim();
@@ -83,6 +84,7 @@ function rankingForPlayers(players = []) {
 function calculateRoomXp(room) {
   const results = Object.fromEntries((room?.players || []).map(player => [player.id, {
     xp: 0,
+    trophies: 0,
     rank: 0,
     validAnswers: 0,
     rounds: 0,
@@ -119,6 +121,7 @@ function calculateRoomXp(room) {
 
     results[player.id] = {
       xp,
+      trophies: TROPHY_REWARDS[rank] ?? TROPHY_REWARDS.default,
       rank,
       validAnswers,
       rounds: completedRounds,
@@ -175,6 +178,7 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
     const progress = progressionFromTotalXp(row?.total_xp || 0);
     return {
       ...progress,
+      trophies: Math.max(0, Number(row?.trophies) || 0),
       completedGames: Math.max(0, Number(row?.completed_games) || 0),
       wins: Math.max(0, Number(row?.wins) || 0)
     };
@@ -185,7 +189,7 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
     const db = pool();
     const token = await ensurePlayer(walletToken, db);
     const result = await db.query(
-      `SELECT total_xp, completed_games, wins
+      `SELECT total_xp, trophies, completed_games, wins
          FROM public.ptitbac_progression
         WHERE wallet_token=$1
         LIMIT 1`,
@@ -205,16 +209,24 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
       await ensurePlayer(token, client);
 
       const locked = await client.query(
-        `SELECT total_xp, completed_games, wins
+        `SELECT total_xp, trophies, completed_games, wins
            FROM public.ptitbac_progression
           WHERE wallet_token=$1
           FOR UPDATE`,
         [token]
       );
 
-      const beforeRow = locked.rows?.[0] || { total_xp: 0, completed_games: 0, wins: 0 };
+      const beforeRow = locked.rows?.[0] || {
+        total_xp:0,
+        trophies:0,
+        completed_games:0,
+        wins:0
+      };
       const existing = await client.query(
-        `SELECT xp_delta, before_total_xp, after_total_xp, before_level, after_level,
+        `SELECT xp_delta, trophy_delta,
+                before_total_xp, after_total_xp,
+                before_trophies, after_trophies,
+                before_level, after_level,
                 rank, valid_answers, rounds
            FROM public.ptitbac_progression_events
           WHERE event_key=$1
@@ -230,10 +242,14 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
           eventKey,
           duplicate: true,
           gainedXp: Number(event.xp_delta) || 0,
+          gainedTrophies: Number(event.trophy_delta) || 0,
           rank: Number(event.rank) || 0,
           validAnswers: Number(event.valid_answers) || 0,
           rounds: Number(event.rounds) || 0,
-          before: progressionFromTotalXp(event.before_total_xp),
+          before: {
+            ...progressionFromTotalXp(event.before_total_xp),
+            trophies:Math.max(0, Number(event.before_trophies) || 0)
+          },
           after,
           levelUp: Number(event.after_level) > Number(event.before_level)
         };
@@ -242,32 +258,46 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
       const before = progressionFromTotalXp(beforeRow.total_xp);
       const gainedXp = Math.max(0, Math.floor(Number(details.xp) || 0));
       const nextTotalXp = Math.max(0, Number(beforeRow.total_xp) + gainedXp);
+      const gainedTrophies = Math.max(
+        0,
+        Math.floor(Number(details.trophies) || 0)
+      );
+      const beforeTrophies = Math.max(0, Number(beforeRow.trophies) || 0);
+      const nextTrophies = beforeTrophies + gainedTrophies;
       const afterProgress = progressionFromTotalXp(nextTotalXp);
       const winDelta = Number(details.rank) === 1 ? 1 : 0;
 
       await client.query(
         `UPDATE public.ptitbac_progression
             SET total_xp=$2,
+                trophies=$3,
                 completed_games=completed_games+1,
-                wins=wins+$3,
+                wins=wins+$4,
                 updated_at=now()
           WHERE wallet_token=$1`,
-        [token, nextTotalXp, winDelta]
+        [token, nextTotalXp, nextTrophies, winDelta]
       );
 
       await client.query(
         `INSERT INTO public.ptitbac_progression_events(
-          event_key, wallet_token, room_code, xp_delta,
-          before_total_xp, after_total_xp, before_level, after_level,
+          event_key, wallet_token, room_code, xp_delta, trophy_delta,
+          before_total_xp, after_total_xp,
+          before_trophies, after_trophies,
+          before_level, after_level,
           rank, valid_answers, rounds
-        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        ) VALUES(
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+        )`,
         [
           eventKey,
           token,
           String(room.code || "").slice(0, 8),
           gainedXp,
+          gainedTrophies,
           Number(beforeRow.total_xp) || 0,
           nextTotalXp,
+          beforeTrophies,
+          nextTrophies,
           before.level,
           afterProgress.level,
           Number(details.rank) || 0,
@@ -280,6 +310,7 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
 
       const after = {
         ...afterProgress,
+        trophies:nextTrophies,
         completedGames: Math.max(0, Number(beforeRow.completed_games) || 0) + 1,
         wins: Math.max(0, Number(beforeRow.wins) || 0) + winDelta
       };
@@ -288,11 +319,13 @@ function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = 
         eventKey,
         duplicate: false,
         gainedXp,
+        gainedTrophies,
         rank: Number(details.rank) || 0,
         validAnswers: Number(details.validAnswers) || 0,
         rounds: Number(details.rounds) || 0,
         before: {
           ...before,
+          trophies:beforeTrophies,
           completedGames: Math.max(0, Number(beforeRow.completed_games) || 0),
           wins: Math.max(0, Number(beforeRow.wins) || 0)
         },
@@ -336,6 +369,7 @@ module.exports = {
   ROUND_XP,
   VALID_ANSWER_XP,
   RANK_BONUS,
+  TROPHY_REWARDS,
   validWalletToken,
   xpForNextLevel,
   totalXpForLevel,

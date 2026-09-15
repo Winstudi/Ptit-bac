@@ -8,6 +8,7 @@ const {
   progressionFromTotalXp,
   calculateRoomXp,
   rankingForPlayers,
+  TROPHY_REWARDS,
   createProgressionService
 } = require("./progression-service.js");
 
@@ -54,6 +55,7 @@ test("une partie rapide gagnée avec 6 réponses valides rapporte 42 XP", () => 
   assert.equal(xp.p1.xp, 42);
   assert.equal(xp.p1.rank, 1);
   assert.equal(xp.p1.validAnswers, 6);
+  assert.equal(xp.p1.trophies, 10);
 });
 
 test("5 manches, 25 réponses valides et deuxième place rapportent 112 XP", () => {
@@ -68,12 +70,42 @@ test("5 manches, 25 réponses valides et deuxième place rapportent 112 XP", () 
     ]
   }));
   assert.equal(xp.p2.xp, 112);
+  assert.equal(xp.p2.trophies, 6);
+});
+
+test("les trophées suivent le classement 10 / 6 / 3 / 1", () => {
+  assert.deepEqual(
+    {
+      first:TROPHY_REWARDS[1],
+      second:TROPHY_REWARDS[2],
+      third:TROPHY_REWARDS[3],
+      other:TROPHY_REWARDS.default
+    },
+    { first:10, second:6, third:3, other:1 }
+  );
+
+  const result = calculateRoomXp(room({
+    paidPlayerIds:["p1","p2","p3","p4"],
+    players:[
+      { id:"p1", score:12, walletToken:token("1"), isBot:false },
+      { id:"p2", score:9, walletToken:token("2"), isBot:false },
+      { id:"p3", score:6, walletToken:token("3"), isBot:false },
+      { id:"p4", score:2, walletToken:token("4"), isBot:false }
+    ]
+  }));
+
+  assert.equal(result.p1.trophies, 10);
+  assert.equal(result.p2.trophies, 6);
+  assert.equal(result.p3.trophies, 3);
+  assert.equal(result.p4.trophies, 1);
 });
 
 test("le salon privé ne donne jamais d'XP", () => {
   const xp = calculateRoomXp(room({ mode:"private" }));
   assert.equal(xp.p1.xp, 0);
   assert.equal(xp.p2.xp, 0);
+  assert.equal(xp.p1.trophies, 0);
+  assert.equal(xp.p2.trophies, 0);
 });
 
 test("une partie avec bot ne donne jamais d'XP", () => {

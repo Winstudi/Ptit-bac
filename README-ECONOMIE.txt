@@ -17,17 +17,11 @@ PIÈCES
 - Pub récompensée : +10 pièces.
 
 RÉCOMPENSES DE FIN DE PARTIE
-- 1er : 60 pièces.
-- 2e : 40 pièces.
-- 3e : 25 pièces.
-- autres joueurs classés : 10 pièces.
-
-Les récompenses ne sont attribuées que si :
-- le mode utilise l'économie (public ou quick) ;
-- la partie est réellement terminée ;
-- au moins 2 joueurs humains participent ;
-- aucun bot n'est présent ;
-- le joueur a bien participé au lancement économique.
+- Aucune pièce n'est gagnée en fin de partie.
+- Les parties Quick/Public éligibles donnent de l'XP et des trophées.
+- Barème trophées actuel : 1er +10, 2e +6, 3e +3, autres +1.
+- Salon privé : aucun XP et aucun trophée.
+- Partie avec bot : aucun XP et aucun trophée.
 
 BOUTIQUE PRÉVUE
 - 0,99 € : 25 pièces.

@@ -6,12 +6,6 @@ const LIFE_RECHARGE_MS = 30 * 60 * 1000;
 const REWARDED_AD_COINS = 10;
 const LETTER_REROLL_COST = 20;
 const CATEGORY_REROLL_COST = 20;
-const RANK_REWARDS = Object.freeze({
-  1: 60,
-  2: 40,
-  3: 25,
-  default: 10
-});
 
 const SHOP_OFFERS = Object.freeze({
   coins25: Object.freeze({ coins: 25, priceEur: 0.99 }),
@@ -26,6 +20,5 @@ module.exports = {
   REWARDED_AD_COINS,
   LETTER_REROLL_COST,
   CATEGORY_REROLL_COST,
-  RANK_REWARDS,
   SHOP_OFFERS
 };

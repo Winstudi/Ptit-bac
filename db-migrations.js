@@ -330,11 +330,16 @@ async function runDatabaseMigrations(pool) {
     CREATE TABLE IF NOT EXISTS public.ptitbac_progression (
       wallet_token text PRIMARY KEY,
       total_xp integer NOT NULL DEFAULT 0 CHECK (total_xp >= 0),
+      trophies integer NOT NULL DEFAULT 0 CHECK (trophies >= 0),
       completed_games integer NOT NULL DEFAULT 0 CHECK (completed_games >= 0),
       wins integer NOT NULL DEFAULT 0 CHECK (wins >= 0),
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     )
+  `);
+  await pool.query(`
+    ALTER TABLE public.ptitbac_progression
+    ADD COLUMN IF NOT EXISTS trophies integer NOT NULL DEFAULT 0 CHECK (trophies >= 0)
   `);
 
   await pool.query(`
@@ -343,8 +348,11 @@ async function runDatabaseMigrations(pool) {
       wallet_token text NOT NULL,
       room_code text,
       xp_delta integer NOT NULL CHECK (xp_delta >= 0),
+      trophy_delta integer NOT NULL DEFAULT 0 CHECK (trophy_delta >= 0),
       before_total_xp integer NOT NULL CHECK (before_total_xp >= 0),
       after_total_xp integer NOT NULL CHECK (after_total_xp >= 0),
+      before_trophies integer NOT NULL DEFAULT 0 CHECK (before_trophies >= 0),
+      after_trophies integer NOT NULL DEFAULT 0 CHECK (after_trophies >= 0),
       before_level integer NOT NULL,
       after_level integer NOT NULL,
       rank integer NOT NULL DEFAULT 0,
@@ -352,6 +360,18 @@ async function runDatabaseMigrations(pool) {
       rounds integer NOT NULL DEFAULT 0,
       created_at timestamptz NOT NULL DEFAULT now()
     )
+  `);
+  await pool.query(`
+    ALTER TABLE public.ptitbac_progression_events
+    ADD COLUMN IF NOT EXISTS trophy_delta integer NOT NULL DEFAULT 0 CHECK (trophy_delta >= 0)
+  `);
+  await pool.query(`
+    ALTER TABLE public.ptitbac_progression_events
+    ADD COLUMN IF NOT EXISTS before_trophies integer NOT NULL DEFAULT 0 CHECK (before_trophies >= 0)
+  `);
+  await pool.query(`
+    ALTER TABLE public.ptitbac_progression_events
+    ADD COLUMN IF NOT EXISTS after_trophies integer NOT NULL DEFAULT 0 CHECK (after_trophies >= 0)
   `);
 
   // Indexes.

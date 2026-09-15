@@ -27,7 +27,7 @@ function renderWaitingV1(){
    </section>
  </main>`);
  document.getElementById("wsv1Exit")?.addEventListener("click",()=>gameExitModal(state,me(),"wsv1-exit"));
- const tick=()=>{const timer=document.getElementById("wsv1Timer"),ring=document.getElementById("wsv1TimerRing");if(!timer||!ring)return;const remainingMs=Math.max(0,Number(state.roundEndsAt||0)-Date.now());const seconds=Math.ceil(remainingMs/1000);timer.textContent=String(seconds);const durationMs=Math.max(1,Number(state.duration||0)*1000);const progress=Math.max(0,Math.min(100,(remainingMs/durationMs)*100));ring.style.setProperty("--wsv1-progress",`${progress}%`);ring.classList.toggle("is-danger",seconds<=10);if(seconds<=0)ring.classList.add("is-finished");};
+ const tick=()=>{const timer=document.getElementById("wsv1Timer"),ring=document.getElementById("wsv1TimerRing");if(!timer||!ring)return;const remainingMs=Math.max(0,Number(state.roundEndsAt||0)-(typeof serverNowMs==="function"?serverNowMs():Date.now()));const seconds=Math.ceil(remainingMs/1000);timer.textContent=String(seconds);const durationMs=Math.max(1,Number(state.duration||0)*1000);const progress=Math.max(0,Math.min(100,(remainingMs/durationMs)*100));ring.style.setProperty("--wsv1-progress",`${progress}%`);ring.classList.toggle("is-danger",seconds<=10);if(seconds<=0)ring.classList.add("is-finished");};
  tick();session.timerHandle=setInterval(tick,100);
 }
 window.renderRoundWaiting=renderWaitingV1;try{renderRoundWaiting=renderWaitingV1;}catch{}

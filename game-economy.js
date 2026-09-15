@@ -1,42 +1,17 @@
 "use strict";
 
-const { isEconomyMode } = require("./room-mode-rules.js");
-const { RANK_REWARDS } = require("./economy-config.js");
-
+/**
+ * Depuis la 1.46.1, une fin de partie ne crédite plus de pièces.
+ * Les pièces restent réservées à la boutique, aux pubs récompensées,
+ * aux relances et aux futurs systèmes économiques.
+ *
+ * Cette fonction est conservée temporairement pour compatibilité avec
+ * d'anciens appels/tests, mais renvoie toujours 0.
+ */
 function calculateRewards(room) {
-  const rewards = Object.fromEntries(room.players.map(player => [player.id, 0]));
-
-  if (
-    !isEconomyMode(room.mode) ||
-    !room.entryDebited ||
-    room.phase !== "finished" ||
-    room.roundIndex + 1 !== room.rounds ||
-    room.players.some(player => player.isBot)
-  ) {
-    return rewards;
-  }
-
-  const players = room.players
-    .filter(player => player.walletToken)
-    .sort((a, b) => b.score - a.score);
-
-  if (players.length < 2) return rewards;
-
-  const paid = new Set(room.paidPlayerIds || []);
-  let rank = 1;
-
-  players.forEach((player, index) => {
-    if (index && player.score !== players[index - 1].score) {
-      rank = index + 1;
-    }
-
-    if (paid.has(player.id)) {
-      rewards[player.id] =
-        RANK_REWARDS[rank] ?? RANK_REWARDS.default;
-    }
-  });
-
-  return rewards;
+  return Object.fromEntries(
+    (room?.players || []).map(player => [player.id, 0])
+  );
 }
 
 module.exports = { calculateRewards };

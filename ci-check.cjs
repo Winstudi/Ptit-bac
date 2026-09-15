@@ -441,18 +441,43 @@ function checkEconomyConfiguration() {
     }
   }
 
-  if (
-    config.RANK_REWARDS?.[1] !== 60 ||
-    config.RANK_REWARDS?.[2] !== 40 ||
-    config.RANK_REWARDS?.[3] !== 25 ||
-    config.RANK_REWARDS?.default !== 10
-  ) {
-    fail("economy-config.js: récompenses de classement incorrectes.");
+  if ("RANK_REWARDS" in config) {
+    fail("economy-config.js ne doit plus contenir de gains de pièces de fin de partie.");
+  }
+
+  const server = read("server.js");
+  if (/GAME_REWARD|distributeRewards\(|calculateRewards/.test(server)) {
+    fail("server.js contient encore un gain de pièces de fin de partie.");
   }
 
   const shop = read("shop-screen-v2.js");
   if (/80 pièces|\+80|500 pièces|250 pièces|coins250/.test(shop)) {
     fail("shop-screen-v2.js contient encore une ancienne offre économique.");
+  }
+}
+
+function checkGameplayProgression() {
+  const progression = require(path.join(root, "progression-service.js"));
+
+  if (
+    progression.TROPHY_REWARDS?.[1] !== 10 ||
+    progression.TROPHY_REWARDS?.[2] !== 6 ||
+    progression.TROPHY_REWARDS?.[3] !== 3 ||
+    progression.TROPHY_REWARDS?.default !== 1
+  ) {
+    fail("barème trophées incorrect.");
+  }
+
+  const server = read("server.js");
+  for (const marker of [
+    "AUTO_VALIDATION_HARD_LIMIT_MS",
+    "completeValidationFallback",
+    "serverNow: Date.now()",
+    "myAnswers: viewerRoundAnswers"
+  ]) {
+    if (!server.includes(marker)) {
+      fail(`stabilité de partie absente: ${marker}`);
+    }
   }
 }
 
@@ -483,6 +508,7 @@ function main() {
   checkIntegratedFrontend();
   checkBackendArchitecture();
   checkEconomyConfiguration();
+  checkGameplayProgression();
 
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();

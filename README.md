@@ -4,7 +4,7 @@ Jeu multijoueur mobile-first de Petit Bac, développé en Node.js avec Express, 
 
 ## État actuel
 
-Version applicative : **1.46.0**
+Version applicative : **1.46.1**
 
 Le dépôt contient désormais directement le code réellement exécuté en production. Les anciennes transformations E2, E3, E4 et E5 ne sont plus nécessaires au déploiement.
 
@@ -117,6 +117,25 @@ Sans clé pour les bots, le jeu utilise son générateur local.
 Ne jamais stocker de clé privée directement dans GitHub.
 
 
+
+
+## Progression de fin de partie — 1.46.1
+
+Les pièces ne sont plus attribuées à la fin d'une partie.
+
+Une partie Quick/Public éligible donne désormais :
+
+- XP selon les manches, réponses valides et classement ;
+- trophées selon le classement : 1er +10, 2e +6, 3e +3, autres +1.
+
+Le salon privé et les parties avec bots ne donnent ni XP ni trophées.
+
+La 1.46.1 renforce aussi la stabilité en partie :
+
+- réponses restaurées après reconnexion ;
+- chrono basé sur l'heure serveur ;
+- validation IA limitée par un délai maximal avec fallback automatique ;
+- distribution XP/trophées idempotente.
 
 ## Boucle de jeu 1.46
 

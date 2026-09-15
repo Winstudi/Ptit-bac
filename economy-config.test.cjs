@@ -10,7 +10,6 @@ const {
   REWARDED_AD_COINS,
   LETTER_REROLL_COST,
   CATEGORY_REROLL_COST,
-  RANK_REWARDS,
   SHOP_OFFERS
 } = require("./economy-config.js");
 
@@ -21,12 +20,6 @@ test("l’économie officielle est figée dans une seule configuration", () => {
   assert.equal(REWARDED_AD_COINS, 10);
   assert.equal(LETTER_REROLL_COST, 20);
   assert.equal(CATEGORY_REROLL_COST, 20);
-  assert.deepEqual(RANK_REWARDS, {
-    1:60,
-    2:40,
-    3:25,
-    default:10
-  });
 });
 
 test("les offres boutique validées sont centralisées", () => {
