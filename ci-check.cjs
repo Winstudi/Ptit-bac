@@ -17,13 +17,26 @@ const BUILD_GENERATED_PUBLIC_FILES = Object.freeze({
 });
 
 const DYNAMIC_INDEX_PREFIXES = ["/socket.io/"];
-const OBSOLETE_BUILD_SCRIPTS = [
+
+const OBSOLETE_BUILD_SCRIPTS = Object.freeze([
   "apply-e1-source-cleanup.cjs",
   "e2-shared-db-build.cjs",
   "e3-functional-fixes-build.cjs",
   "e4-render-events-build.cjs",
   "e5-socket-security-build.cjs"
-];
+]);
+
+const LEGACY_FILES = Object.freeze([
+  ...OBSOLETE_BUILD_SCRIPTS,
+  "profile-screen-v2.js",
+  "profile-redesign-v1.js",
+  "avatar-fix-v2.css",
+  "avatar-system-v1.css",
+  "lobby-polish-v1.css",
+  "lobby-polish-v1.js",
+  "ui-fixes-v3.css",
+  "ui-fixes-v3.js"
+]);
 
 function fail(message) {
   throw new Error(`[CI] ${message}`);
@@ -91,6 +104,16 @@ function checkRenderChain() {
 
   if (!render.includes("healthCheckPath: /health")) {
     fail("Render doit conserver /health comme health check.");
+  }
+}
+
+function checkLegacyFilesRemoved() {
+  const present = LEGACY_FILES.filter(exists);
+  if (present.length) {
+    fail(
+      "fichiers legacy encore présents dans le dépôt: " +
+      present.join(", ")
+    );
   }
 }
 
@@ -189,7 +212,6 @@ function checkCoreFiles() {
   const missing = required.filter(name => !exists(name));
   if (missing.length) fail(`fichiers cœur manquants: ${missing.join(", ")}`);
 }
-
 
 function checkVersionConsistency() {
   const pkg = JSON.parse(read("package.json"));
@@ -297,8 +319,8 @@ function checkIntegratedFrontend() {
     "avatar-system-v1.js",
     "avatar-pages-fix-v1.js",
     "progression-client.js",
-    "lobby-polish-v1.js",
-    "ui-fixes-v3.js"
+    "lobby-runtime-v1.js",
+    "ui-runtime-v1.js"
   ];
 
   for (const name of observerModules) {
@@ -489,13 +511,6 @@ function checkProductionBundles() {
   }
 }
 
-function reportObsoleteScripts() {
-  const present = OBSOLETE_BUILD_SCRIPTS.filter(exists);
-  if (present.length) {
-    console.warn(`[CI] Info: scripts de migration encore présents mais inutilisés: ${present.join(", ")}`);
-  }
-}
-
 function main() {
   checkGitignore();
   checkCoreFiles();
@@ -504,6 +519,7 @@ function main() {
   checkDeploymentReliability();
   checkGeneratedPublicFiles();
   checkRenderChain();
+  checkLegacyFilesRemoved();
   checkIntegratedBackend();
   checkIntegratedFrontend();
   checkBackendArchitecture();
@@ -513,7 +529,6 @@ function main() {
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();
   checkProductionBundles();
-  reportObsoleteScripts();
 
   console.log(
     `[CI] OK — ${syntaxCount} fichiers JS/CJS validés, ` +

@@ -7,6 +7,7 @@ const test = require("node:test");
 
 const root = __dirname;
 const read = name => fs.readFileSync(path.join(root, name), "utf8");
+const exists = name => fs.existsSync(path.join(root, name));
 
 test("le runtime mobile est chargé avant le noyau client", () => {
   const html = read("index.html");
@@ -29,6 +30,9 @@ test("le profil n'utilise plus deux scripts concurrents", () => {
   assert.ok(publicFiles.includes("/profile-module-v1.js"));
   assert.ok(!publicFiles.includes("/profile-screen-v2.js"));
   assert.ok(!publicFiles.includes("/profile-redesign-v1.js"));
+
+  assert.equal(exists("profile-screen-v2.js"), false);
+  assert.equal(exists("profile-redesign-v1.js"), false);
 });
 
 test("le bundle cœur référence uniquement le profil canonique", () => {
@@ -54,8 +58,7 @@ test("le module profil expose les points d'entrée attendus", () => {
   assert.doesNotMatch(source, /new MutationObserver\s*\(/);
 });
 
-
-test("les anciens patchs lobby et UI ne sont plus chargés", () => {
+test("les anciens patchs lobby, UI et avatar ont disparu du dépôt", () => {
   const html = read("index.html");
   const publicFiles = JSON.parse(read("public-files.json"));
   const { BUNDLES } = require("./frontend-assets.cjs");
@@ -72,6 +75,19 @@ test("les anciens patchs lobby et UI ne sont plus chargés", () => {
     assert.doesNotMatch(html, new RegExp(legacy.replace(".", "\\.")));
     assert.ok(!publicFiles.includes(`/${legacy}`));
     assert.ok(!assets.includes(legacy));
+    assert.equal(exists(legacy), false, `${legacy} doit être supprimé du dépôt`);
+  }
+});
+
+test("les anciens scripts de transformation ont disparu du dépôt", () => {
+  for (const legacy of [
+    "apply-e1-source-cleanup.cjs",
+    "e2-shared-db-build.cjs",
+    "e3-functional-fixes-build.cjs",
+    "e4-render-events-build.cjs",
+    "e5-socket-security-build.cjs"
+  ]) {
+    assert.equal(exists(legacy), false, `${legacy} doit être supprimé du dépôt`);
   }
 });
 
