@@ -168,7 +168,7 @@
 
         if (difficultyIcon) {
           difficultyIcon.src =
-            "/difficulty-normal.png?v=lobby-v5";
+            "/difficulty.png";
         }
 
         if (difficultyValue) {

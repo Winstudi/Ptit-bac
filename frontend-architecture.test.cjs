@@ -173,3 +173,21 @@ test("le runtime UI tolère une socket absente ou déconnectée", () => {
   assert.match(source, /!socket\?\.connected/);
   assert.match(source, /window\.PtitBacUiRuntime/);
 });
+
+test("le salon Quick référence une icône de difficulté réellement publiée", () => {
+  const source = read("quick-lobby-v1.js");
+  const publicFiles = JSON.parse(read("public-files.json"));
+
+  assert.doesNotMatch(source, /\/difficulty-normal\.png/);
+  assert.match(source, /\/difficulty\.png/);
+  assert.ok(
+    publicFiles.includes("/difficulty.png"),
+    "difficulty.png doit rester publié dans public-files.json"
+  );
+  assert.equal(
+    exists("difficulty.png"),
+    true,
+    "difficulty.png doit exister dans le dépôt"
+  );
+});
+
