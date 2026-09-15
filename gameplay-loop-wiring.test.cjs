@@ -46,3 +46,36 @@ test("les sorties joueur attendent la confirmation serveur", () => {
   assert.match(source("app.js"), /"game:leave"/);
   assert.match(source("final-screen-v1.js"), /socket\.timeout\(8000\)\.emit\(/);
 });
+
+test("les transitions critiques récupèrent après une perte réseau", () => {
+  const answers = source("answer-screen-v1.js");
+  const validation = source("validation-screen-v1.js");
+  const scoreboard = source("scoreboard-screen-v1.js");
+
+  assert.match(
+    answers,
+    /socket\.timeout\(8000\)\.emit\(\s*"round:submit"/
+  );
+  assert.match(
+    answers,
+    /La validation n’a pas été confirmée\. Réessaie\./
+  );
+
+  assert.match(
+    validation,
+    /socket\.timeout\(8000\)\.emit\(\s*"validation:retry"/
+  );
+  assert.match(
+    validation,
+    /La relance n’a pas été confirmée\. Réessaie\./
+  );
+
+  assert.match(
+    scoreboard,
+    /socket\.timeout\(12000\)\.emit\(\s*"game:nextRound"/
+  );
+  assert.match(
+    scoreboard,
+    /Le passage à la suite n’a pas été confirmé\. Réessaie\./
+  );
+});

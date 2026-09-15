@@ -125,16 +125,40 @@
               "vsv1Retry"
             );
 
+          if (!socket.connected) {
+            return toast(
+              "Connexion interrompue. Attends la reconnexion."
+            );
+          }
+
           if (button) {
             button.disabled = true;
           }
 
-          socket.emit(
+          socket.timeout(8000).emit(
             "validation:retry",
             {
               code:state.code,
               playerId:
                 session.playerId
+            },
+            error => {
+              if (!error) return;
+
+              const current = session.state;
+              const stillUnavailable =
+                current?.phase === "validation" &&
+                current?.validation?.status === "unavailable";
+
+              if (
+                button?.isConnected &&
+                stillUnavailable
+              ) {
+                button.disabled = false;
+                toast(
+                  "La relance n’a pas été confirmée. Réessaie."
+                );
+              }
             }
           );
         }

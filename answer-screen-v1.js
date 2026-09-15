@@ -97,9 +97,6 @@
           keyboardOpen
         );
 
-        /* iOS Safari peut déplacer le viewport complet pour garder
-           l'input actif visible. On garde la page à 0 : seule la liste
-           des réponses a le droit de défiler. */
         if (window.scrollY !== 0) {
           window.scrollTo(0,0);
         }
@@ -486,13 +483,32 @@
           );
         }
 
-        event.currentTarget.disabled = true;
+        const button = event.currentTarget;
+        button.disabled = true;
 
-        socket.emit(
+        socket.timeout(8000).emit(
           "round:submit",
           {
             code:state.code,
             playerId:session.playerId
+          },
+          error => {
+            if (!error) return;
+
+            const current = session.state;
+            const stillWaitingForSubmit =
+              current?.phase === "round" &&
+              !me()?.submitted;
+
+            if (
+              button.isConnected &&
+              stillWaitingForSubmit
+            ) {
+              button.disabled = false;
+              toast(
+                "La validation n’a pas été confirmée. Réessaie."
+              );
+            }
           }
         );
       });

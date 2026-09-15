@@ -64,7 +64,30 @@ function render(){
  swipe.addEventListener("pointercancel",()=>{start=null;});
  swipe.addEventListener("keydown",e=>{if(e.key==="ArrowLeft"||e.key==="ArrowRight"){e.preventDefault();navigate(selected+(e.key==="ArrowRight"?1:-1));}});
  const next=document.getElementById("resContinue");
- if(next)next.onclick=()=>{if(next.disabled)return;next.disabled=true;socket.emit("game:nextRound",{code:state.code,playerId:session.playerId});};
+ if(next)next.onclick=()=>{
+  if(next.disabled)return;
+  if(!socket.connected)return toast("Connexion interrompue. Attends la reconnexion.");
+  next.disabled=true;
+  socket.timeout(12000).emit(
+    "game:nextRound",
+    {code:state.code,playerId:session.playerId},
+    error=>{
+      if(!error)return;
+      const current=session.state;
+      const stillSameScoreboard=
+        current?.phase==="scoreboard" &&
+        JSON.stringify([
+          current.code,
+          current.gameSessionId,
+          Number(current.lastRoundResults?.roundIndex??current.roundIndex??0)
+        ])===key;
+      if(next.isConnected&&stillSameScoreboard){
+        next.disabled=false;
+        toast("Le passage à la suite n’a pas été confirmé. Réessaie.");
+      }
+    }
+  );
+ };
  document.getElementById("resReport").onclick=()=>{
   if(!eligible||reported||reports.get(reportKey)==="pending")return;
   reports.set(reportKey,"pending");
