@@ -12,6 +12,12 @@ const { createInventoryService, normalizeAvatarId } = require("./inventory-servi
 const { createProgressionService } = require("./progression-service.js");
 const { installSocketSecurity } = require("./socket-security.js");
 const {
+  shouldRefundEntryOnLeave,
+  isFinalScoreboard,
+  nextHostCandidate,
+  canAdvanceScoreboard
+} = require("./game-loop-rules.js");
+const {
   DEFAULT_COINS,
   MAX_LIVES: ECONOMY_MAX_LIVES,
   LIFE_RECHARGE_MS: ECONOMY_LIFE_MS,
@@ -216,6 +222,7 @@ app.use((req, res, next) => {
 });
 
 const GAME_COST = 0; // Economie: entree payee en vies, pas en pièces.
+const HOST_RECONNECT_GRACE_MS = 15 * 1000;
 const ADMIN_DIAGNOSTIC_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const WALLET_FILE = process.env.PTITBAC_WALLET_FILE
   ? path.resolve(process.env.PTITBAC_WALLET_FILE)
@@ -2514,9 +2521,44 @@ function playBots(room) {
   });
 }
 
-function ptitBacTransferHost(room) {
-  const nextHost = room.players.find(p => !p.isBot) || room.players[0] || null;
-  room.players.forEach(p => { p.isHost = !!nextHost && p.id === nextHost.id; });
+function ptitBacTransferHost(room, excludedPlayerId = "") {
+  const nextHost = nextHostCandidate(room.players, excludedPlayerId);
+  room.players.forEach(p => {
+    p.isHost = !!nextHost && p.id === nextHost.id;
+  });
+  return nextHost;
+}
+
+function ptitBacScheduleHostTransfer(room, disconnectedHost) {
+  if (!room || !disconnectedHost?.isHost || room.phase === "finished") return;
+
+  const roomCodeAtDisconnect = room.code;
+  const hostIdAtDisconnect = disconnectedHost.id;
+
+  setTimeout(() => {
+    const current = rooms.get(roomCodeAtDisconnect);
+    if (!current || current.phase === "finished") return;
+
+    const oldHost = getPlayer(current, hostIdAtDisconnect);
+    if (!oldHost || !oldHost.isHost || oldHost.connected) return;
+
+    const nextHost = nextHostCandidate(
+      current.players,
+      hostIdAtDisconnect
+    );
+
+    if (!nextHost || nextHost.isBot || !nextHost.connected) return;
+
+    current.players.forEach(p => {
+      p.isHost = p.id === nextHost.id;
+    });
+
+    io.to(current.code).emit(
+      "toast",
+      `${nextHost.name} devient l’hôte.`
+    );
+    emitRoom(current);
+  }, HOST_RECONNECT_GRACE_MS).unref?.();
 }
 
 function ptitBacDetachSocketFromRoom(socket, room, player) {
@@ -2540,89 +2582,216 @@ function ptitBacCloseRoomSockets(room, payload = {}) {
 }
 
 function ptitBacAwardForfeit(room, winner) {
-  return { reward: 0, balance: winner?.walletToken ? walletBalance(winner.walletToken) : 0 };
+  return {
+    reward: 0,
+    balance: winner?.walletToken
+      ? walletBalance(winner.walletToken)
+      : 0
+  };
 }
 
-function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
+async function ptitBacRefundSelectedLives(room, players = []) {
+  if (!room?.entryDebited || !room.gameSessionId) return;
+
+  const paid = new Set(room.paidPlayerIds || []);
+  const eligible = players.filter(
+    p => !p?.isBot && p.walletToken && paid.has(p.id)
+  );
+  if (!eligible.length) return;
+
+  const snapshot = {
+    roomCode:room.code,
+    sessionId:room.gameSessionId,
+    players:eligible.map(p => ({
+      id:p.id,
+      name:p.name,
+      avatar:p.avatar,
+      walletToken:p.walletToken,
+      socketId:p.socketId
+    }))
+  };
+
+  await refundLivesSnapshot(snapshot);
+
+  for (const p of snapshot.players) {
+    const eco = await economyState(p.walletToken).catch(() => null);
+    if (eco && p.socketId) {
+      io.to(p.socketId).emit("economy:update", eco);
+    }
+  }
+}
+
+async function finishGameRoom(room) {
+  if (!room) return;
+
+  if (room.phase !== "finished") {
+    room.phase = "finished";
+  }
+
+  distributeRewards(room);
+  await distributeProgression(room);
+  emitRoom(room);
+}
+
+async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
   const { room, player } = requireMember(socket, payload);
   if (!room || !player) {
     return cb({ ok: false, error: "Partie introuvable." });
   }
 
-  if (room.economyStartPending) return cb({ok:false,error:"Lancement en cours, réessaie dans un instant."});
+  if (room.economyStartPending) {
+    return cb({
+      ok:false,
+      error:"Lancement en cours, réessaie dans un instant."
+    });
+  }
+
+  const wasHost = !!player.isHost;
+  const quitterName = String(player.name || "Un joueur");
+
+  // Une partie dont la dernière manche est déjà corrigée est terminée
+  // fonctionnellement, même si personne n'a encore affiché le classement.
+  if (isFinalScoreboard(room)) {
+    await finishGameRoom(room);
+  }
+
+  // Une vie est engagée dès que la sélection des catégories commence.
+  // Quitter pendant le choix des catégories ou de la lettre ne rembourse donc
+  // pas la vie consommée.
+  if (
+    room.phase === "category_selection" ||
+    room.phase === "letter_selection"
+  ) {
+    const phaseBeforeLeave = room.phase;
+
+    room.players = room.players.filter(p => p.id !== player.id);
+    ptitBacDetachSocketFromRoom(socket, room, player);
+
+    if (!room.players.length) {
+      rooms.delete(room.code);
+      return cb({
+        ok:true,
+        outcome:"room_closed",
+        message:"Tu as quitté la partie. La vie consommée n’est pas remboursée."
+      });
+    }
+
+    if (wasHost) {
+      ptitBacTransferHost(room, player.id);
+    }
+
+    ensureCategoryChooser(room);
+
+    if (room.letterChooserPlayerId === player.id) {
+      const chooser = chooseLetterPlayer(room);
+      room.letterChooserPlayerId = chooser?.id || null;
+      room.pendingLetter = null;
+      room.letterSpinVersion =
+        (room.letterSpinVersion || 0) + 1;
+    }
+
+    emitRoom(room);
+
+    return cb({
+      ok:true,
+      outcome:"left_pre_round",
+      phase:phaseBeforeLeave,
+      message:"Tu as quitté la partie. La vie consommée n’est pas remboursée."
+    });
+  }
+
   const phaseBeforeLeave = room.phase;
   const isActiveGame =
     phaseBeforeLeave !== "lobby" &&
     phaseBeforeLeave !== "finished";
 
-  const humanCountBefore = room.players.filter(p => !p.isBot).length;
-  const wasHost = !!player.isHost;
-  const quitterName = String(player.name || "Un joueur");
+  const humanCountBefore =
+    room.players.filter(p => !p.isBot).length;
 
   room.players = room.players.filter(p => p.id !== player.id);
   ptitBacDetachSocketFromRoom(socket, room, player);
 
-  // Départ classique depuis le salon.
+  // Départ classique depuis le salon ou après la fin.
   if (!isActiveGame) {
     if (room.players.length === 0) {
       rooms.delete(room.code);
-      return cb({ ok: true, outcome: "room_closed" });
+      return cb({ ok:true, outcome:"room_closed" });
     }
 
-    if (wasHost) ptitBacTransferHost(room);
+    if (wasHost) {
+      ptitBacTransferHost(room, player.id);
+    }
+
     emitRoom(room);
-    return cb({ ok: true, outcome: "left_room" });
+    return cb({ ok:true, outcome:"left_room" });
   }
 
-  const remainingHumans = room.players.filter(p => !p.isBot);
+  const remainingHumans =
+    room.players.filter(p => !p.isBot);
 
   // Aucun humain restant : la partie et les bots sont clôturés.
   if (remainingHumans.length === 0) {
     rooms.delete(room.code);
 
     return cb({
-      ok: true,
-      outcome: "room_closed_bots_only",
-      message: "La partie est terminée."
+      ok:true,
+      outcome:"room_closed_bots_only",
+      message:"La partie est terminée."
     });
   }
 
-  // Duel : l'autre humain gagne immédiatement par forfait.
+  // Duel interrompu : le joueur qui abandonne conserve sa vie consommée,
+  // mais l'adversaire restant récupère la sienne. Aucun gain de pièces/XP
+  // n'est créé pour une partie incomplète.
   if (humanCountBefore === 2 && remainingHumans.length === 1) {
     const winner = remainingHumans[0];
-    const payout = ptitBacAwardForfeit(room, winner, quitterName);
+
+    await ptitBacRefundSelectedLives(room, [winner]).catch(err => {
+      console.warn("Remboursement duel interrompu:", err.message);
+    });
+
+    const payout =
+      ptitBacAwardForfeit(room, winner, quitterName);
 
     ptitBacCloseRoomSockets(room, {
-      reason: "forfeit_win",
-      message: quitterName + " a quitté la partie.",
+      reason:"forfeit_win",
+      message:quitterName + " a quitté la partie.",
       quitterName,
-      winnerId: winner.id,
-      winnerName: winner.name,
-      reward: payout.reward,
-      balance: payout.balance
+      winnerId:winner.id,
+      winnerName:winner.name,
+      reward:payout.reward,
+      balance:payout.balance,
+      lifeRefunded:true
     });
 
     rooms.delete(room.code);
 
     return cb({
-      ok: true,
-      outcome: "forfeit",
-      message: "Tu as quitté la partie."
+      ok:true,
+      outcome:"forfeit",
+      message:"Tu as quitté la partie."
     });
   }
 
   // 3 humains ou plus : on retire uniquement le joueur.
-  if (wasHost) ptitBacTransferHost(room);
+  if (wasHost) {
+    ptitBacTransferHost(room, player.id);
+  }
+
   ensureCategoryChooser(room);
 
   if (room.letterChooserPlayerId === player.id) {
     const chooser = chooseLetterPlayer(room);
     room.letterChooserPlayerId = chooser?.id || null;
     room.pendingLetter = null;
-    room.letterSpinVersion = (room.letterSpinVersion || 0) + 1;
+    room.letterSpinVersion =
+      (room.letterSpinVersion || 0) + 1;
   }
 
-  io.to(room.code).emit("toast", quitterName + " a quitté la partie");
+  io.to(room.code).emit(
+    "toast",
+    quitterName + " a quitté la partie"
+  );
   emitRoom(room);
 
   // Si le joueur parti bloquait la fin d'une manche,
@@ -2636,9 +2805,9 @@ function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
   }
 
   cb({
-    ok: true,
-    outcome: "left_game",
-    message: "Tu as quitté la partie."
+    ok:true,
+    outcome:"left_game",
+    message:"Tu as quitté la partie."
   });
 }
 
@@ -3268,22 +3437,66 @@ io.on("connection", socket => {
     }
   });
 
-  socket.on("room:leave", (payload, cb = () => {}) => {
+  socket.on("room:leave", async (payload, cb = () => {}) => {
     const {room} = requireMember(socket, payload);
+
     if (room?.mode === "quick" && room.phase === "lobby") {
-      if (!quickMatch.cancel(socket)) return cb({ok:false,error:"La partie se prépare déjà."});
-      if (!getRoom(payload.code)?.players.some(p => p.id === payload.playerId)) return cb({ok:true});
+      if (!quickMatch.cancel(socket)) {
+        return cb({
+          ok:false,
+          error:"La partie se prépare déjà."
+        });
+      }
+
+      if (
+        !getRoom(payload.code)?.players.some(
+          p => p.id === payload.playerId
+        )
+      ) {
+        return cb({ok:true});
+      }
     }
-    ptitBacHandleExplicitLeave(socket, payload, cb);
+
+    try {
+      await ptitBacHandleExplicitLeave(socket, payload, cb);
+    } catch (err) {
+      console.error("room:leave:", err.message);
+      cb({
+        ok:false,
+        error:"Impossible de quitter proprement la partie."
+      });
+    }
   });
 
-  socket.on("game:leave", (payload, cb = () => {}) => {
+  socket.on("game:leave", async (payload, cb = () => {}) => {
     const {room} = requireMember(socket, payload);
+
     if (room?.mode === "quick" && room.phase === "lobby") {
-      if (!quickMatch.cancel(socket)) return cb({ok:false,error:"La partie se prépare déjà."});
-      if (!getRoom(payload.code)?.players.some(p => p.id === payload.playerId)) return cb({ok:true});
+      if (!quickMatch.cancel(socket)) {
+        return cb({
+          ok:false,
+          error:"La partie se prépare déjà."
+        });
+      }
+
+      if (
+        !getRoom(payload.code)?.players.some(
+          p => p.id === payload.playerId
+        )
+      ) {
+        return cb({ok:true});
+      }
     }
-    ptitBacHandleExplicitLeave(socket, payload, cb);
+
+    try {
+      await ptitBacHandleExplicitLeave(socket, payload, cb);
+    } catch (err) {
+      console.error("game:leave:", err.message);
+      cb({
+        ok:false,
+        error:"Impossible de quitter proprement la partie."
+      });
+    }
   });
 
   socket.on("room:kick", ({ code, playerId, targetPlayerId }) => {
@@ -3506,14 +3719,13 @@ io.on("connection", socket => {
 
   socket.on("game:nextRound", async payload => {
     const { room, player } = requireMember(socket, payload);
-    if (!room || !player?.isHost || room.phase !== "scoreboard") return;
+    if (!canAdvanceScoreboard(room, player)) return;
+
     if (room.roundIndex + 1 >= room.rounds) {
-      room.phase = "finished";
-      distributeRewards(room);
-      await distributeProgression(room);
-      emitRoom(room);
+      await finishGameRoom(room);
       return;
     }
+
     prepareCategorySelection(room);
   });
 
@@ -3562,6 +3774,11 @@ io.on("connection", socket => {
 
     player.connected = false;
     player.lobbyReady = false;
+
+    if (player.isHost) {
+      ptitBacScheduleHostTransfer(room, player);
+    }
+
     ensureCategoryChooser(room);
     if (room.phase === "letter_selection" && room.letterChooserPlayerId === player.id) {
       const chooser = chooseLetterPlayer(room);

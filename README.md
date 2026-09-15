@@ -4,7 +4,7 @@ Jeu multijoueur mobile-first de Petit Bac, développé en Node.js avec Express, 
 
 ## État actuel
 
-Version applicative : **1.45.1**
+Version applicative : **1.46.0**
 
 Le dépôt contient désormais directement le code réellement exécuté en production. Les anciennes transformations E2, E3, E4 et E5 ne sont plus nécessaires au déploiement.
 
@@ -116,6 +116,18 @@ Sans clé pour les bots, le jeu utilise son générateur local.
 
 Ne jamais stocker de clé privée directement dans GitHub.
 
+
+
+## Boucle de jeu 1.46
+
+La boucle multijoueur a été renforcée :
+
+- en Quick, aucun clic d'un hôte technique n'est requis sur l'écran des résultats ;
+- un hôte déconnecté peut se reconnecter pendant 15 secondes avant qu'un autre humain connecté prenne le relais ;
+- quitter pendant le choix des catégories ou de la lettre ne rembourse pas la vie consommée ;
+- lors d'un duel interrompu en cours de partie, le joueur qui reste récupère sa vie tandis que l'abandonneur conserve le coût de son entrée ;
+- quitter après la dernière manche valide d'abord la fin de partie afin de ne pas perdre les récompenses ;
+- les principaux boutons de sortie attendent désormais la confirmation du serveur avant d'effacer la session locale.
 
 ## Santé du service
 

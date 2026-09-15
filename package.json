@@ -1,6 +1,6 @@
 {
   "name": "petit-bac-soiree",
-  "version": "1.45.1",
+  "version": "1.46.0",
   "private": true,
   "description": "P'tit Bac multijoueur mobile — profils persistants, amis, chat, vies rechargeables et économie serveur.",
   "main": "server.js",

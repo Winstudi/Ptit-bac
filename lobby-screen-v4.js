@@ -490,9 +490,30 @@
     const leave = () => {
       lobbySettingsOpen = false;
       lobbyInviteOpen = false;
-      socket.emit("room:leave", { code: state.code, playerId: session.playerId });
-      clearSession();
-      renderHome();
+
+      const button = document.getElementById("lobbyV5Leave");
+      if (button) button.disabled = true;
+
+      socket.timeout(8000).emit(
+        "room:leave",
+        { code:state.code, playerId:session.playerId },
+        (err, res) => {
+          if (err || !res?.ok) {
+            if (button) button.disabled = false;
+            return toast(
+              res?.error ||
+              "Impossible de quitter le salon pour le moment."
+            );
+          }
+
+          clearSession();
+          if (typeof initWallet === "function") {
+            initWallet(() => renderHome());
+          } else {
+            renderHome();
+          }
+        }
+      );
     };
 
     document.getElementById("lobbyV5Leave")?.addEventListener("click", leave);

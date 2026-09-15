@@ -799,16 +799,29 @@
           0;
       }
 
-      socket.emit(
+      socket.timeout(8000).emit(
         "room:leave",
         {
           code:state.code,
           playerId:session.playerId
+        },
+        (err, res) => {
+          if (err || !res?.ok) {
+            return toast(
+              res?.error ||
+              "Impossible de quitter le classement pour le moment."
+            );
+          }
+
+          clearSession();
+
+          if (typeof initWallet === "function") {
+            initWallet(() => renderHome());
+          } else {
+            renderHome();
+          }
         }
       );
-
-      clearSession();
-      renderHome();
     };
 
     document

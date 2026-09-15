@@ -47,7 +47,7 @@ function render(){
  '<div class="res-rows">'+rows+'</div>'+
  '<button class="res-report" id="resReport" '+(!eligible||reported||pending?'disabled':'')+'>ⓘ '+(reported?'Signalé ✓':pending?'Envoi…':'Signaler une correction')+'</button>'+
  '<p class="res-legend"><span>✓ Valide</span><span>— Sans réponse</span><span>× Refusée</span><span>= Doublon</span></p></section>'+
- (user?.isHost?'<button id="resContinue" class="res-continue">'+(last?'Afficher le classement':'Prochaine manche')+' →</button>':'<p class="res-wait">'+(state.mode==="quick"?'En attente de la suite…':'En attente de l’hôte pour continuer')+'</p>')+'</main>');
+ ((user?.isHost||state.mode==="quick")?'<button id="resContinue" class="res-continue">'+(last?'Afficher le classement':'Prochaine manche')+' →</button>':'<p class="res-wait">En attente de l’hôte pour continuer</p>')+'</main>');
  const navigate=index=>{
   selected=Math.max(0,Math.min(categories.length-1,index));
   render();

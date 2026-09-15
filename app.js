@@ -1,4 +1,4 @@
-const CLIENT_BUILD = "1.45.1";
+const CLIENT_BUILD = "1.46.0";
 const socket = io();
 const app = document.getElementById("app");
 const toastEl = document.getElementById("toast");
@@ -72,6 +72,25 @@ socket.on("room:kicked", () => {
   toast("Tu as été retiré du salon.");
   clearSession();
   renderHome();
+});
+socket.on("room:closed", payload => {
+  if (payload?.reason !== "pre_game_cancelled") return;
+
+  clearSession();
+
+  const finish = () => {
+    renderHome();
+    toast(
+      payload?.message ||
+      "La partie a été annulée avant la première manche."
+    );
+  };
+
+  if (typeof initWallet === "function") {
+    initWallet(finish);
+  } else {
+    finish();
+  }
 });
 socket.on("room:state", state => {
   const previous = session.state;
@@ -448,10 +467,33 @@ function gameExitModal(state, user, prefix) {
       return;
     }
     if (action === "home") {
-      socket.emit("room:leave", { code: state.code, playerId: session.playerId });
-      clearSession();
-      overlay.remove();
-      renderHome();
+      const buttons = overlay.querySelectorAll("button");
+      buttons.forEach(button => { button.disabled = true; });
+
+      socket.timeout(8000).emit(
+        "game:leave",
+        { code:state.code, playerId:session.playerId },
+        (err, res) => {
+          if (err || !res?.ok) {
+            buttons.forEach(button => { button.disabled = false; });
+            return toast(
+              res?.error ||
+              "Impossible de quitter la partie pour le moment."
+            );
+          }
+
+          clearSession();
+          overlay.remove();
+
+          if (typeof initWallet === "function") {
+            initWallet(() => renderHome());
+          } else {
+            renderHome();
+          }
+
+          if (res?.message) toast(res.message);
+        }
+      );
     }
   });
   document.body.appendChild(overlay);
