@@ -1,7 +1,6 @@
 /** Friends socket handlers, explicitly installed by server.js. */
 "use strict";
 
-const crypto = require("crypto");
 const { getPool, ensureDatabaseSchema } = require("./db.js");
 const presence = require("./presence-service.js");
 
@@ -15,7 +14,7 @@ function cleanUsername(value) {
 }
 
 function cleanAvatar(value) {
-  return String(value || "🐼").trim().slice(0, 16) || "🐼";
+  return String(value || "🐼").trim().slice(0, 120) || "🐼";
 }
 
 function validWalletToken(value) {
@@ -23,32 +22,8 @@ function validWalletToken(value) {
   return /^[a-f0-9]{48}$/i.test(token) ? token : "";
 }
 
-function codeStem(username) {
-  const normalized = cleanUsername(username)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/gi, "")
-    .toUpperCase()
-    .slice(0, 6);
-  return normalized || "JOUEUR";
-}
-
 async function ensureSchema() {
   return ensureDatabaseSchema();
-}
-
-async function uniqueFriendCode(username) {
-  const stem = codeStem(username);
-  for (let i = 0; i < 40; i++) {
-    const suffix = crypto.randomInt(0, 10000).toString().padStart(4, "0");
-    const code = `${stem}#${suffix}`;
-    const exists = await pool.query(
-      "SELECT 1 FROM public.users WHERE friend_code = $1 LIMIT 1",
-      [code]
-    );
-    if (!exists.rowCount) return code;
-  }
-  return `${stem}#${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
 async function ensureProfile(payload = {}) {
@@ -68,12 +43,11 @@ async function ensureProfile(payload = {}) {
   );
 
   if (!found.rowCount) {
-    const friendCode = await uniqueFriendCode(username);
     found = await pool.query(
       `INSERT INTO public.users(friend_code, username, avatar, wallet_token, last_seen, updated_at)
-       VALUES($1,$2,$3,$4,now(),now())
+       VALUES('AUTO',$1,$2,$3,now(),now())
        RETURNING id, friend_code, username, avatar, wallet_token, created_at, last_seen`,
-      [friendCode, username, avatar, walletToken]
+      [username, avatar, walletToken]
     );
   } else {
     found = await pool.query(

@@ -20,6 +20,13 @@
     const coins = Math.max(0, Number(eco.coins) || 0);
     const lives = Math.max(0, Number(eco.lives) || 0);
     const maxLives = Math.max(1, Number(eco.maxLives) || 5);
+    const rewardedAdCoins = Math.max(0, Number(eco.rewardedAdCoins) || 10);
+    const offers = eco.shopOffers || {};
+    const coins25 = offers.coins25 || { coins:25, priceEur:0.99 };
+    const coins100 = offers.coins100 || { coins:100, priceEur:2.99 };
+    const noAds = offers.noAdsLifetime || { bonusCoins:100 };
+    const euro = value =>
+      `${Number(value || 0).toFixed(2).replace(".", ",")} €`;
 
     setScreen(`
       <main class="screen shop-v2">
@@ -61,10 +68,10 @@
 
             <div class="shop-v2-reward-copy">
               <h2>Pub récompensée</h2>
-              <p>Regarde une pub et reçois<br><strong>80 pièces.</strong></p>
+              <p>Regarde une pub et reçois<br><strong>${rewardedAdCoins} pièces.</strong></p>
               <div class="shop-v2-reward-value">
                 <img src="/coin.png" alt="">
-                <strong>+80</strong>
+                <strong>+${rewardedAdCoins}</strong>
               </div>
             </div>
           </div>
@@ -91,9 +98,9 @@
               <img src="/coin.png" alt="">
             </div>
             <small>Petit pack</small>
-            <h3>25 pièces</h3>
+            <h3>${coins25.coins} pièces</h3>
             <p>Parfait pour<br>commencer !</p>
-            <button class="shop-v2-buy" type="button" data-product="coins25">0,99 €</button>
+            <button class="shop-v2-buy" type="button" data-product="coins25">${euro(coins25.priceEur)}</button>
           </article>
 
           <article class="shop-v2-pack popular">
@@ -105,23 +112,12 @@
               <img src="/coin.png" alt="">
             </div>
             <small>Gros pack</small>
-            <h3>100 pièces</h3>
+            <h3>${coins100.coins} pièces</h3>
             <p>Joue encore plus<br>longtemps !</p>
-            <button class="shop-v2-buy" type="button" data-product="coins100">2,99 €</button>
+            <button class="shop-v2-buy" type="button" data-product="coins100">${euro(coins100.priceEur)}</button>
           </article>
 
-          <article class="shop-v2-pack">
-            <div class="shop-v2-mega-art">
-              <span class="shop-v2-bag">♛</span>
-              <img src="/coin.png" alt="">
-              <img src="/coin.png" alt="">
-              <img src="/coin.png" alt="">
-            </div>
-            <small>Méga pack</small>
-            <h3>250 pièces</h3>
-            <p>Pour les vrais<br>champions !</p>
-            <button class="shop-v2-buy" type="button" data-product="coins250">5,99 €</button>
-          </article>
+
         </section>
 
         <section class="shop-v2-noads">
@@ -131,7 +127,7 @@
           <div class="shop-v2-noads-copy">
             <h2>Sans pub à vie</h2>
             <p>✓ Aucune publicité automatique</p>
-            <p>✓ <strong>+ 500 pièces offertes</strong></p>
+            <p>✓ <strong>+ ${noAds.bonusCoins} pièces offertes</strong></p>
           </div>
 
           <button class="shop-v2-buy shop-v2-noads-btn" type="button" data-product="noads">

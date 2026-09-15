@@ -71,7 +71,11 @@ Render exécute :
 - toutes les migrations PostgreSQL sont centralisées dans `db-migrations.js` ;
 - `ptitbac_wallets` est l'unique source de vérité des pièces ;
 - l'ancien `public.users.coins` est migré puis supprimé ;
-- amis et chat partagent `presence-service.js`.
+- amis et chat partagent `presence-service.js` ;
+- l’ancien inventaire admin `ptitbac_player_items` est supprimé ;
+- les objets admin passent par `inventory-service.js` ;
+- l’économie est centralisée dans `economy-config.js` ;
+- la liste des conversations chat est chargée en une seule requête PostgreSQL.
 
 ## Prochaines optimisations conseillées
 

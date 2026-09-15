@@ -7,6 +7,13 @@ const GLOBAL_POLICY = Object.freeze({
   message: "Trop de requêtes. Réessaie dans quelques secondes."
 });
 
+const ADMIN_DEFAULT_POLICY = Object.freeze({
+  limit: 60,
+  windowMs: 60_000,
+  scope: "identity",
+  message: "Trop de requêtes administrateur."
+});
+
 const EVENT_POLICIES = Object.freeze({
   "admin:claim": Object.freeze({
     limit: 5,
@@ -132,6 +139,13 @@ const EVENT_POLICIES = Object.freeze({
     windowMs: 60_000,
     scope: "socket",
     message: "Actualisation de l’économie trop fréquente."
+  }),
+
+  "economy:rewardedAdDev": Object.freeze({
+    limit: 6,
+    windowMs: 60_000,
+    scope: "identity",
+    message: "Récompense publicitaire demandée trop rapidement."
   }),
 
   "progression:get": Object.freeze({
@@ -345,7 +359,9 @@ function installSocketSecurity(io, options = {}) {
         return;
       }
 
-      const policy = policies[eventName];
+      const policy =
+        policies[eventName] ||
+        (eventName.startsWith("admin:") ? ADMIN_DEFAULT_POLICY : null);
 
       if (policy) {
         const key =
@@ -387,6 +403,7 @@ function installSocketSecurity(io, options = {}) {
 
 module.exports = {
   GLOBAL_POLICY,
+  ADMIN_DEFAULT_POLICY,
   EVENT_POLICIES,
   NON_ADMIN_PAYLOAD_LIMIT,
   ADMIN_PAYLOAD_LIMIT,

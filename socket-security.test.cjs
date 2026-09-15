@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  ADMIN_DEFAULT_POLICY,
   EVENT_POLICIES,
   NON_ADMIN_PAYLOAD_LIMIT,
   createRateLimiter,
@@ -188,4 +189,56 @@ test("le rate limiter remet le compteur à zéro après la fenêtre", () => {
   clock += 1_001;
 
   assert.equal(limiter.consume("x", policy).allowed, true);
+});
+
+
+test("les événements admin non listés ont aussi une limite par défaut", () => {
+  const io = fakeIo();
+  const socket = fakeSocket();
+  const security = installSocketSecurity(io);
+  connect(io, socket);
+
+  const limit = ADMIN_DEFAULT_POLICY.limit;
+  for (let index = 0; index < limit; index += 1) {
+    assert.equal(
+      send(socket, "admin:playerLookup", {
+        walletToken:"f".repeat(48),
+        friendCode:"12345"
+      }).dispatched,
+      true
+    );
+  }
+
+  const blocked = send(socket, "admin:playerLookup", {
+    walletToken:"f".repeat(48),
+    friendCode:"12345"
+  });
+
+  assert.equal(blocked.dispatched, false);
+  assert.equal(blocked.response?.rateLimited, true);
+  security.stop();
+});
+
+test("la récompense pub de développement est limitée", () => {
+  const io = fakeIo();
+  const socket = fakeSocket();
+  const security = installSocketSecurity(io);
+  connect(io, socket);
+
+  const limit = EVENT_POLICIES["economy:rewardedAdDev"].limit;
+  for (let index = 0; index < limit; index += 1) {
+    assert.equal(
+      send(socket, "economy:rewardedAdDev", {
+        walletToken:"1".repeat(48)
+      }).dispatched,
+      true
+    );
+  }
+
+  const blocked = send(socket, "economy:rewardedAdDev", {
+    walletToken:"1".repeat(48)
+  });
+  assert.equal(blocked.dispatched, false);
+  assert.equal(blocked.response?.rateLimited, true);
+  security.stop();
 });

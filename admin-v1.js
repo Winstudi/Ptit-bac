@@ -393,18 +393,6 @@
               }
             </select>
           </label>
-
-          <label>
-            Quantité
-            <input
-              id="admItemQuantity"
-              inputmode="numeric"
-              type="number"
-              min="1"
-              max="99"
-              value="1"
-            >
-          </label>
         </div>
 
         <button
@@ -571,12 +559,6 @@
         const itemKey =
           body.querySelector("#admItemKey")?.value || "";
 
-        const quantity =
-          Number(
-            body.querySelector("#admItemQuantity")?.value ||
-            1
-          );
-
         if (!/^\d{5}$/.test(friendCode)) {
           return toast("Entre un ID joueur valide.");
         }
@@ -592,8 +574,7 @@
           "admin:grantItem",
           {
             friendCode,
-            itemKey,
-            quantity
+            itemKey
           }
         );
 
@@ -608,7 +589,7 @@
         }
 
         toast(
-          `${response.item} ×${response.quantity} envoyé à ${response.name}.`
+          `${response.item} envoyé à ${response.name}.`
         );
       });
   }
@@ -1063,13 +1044,13 @@
           </div>
 
           <div class="admin-v4-items">
-            <b>Objets</b>
+            <b>Inventaire</b>
             ${
               player.items?.length
                 ? `<div>${player.items.map(item => `
-                    <span>${esc(item.label)} ×${Number(item.quantity || 0)}</span>
+                    <span>${esc(item.label)}</span>
                   `).join("")}</div>`
-                : `<small>Aucun objet attribué.</small>`
+                : `<small>Aucun objet dans l’inventaire.</small>`
             }
           </div>
 
@@ -1526,18 +1507,6 @@
               }
             </select>
           </label>
-
-          <label>
-            Quantité
-            <input
-              id="admMessageRewardItemAmount"
-              type="number"
-              inputmode="numeric"
-              min="1"
-              max="99"
-              value="1"
-            >
-          </label>
         </div>
       </section>
 
@@ -1610,8 +1579,7 @@
         const label =
           select?.selectedOptions?.[0]?.textContent || "Objet";
 
-        rewardText =
-          `${label} ×${Number(body.querySelector("#admMessageRewardItemAmount")?.value || 1)}`;
+        rewardText = label;
       }
 
       previewReward.hidden = !rewardText;
@@ -1679,10 +1647,6 @@
     body
       .querySelector("#admMessageRewardItem")
       ?.addEventListener("change",updatePreview);
-
-    body
-      .querySelector("#admMessageRewardItemAmount")
-      ?.addEventListener("input",updatePreview);
 
     body
       .querySelector("#admMessageImage")
@@ -1791,12 +1755,7 @@
           rewardKey =
             body.querySelector("#admMessageRewardItem")?.value ||
             "";
-
-          rewardAmount =
-            Number(
-              body.querySelector("#admMessageRewardItemAmount")?.value ||
-              1
-            );
+          rewardAmount = 1;
         }
 
         button.disabled = true;

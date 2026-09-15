@@ -176,6 +176,7 @@ function checkCoreFiles() {
     "db.js",
     "db-migrations.js",
     "presence-service.js",
+    "economy-config.js",
     "socket-security.js",
     "letter-wheel-spin.wav",
     "room-mode-rules.js",
@@ -335,6 +336,67 @@ function checkBackendArchitecture() {
   if (chat.includes("new Map(); // userId -> Set(socketId)")) {
     fail("chat-hook.js possède encore sa propre map de présence.");
   }
+
+  const admin = read("admin-hook.js");
+  const server = read("server.js");
+  const app = read("app.js");
+
+  if (admin.includes("ptitbac_player_items")) {
+    fail("admin-hook.js utilise encore l’ancien inventaire admin.");
+  }
+  if (server.includes("wallet:adminAdjust") || app.includes("wallet:adminAdjust")) {
+    fail("l’ancien endpoint wallet:adminAdjust est encore présent.");
+  }
+  if (
+    read("friends-hook.js").includes("uniqueFriendCode") ||
+    read("friends-hook.js").includes("codeStem") ||
+    server.includes("economyFriendCode")
+  ) {
+    fail("un ancien générateur de code ami est encore présent.");
+  }
+
+  const chatList = chat.match(
+    /async function conversationList\(userId\) \{([\s\S]*?)\n\}\n\nasync function history/
+  )?.[1] || "";
+  if (!chatList.includes("JOIN LATERAL")) {
+    fail("conversationList n’utilise pas encore la requête SQL groupée.");
+  }
+  if ((chatList.match(/pool\.query\(/g) || []).length !== 1) {
+    fail("conversationList doit effectuer un seul aller-retour PostgreSQL.");
+  }
+}
+
+function checkEconomyConfiguration() {
+  const config = require(path.join(root, "economy-config.js"));
+
+  const expected = {
+    DEFAULT_COINS:25,
+    MAX_LIVES:5,
+    LIFE_RECHARGE_MS:30 * 60 * 1000,
+    REWARDED_AD_COINS:10,
+    LETTER_REROLL_COST:20,
+    CATEGORY_REROLL_COST:20
+  };
+
+  for (const [key, value] of Object.entries(expected)) {
+    if (config[key] !== value) {
+      fail(`economy-config.js: ${key} doit valoir ${value}.`);
+    }
+  }
+
+  if (
+    config.RANK_REWARDS?.[1] !== 60 ||
+    config.RANK_REWARDS?.[2] !== 40 ||
+    config.RANK_REWARDS?.[3] !== 25 ||
+    config.RANK_REWARDS?.default !== 10
+  ) {
+    fail("economy-config.js: récompenses de classement incorrectes.");
+  }
+
+  const shop = read("shop-screen-v2.js");
+  if (/80 pièces|\+80|500 pièces|250 pièces|coins250/.test(shop)) {
+    fail("shop-screen-v2.js contient encore une ancienne offre économique.");
+  }
 }
 
 function checkProductionBundles() {
@@ -361,6 +423,7 @@ function main() {
   checkIntegratedBackend();
   checkIntegratedFrontend();
   checkBackendArchitecture();
+  checkEconomyConfiguration();
 
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();

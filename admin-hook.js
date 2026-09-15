@@ -2,6 +2,12 @@
 
 const crypto = require("crypto");
 const { getPool, ensureDatabaseSchema } = require("./db.js");
+const {
+  CATALOG: INVENTORY_CATALOG,
+  catalogEntries,
+  parseCatalogKey,
+  createInventoryService
+} = require("./inventory-service.js");
 
 const ADMIN_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
@@ -18,12 +24,11 @@ const infiniteLives =
 
 const gemOverrides = new Map();
 
-const ITEM_CATALOG = [
-  { key:"epic_chest", label:"Coffre épique", icon:"🎁" },
-  { key:"mystery_box", label:"Boîte mystère", icon:"📦" },
-  { key:"avatar_token", label:"Jeton avatar", icon:"👤" },
-  { key:"future_badge", label:"Badge spécial", icon:"🏅" }
-];
+const ITEM_CATALOG = Object.freeze(catalogEntries());
+const inventoryService = createInventoryService({
+  getPool: () => pool,
+  ensureSchema: ensureDatabaseSchema
+});
 
 function walletToken(value) {
   value = String(value || "").trim();
@@ -149,9 +154,9 @@ async function findUserByCode(code) {
             created_at,last_seen,updated_at,
             admin_banned,admin_ban_reason,admin_banned_at
      FROM public.users
-     WHERE friend_code=$1 OR friend_code=$2
+     WHERE friend_code=$1
      LIMIT 1`,
-    [code, "PLAYER#" + code.slice(-4)]
+    [code]
   ).catch(() => ({ rows:[] }));
 
   return q.rows[0] || null;
@@ -215,13 +220,19 @@ async function playerSnapshot(io, code) {
 
   const wallet = await getWallet(user.wallet_token);
 
-  const items = await pool.query(
-    `SELECT item_key,quantity,updated_at
-     FROM ptitbac_player_items
-     WHERE wallet_token=$1
-     ORDER BY updated_at DESC`,
-    [user.wallet_token]
-  ).catch(() => ({ rows:[] }));
+  const inventoryState =
+    await inventoryService
+      .getState(user.wallet_token)
+      .catch(() => ({
+        owned:{ avatars:[], frames:[], tags:[] },
+        equipped:{ avatar:"", frame:"", tag:"" }
+      }));
+
+  const inventoryItems = [
+    ...(inventoryState.owned?.avatars || []).map(id => ({ type:"avatar", id })),
+    ...(inventoryState.owned?.frames || []).map(id => ({ type:"frame", id })),
+    ...(inventoryState.owned?.tags || []).map(id => ({ type:"tag", id }))
+  ];
 
   const reportCount = await pool.query(
     `SELECT COUNT(*)::int AS count
@@ -255,13 +266,16 @@ async function playerSnapshot(io, code) {
     reports:
       Number(reportCount.rows[0]?.count || 0) +
       Number(feedbackCount.rows[0]?.count || 0),
-    items:items.rows.map(row => ({
-      key:row.item_key,
-      quantity:Number(row.quantity || 0),
-      label:
-        ITEM_CATALOG.find(item => item.key === row.item_key)?.label ||
-        row.item_key
-    }))
+    items:inventoryItems.map(item => {
+      const meta = INVENTORY_CATALOG[item.type]?.[item.id];
+      return {
+        key:`${item.type}:${item.id}`,
+        type:item.type,
+        id:item.id,
+        quantity:1,
+        label:meta?.name || item.id
+      };
+    })
   };
 }
 
@@ -308,13 +322,7 @@ function normalizeReward(type, key, amount) {
     return {
       type:"item",
       key:item.key,
-      amount:Math.max(
-        1,
-        Math.min(
-          99,
-          Math.floor(Number(amount) || 1)
-        )
-      )
+      amount:1
     };
   }
 
@@ -990,14 +998,10 @@ function installAdmin(io) {
 
         const code = friendCode(payload.friendCode);
         const itemKey = String(payload.itemKey || "").trim();
-        const quantity = Math.max(
-          1,
-          Math.min(99,Math.floor(Number(payload.quantity) || 1))
-        );
-
         const item = ITEM_CATALOG.find(entry => entry.key === itemKey);
+        const parsedItem = parseCatalogKey(itemKey);
 
-        if (!code || !item) {
+        if (!code || !item || !parsedItem) {
           return cb({
             ok:false,
             error:"Joueur ou objet invalide."
@@ -1013,14 +1017,18 @@ function installAdmin(io) {
           });
         }
 
-        await pool.query(
-          `INSERT INTO ptitbac_player_items
-           (wallet_token,item_key,quantity,updated_at)
-           VALUES($1,$2,$3,now())
-           ON CONFLICT(wallet_token,item_key) DO UPDATE SET
-             quantity=ptitbac_player_items.quantity + EXCLUDED.quantity,
-             updated_at=now()`,
-          [user.wallet_token,item.key,quantity]
+        const inventoryState = await inventoryService.grant(
+          user.wallet_token,
+          parsedItem.type,
+          parsedItem.id,
+          "admin"
+        );
+
+        emitWalletEvent(
+          io,
+          user.wallet_token,
+          "inventory:update",
+          inventoryState
         );
 
         await audit(
@@ -1029,7 +1037,8 @@ function installAdmin(io) {
           code,
           {
             itemKey:item.key,
-            quantity
+            itemType:parsedItem.type,
+            itemId:parsedItem.id
           }
         );
 
@@ -1037,7 +1046,7 @@ function installAdmin(io) {
           ok:true,
           name:user.username || "Joueur",
           item:item.label,
-          quantity
+          quantity:1
         });
       } catch {
         cb({
@@ -1681,8 +1690,9 @@ function installAdmin(io) {
               entry =>
                 entry.key === message.reward_key
             );
+          const parsedItem = parseCatalogKey(message.reward_key);
 
-          if (!item) {
+          if (!item || !parsedItem) {
             await client.query("ROLLBACK");
             return cb({
               ok:false,
@@ -1693,17 +1703,27 @@ function installAdmin(io) {
           itemLabel = item.label;
 
           await client.query(
-            `INSERT INTO ptitbac_player_items
-             (wallet_token,item_key,quantity,updated_at)
-             VALUES($1,$2,$3,now())
-             ON CONFLICT(wallet_token,item_key) DO UPDATE SET
-               quantity=ptitbac_player_items.quantity + EXCLUDED.quantity,
-               updated_at=now()`,
-            [token,item.key,amount]
+            `INSERT INTO ptitbac_inventory_items
+             (wallet_token,item_type,item_id,source)
+             VALUES($1,$2,$3,'inbox')
+             ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+            [token,parsedItem.type,parsedItem.id]
           );
         }
 
         await client.query("COMMIT");
+
+        if (message.reward_type === "item") {
+          const inventoryState =
+            await inventoryService.getState(token);
+
+          emitWalletEvent(
+            io,
+            token,
+            "inventory:update",
+            inventoryState
+          );
+        }
 
         if (Number.isFinite(coins)) {
           global.__ptbAdminSetCoins?.(

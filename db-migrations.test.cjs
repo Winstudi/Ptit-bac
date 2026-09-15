@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { runDatabaseMigrations } = require("./db-migrations.js");
 
-function fakePool({ legacyCoins = false } = {}) {
+function fakePool({ legacyCoins = false, legacyAdminItems = false } = {}) {
   const queries = [];
   return {
     queries,
@@ -13,6 +13,12 @@ function fakePool({ legacyCoins = false } = {}) {
       queries.push(text);
       if (text.includes("information_schema.columns")) {
         return { rowCount: legacyCoins ? 1 : 0, rows: legacyCoins ? [{ exists:1 }] : [] };
+      }
+      if (text.includes("to_regclass('public.ptitbac_player_items')")) {
+        return {
+          rowCount: 1,
+          rows: [{ table_name: legacyAdminItems ? "ptitbac_player_items" : null }]
+        };
       }
       return { rowCount:0, rows:[] };
     }
@@ -48,4 +54,26 @@ test("une base déjà migrée n'essaie plus de supprimer users.coins", async () 
   await runDatabaseMigrations(pool);
   const sql = pool.queries.join("\n");
   assert.doesNotMatch(sql, /DROP COLUMN IF EXISTS coins/);
+});
+
+
+test("l’ancien inventaire admin est migré si compatible puis supprimé", async () => {
+  const pool = fakePool({ legacyAdminItems:true });
+  await runDatabaseMigrations(pool);
+  const sql = pool.queries.join("\n");
+
+  assert.match(sql, /INSERT INTO public\.ptitbac_inventory_items\(wallet_token,item_type,item_id,source\)/);
+  assert.match(sql, /DROP TABLE IF EXISTS public\.ptitbac_player_items/);
+  assert.doesNotMatch(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_player_items/);
+});
+
+test("la migration progression ne déclare pas deux fois event_key", () => {
+  const source = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "db-migrations.js"),
+    "utf8"
+  );
+  const block = source.match(
+    /CREATE TABLE IF NOT EXISTS public\.ptitbac_progression_events \(([\s\S]*?)\n\s*\)/
+  )?.[1] || "";
+  assert.equal((block.match(/event_key text PRIMARY KEY/g) || []).length, 1);
 });

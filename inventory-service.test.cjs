@@ -6,6 +6,8 @@ const {
   DEFAULT_OWNED,
   normalizeItemId,
   normalizeAvatarId,
+  catalogEntries,
+  parseCatalogKey,
   normalizeLegacyEquipped,
   canEquipFromState,
   createInventoryService
@@ -67,7 +69,28 @@ test("le schéma nettoie les anciens cadres et tags de PostgreSQL", async () => 
   await service.ensureSchema();
   const joined = queries.join("\n");
   assert.match(joined, /DELETE FROM public\.ptitbac_inventory_items/);
-  assert.match(joined, /item_type = 'frame'/);
-  assert.match(joined, /item_id <> 'tag_debutant'/);
-  assert.match(joined, /SET frame_id = ''/);
+  assert.match(joined, /item_type='frame'/);
+  assert.match(joined, /item_type='tag'/);
+  assert.match(joined, /ANY\(\$1::text\[\]\)/);
+  assert.match(joined, /SET frame_id=''/);
+});
+
+
+test("le catalogue admin utilise exactement les objets de l’inventaire officiel", () => {
+  const entries = catalogEntries();
+  assert.ok(entries.length >= 6);
+  assert.ok(entries.every(item => ["avatar","frame","tag"].includes(item.type)));
+  assert.ok(entries.some(item => item.key === "avatar:/a1.webp"));
+  assert.ok(entries.some(item => item.key === "tag:tag_debutant"));
+
+  assert.deepEqual(
+    parseCatalogKey("avatar:/a3.webp"),
+    {
+      key:"avatar:/a3.webp",
+      type:"avatar",
+      id:"/a3.webp",
+      item:CATALOG.avatar["/a3.webp"]
+    }
+  );
+  assert.equal(parseCatalogKey("epic_chest"), null);
 });

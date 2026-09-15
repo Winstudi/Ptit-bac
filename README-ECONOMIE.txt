@@ -1,7 +1,6 @@
-P'TIT BAC — ECONOMIE ACTUELLE
+P'TIT BAC — ÉCONOMIE OFFICIELLE
 
-Ce document décrit le comportement réellement présent dans le code de la
-version 1.45.0.
+Ce document décrit les valeurs utilisées par le code serveur.
 
 VIES
 - Maximum : 5 vies.
@@ -9,17 +8,15 @@ VIES
 - Partie rapide : -1 vie au lancement réel.
 - Salon public : -1 vie au lancement réel.
 - Salon privé : aucune vie consommée.
-- Si un lancement économique est annulé avant la partie, le serveur possède
-  un mécanisme de remboursement.
+- Si le lancement est annulé avant la partie, le serveur peut rembourser la vie.
 
-PIECES
-- Source de vérité : table PostgreSQL ptitbac_wallets.
-- public.users ne contient plus de copie du solde depuis E8.
-- Solde de départ actuel : 50 pièces.
+PIÈCES
+- Solde de départ : 25 pièces.
 - Relance de lettre : 20 pièces.
 - Relance de catégories : 20 pièces.
+- Pub récompensée : +10 pièces.
 
-RECOMPENSES DE FIN DE PARTIE
+RÉCOMPENSES DE FIN DE PARTIE
 - 1er : 60 pièces.
 - 2e : 40 pièces.
 - 3e : 25 pièces.
@@ -30,15 +27,18 @@ Les récompenses ne sont attribuées que si :
 - la partie est réellement terminée ;
 - au moins 2 joueurs humains participent ;
 - aucun bot n'est présent ;
-- le joueur a bien participé à l'entrée économique.
+- le joueur a bien participé au lancement économique.
 
-PUB RECOMPENSEE
-Le mode de développement actuel réserve encore une récompense de 80 pièces
-avec REWARDED_AD_DEV_MODE=true.
+BOUTIQUE PRÉVUE
+- 0,99 € : 25 pièces.
+- 2,99 € : 100 pièces.
+- Sans pub à vie : suppression des publicités automatiques + bonus de 100 pièces.
 
-La vraie publicité mobile n'est pas encore branchée.
+Les achats intégrés et la vraie publicité mobile ne sont pas encore branchés.
+Le mode REWARDED_AD_DEV_MODE sert uniquement aux tests et applique lui aussi
+la récompense officielle de +10 pièces.
 
-IMPORTANT
-Le code serveur reste la source de vérité. Les anciennes règles +/-20 %, le
-fichier economy-hook.js et les anciennes instructions Supabase ne sont plus
-d'actualité.
+SOURCE DE VÉRITÉ
+Les valeurs sont centralisées dans economy-config.js.
+Le portefeuille PostgreSQL ptitbac_wallets est l'unique source de vérité pour
+les pièces et les gemmes.

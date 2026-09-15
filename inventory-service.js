@@ -32,6 +32,43 @@ const LEGACY_AVATAR_IDS = Object.freeze({
   "/avatar-base-05.webp": "/a5.webp"
 });
 
+
+const ITEM_TYPE_ICONS = Object.freeze({
+  avatar: "👤",
+  frame: "🖼️",
+  tag: "🏷️"
+});
+
+function catalogEntries() {
+  return ITEM_TYPES.flatMap(type =>
+    Object.values(CATALOG[type]).map(item => ({
+      key: `${type}:${item.id}`,
+      type,
+      id: item.id,
+      label: item.name,
+      icon: ITEM_TYPE_ICONS[type] || "🎁",
+      defaultOwned: Boolean(item.defaultOwned)
+    }))
+  );
+}
+
+function parseCatalogKey(value) {
+  const key = String(value || "").trim();
+  const separator = key.indexOf(":");
+  if (separator <= 0) return null;
+
+  const type = normalizeItemType(key.slice(0, separator));
+  const id = normalizeItemId(type, key.slice(separator + 1));
+  if (!type || !id) return null;
+
+  return {
+    key: `${type}:${id}`,
+    type,
+    id,
+    item: CATALOG[type][id]
+  };
+}
+
 function validWalletToken(value) {
   const token = String(value || "").trim();
   return /^[a-f0-9]{48}$/i.test(token) ? token : "";
@@ -125,24 +162,56 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
       }
 
       // Nettoyage métier de l'ancien prototype cosmétique.
-      // Ce n'est pas une migration de schéma : le catalogue actuel ne possède
-      // volontairement aucun cadre avancé ni tag autre que Débutant.
-      await db.query(`
-        DELETE FROM public.ptitbac_inventory_items
-         WHERE item_type = 'frame'
-            OR (item_type = 'tag' AND item_id <> 'tag_debutant')
-      `);
-      await db.query(`
-        UPDATE public.ptitbac_inventory_equipped
-           SET frame_id = '',
-               tag_id = CASE
-                 WHEN tag_id = '' THEN ''
-                 ELSE 'tag_debutant'
-               END,
-               updated_at = now()
-         WHERE frame_id <> ''
-            OR tag_id NOT IN ('', 'tag_debutant')
-      `);
+      // On supprime uniquement les IDs absents du catalogue courant afin que
+      // les futurs cadres/tags officiels ne soient jamais effacés.
+      const frameIds = Object.keys(CATALOG.frame);
+      const tagIds = Object.keys(CATALOG.tag);
+
+      if (frameIds.length) {
+        await db.query(
+          `DELETE FROM public.ptitbac_inventory_items
+            WHERE item_type='frame'
+              AND NOT (item_id = ANY($1::text[]))`,
+          [frameIds]
+        );
+        await db.query(
+          `UPDATE public.ptitbac_inventory_equipped
+              SET frame_id='', updated_at=now()
+            WHERE frame_id <> ''
+              AND NOT (frame_id = ANY($1::text[]))`,
+          [frameIds]
+        );
+      } else {
+        await db.query(
+          `DELETE FROM public.ptitbac_inventory_items
+            WHERE item_type='frame'`
+        );
+        await db.query(
+          `UPDATE public.ptitbac_inventory_equipped
+              SET frame_id='', updated_at=now()
+            WHERE frame_id <> ''`
+        );
+      }
+
+      if (tagIds.length) {
+        await db.query(
+          `DELETE FROM public.ptitbac_inventory_items
+            WHERE item_type='tag'
+              AND NOT (item_id = ANY($1::text[]))`,
+          [tagIds]
+        );
+        await db.query(
+          `UPDATE public.ptitbac_inventory_equipped
+              SET tag_id=CASE
+                    WHEN tag_id='' THEN ''
+                    ELSE $2
+                  END,
+                  updated_at=now()
+            WHERE tag_id <> ''
+              AND NOT (tag_id = ANY($1::text[]))`,
+          [tagIds, DEFAULT_OWNED.tags[0] || ""]
+        );
+      }
     })().catch(err => {
       schemaPromise = null;
       throw err;
@@ -304,6 +373,9 @@ module.exports = {
   ITEM_TYPES,
   CATALOG,
   DEFAULT_OWNED,
+  ITEM_TYPE_ICONS,
+  catalogEntries,
+  parseCatalogKey,
   validWalletToken,
   normalizeItemType,
   normalizeItemId,

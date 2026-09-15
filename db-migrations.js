@@ -235,16 +235,6 @@ async function runDatabaseMigrations(pool) {
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS public.ptitbac_player_items(
-      wallet_token text NOT NULL,
-      item_key text NOT NULL,
-      quantity integer NOT NULL DEFAULT 0 CHECK(quantity >= 0),
-      updated_at timestamptz NOT NULL DEFAULT now(),
-      PRIMARY KEY(wallet_token,item_key)
-    )
-  `);
-
-  await pool.query(`
     CREATE TABLE IF NOT EXISTS public.ptitbac_admin_logs(
       id text PRIMARY KEY,
       admin_wallet_token text NOT NULL,
@@ -303,6 +293,28 @@ async function runDatabaseMigrations(pool) {
       PRIMARY KEY (wallet_token, item_type, item_id)
     )
   `);
+
+  // E8.1: l'ancien inventaire admin séparé est supprimé.
+  // Si une ancienne ligne utilise déjà une clé officielle "type:id", elle est
+  // transférée avant suppression. Les prototypes sans équivalent cosmétique
+  // (coffres/jetons/badges de test) ne sont pas conservés.
+  const legacyAdminItems = await pool.query(`
+    SELECT to_regclass('public.ptitbac_player_items') AS table_name
+  `);
+  if (legacyAdminItems.rows?.[0]?.table_name) {
+    await pool.query(`
+      INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+      SELECT wallet_token,
+             split_part(item_key, ':', 1),
+             substring(item_key FROM position(':' IN item_key) + 1),
+             'legacy-admin'
+        FROM public.ptitbac_player_items
+       WHERE split_part(item_key, ':', 1) IN ('avatar','frame','tag')
+         AND position(':' IN item_key) > 1
+      ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING
+    `).catch(() => {});
+    await pool.query(`DROP TABLE IF EXISTS public.ptitbac_player_items`);
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_equipped (

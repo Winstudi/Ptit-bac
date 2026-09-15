@@ -1,5 +1,4 @@
 "use strict";
-require("./friend-code-v2-hook.js");
 const express = require("express");
 const http = require("http");
 const path = require("path");
@@ -12,6 +11,15 @@ const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.j
 const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
 const { createProgressionService } = require("./progression-service.js");
 const { installSocketSecurity } = require("./socket-security.js");
+const {
+  DEFAULT_COINS,
+  MAX_LIVES: ECONOMY_MAX_LIVES,
+  LIFE_RECHARGE_MS: ECONOMY_LIFE_MS,
+  REWARDED_AD_COINS: ECONOMY_AD_REWARD,
+  LETTER_REROLL_COST,
+  CATEGORY_REROLL_COST,
+  SHOP_OFFERS
+} = require("./economy-config.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -140,11 +148,8 @@ app.use((req, res, next) => {
   return servePublicFile(req, res, next);
 });
 
-const GAME_COST = 0; // Economie V2.5: entree payee en vies
-const LETTER_REROLL_COST = 20;
-const CATEGORY_REROLL_COST = 20;
-const DEFAULT_COINS = 50;
-const ADMIN_COIN_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
+const GAME_COST = 0; // Economie: entree payee en vies, pas en pièces.
+const ADMIN_DIAGNOSTIC_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const WALLET_FILE = process.env.PTITBAC_WALLET_FILE
   ? path.resolve(process.env.PTITBAC_WALLET_FILE)
   : path.join(__dirname, "wallets.json");
@@ -369,17 +374,11 @@ function emitWallet(player) {
   io.to(player.socketId).emit("wallet:update", { balance: walletBalance(player.walletToken) });
 }
 
-const ECONOMY_MAX_LIVES = 5;
-const ECONOMY_LIFE_MS = 30 * 60 * 1000;
-const ECONOMY_AD_REWARD = 80;
 const { calculateRewards } = require("./game-economy.js");
 async function ensureEconomySchema() {
   await ensureDatabaseSchema();
 }
 
-function economyFriendCode() {
-  return "PLAYER#" + crypto.randomInt(0, 10000).toString().padStart(4, "0");
-}
 
 async function ensureEconomyUser(walletToken, name = "Joueur", avatar = "🐼") {
   if (!pgPool || !walletToken) return null;
@@ -399,9 +398,9 @@ async function ensureEconomyUser(walletToken, name = "Joueur", avatar = "🐼") 
          VALUES($1,$2,$3,$4,5,now(),now(),now())
          RETURNING id,wallet_token,username,avatar,lives,life_updated_at`,
         [
-          economyFriendCode(),
+          "AUTO",
           String(name || "Joueur").slice(0,24),
-          String(avatar || "🐼").slice(0,16),
+          String(avatar || "🐼").slice(0,120),
           walletToken
         ]
       );
@@ -466,7 +465,8 @@ async function economyState(walletToken) {
     nextLifeAt:life.nextLifeAt,
     secondsToNext:life.secondsToNext,
     rechargeSeconds:ECONOMY_LIFE_MS / 1000,
-    rewardedAdCoins:ECONOMY_AD_REWARD
+    rewardedAdCoins:ECONOMY_AD_REWARD,
+    shopOffers:SHOP_OFFERS
   };
 }
 
@@ -748,7 +748,7 @@ loadValidationCache();
 app.get("/api/validation-health", async (req, res) => {
   let liveCheck = null;
   if (String(req.query.live || "") === "1") {
-    if (!ADMIN_COIN_CODE || req.get("Authorization") !== `Bearer ${ADMIN_COIN_CODE}`) {
+    if (!ADMIN_DIAGNOSTIC_CODE || req.get("Authorization") !== `Bearer ${ADMIN_DIAGNOSTIC_CODE}`) {
       return res.status(403).json({ ok: false, error: "Diagnostic réservé à l’administrateur." });
     }
     liveCheck = await testOpenAIConnection();
@@ -2884,7 +2884,7 @@ io.on("connection", socket => {
         token,
         ECONOMY_AD_REWARD,
         "REWARDED_AD",
-        {note:"Video recompensee (+80)"},
+        {note:`Vidéo récompensée (+${ECONOMY_AD_REWARD})`},
         eventId
       );
 
@@ -2963,17 +2963,6 @@ io.on("connection", socket => {
     const result = ensureWallet(token);
     socket.data.walletToken = result.token;
     cb({ ok: true, token: result.token, balance: result.wallet.coins });
-  });
-
-  socket.on("wallet:adminAdjust", ({ token, code, mode, value } = {}, cb = () => {}) => {
-    if (!ADMIN_COIN_CODE) return cb({ ok: false, error: "Outil administrateur désactivé sur ce serveur." });
-    if (String(code || "") !== ADMIN_COIN_CODE) return cb({ ok: false, error: "Code administrateur incorrect." });
-    const result = ensureWallet(token);
-    let txResult = null;
-    if (mode === "add") txResult = walletTransaction(result.token, Math.floor(Number(value) || 0), "ADMIN_ADJUST", { note: "Ajustement administrateur" });
-    else if (mode === "set") txResult = setWalletBalance(result.token, value, "ADMIN_SET", { note: "Solde défini par administrateur" });
-    else return cb({ ok: false, error: "Action invalide." });
-    cb({ ok: true, token: result.token, balance: txResult?.balance ?? result.wallet.coins });
   });
 
   socket.on("wallet:history", ({ token, limit } = {}, cb = () => {}) => {
@@ -3509,7 +3498,7 @@ initWalletPersistence()
       console.log(`IA joueurs test: ${BOT_AI_ENABLED && OPENAI_BOT_API_KEY ? `activée (${OPENAI_BOT_MODEL})` : "générateur local"}`);
       console.log(`Stockage portefeuille: ${walletStorageMode}`);
       console.log(`Mémoire IA: ${pgPool ? "PostgreSQL" : "JSON local"} (${learnedAnswers.size} réponse(s) apprise(s))`);
-      console.log(`Admin pièces: ${ADMIN_COIN_CODE ? "activé par variable d’environnement" : "désactivé"}`);
+      console.log(`Diagnostic admin: ${ADMIN_DIAGNOSTIC_CODE ? "protégé par variable d’environnement" : "désactivé"}`);
     });
   });
 

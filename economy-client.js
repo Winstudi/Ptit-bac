@@ -10,7 +10,12 @@
     maxLives: 5,
     nextLifeAt: null,
     secondsToNext: 0,
-    rewardedAdCoins: 80
+    rewardedAdCoins: 10,
+    shopOffers: {
+      coins25: { coins:25, priceEur:0.99 },
+      coins100: { coins:100, priceEur:2.99 },
+      noAdsLifetime: { bonusCoins:100 }
+    }
   };
 
   let refreshing = false;
@@ -131,7 +136,7 @@
   window.PtitBacEconomy = {
     refresh: requestState,
     state: () => ({ ...eco }),
-    rewardedAdCoins: 80,
+    rewardedAdCoins: 10,
     rules: Object.freeze({
       public: { lifeCost: 1, rewards: true, xp: true },
       quick: { lifeCost: 1, rewards: true, xp: true },

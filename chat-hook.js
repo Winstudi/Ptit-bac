@@ -115,48 +115,78 @@ async function hiddenBefore(userId, friendId) {
 }
 
 async function conversationList(userId) {
-  const friends = await friendsFor(userId);
-  const result = [];
-
-  for (const friend of friends) {
-    const hidden = await hiddenBefore(userId, friend.id);
-
-    const latest = await pool.query(`
-      SELECT id, sender_id, receiver_id, content, created_at, read_at
-        FROM public.ptitbac_messages
+  const q = await pool.query(`
+    SELECT
+      u.id AS friend_id,
+      u.friend_code,
+      u.username,
+      u.avatar,
+      u.last_seen,
+      latest.id AS message_id,
+      latest.sender_id,
+      latest.receiver_id,
+      latest.content,
+      latest.created_at,
+      latest.read_at,
+      COALESCE(unread.unread, 0)::int AS unread
+    FROM public.friendships f
+    JOIN public.users u
+      ON u.id = f.friend_id
+    LEFT JOIN public.ptitbac_chat_hidden h
+      ON h.user_id = $1
+     AND h.friend_id = u.id
+    JOIN LATERAL (
+      SELECT m.id,
+             m.sender_id,
+             m.receiver_id,
+             m.content,
+             m.created_at,
+             m.read_at
+        FROM public.ptitbac_messages m
        WHERE (
-              (sender_id = $1 AND receiver_id = $2)
-           OR (sender_id = $2 AND receiver_id = $1)
+              (m.sender_id = $1 AND m.receiver_id = u.id)
+           OR (m.sender_id = u.id AND m.receiver_id = $1)
        )
-       ${hidden ? "AND created_at > $3" : ""}
-       ORDER BY created_at DESC
+         AND (
+           h.hidden_before IS NULL
+           OR m.created_at > h.hidden_before
+         )
+       ORDER BY m.created_at DESC
        LIMIT 1
-    `, hidden ? [userId, friend.id, hidden] : [userId, friend.id]);
+    ) latest ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*)::int AS unread
+        FROM public.ptitbac_messages m
+       WHERE m.sender_id = u.id
+         AND m.receiver_id = $1
+         AND m.read_at IS NULL
+         AND (
+           h.hidden_before IS NULL
+           OR m.created_at > h.hidden_before
+         )
+    ) unread ON true
+    WHERE f.user_id = $1
+    ORDER BY latest.created_at DESC
+  `, [userId]);
 
-    const unread = await pool.query(`
-      SELECT count(*)::int AS count
-        FROM public.ptitbac_messages
-       WHERE sender_id = $2
-         AND receiver_id = $1
-         AND read_at IS NULL
-         ${hidden ? "AND created_at > $3" : ""}
-    `, hidden ? [userId, friend.id, hidden] : [userId, friend.id]);
-
-    if (!latest.rowCount) continue;
-
-    result.push({
-      friend,
-      lastMessage: latest.rows[0],
-      unread: Number(unread.rows[0]?.count || 0)
-    });
-  }
-
-  result.sort((a, b) =>
-    new Date(b.lastMessage.created_at).getTime() -
-    new Date(a.lastMessage.created_at).getTime()
-  );
-
-  return result;
+  return q.rows.map(row => ({
+    friend: safeUser({
+      id: row.friend_id,
+      friend_code: row.friend_code,
+      username: row.username,
+      avatar: row.avatar,
+      last_seen: row.last_seen
+    }),
+    lastMessage: {
+      id: row.message_id,
+      sender_id: row.sender_id,
+      receiver_id: row.receiver_id,
+      content: row.content,
+      created_at: row.created_at,
+      read_at: row.read_at
+    },
+    unread: Number(row.unread || 0)
+  }));
 }
 
 async function history(userId, friendId, limit = 100) {

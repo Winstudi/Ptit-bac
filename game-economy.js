@@ -1,18 +1,42 @@
 "use strict";
+
 const { isEconomyMode } = require("./room-mode-rules.js");
-// Reward eligibility is decided by the server-created room, never a client flag.
+const { RANK_REWARDS } = require("./economy-config.js");
+
 function calculateRewards(room) {
-  const rewards = Object.fromEntries(room.players.map(p => [p.id, 0]));
-  if (!isEconomyMode(room.mode) || !room.entryDebited || room.phase !== "finished" ||
-      room.roundIndex + 1 !== room.rounds || room.players.some(p => p.isBot)) return rewards;
-  const players = room.players.filter(p => p.walletToken).sort((a,b) => b.score - a.score);
+  const rewards = Object.fromEntries(room.players.map(player => [player.id, 0]));
+
+  if (
+    !isEconomyMode(room.mode) ||
+    !room.entryDebited ||
+    room.phase !== "finished" ||
+    room.roundIndex + 1 !== room.rounds ||
+    room.players.some(player => player.isBot)
+  ) {
+    return rewards;
+  }
+
+  const players = room.players
+    .filter(player => player.walletToken)
+    .sort((a, b) => b.score - a.score);
+
   if (players.length < 2) return rewards;
+
   const paid = new Set(room.paidPlayerIds || []);
   let rank = 1;
+
   players.forEach((player, index) => {
-    if (index && player.score !== players[index - 1].score) rank = index + 1;
-    if (paid.has(player.id)) rewards[player.id] = [60,40,25][rank-1] ?? 10;
+    if (index && player.score !== players[index - 1].score) {
+      rank = index + 1;
+    }
+
+    if (paid.has(player.id)) {
+      rewards[player.id] =
+        RANK_REWARDS[rank] ?? RANK_REWARDS.default;
+    }
   });
+
   return rewards;
 }
+
 module.exports = { calculateRewards };

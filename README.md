@@ -64,6 +64,7 @@ Salon sur invitation/code.
 - `inventory-service.js` : inventaire serveur ;
 - `progression-service.js` : XP et niveaux ;
 - `quick-match.js` : recherche de partie rapide ;
+- `economy-config.js` : valeurs officielles de l’économie et de la boutique ;
 - `game-economy.js` : récompenses de fin de partie ;
 - `friends-hook.js`, `chat-hook.js`, `admin-hook.js`, `player-report-hook.js` : modules serveur spécialisés.
 
@@ -89,6 +90,8 @@ Depuis E8, toutes les créations et évolutions de tables sont centralisées dan
 `ptitbac_wallets` est la source de vérité pour les pièces et les gemmes. L'ancien champ `public.users.coins` est migré puis supprimé automatiquement.
 
 La présence en ligne des amis et du chat est partagée via `presence-service.js`.
+
+Le panneau admin et les récompenses de boîte de réception utilisent désormais le même inventaire officiel (`ptitbac_inventory_items`) que le joueur.
 
 ## OpenAI
 

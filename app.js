@@ -11,11 +11,9 @@ const session = {
   timerHandle: null,
   walletToken: localStorage.getItem("petitbac_walletToken") || "",
   walletBalance: Number(localStorage.getItem("petitbac_walletBalance") || "0"),
-  adminCoinCode: ""
 };
 
 const GAME_COST = 0;
-const DEFAULT_COINS = 50;
 const PROFILE_ICONS = ["🐼","🦊","🐯","🐸","🦁","🐨","🐙","🦄","🤖","😎","🧠","⭐"];
 const LETTER_WHEEL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -300,79 +298,6 @@ function homeCoin(sizeClass = "") {
 
 function renderHome() {
   setScreen('<main class="screen center-screen"><p role="status">Chargement…</p></main>');
-}
-
-function openAdminCoinAccess() {
-  const code = window.prompt("Code administrateur");
-  if (code === null) return;
-  session.adminCoinCode = code.trim();
-  renderAdminCoins();
-}
-
-function renderAdminCoins() {
-  const coins = getCoins();
-  setScreen(`
-    <main class="screen utility-screen admin-coins-screen">
-      <button class="utility-back" id="backHome">←</button>
-      <img src="ptit-bac-logo-v2.png" class="utility-logo" alt="P’tit Bac">
-      <div class="utility-heading">
-        <h1>Pièces — Admin</h1>
-        <p>Outil local de test pour ce navigateur.</p>
-      </div>
-      <section class="utility-card admin-coin-card">
-        <div class="admin-coin-balance">
-          <span class="coin-medal admin-coin-medal">👑</span>
-          <div><small>Solde actuel</small><strong id="adminCoinTotal">${coins}</strong></div>
-        </div>
-        <div class="admin-coin-grid">
-          <button type="button" class="admin-coin-btn" data-add="5">+5</button>
-          <button type="button" class="admin-coin-btn" data-add="25">+25</button>
-          <button type="button" class="admin-coin-btn" data-add="100">+100</button>
-          <button type="button" class="admin-coin-btn secondary" id="resetCoins">Remettre à 25</button>
-        </div>
-        <form class="admin-custom-coins" id="customCoinsForm">
-          <label class="label" for="customCoins">Définir un solde précis</label>
-          <div class="admin-custom-row">
-            <input class="input" id="customCoins" type="number" min="0" max="999999" inputmode="numeric" placeholder="Ex. 500">
-            <button class="btn-primary admin-apply-btn" type="submit">Appliquer</button>
-          </div>
-        </form>
-      </section>
-    </main>
-  `);
-
-  const refresh = value => {
-    document.getElementById("adminCoinTotal").textContent = value;
-  };
-
-  document.querySelectorAll("[data-add]").forEach(btn => {
-    btn.onclick = () => {
-      socket.emit("wallet:adminAdjust", { token: session.walletToken, code: session.adminCoinCode, mode: "add", value: Number(btn.dataset.add || 0) }, res => {
-        if (!res?.ok) return toast(res?.error || "Impossible de modifier le solde.");
-        setWalletState(res.token, res.balance); refresh(res.balance); toast(`Solde : ${res.balance} pièces`);
-      });
-    };
-  });
-
-  document.getElementById("resetCoins").onclick = () => {
-    socket.emit("wallet:adminAdjust", { token: session.walletToken, code: session.adminCoinCode, mode: "set", value: DEFAULT_COINS }, res => {
-      if (!res?.ok) return toast(res?.error || "Impossible de modifier le solde.");
-      setWalletState(res.token, res.balance); refresh(res.balance); toast("Solde remis à 25 pièces.");
-    });
-  };
-
-  document.getElementById("customCoinsForm").onsubmit = e => {
-    e.preventDefault();
-    const field = document.getElementById("customCoins");
-    const value = Number(field.value);
-    if (!Number.isFinite(value) || value < 0) return toast("Entre un nombre valide.");
-    socket.emit("wallet:adminAdjust", { token: session.walletToken, code: session.adminCoinCode, mode: "set", value: Math.min(999999, value) }, res => {
-      if (!res?.ok) return toast(res?.error || "Impossible de modifier le solde.");
-      setWalletState(res.token, res.balance); refresh(res.balance); field.value = ""; toast(`Solde défini à ${res.balance} pièces.`);
-    });
-  };
-
-  document.getElementById("backHome").onclick = renderHome;
 }
 
 function renderProfile() {
