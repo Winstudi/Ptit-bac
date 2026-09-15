@@ -15,15 +15,18 @@ const REQUIRED_BUILD_STEPS = [
   "cleanup-frontend-build.cjs"
 ];
 
-const GENERATED_PUBLIC_FILES = new Set([
-  "/letter-wheel-spin.wav",
-  "/ptb-category-avatar-patches.css",
-  "/ptb-ui-wheel-patches.css",
-  "/ptb-late-patches.css",
-  "/ptb-core-client.js",
-  "/ptb-ui-patches.js",
-  "/ptb-late-client.js"
-]);
+const BUILD_GENERATED_PUBLIC_FILES = Object.freeze({
+  "/ptb-category-avatar-patches.css": "cleanup-frontend-build.cjs",
+  "/ptb-ui-wheel-patches.css": "cleanup-frontend-build.cjs",
+  "/ptb-late-patches.css": "cleanup-frontend-build.cjs",
+  "/ptb-core-client.js": "cleanup-frontend-build.cjs",
+  "/ptb-ui-patches.js": "cleanup-frontend-build.cjs",
+  "/ptb-late-client.js": "cleanup-frontend-build.cjs"
+});
+
+const DYNAMIC_INDEX_PREFIXES = [
+  "/socket.io/"
+];
 
 function fail(message) {
   throw new Error(`[CI] ${message}`);
@@ -74,6 +77,14 @@ function checkRenderChain() {
   const render = read("render.yaml");
   let previous = -1;
 
+  if (!render.includes("npm test")) {
+    fail("Render doit lancer npm test avant le déploiement.");
+  }
+
+  if (!render.includes("npm run check")) {
+    fail("Render doit lancer npm run check avant les transformations.");
+  }
+
   for (const step of REQUIRED_BUILD_STEPS) {
     if (!exists(step)) {
       fail(`script de build absent: ${step}`);
@@ -91,6 +102,10 @@ function checkRenderChain() {
     previous = index;
   }
 
+  if (!render.includes("npm run check:production")) {
+    fail("Render doit valider les transformations de production.");
+  }
+
   if (!render.includes("healthCheckPath: /health")) {
     fail("Render doit conserver /health comme health check.");
   }
@@ -103,10 +118,40 @@ function localRoutesFromIndex(html) {
 
   while ((match = regex.exec(html))) {
     const route = String(match[1] || "").trim();
-    if (route) routes.add(route);
+    if (!route) continue;
+
+    if (
+      DYNAMIC_INDEX_PREFIXES.some(prefix =>
+        route.startsWith(prefix)
+      )
+    ) {
+      continue;
+    }
+
+    routes.add(route);
   }
 
   return [...routes].sort();
+}
+
+function checkGeneratedPublicFiles() {
+  const cleanupSource = read("cleanup-frontend-build.cjs");
+
+  for (const [route, generator] of Object.entries(
+    BUILD_GENERATED_PUBLIC_FILES
+  )) {
+    if (!exists(generator)) {
+      fail(`générateur absent pour ${route}: ${generator}`);
+    }
+
+    const fileName = route.slice(1);
+    if (!cleanupSource.includes(fileName)) {
+      fail(
+        `${route} est déclaré comme généré, mais ` +
+        `${generator} ne contient pas ${fileName}.`
+      );
+    }
+  }
 }
 
 function checkPublicFiles() {
@@ -121,7 +166,10 @@ function checkPublicFiles() {
   );
 
   if (duplicates.length) {
-    fail(`doublons dans public-files.json: ${[...new Set(duplicates)].join(", ")}`);
+    fail(
+      `doublons dans public-files.json: ` +
+      [...new Set(duplicates)].join(", ")
+    );
   }
 
   const publicSet = new Set(list);
@@ -135,7 +183,9 @@ function checkPublicFiles() {
     const file = route.slice(1);
     if (!file) continue;
 
-    if (!exists(file) && !GENERATED_PUBLIC_FILES.has(route)) {
+    const generated = Boolean(BUILD_GENERATED_PUBLIC_FILES[route]);
+
+    if (!exists(file) && !generated) {
       missingOnDisk.push(route);
     }
   }
@@ -145,7 +195,8 @@ function checkPublicFiles() {
   }
 
   const indexRoutes = localRoutesFromIndex(read("index.html"));
-  const missingFromAllowlist = indexRoutes.filter(route => !publicSet.has(route));
+  const missingFromAllowlist =
+    indexRoutes.filter(route => !publicSet.has(route));
 
   if (missingFromAllowlist.length) {
     fail(
@@ -162,6 +213,7 @@ function checkPublicFiles() {
 
 function checkCoreFiles() {
   const required = [
+    ".gitignore",
     "server.js",
     "app.js",
     "style.css",
@@ -176,6 +228,7 @@ function checkCoreFiles() {
   ];
 
   const missing = required.filter(name => !exists(name));
+
   if (missing.length) {
     fail(`fichiers cœur manquants: ${missing.join(", ")}`);
   }
@@ -196,7 +249,9 @@ function checkProductionTransform() {
 
   for (const marker of requiredServerMarkers) {
     if (!server.includes(marker)) {
-      fail(`transformation production absente de server.js: ${marker}`);
+      fail(
+        `transformation production absente de server.js: ${marker}`
+      );
     }
   }
 
@@ -225,7 +280,10 @@ function checkProductionTransform() {
       fail(`${name} n'utilise pas db.js après E2.`);
     }
 
-    if (source.includes('require("pg")') || source.includes("new Pool(")) {
+    if (
+      source.includes('require("pg")') ||
+      source.includes("new Pool(")
+    ) {
       fail(`${name} crée encore un Pool PostgreSQL après E2.`);
     }
   }
@@ -240,7 +298,9 @@ function checkProductionTransform() {
 
   for (const name of observerModules) {
     if (read(name).includes("new MutationObserver(")) {
-      fail(`${name} possède encore un MutationObserver individuel après E4.`);
+      fail(
+        `${name} possède encore un MutationObserver individuel après E4.`
+      );
     }
   }
 }
@@ -248,9 +308,12 @@ function checkProductionTransform() {
 function main() {
   checkCoreFiles();
   checkPackage();
+  checkGeneratedPublicFiles();
   checkRenderChain();
+
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();
+
   checkProductionTransform();
 
   console.log(
