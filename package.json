@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test *.test.cjs"
+    "test": "node --test *.test.cjs",
+    "check": "node ci-check.cjs",
+    "check:production": "node ci-check.cjs --production",
+    "ci": "npm test && npm run check"
   },
   "engines": {
     "node": "22.x"
