@@ -312,8 +312,10 @@
     styleOnce();
     readCache();
 
-    const observer = new MutationObserver(schedulePatch);
-    observer.observe(document.documentElement, { childList:true, subtree:true });
+    document.addEventListener(
+      "ptitbac:screen-rendered",
+      schedulePatch
+    );
 
     try {
       socket?.on?.("connect", () => setTimeout(() => warm(0), 100));

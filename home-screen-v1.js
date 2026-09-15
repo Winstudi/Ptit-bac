@@ -317,23 +317,8 @@
 
     document.getElementById("homePlaqueShop")?.addEventListener("click", renderShop);
 
-    const betaTrigger = document.getElementById("homeBrandLogo");
-    let adminTapCount = 0;
-    let adminTapTimer = null;
-
-    betaTrigger?.addEventListener("click", () => {
-      adminTapCount += 1;
-      clearTimeout(adminTapTimer);
-      adminTapTimer = setTimeout(() => {
-        adminTapCount = 0;
-      }, 2200);
-
-      if (adminTapCount >= 7) {
-        adminTapCount = 0;
-        clearTimeout(adminTapTimer);
-        openAdminCoinAccess();
-      }
-    });
+    // E3: ancien déclencheur admin caché supprimé.
+    // L’administration passe uniquement par le menu admin authentifié.
   }
 
   function lockIcon() {

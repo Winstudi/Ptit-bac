@@ -291,11 +291,7 @@
   }
 
   function start() {
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+    document.addEventListener("ptitbac:screen-rendered", schedule);
 
     try {
       socket?.on?.("room:state", schedule);

@@ -6,11 +6,12 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 const { Server } = require("socket.io");
-const { Pool } = require("pg");
+const { getPool: getDbPool } = require("./db.js");
 const { normalizeFrameId } = require("./frame-sync-server.js");
 const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
 const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
 const { createProgressionService } = require("./progression-service.js");
+const { installSocketSecurity } = require("./socket-security.js");
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +35,9 @@ io.use((socket, next) => {
   });
   next();
 });
+
+// E5: protection centralisée avant les handlers fonctionnels.
+installSocketSecurity(io);
 
 require("./friends-hook.js")(io, {
   canInvite: (token, code) => {
@@ -226,10 +230,8 @@ async function initWalletPersistence() {
   }
 
   try {
-    pgPool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL) ? false : { rejectUnauthorized: false }
-    });
+    pgPool = getDbPool();
+        if (!pgPool) throw new Error("DATABASE_URL manquant");
     await pgPool.query(`
       CREATE TABLE IF NOT EXISTS ptitbac_wallets (
         token TEXT PRIMARY KEY,
@@ -254,7 +256,6 @@ async function initWalletPersistence() {
     console.log(`Portefeuilles: PostgreSQL actif (${rows.length} portefeuille(s) chargé(s)).`);
   } catch (err) {
     console.error("PostgreSQL indisponible, repli sur wallets.json:", err.message);
-    try { await pgPool?.end(); } catch {}
     pgPool = null;
     walletStorageMode = "json";
     loadWalletsFromFile();
@@ -2164,6 +2165,9 @@ function finalizeRound(room) {
       if (item?.status === "valid") gained += 1;
     });
     player.score += gained;
+    // E3: conserver séparément le nombre de réponses validées.
+    player.validAnswerCount =
+      Math.max(0, Number(player.validAnswerCount) || 0) + gained;
     scores[player.id] = gained;
     player.submitted = false;
   });
@@ -2998,10 +3002,35 @@ io.on("connection", socket => {
       durationMs
     });
 
+    // E3: le serveur termine lui-même le compte à rebours.
+    // Le lancement ne dépend donc plus du timer du téléphone de l’hôte.
+    const countdownRoomCode = room.code;
+    const countdownPlayerId = player.id;
+
     setTimeout(() => {
-      const current = rooms.get(room.code);
-      if (current) current.ptbCountdownUntil = 0;
-    }, durationMs + 1200);
+      const current = rooms.get(countdownRoomCode);
+      if (!current) return;
+
+      current.ptbCountdownUntil = 0;
+      if (current.phase !== "lobby") return;
+
+      const currentHost = getPlayer(current, countdownPlayerId);
+      if (!currentHost?.isHost || currentHost.socketId !== socket.id) {
+        io.to(countdownRoomCode).emit(
+          "toast",
+          "Lancement annulé : l’hôte a quitté le salon."
+        );
+        return;
+      }
+
+      startGame(socket, {
+        code: countdownRoomCode,
+        playerId: countdownPlayerId
+      }).catch(err => {
+        console.error("Lancement après compte à rebours:", err.message);
+        socket.emit("toast", "Le lancement a échoué. Réessaie.");
+      });
+    }, durationMs);
 
     cb({ ok: true, durationMs });
   });
@@ -3502,6 +3531,8 @@ io.on("connection", socket => {
     room.gameSessionId = null;
     room.players.forEach(p => {
       p.score = 0;
+      // E3: compteur séparé utilisé par la progression XP.
+      p.validAnswerCount = 0;
       p.submitted = false;
       p.answers = {};
     });

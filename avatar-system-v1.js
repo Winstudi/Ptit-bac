@@ -277,32 +277,33 @@
     upgradeWheelChooser();
   }
 
+  let avatarUpgradeScheduled = false;
+
+  function scheduleAvatarUpgrade() {
+    if (avatarUpgradeScheduled) return;
+    avatarUpgradeScheduled = true;
+
+    requestAnimationFrame(() => {
+      avatarUpgradeScheduled = false;
+      upgradeAll(document);
+    });
+  }
+
   function start() {
     upgradeAll(document);
 
-    const observer = new MutationObserver(records => {
-      let shouldCheckWheel = false;
+    document.addEventListener(
+      "ptitbac:screen-rendered",
+      scheduleAvatarUpgrade
+    );
 
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (!(node instanceof Element)) continue;
-          upgradeAll(node);
-          shouldCheckWheel = true;
-        }
-      }
-
-      if (shouldCheckWheel) upgradeWheelChooser();
-    });
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+    document.addEventListener(
+      "ptitbac:dom-updated",
+      scheduleAvatarUpgrade
+    );
 
     try {
-      socket?.on?.("room:state", () =>
-        requestAnimationFrame(upgradeWheelChooser)
-      );
+      socket?.on?.("room:state", scheduleAvatarUpgrade);
     } catch {}
   }
 

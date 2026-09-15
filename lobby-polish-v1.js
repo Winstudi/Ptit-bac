@@ -2,7 +2,6 @@
   "use strict";
 
   let countdownTimer = null;
-  let countdownFinishTimer = null;
   let countdownActive = false;
   let countdownCode = "";
   let countdownAudio = null;
@@ -123,9 +122,7 @@
 
   function removeCountdown() {
     clearInterval(countdownTimer);
-    clearTimeout(countdownFinishTimer);
     countdownTimer = null;
-    countdownFinishTimer = null;
     countdownActive = false;
     countdownCode = "";
     lastCountdownValue = "";
@@ -230,26 +227,8 @@
     update();
     countdownTimer = setInterval(update, 70);
 
-    const user = currentPlayer();
-    const amHost =
-      !!user?.isHost &&
-      String(user.id) === String(payload.hostPlayerId || "");
-
-    if (amHost) {
-      countdownFinishTimer = setTimeout(() => {
-        // Vérifie qu'on est toujours dans le même salon avant de lancer.
-        if (
-          countdownActive &&
-          isLobbyVisible() &&
-          String(session?.state?.code || session?.code || "") === countdownCode
-        ) {
-          socket.emit("game:start", {
-            code: countdownCode,
-            playerId: session.playerId
-          });
-        }
-      }, durationMs);
-    }
+    // E3: le serveur lance maintenant la partie à la fin du countdown.
+    // Le client ne fait plus qu’afficher l’animation.
 
     // Filet de sécurité si l'état serveur tarde à arriver.
     setTimeout(() => {
@@ -271,18 +250,10 @@
 
   queueMicrotask(ensureRoomModeControl);
 
-  const appRoot = document.getElementById("app");
-  if (appRoot) {
-    const lobbyModeObserver = new MutationObserver(() => {
-      if (document.querySelector(".lobby-v5.pl-private")) {
-        queueMicrotask(ensureRoomModeControl);
-      }
-    });
-
-    lobbyModeObserver.observe(appRoot, {
-      childList: true
-    });
-  }
+  document.addEventListener(
+    "ptitbac:screen-rendered",
+    () => queueMicrotask(ensureRoomModeControl)
+  );
 
   /*
    * Le lobby historique possède déjà un listener direct sur #startBtn

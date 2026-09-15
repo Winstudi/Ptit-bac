@@ -106,7 +106,12 @@ function calculateRoomXp(room) {
     if (!paid.has(player.id)) continue;
 
     const rank = ranks[player.id] || 0;
-    const validAnswers = Math.max(0, Math.floor(Number(player.score) || 0));
+    // E3: l’XP récompense les réponses réellement validées,
+    // indépendamment du score/classement de la partie.
+    const validAnswers = Math.max(
+      0,
+      Math.floor(Number(player.validAnswerCount ?? player.score) || 0)
+    );
     const xp =
       completedRounds * ROUND_XP +
       validAnswers * VALID_ANSWER_XP +

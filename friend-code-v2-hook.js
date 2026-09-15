@@ -8,21 +8,13 @@
  * - migration automatique des anciens codes (KIKI#1234, PLAYER#1234, etc.)
  */
 
-const { Pool } = require("pg");
+const { getPool } = require("./db.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 if (!DATABASE_URL) {
   console.warn("Codes amis V2 désactivés: DATABASE_URL absent.");
 } else {
-  const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL)
-      ? false
-      : { rejectUnauthorized: false },
-    max: 1,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000
-  });
+  const pool = getPool();
 
   let installed = false;
   let tries = 0;

@@ -7,14 +7,6 @@ const { execFileSync } = require("child_process");
 const root = __dirname;
 const production = process.argv.includes("--production");
 
-const REQUIRED_BUILD_STEPS = [
-  "e2-shared-db-build.cjs",
-  "e3-functional-fixes-build.cjs",
-  "e4-render-events-build.cjs",
-  "e5-socket-security-build.cjs",
-  "cleanup-frontend-build.cjs"
-];
-
 const BUILD_GENERATED_PUBLIC_FILES = Object.freeze({
   "/ptb-category-avatar-patches.css": "cleanup-frontend-build.cjs",
   "/ptb-ui-wheel-patches.css": "cleanup-frontend-build.cjs",
@@ -24,8 +16,13 @@ const BUILD_GENERATED_PUBLIC_FILES = Object.freeze({
   "/ptb-late-client.js": "cleanup-frontend-build.cjs"
 });
 
-const DYNAMIC_INDEX_PREFIXES = [
-  "/socket.io/"
+const DYNAMIC_INDEX_PREFIXES = ["/socket.io/"];
+const OBSOLETE_BUILD_SCRIPTS = [
+  "apply-e1-source-cleanup.cjs",
+  "e2-shared-db-build.cjs",
+  "e3-functional-fixes-build.cjs",
+  "e4-render-events-build.cjs",
+  "e5-socket-security-build.cjs"
 ];
 
 function fail(message) {
@@ -67,43 +64,29 @@ function checkPackage() {
   }
 
   for (const script of ["test", "check", "check:production"]) {
-    if (!pkg?.scripts?.[script]) {
-      fail(`script npm manquant: ${script}`);
-    }
+    if (!pkg?.scripts?.[script]) fail(`script npm manquant: ${script}`);
   }
 }
 
 function checkRenderChain() {
   const render = read("render.yaml");
-  let previous = -1;
 
-  if (!render.includes("npm test")) {
-    fail("Render doit lancer npm test avant le déploiement.");
+  for (const required of [
+    "npm ci",
+    "npm test",
+    "npm run check",
+    "node cleanup-frontend-build.cjs",
+    "npm run check:production"
+  ]) {
+    if (!render.includes(required)) {
+      fail(`render.yaml doit contenir: ${required}`);
+    }
   }
 
-  if (!render.includes("npm run check")) {
-    fail("Render doit lancer npm run check avant les transformations.");
-  }
-
-  for (const step of REQUIRED_BUILD_STEPS) {
-    if (!exists(step)) {
-      fail(`script de build absent: ${step}`);
+  for (const obsolete of OBSOLETE_BUILD_SCRIPTS) {
+    if (render.includes(`node ${obsolete}`)) {
+      fail(`render.yaml exécute encore l'ancien patch ${obsolete}.`);
     }
-
-    const index = render.indexOf(`node ${step}`);
-    if (index < 0) {
-      fail(`render.yaml n'exécute pas ${step}.`);
-    }
-
-    if (index <= previous) {
-      fail(`ordre de build incorrect autour de ${step}.`);
-    }
-
-    previous = index;
-  }
-
-  if (!render.includes("npm run check:production")) {
-    fail("Render doit valider les transformations de production.");
   }
 
   if (!render.includes("healthCheckPath: /health")) {
@@ -119,15 +102,7 @@ function localRoutesFromIndex(html) {
   while ((match = regex.exec(html))) {
     const route = String(match[1] || "").trim();
     if (!route) continue;
-
-    if (
-      DYNAMIC_INDEX_PREFIXES.some(prefix =>
-        route.startsWith(prefix)
-      )
-    ) {
-      continue;
-    }
-
+    if (DYNAMIC_INDEX_PREFIXES.some(prefix => route.startsWith(prefix))) continue;
     routes.add(route);
   }
 
@@ -137,39 +112,22 @@ function localRoutesFromIndex(html) {
 function checkGeneratedPublicFiles() {
   const cleanupSource = read("cleanup-frontend-build.cjs");
 
-  for (const [route, generator] of Object.entries(
-    BUILD_GENERATED_PUBLIC_FILES
-  )) {
-    if (!exists(generator)) {
-      fail(`générateur absent pour ${route}: ${generator}`);
-    }
-
+  for (const [route, generator] of Object.entries(BUILD_GENERATED_PUBLIC_FILES)) {
+    if (!exists(generator)) fail(`générateur absent pour ${route}: ${generator}`);
     const fileName = route.slice(1);
     if (!cleanupSource.includes(fileName)) {
-      fail(
-        `${route} est déclaré comme généré, mais ` +
-        `${generator} ne contient pas ${fileName}.`
-      );
+      fail(`${route} est déclaré comme généré, mais ${generator} ne contient pas ${fileName}.`);
     }
   }
 }
 
 function checkPublicFiles() {
   const list = JSON.parse(read("public-files.json"));
+  if (!Array.isArray(list)) fail("public-files.json doit contenir un tableau.");
 
-  if (!Array.isArray(list)) {
-    fail("public-files.json doit contenir un tableau.");
-  }
-
-  const duplicates = list.filter(
-    (item, index) => list.indexOf(item) !== index
-  );
-
+  const duplicates = list.filter((item, index) => list.indexOf(item) !== index);
   if (duplicates.length) {
-    fail(
-      `doublons dans public-files.json: ` +
-      [...new Set(duplicates)].join(", ")
-    );
+    fail(`doublons dans public-files.json: ${[...new Set(duplicates)].join(", ")}`);
   }
 
   const publicSet = new Set(list);
@@ -182,12 +140,8 @@ function checkPublicFiles() {
 
     const file = route.slice(1);
     if (!file) continue;
-
     const generated = Boolean(BUILD_GENERATED_PUBLIC_FILES[route]);
-
-    if (!exists(file) && !generated) {
-      missingOnDisk.push(route);
-    }
+    if (!exists(file) && !generated) missingOnDisk.push(route);
   }
 
   if (missingOnDisk.length) {
@@ -195,20 +149,12 @@ function checkPublicFiles() {
   }
 
   const indexRoutes = localRoutesFromIndex(read("index.html"));
-  const missingFromAllowlist =
-    indexRoutes.filter(route => !publicSet.has(route));
-
+  const missingFromAllowlist = indexRoutes.filter(route => !publicSet.has(route));
   if (missingFromAllowlist.length) {
-    fail(
-      `assets de index.html absents de public-files.json: ` +
-      missingFromAllowlist.join(", ")
-    );
+    fail(`assets de index.html absents de public-files.json: ${missingFromAllowlist.join(", ")}`);
   }
 
-  return {
-    publicCount: list.length,
-    indexCount: indexRoutes.length
-  };
+  return { publicCount:list.length, indexCount:indexRoutes.length };
 }
 
 function checkCoreFiles() {
@@ -221,6 +167,7 @@ function checkCoreFiles() {
     "public-files.json",
     "db.js",
     "socket-security.js",
+    "letter-wheel-spin.wav",
     "room-mode-rules.js",
     "game-economy.js",
     "inventory-service.js",
@@ -228,41 +175,24 @@ function checkCoreFiles() {
   ];
 
   const missing = required.filter(name => !exists(name));
-
-  if (missing.length) {
-    fail(`fichiers cœur manquants: ${missing.join(", ")}`);
-  }
+  if (missing.length) fail(`fichiers cœur manquants: ${missing.join(", ")}`);
 }
 
-function checkProductionTransform() {
-  if (!production) return;
-
+function checkIntegratedBackend() {
   const server = read("server.js");
-  const app = read("app.js");
 
-  const requiredServerMarkers = [
+  for (const marker of [
     'require("./db.js")',
+    'require("./socket-security.js")',
     "installSocketSecurity(io);",
     "validAnswerCount",
     "countdownRoomCode"
-  ];
-
-  for (const marker of requiredServerMarkers) {
-    if (!server.includes(marker)) {
-      fail(
-        `transformation production absente de server.js: ${marker}`
-      );
-    }
+  ]) {
+    if (!server.includes(marker)) fail(`server.js n'intègre pas encore: ${marker}`);
   }
 
-  for (const marker of [
-    "ptitbac:screen-rendered",
-    "ptitbac:dom-updated",
-    "ptbSharedDomObserver"
-  ]) {
-    if (!app.includes(marker)) {
-      fail(`transformation E4 absente de app.js: ${marker}`);
-    }
+  if (server.includes('require("pg")') || server.includes("new Pool(")) {
+    fail("server.js crée encore son propre Pool PostgreSQL.");
   }
 
   const sharedDbFiles = [
@@ -275,17 +205,24 @@ function checkProductionTransform() {
 
   for (const name of sharedDbFiles) {
     const source = read(name);
-
-    if (!source.includes('require("./db.js")')) {
-      fail(`${name} n'utilise pas db.js après E2.`);
+    if (!source.includes('require("./db.js")')) fail(`${name} n'utilise pas db.js.`);
+    if (source.includes('require("pg")') || source.includes("new Pool(")) {
+      fail(`${name} crée encore son propre Pool PostgreSQL.`);
     }
+  }
+}
 
-    if (
-      source.includes('require("pg")') ||
-      source.includes("new Pool(")
-    ) {
-      fail(`${name} crée encore un Pool PostgreSQL après E2.`);
-    }
+function checkIntegratedFrontend() {
+  const app = read("app.js");
+  const wheel = read("letter-wheel-v1.js");
+  const style = read("style.css");
+
+  for (const marker of [
+    "ptitbac:screen-rendered",
+    "ptitbac:dom-updated",
+    "ptbSharedDomObserver"
+  ]) {
+    if (!app.includes(marker)) fail(`app.js n'intègre pas E4: ${marker}`);
   }
 
   const observerModules = [
@@ -298,10 +235,53 @@ function checkProductionTransform() {
 
   for (const name of observerModules) {
     if (read(name).includes("new MutationObserver(")) {
-      fail(
-        `${name} possède encore un MutationObserver individuel après E4.`
-      );
+      fail(`${name} possède encore un MutationObserver individuel.`);
     }
+  }
+
+  if (wheel.includes("data:audio/wav;base64")) {
+    fail("letter-wheel-v1.js contient encore l'audio base64.");
+  }
+  if (wheel.includes("function ensureWheelFxStyles()")) {
+    fail("letter-wheel-v1.js contient encore l'ancien injecteur CSS.");
+  }
+  if (!wheel.includes('"/letter-wheel-spin.wav"')) {
+    fail("letter-wheel-v1.js n'utilise pas letter-wheel-spin.wav.");
+  }
+
+  const wav = fs.readFileSync(path.join(root, "letter-wheel-spin.wav"));
+  if (
+    wav.length <= 44 ||
+    wav.subarray(0,4).toString("ascii") !== "RIFF" ||
+    wav.subarray(8,12).toString("ascii") !== "WAVE"
+  ) {
+    fail("letter-wheel-spin.wav est invalide.");
+  }
+
+  if (!app.includes("Chargement de la partie")) {
+    fail("app.js ne contient pas les fallbacks modernes attendus.");
+  }
+
+  if (Buffer.byteLength(app) > 70 * 1024) {
+    fail("app.js contient encore trop de rendu legacy (>70 Ko). ");
+  }
+  if (Buffer.byteLength(style) > 170 * 1024) {
+    fail("style.css contient encore trop de CSS legacy (>170 Ko). ");
+  }
+}
+
+function checkProductionBundles() {
+  if (!production) return;
+
+  for (const route of Object.keys(BUILD_GENERATED_PUBLIC_FILES)) {
+    if (!exists(route.slice(1))) fail(`bundle de production absent: ${route}`);
+  }
+}
+
+function reportObsoleteScripts() {
+  const present = OBSOLETE_BUILD_SCRIPTS.filter(exists);
+  if (present.length) {
+    console.warn(`[CI] Info: scripts de migration encore présents mais inutilisés: ${present.join(", ")}`);
   }
 }
 
@@ -310,17 +290,19 @@ function main() {
   checkPackage();
   checkGeneratedPublicFiles();
   checkRenderChain();
+  checkIntegratedBackend();
+  checkIntegratedFrontend();
 
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();
-
-  checkProductionTransform();
+  checkProductionBundles();
+  reportObsoleteScripts();
 
   console.log(
     `[CI] OK — ${syntaxCount} fichiers JS/CJS validés, ` +
     `${publicInfo.publicCount} fichiers publics, ` +
     `${publicInfo.indexCount} assets locaux dans index.html` +
-    `${production ? ", transformations production validées" : ""}.`
+    `${production ? ", bundles production validés" : ""}.`
   );
 }
 

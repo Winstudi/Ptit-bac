@@ -108,11 +108,14 @@
     }
   }
 
-  const observer = new MutationObserver(cleanupCurrentScreen);
-  observer.observe(document.getElementById("app"), {
-    childList: true,
-    subtree: true
-  });
+  document.addEventListener(
+    "ptitbac:screen-rendered",
+    cleanupCurrentScreen
+  );
+  document.addEventListener(
+    "ptitbac:dom-updated",
+    cleanupCurrentScreen
+  );
 
   if (typeof socket !== "undefined") {
     socket.on("connect", () => setTimeout(refreshAdminState, 120));

@@ -2,22 +2,12 @@
 "use strict";
 
 const crypto = require("crypto");
-const { Pool } = require("pg");
+const { getPool } = require("./db.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const DEFAULT_COINS = 50;
 
-const pool = DATABASE_URL
-  ? new Pool({
-      connectionString: DATABASE_URL,
-      ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL)
-        ? false
-        : { rejectUnauthorized: false },
-      max: 2,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000
-    })
-  : null;
+const pool = getPool();
 
 let schemaReady = false;
 let schemaPromise = null;

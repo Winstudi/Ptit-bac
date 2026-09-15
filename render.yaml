@@ -7,10 +7,6 @@ services:
       npm ci &&
       npm test &&
       npm run check &&
-      node e2-shared-db-build.cjs &&
-      node e3-functional-fixes-build.cjs &&
-      node e4-render-events-build.cjs &&
-      node e5-socket-security-build.cjs &&
       node cleanup-frontend-build.cjs &&
       npm run check:production &&
       (npm install --no-save --package-lock=false sharp@0.34.1 && node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
