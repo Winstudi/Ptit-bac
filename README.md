@@ -58,6 +58,8 @@ Salon sur invitation/code.
 
 - `server.js` : serveur HTTP, Socket.IO et logique principale de partie ;
 - `db.js` : Pool PostgreSQL partagé ;
+- `db-migrations.js` : schéma PostgreSQL central ;
+- `presence-service.js` : présence temps réel commune aux amis et au chat ;
 - `socket-security.js` : sécurité et limites de fréquence ;
 - `inventory-service.js` : inventaire serveur ;
 - `progression-service.js` : XP et niveaux ;
@@ -82,7 +84,11 @@ Configurer `DATABASE_URL` sur Render.
 
 Un seul Pool PostgreSQL est créé dans `db.js` puis partagé par les modules serveur.
 
-Certaines migrations SQL historiques sont encore créées par les modules eux-mêmes. Leur centralisation dans un dossier de migrations dédié reste une amélioration future.
+Depuis E8, toutes les créations et évolutions de tables sont centralisées dans `db-migrations.js`. Les modules fonctionnels ne créent plus leurs propres tables.
+
+`ptitbac_wallets` est la source de vérité pour les pièces et les gemmes. L'ancien champ `public.users.coins` est migré puis supprimé automatiquement.
+
+La présence en ligne des amis et du chat est partagée via `presence-service.js`.
 
 ## OpenAI
 

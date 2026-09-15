@@ -174,6 +174,8 @@ function checkCoreFiles() {
     "index.html",
     "public-files.json",
     "db.js",
+    "db-migrations.js",
+    "presence-service.js",
     "socket-security.js",
     "letter-wheel-spin.wav",
     "room-mode-rules.js",
@@ -278,6 +280,63 @@ function checkIntegratedFrontend() {
   }
 }
 
+function checkBackendArchitecture() {
+  const migrations = read("db-migrations.js");
+
+  for (const marker of [
+    "CREATE TABLE IF NOT EXISTS public.ptitbac_wallets",
+    "CREATE TABLE IF NOT EXISTS public.users",
+    "DROP COLUMN IF EXISTS coins",
+    "ptitbac_assign_friend_code_5",
+    "ptitbac_inventory_items",
+    "ptitbac_progression_events"
+  ]) {
+    if (!migrations.includes(marker)) {
+      fail(`db-migrations.js incomplet: ${marker}`);
+    }
+  }
+
+  const schemaOwners = [
+    "server.js",
+    "friends-hook.js",
+    "chat-hook.js",
+    "admin-hook.js",
+    "player-report-hook.js",
+    "inventory-service.js",
+    "progression-service.js",
+    "friend-code-v2-hook.js"
+  ];
+
+  const schemaPattern = /CREATE\s+(?:TABLE|INDEX|EXTENSION|TRIGGER|OR\s+REPLACE\s+FUNCTION)|ALTER\s+TABLE|DROP\s+TRIGGER/i;
+  for (const name of schemaOwners) {
+    if (schemaPattern.test(read(name))) {
+      fail(`${name} contient encore une migration PostgreSQL hors db-migrations.js.`);
+    }
+  }
+
+  const coinDupPattern = /public\.users[\s\S]{0,120}\bcoins\b|\bcoins\b[\s\S]{0,120}public\.users/i;
+  for (const name of ["server.js", "friends-hook.js", "admin-hook.js"]) {
+    if (coinDupPattern.test(read(name))) {
+      fail(`${name} utilise encore public.users.coins.`);
+    }
+  }
+
+  const friends = read("friends-hook.js");
+  const chat = read("chat-hook.js");
+  if (!friends.includes('require("./presence-service.js")')) {
+    fail("friends-hook.js n'utilise pas presence-service.js.");
+  }
+  if (!chat.includes('require("./presence-service.js")')) {
+    fail("chat-hook.js n'utilise pas presence-service.js.");
+  }
+  if (friends.includes("new Map(); // userId -> Set(socketId)")) {
+    fail("friends-hook.js possède encore sa propre map de présence.");
+  }
+  if (chat.includes("new Map(); // userId -> Set(socketId)")) {
+    fail("chat-hook.js possède encore sa propre map de présence.");
+  }
+}
+
 function checkProductionBundles() {
   if (!production) return;
 
@@ -301,6 +360,7 @@ function main() {
   checkRenderChain();
   checkIntegratedBackend();
   checkIntegratedFrontend();
+  checkBackendArchitecture();
 
   const syntaxCount = syntaxCheckAll();
   const publicInfo = checkPublicFiles();

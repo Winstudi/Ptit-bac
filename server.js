@@ -6,7 +6,7 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 const { Server } = require("socket.io");
-const { getPool: getDbPool } = require("./db.js");
+const { getPool: getDbPool, ensureDatabaseSchema } = require("./db.js");
 const { normalizeFrameId } = require("./frame-sync-server.js");
 const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
 const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
@@ -184,8 +184,14 @@ const validationServiceState = {
 const wallets = new Map();
 let pgPool = null;
 let walletStorageMode = "json";
-const inventoryService = createInventoryService({ getPool: () => pgPool });
-const progressionService = createProgressionService({ getPool: () => pgPool });
+const inventoryService = createInventoryService({
+  getPool: () => pgPool,
+  ensureSchema: ensureDatabaseSchema
+});
+const progressionService = createProgressionService({
+  getPool: () => pgPool,
+  ensureSchema: ensureDatabaseSchema
+});
 
 function normalizeWalletRecord(wallet) {
   const history = Array.isArray(wallet?.history) ? wallet.history.slice(-100) : [];
@@ -231,17 +237,8 @@ async function initWalletPersistence() {
 
   try {
     pgPool = getDbPool();
-        if (!pgPool) throw new Error("DATABASE_URL manquant");
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_wallets (
-        token TEXT PRIMARY KEY,
-        coins INTEGER NOT NULL,
-        created_at BIGINT NOT NULL,
-        updated_at BIGINT NOT NULL,
-        history JSONB NOT NULL DEFAULT '[]'::jsonb
-      )
-    `);
-    await pgPool.query("ALTER TABLE ptitbac_wallets ADD COLUMN IF NOT EXISTS gems INTEGER NOT NULL DEFAULT 0 CHECK (gems >= 0)");
+    if (!pgPool) throw new Error("DATABASE_URL manquant");
+    await ensureDatabaseSchema();
     const { rows } = await pgPool.query("SELECT token, coins, gems, created_at, updated_at, history FROM ptitbac_wallets");
     for (const row of rows) {
       wallets.set(row.token, normalizeWalletRecord({
@@ -350,7 +347,7 @@ function walletTransaction(token, delta, type, details = {}, idempotencyKey = ""
   wallet.updatedAt = transaction.at;
   wallet.history = [...(wallet.history || []), transaction].slice(-100);
   persistWallet(token);
-  syncEconomyCoins(token, after, transaction.type, appliedDelta, details, transaction.idempotencyKey);
+  recordEconomyCoinTransaction(token, transaction.type, appliedDelta, details, transaction.idempotencyKey);
   return { balance: after, transaction, duplicate: false };
 }
 
@@ -376,66 +373,8 @@ const ECONOMY_MAX_LIVES = 5;
 const ECONOMY_LIFE_MS = 30 * 60 * 1000;
 const ECONOMY_AD_REWARD = 80;
 const { calculateRewards } = require("./game-economy.js");
-let economySchemaReady = false;
-let economySchemaPromise = null;
-
 async function ensureEconomySchema() {
-  if (!pgPool) throw new Error("PostgreSQL indisponible");
-  if (economySchemaReady) return;
-  if (economySchemaPromise) return economySchemaPromise;
-
-  economySchemaPromise = (async () => {
-    await pgPool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
-
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS public.users (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        friend_code text UNIQUE NOT NULL,
-        username text NOT NULL,
-        avatar text DEFAULT '🐼',
-        coins integer NOT NULL DEFAULT 50 CHECK (coins >= 0),
-        wallet_token text UNIQUE,
-        lives integer NOT NULL DEFAULT 5 CHECK (lives >= 0 AND lives <= 5),
-        life_updated_at timestamptz NOT NULL DEFAULT now(),
-        created_at timestamptz NOT NULL DEFAULT now(),
-        last_seen timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pgPool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_token text UNIQUE');
-    await pgPool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()');
-    await pgPool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS lives integer NOT NULL DEFAULT 5 CHECK (lives >= 0 AND lives <= 5)');
-    await pgPool.query('ALTER TABLE public.users ADD COLUMN IF NOT EXISTS life_updated_at timestamptz NOT NULL DEFAULT now()');
-    await pgPool.query('ALTER TABLE public.users ALTER COLUMN coins SET DEFAULT 50');
-
-    await pgPool.query(`
-      CREATE TABLE IF NOT EXISTS public.economy_transactions (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
-        wallet_token text,
-        kind text NOT NULL,
-        coins_delta integer NOT NULL DEFAULT 0,
-        lives_delta integer NOT NULL DEFAULT 0,
-        room_code text,
-        note text,
-        idempotency_key text UNIQUE,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pgPool.query('CREATE INDEX IF NOT EXISTS users_wallet_token_idx ON public.users(wallet_token)');
-    await pgPool.query('CREATE INDEX IF NOT EXISTS economy_transactions_user_idx ON public.economy_transactions(user_id, created_at DESC)');
-    await pgPool.query('CREATE INDEX IF NOT EXISTS economy_transactions_wallet_idx ON public.economy_transactions(wallet_token, created_at DESC)');
-
-    economySchemaReady = true;
-    console.log("Economie V2.5 active: 50 pieces, 5 vies, recharge 30 min.");
-  })().catch(err => {
-    economySchemaPromise = null;
-    throw err;
-  });
-
-  return economySchemaPromise;
+  await ensureDatabaseSchema();
 }
 
 function economyFriendCode() {
@@ -447,7 +386,7 @@ async function ensureEconomyUser(walletToken, name = "Joueur", avatar = "🐼") 
   await ensureEconomySchema();
 
   let found = await pgPool.query(
-    "SELECT id,wallet_token,username,avatar,coins,lives,life_updated_at FROM public.users WHERE wallet_token=$1 LIMIT 1",
+    "SELECT id,wallet_token,username,avatar,lives,life_updated_at FROM public.users WHERE wallet_token=$1 LIMIT 1",
     [walletToken]
   );
   if (found.rowCount) return found.rows[0];
@@ -456,14 +395,13 @@ async function ensureEconomyUser(walletToken, name = "Joueur", avatar = "🐼") 
     try {
       const created = await pgPool.query(
         `INSERT INTO public.users
-          (friend_code,username,avatar,coins,wallet_token,lives,life_updated_at,last_seen,updated_at)
-         VALUES($1,$2,$3,$4,$5,5,now(),now(),now())
-         RETURNING id,wallet_token,username,avatar,coins,lives,life_updated_at`,
+          (friend_code,username,avatar,wallet_token,lives,life_updated_at,last_seen,updated_at)
+         VALUES($1,$2,$3,$4,5,now(),now(),now())
+         RETURNING id,wallet_token,username,avatar,lives,life_updated_at`,
         [
           economyFriendCode(),
           String(name || "Joueur").slice(0,24),
           String(avatar || "🐼").slice(0,16),
-          walletBalance(walletToken),
           walletToken
         ]
       );
@@ -471,7 +409,7 @@ async function ensureEconomyUser(walletToken, name = "Joueur", avatar = "🐼") 
     } catch (err) {
       if (err?.code !== "23505") throw err;
       found = await pgPool.query(
-        "SELECT id,wallet_token,username,avatar,coins,lives,life_updated_at FROM public.users WHERE wallet_token=$1 LIMIT 1",
+        "SELECT id,wallet_token,username,avatar,lives,life_updated_at FROM public.users WHERE wallet_token=$1 LIMIT 1",
         [walletToken]
       );
       if (found.rowCount) return found.rows[0];
@@ -685,37 +623,30 @@ async function refundLivesSnapshot(snapshot) {
   }
 }
 
-async function syncEconomyCoins(walletToken, coins, kind, delta, details, idempotencyKey) {
-  if (!pgPool || !walletToken) return;
+async function recordEconomyCoinTransaction(walletToken, kind, delta, details, idempotencyKey) {
+  if (!pgPool || !walletToken || delta === 0) return;
 
   try {
     const user = await ensureEconomyUser(walletToken);
     if (!user) return;
 
     await pgPool.query(
-      "UPDATE public.users SET coins=$2,updated_at=now() WHERE id=$1",
-      [user.id,Math.max(0,Math.floor(Number(coins)||0))]
+      `INSERT INTO public.economy_transactions
+        (user_id,wallet_token,kind,coins_delta,lives_delta,room_code,note,idempotency_key)
+       VALUES($1,$2,$3,$4,0,$5,$6,$7)
+       ON CONFLICT(idempotency_key) DO NOTHING`,
+      [
+        user.id,
+        walletToken,
+        String(kind || "COIN_CHANGE").slice(0,40),
+        Math.trunc(Number(delta)||0),
+        details?.roomCode ? String(details.roomCode).slice(0,8) : null,
+        details?.note ? String(details.note).slice(0,100) : null,
+        idempotencyKey || null
+      ]
     );
-
-    if (delta !== 0) {
-      await pgPool.query(
-        `INSERT INTO public.economy_transactions
-          (user_id,wallet_token,kind,coins_delta,lives_delta,room_code,note,idempotency_key)
-         VALUES($1,$2,$3,$4,0,$5,$6,$7)
-         ON CONFLICT(idempotency_key) DO NOTHING`,
-        [
-          user.id,
-          walletToken,
-          String(kind || "COIN_CHANGE").slice(0,40),
-          Math.trunc(Number(delta)||0),
-          details?.roomCode ? String(details.roomCode).slice(0,8) : null,
-          details?.note ? String(details.note).slice(0,100) : null,
-          idempotencyKey || null
-        ]
-      );
-    }
   } catch (err) {
-    console.warn("Economie sync:", err.message);
+    console.warn("Economie transaction:", err.message);
   }
 }
 
@@ -762,13 +693,7 @@ async function initLearningPersistence() {
   loadLearningData();
   if (!pgPool) return;
   try {
-    await pgPool.query(`CREATE TABLE IF NOT EXISTS ptitbac_learned_answers (
-      answer_key TEXT PRIMARY KEY, category TEXT NOT NULL, answer TEXT NOT NULL, status TEXT NOT NULL,
-      confidence INTEGER NOT NULL, source TEXT NOT NULL, support_count INTEGER NOT NULL DEFAULT 1, updated_at BIGINT NOT NULL)`);
-    await pgPool.query(`CREATE TABLE IF NOT EXISTS ptitbac_answer_reports (
-      id TEXT PRIMARY KEY, room_code TEXT, player_id TEXT, round_index INTEGER, category TEXT NOT NULL, answer TEXT NOT NULL,
-      letter TEXT NOT NULL, original_reason TEXT, status TEXT NOT NULL, review_verdict TEXT, review_confidence INTEGER,
-      created_at BIGINT NOT NULL, reviewed_at BIGINT)`);
+    await ensureDatabaseSchema();
     const learned = await pgPool.query("SELECT answer_key, category, answer, status, confidence, source, support_count, updated_at FROM ptitbac_learned_answers");
     learnedAnswers.clear();
     for (const row of learned.rows) learnedAnswers.set(row.answer_key, { category: row.category, answer: row.answer, status: row.status, confidence: row.confidence, source: row.source, supportCount: row.support_count, updatedAt: Number(row.updated_at) });

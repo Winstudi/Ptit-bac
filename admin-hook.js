@@ -1,7 +1,7 @@
 "use strict";
 
 const crypto = require("crypto");
-const { getPool } = require("./db.js");
+const { getPool, ensureDatabaseSchema } = require("./db.js");
 
 const ADMIN_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
@@ -17,7 +17,6 @@ const infiniteLives =
   (global.__ptbInfiniteLives = new Set());
 
 const gemOverrides = new Map();
-let schemaPromise = null;
 
 const ITEM_CATALOG = [
   { key:"epic_chest", label:"Coffre épique", icon:"🎁" },
@@ -59,178 +58,15 @@ function learnedAnswerKey(category, answer) {
 
 
 async function ensureUserModerationColumns() {
-  if (!pool) return;
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_banned boolean NOT NULL DEFAULT false"
-  ).catch(()=>{});
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_ban_reason text"
-  ).catch(()=>{});
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin_banned_at timestamptz"
-  ).catch(()=>{});
+  return ensureDatabaseSchema();
 }
 
 async function ensureReportModerationColumns() {
-  if (!pool) return;
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS ptitbac_feedback_reports ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending'"
-  ).catch(()=>{});
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS ptitbac_feedback_reports ADD COLUMN IF NOT EXISTS treated_at timestamptz"
-  ).catch(()=>{});
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS ptitbac_player_reports ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending'"
-  ).catch(()=>{});
-
-  await pool.query(
-    "ALTER TABLE IF EXISTS ptitbac_player_reports ADD COLUMN IF NOT EXISTS treated_at timestamptz"
-  ).catch(()=>{});
+  return ensureDatabaseSchema();
 }
 
 async function schema() {
-  if (!pool) throw new Error("DATABASE_URL manquant");
-  if (schemaPromise) return schemaPromise;
-
-  schemaPromise = (async () => {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_admin_owner(
-        singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
-        wallet_token text UNIQUE NOT NULL,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_admin_settings(
-        wallet_token text PRIMARY KEY,
-        infinite_coins boolean NOT NULL DEFAULT false,
-        infinite_lives boolean NOT NULL DEFAULT false,
-        updated_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_feedback_reports(
-        id text PRIMARY KEY,
-        report_type text NOT NULL CHECK(report_type IN ('report-avis','report-bug')),
-        wallet_token text,
-        friend_code text,
-        player_name text,
-        message text NOT NULL,
-        room_code text,
-        category text,
-        answer text,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_learned_answers(
-        answer_key text PRIMARY KEY,
-        category text NOT NULL,
-        answer text NOT NULL,
-        status text NOT NULL,
-        confidence integer NOT NULL,
-        source text NOT NULL,
-        support_count integer NOT NULL DEFAULT 1,
-        updated_at bigint NOT NULL
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_answer_reports(
-        id text PRIMARY KEY,
-        room_code text,
-        player_id text,
-        round_index integer,
-        category text NOT NULL,
-        answer text NOT NULL,
-        letter text NOT NULL,
-        original_reason text,
-        status text NOT NULL,
-        review_verdict text,
-        review_confidence integer,
-        created_at bigint NOT NULL,
-        reviewed_at bigint
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_player_items(
-        wallet_token text NOT NULL,
-        item_key text NOT NULL,
-        quantity integer NOT NULL DEFAULT 0 CHECK(quantity >= 0),
-        updated_at timestamptz NOT NULL DEFAULT now(),
-        PRIMARY KEY(wallet_token,item_key)
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_admin_logs(
-        id text PRIMARY KEY,
-        admin_wallet_token text NOT NULL,
-        action text NOT NULL,
-        target_friend_code text,
-        details jsonb NOT NULL DEFAULT '{}'::jsonb,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await ensureUserModerationColumns();
-    await ensureReportModerationColumns();
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_player_warnings(
-        id text PRIMARY KEY,
-        wallet_token text NOT NULL,
-        friend_code text,
-        message text NOT NULL,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        delivered_at timestamptz
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_inbox_messages(
-        id text PRIMARY KEY,
-        sender_wallet_token text,
-        recipient_wallet_token text,
-        recipient_friend_code text,
-        message_type text NOT NULL DEFAULT 'message',
-        title text NOT NULL,
-        body text NOT NULL,
-        image_data text,
-        reward_type text NOT NULL DEFAULT 'none',
-        reward_key text,
-        reward_amount integer NOT NULL DEFAULT 0,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ptitbac_inbox_receipts(
-        message_id text NOT NULL REFERENCES ptitbac_inbox_messages(id) ON DELETE CASCADE,
-        wallet_token text NOT NULL,
-        read_at timestamptz,
-        claimed_at timestamptz,
-        PRIMARY KEY(message_id,wallet_token)
-      )
-    `);
-
-    await pool.query(
-      `CREATE INDEX IF NOT EXISTS idx_ptitbac_inbox_recipient
-       ON ptitbac_inbox_messages(recipient_wallet_token,created_at DESC)`
-    );
-  })();
-
-  return schemaPromise;
+  return ensureDatabaseSchema();
 }
 
 async function ownerToken() {
@@ -647,13 +483,6 @@ async function updateResource(io, {
          updated_at=$4`,
       [targetToken,next,Number(wallet.gems || 0),now]
     );
-
-    await pool.query(
-      `UPDATE public.users
-       SET coins=$2,updated_at=now()
-       WHERE wallet_token=$1`,
-      [targetToken,next]
-    ).catch(()=>{});
 
     global.__ptbAdminSetCoins?.(targetToken, next);
   } else {
@@ -1844,13 +1673,6 @@ function installAdmin(io) {
                updated_at=$4`,
             [token,coins,gems,now]
           );
-
-          await client.query(
-            `UPDATE public.users
-             SET coins=$2,updated_at=now()
-             WHERE wallet_token=$1`,
-            [token,coins]
-          ).catch(()=>{});
         }
 
         if (message.reward_type === "item") {

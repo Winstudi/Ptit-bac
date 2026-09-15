@@ -42,6 +42,9 @@ de patch contenues ici ont été remplacées par l'architecture actuelle.
 ## Backend
 
 - Pool PostgreSQL unique via `db.js`
+- migrations centralisées via `db-migrations.js`
+- `ptitbac_wallets` est l'unique source de vérité des pièces
+- présence amis/chat partagée via `presence-service.js`
 - sécurité Socket.IO centralisée
 - quick-match séparé
 - inventaire et progression dans des services dédiés

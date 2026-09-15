@@ -1,36 +1,13 @@
 "use strict";
 
 const crypto = require("crypto");
-const { getPool } = require("./db.js");
+const { getPool, ensureDatabaseSchema } = require("./db.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const pool = getPool();
 
-let schemaPromise = null;
-
 function ensureSchema() {
-  if (!pool) return Promise.reject(new Error("DATABASE_URL manquant"));
-  if (schemaPromise) return schemaPromise;
-
-  schemaPromise = pool.query(`
-    CREATE TABLE IF NOT EXISTS ptitbac_player_reports (
-      id text PRIMARY KEY,
-      reporter_wallet_token text NOT NULL,
-      reported_friend_code text NOT NULL,
-      reported_name text NOT NULL,
-      room_code text,
-      reported_player_id text,
-      reason text NOT NULL DEFAULT 'lobby_profile',
-      created_at timestamptz NOT NULL DEFAULT now()
-    )
-  `).then(() =>
-    pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_player_reports_target_idx
-      ON ptitbac_player_reports(reported_friend_code, created_at DESC)
-    `)
-  );
-
-  return schemaPromise;
+  return ensureDatabaseSchema();
 }
 
 function validWalletToken(value) {

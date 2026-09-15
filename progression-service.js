@@ -129,7 +129,7 @@ function calculateRoomXp(room) {
   return results;
 }
 
-function createProgressionService({ getPool }) {
+function createProgressionService({ getPool, ensureSchema: ensureSharedSchema = null }) {
   if (typeof getPool !== "function") throw new TypeError("getPool requis");
 
   let schemaPromise = null;
@@ -143,42 +143,17 @@ function createProgressionService({ getPool }) {
   async function ensureSchema() {
     if (schemaPromise) return schemaPromise;
 
-    schemaPromise = (async () => {
-      const db = pool();
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_progression (
-          wallet_token text PRIMARY KEY,
-          total_xp integer NOT NULL DEFAULT 0 CHECK (total_xp >= 0),
-          completed_games integer NOT NULL DEFAULT 0 CHECK (completed_games >= 0),
-          wins integer NOT NULL DEFAULT 0 CHECK (wins >= 0),
-          created_at timestamptz NOT NULL DEFAULT now(),
-          updated_at timestamptz NOT NULL DEFAULT now()
-        )
-      `);
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_progression_events (
-          event_key text PRIMARY KEY,
-          wallet_token text NOT NULL,
-          room_code text,
-          xp_delta integer NOT NULL CHECK (xp_delta >= 0),
-          before_total_xp integer NOT NULL CHECK (before_total_xp >= 0),
-          after_total_xp integer NOT NULL CHECK (after_total_xp >= 0),
-          before_level integer NOT NULL,
-          after_level integer NOT NULL,
-          rank integer NOT NULL DEFAULT 0,
-          valid_answers integer NOT NULL DEFAULT 0,
-          rounds integer NOT NULL DEFAULT 0,
-          created_at timestamptz NOT NULL DEFAULT now()
-        )
-      `);
-      await db.query(`
-        CREATE INDEX IF NOT EXISTS ptitbac_progression_events_wallet_idx
-        ON public.ptitbac_progression_events(wallet_token, created_at DESC)
-      `);
-    })().catch(err => {
-      schemaPromise = null;
-      throw err;
-    });
+    schemaPromise = Promise.resolve()
+      .then(() => {
+        if (typeof ensureSharedSchema === "function") {
+          return ensureSharedSchema();
+        }
+        return null;
+      })
+      .catch(err => {
+        schemaPromise = null;
+        throw err;
+      });
 
     return schemaPromise;
   }

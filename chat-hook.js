@@ -13,13 +13,12 @@
  * - signalement
  */
 
-const { getPool } = require("./db.js");
+const { getPool, ensureDatabaseSchema } = require("./db.js");
+const presence = require("./presence-service.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const pool = getPool();
 
-let schemaPromise = null;
-const activeUsers = new Map(); // userId -> Set(socketId)
 
 function validToken(value) {
   const token = String(value || "").trim();
@@ -33,89 +32,8 @@ function cleanMessage(value) {
     .slice(0, 500);
 }
 
-function addActive(userId, socketId) {
-  if (!activeUsers.has(userId)) activeUsers.set(userId, new Set());
-  activeUsers.get(userId).add(socketId);
-}
-
-function removeActive(userId, socketId) {
-  const set = activeUsers.get(userId);
-  if (!set) return;
-  set.delete(socketId);
-  if (!set.size) activeUsers.delete(userId);
-}
-
-function isOnline(userId) {
-  return Boolean(activeUsers.get(userId)?.size);
-}
-
-function emitToUser(io, userId, event, payload) {
-  const sockets = activeUsers.get(userId);
-  if (!sockets) return;
-  for (const socketId of sockets) io.to(socketId).emit(event, payload);
-}
-
 async function ensureSchema() {
-  if (!pool) throw new Error("DATABASE_URL manquant");
-  if (schemaPromise) return schemaPromise;
-
-  schemaPromise = (async () => {
-    // Attend que friends-hook ait créé public.users.
-    for (let i = 0; i < 60; i++) {
-      const q = await pool.query(`SELECT to_regclass('public.users') AS users_table`);
-      if (q.rows[0]?.users_table) break;
-      if (i === 59) throw new Error("table users introuvable");
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ptitbac_messages (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        sender_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        receiver_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        content text NOT NULL CHECK (char_length(content) BETWEEN 1 AND 500),
-        created_at timestamptz NOT NULL DEFAULT now(),
-        read_at timestamptz,
-        CHECK (sender_id <> receiver_id)
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ptitbac_chat_hidden (
-        user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        friend_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        hidden_before timestamptz NOT NULL DEFAULT now(),
-        PRIMARY KEY (user_id, friend_id)
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ptitbac_chat_reports (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        reporter_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        reported_user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        note text,
-        created_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_messages_pair_created_idx
-      ON public.ptitbac_messages(sender_id, receiver_id, created_at DESC)
-    `);
-
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_messages_receiver_unread_idx
-      ON public.ptitbac_messages(receiver_id, read_at, created_at DESC)
-    `);
-
-    console.log("Chat V1: schéma PostgreSQL prêt.");
-  })().catch(err => {
-    schemaPromise = null;
-    throw err;
-  });
-
-  return schemaPromise;
+  return ensureDatabaseSchema();
 }
 
 async function userFromToken(walletToken) {
@@ -139,12 +57,12 @@ async function identity(socket, payload = {}) {
   const user = await userFromToken(token);
 
   if (socket.data.ptitChatUserId && socket.data.ptitChatUserId !== user.id) {
-    removeActive(socket.data.ptitChatUserId, socket.id);
+    presence.remove(socket.data.ptitChatUserId, socket.id);
   }
 
   socket.data.ptitChatUserId = user.id;
   socket.data.ptitChatWalletToken = user.wallet_token;
-  addActive(user.id, socket.id);
+  presence.add(user.id, socket.id);
 
   await pool.query(
     `UPDATE public.users SET last_seen = now(), updated_at = now() WHERE id = $1`,
@@ -171,7 +89,7 @@ function safeUser(row) {
     username: row.username,
     avatar: row.avatar || "🐼",
     lastSeen: row.last_seen || null,
-    online: isOnline(row.id)
+    online: presence.isOnline(row.id)
   };
 }
 
@@ -335,7 +253,7 @@ function installChat(io) {
         const readRows = await markRead(me.id, friendId);
 
         if (readRows.length) {
-          emitToUser(io, friendId, "chat:read", {
+          presence.emitToUser(io, friendId, "chat:read", {
             byUserId: me.id,
             messageIds: readRows.map(row => row.id),
             readAt: readRows[0].read_at
@@ -379,12 +297,12 @@ function installChat(io) {
 
         const message = inserted.rows[0];
 
-        emitToUser(io, friendId, "chat:message", {
+        presence.emitToUser(io, friendId, "chat:message", {
           message,
           from: safeUser(me)
         });
 
-        emitToUser(io, me.id, "chat:message", {
+        presence.emitToUser(io, me.id, "chat:message", {
           message,
           from: safeUser(me)
         });
@@ -404,7 +322,7 @@ function installChat(io) {
         }
         const rows = await markRead(me.id, friendId);
         if (rows.length) {
-          emitToUser(io, friendId, "chat:read", {
+          presence.emitToUser(io, friendId, "chat:read", {
             byUserId: me.id,
             messageIds: rows.map(row => row.id),
             readAt: rows[0].read_at
@@ -458,7 +376,7 @@ function installChat(io) {
 
     socket.on("disconnect", () => {
       if (socket.data.ptitChatUserId) {
-        removeActive(socket.data.ptitChatUserId, socket.id);
+        presence.remove(socket.data.ptitChatUserId, socket.id);
       }
     });
   });

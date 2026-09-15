@@ -1,6 +1,6 @@
 "use strict";
 
-const { Pool } = require("pg");
+const { runDatabaseMigrations } = require("./db-migrations.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const POOL_MAX = Math.max(
@@ -9,6 +9,7 @@ const POOL_MAX = Math.max(
 );
 
 let pool = null;
+let migrationPromise = null;
 
 function hasDatabase() {
   return Boolean(DATABASE_URL);
@@ -17,6 +18,7 @@ function hasDatabase() {
 function createPool() {
   if (!DATABASE_URL) return null;
 
+  const { Pool } = require("pg");
   const shared = new Pool({
     connectionString: DATABASE_URL,
     ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL)
@@ -59,9 +61,28 @@ function getPool() {
   return pool;
 }
 
+function ensureDatabaseSchema() {
+  const db = getPool();
+  if (!db) return Promise.reject(new Error("DATABASE_URL manquant"));
+  if (migrationPromise) return migrationPromise;
+
+  migrationPromise = runDatabaseMigrations(db)
+    .then(() => {
+      console.log("PostgreSQL: schéma central prêt.");
+      return db;
+    })
+    .catch(error => {
+      migrationPromise = null;
+      throw error;
+    });
+
+  return migrationPromise;
+}
+
 module.exports = {
   DATABASE_URL,
   POOL_MAX,
   hasDatabase,
-  getPool
+  getPool,
+  ensureDatabaseSchema
 };

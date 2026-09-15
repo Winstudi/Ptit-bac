@@ -66,11 +66,16 @@ Render exécute :
 6. optimisation images
 7. démarrage
 
+## E8 — backend PostgreSQL
+
+- toutes les migrations PostgreSQL sont centralisées dans `db-migrations.js` ;
+- `ptitbac_wallets` est l'unique source de vérité des pièces ;
+- l'ancien `public.users.coins` est migré puis supprimé ;
+- amis et chat partagent `presence-service.js`.
+
 ## Prochaines optimisations conseillées
 
-- centraliser les migrations PostgreSQL ;
 - supprimer définitivement les scripts historiques E1/E2/E3/E4/E5 ;
-- unifier la présence amis/chat ;
 - réduire progressivement le nombre de couches CSS d'un même écran ;
 - déplacer le CSS injecté par `progression-client.js` dans un fichier CSS ;
 - verrouiller `sharp` dans les dépendances plutôt que l'installer à chaque

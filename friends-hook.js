@@ -2,16 +2,12 @@
 "use strict";
 
 const crypto = require("crypto");
-const { getPool } = require("./db.js");
+const { getPool, ensureDatabaseSchema } = require("./db.js");
+const presence = require("./presence-service.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
-const DEFAULT_COINS = 50;
-
 const pool = getPool();
 
-let schemaReady = false;
-let schemaPromise = null;
-const activeUsers = new Map(); // userId -> Set(socketId)
 
 function cleanUsername(value) {
   const text = String(value || "").trim().replace(/\s+/g, " ");
@@ -38,71 +34,7 @@ function codeStem(username) {
 }
 
 async function ensureSchema() {
-  if (!pool) throw new Error("DATABASE_URL manquant");
-  if (schemaReady) return;
-  if (schemaPromise) return schemaPromise;
-
-  schemaPromise = (async () => {
-    await pool.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.users (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        friend_code text UNIQUE NOT NULL,
-        username text NOT NULL,
-        avatar text DEFAULT '🐼',
-        coins integer NOT NULL DEFAULT 50 CHECK (coins >= 0),
-        wallet_token text UNIQUE,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        last_seen timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
-
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_token text UNIQUE`);
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()`);
-    await pool.query(`ALTER TABLE public.users ALTER COLUMN coins SET DEFAULT 50`);
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS lives integer NOT NULL DEFAULT 5 CHECK (lives >= 0 AND lives <= 5)`);
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS life_updated_at timestamptz NOT NULL DEFAULT now()`);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.friend_requests (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        sender_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        receiver_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        status text NOT NULL DEFAULT 'pending'
-          CHECK (status IN ('pending','accepted','declined')),
-        created_at timestamptz NOT NULL DEFAULT now(),
-        CHECK (sender_id <> receiver_id),
-        UNIQUE (sender_id, receiver_id)
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.friendships (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        friend_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        CHECK (user_id <> friend_id),
-        UNIQUE (user_id, friend_id)
-      )
-    `);
-
-    await pool.query(`CREATE INDEX IF NOT EXISTS users_wallet_token_idx ON public.users(wallet_token)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS users_friend_code_idx ON public.users(friend_code)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS friend_requests_sender_idx ON public.friend_requests(sender_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS friend_requests_receiver_idx ON public.friend_requests(receiver_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS friendships_user_idx ON public.friendships(user_id)`);
-
-    schemaReady = true;
-    console.log("Amis V1: schéma PostgreSQL prêt.");
-  })().catch(err => {
-    schemaPromise = null;
-    throw err;
-  });
-
-  return schemaPromise;
+  return ensureDatabaseSchema();
 }
 
 async function uniqueFriendCode(username) {
@@ -119,19 +51,6 @@ async function uniqueFriendCode(username) {
   return `${stem}#${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
-async function walletCoins(walletToken) {
-  try {
-    const result = await pool.query(
-      "SELECT coins FROM ptitbac_wallets WHERE token = $1 LIMIT 1",
-      [walletToken]
-    );
-    if (result.rowCount) return Math.max(0, Number(result.rows[0].coins) || 0);
-  } catch {
-    // La table portefeuille peut ne pas encore exister lors du tout premier démarrage.
-  }
-  return DEFAULT_COINS;
-}
-
 async function ensureProfile(payload = {}) {
   await ensureSchema();
 
@@ -140,10 +59,8 @@ async function ensureProfile(payload = {}) {
 
   const username = cleanUsername(payload.username);
   const avatar = cleanAvatar(payload.avatar);
-  const coins = await walletCoins(walletToken);
-
   let found = await pool.query(
-    `SELECT id, friend_code, username, avatar, coins, wallet_token, created_at, last_seen
+    `SELECT id, friend_code, username, avatar, wallet_token, created_at, last_seen
        FROM public.users
       WHERE wallet_token = $1
       LIMIT 1`,
@@ -153,22 +70,21 @@ async function ensureProfile(payload = {}) {
   if (!found.rowCount) {
     const friendCode = await uniqueFriendCode(username);
     found = await pool.query(
-      `INSERT INTO public.users(friend_code, username, avatar, coins, wallet_token, last_seen, updated_at)
-       VALUES($1,$2,$3,$4,$5,now(),now())
-       RETURNING id, friend_code, username, avatar, coins, wallet_token, created_at, last_seen`,
-      [friendCode, username, avatar, coins, walletToken]
+      `INSERT INTO public.users(friend_code, username, avatar, wallet_token, last_seen, updated_at)
+       VALUES($1,$2,$3,$4,now(),now())
+       RETURNING id, friend_code, username, avatar, wallet_token, created_at, last_seen`,
+      [friendCode, username, avatar, walletToken]
     );
   } else {
     found = await pool.query(
       `UPDATE public.users
           SET username = $2,
               avatar = $3,
-              coins = $4,
               last_seen = now(),
               updated_at = now()
         WHERE wallet_token = $1
-        RETURNING id, friend_code, username, avatar, coins, wallet_token, created_at, last_seen`,
-      [walletToken, username, avatar, coins]
+        RETURNING id, friend_code, username, avatar, wallet_token, created_at, last_seen`,
+      [walletToken, username, avatar]
     );
   }
 
@@ -181,32 +97,9 @@ function safeProfile(row, online = false) {
     friendCode: row.friend_code,
     username: row.username,
     avatar: row.avatar || "🐼",
-    coins: Math.max(0, Number(row.coins) || 0),
     online: Boolean(online),
     lastSeen: row.last_seen || null
   };
-}
-
-function addActiveUser(userId, socketId) {
-  if (!activeUsers.has(userId)) activeUsers.set(userId, new Set());
-  activeUsers.get(userId).add(socketId);
-}
-
-function removeActiveUser(userId, socketId) {
-  const set = activeUsers.get(userId);
-  if (!set) return;
-  set.delete(socketId);
-  if (!set.size) activeUsers.delete(userId);
-}
-
-function isOnline(userId) {
-  return Boolean(activeUsers.get(userId)?.size);
-}
-
-function emitToUser(io, userId, event, payload = {}) {
-  const sockets = activeUsers.get(userId);
-  if (!sockets) return;
-  for (const socketId of sockets) io.to(socketId).emit(event, payload);
 }
 
 async function friendIds(userId) {
@@ -221,9 +114,9 @@ async function notifyFriendsPresence(io, userId) {
   try {
     const ids = await friendIds(userId);
     for (const id of ids) {
-      emitToUser(io, id, "friends:presence", {
+      presence.emitToUser(io, id, "friends:presence", {
         userId,
-        online: isOnline(userId)
+        online: presence.isOnline(userId)
       });
     }
   } catch (err) {
@@ -233,7 +126,7 @@ async function notifyFriendsPresence(io, userId) {
 
 async function getFriendData(userId) {
   const friends = await pool.query(
-    `SELECT u.id, u.friend_code, u.username, u.avatar, u.coins, u.last_seen
+    `SELECT u.id, u.friend_code, u.username, u.avatar, u.last_seen
        FROM public.friendships f
        JOIN public.users u ON u.id = f.friend_id
       WHERE f.user_id = $1
@@ -243,7 +136,7 @@ async function getFriendData(userId) {
 
   const incoming = await pool.query(
     `SELECT fr.id AS request_id, fr.created_at,
-            u.id, u.friend_code, u.username, u.avatar, u.coins, u.last_seen
+            u.id, u.friend_code, u.username, u.avatar, u.last_seen
        FROM public.friend_requests fr
        JOIN public.users u ON u.id = fr.sender_id
       WHERE fr.receiver_id = $1 AND fr.status = 'pending'
@@ -253,7 +146,7 @@ async function getFriendData(userId) {
 
   const outgoing = await pool.query(
     `SELECT fr.id AS request_id, fr.created_at,
-            u.id, u.friend_code, u.username, u.avatar, u.coins, u.last_seen
+            u.id, u.friend_code, u.username, u.avatar, u.last_seen
        FROM public.friend_requests fr
        JOIN public.users u ON u.id = fr.receiver_id
       WHERE fr.sender_id = $1 AND fr.status = 'pending'
@@ -262,16 +155,16 @@ async function getFriendData(userId) {
   );
 
   return {
-    friends: friends.rows.map(r => safeProfile(r, isOnline(r.id))),
+    friends: friends.rows.map(r => safeProfile(r, presence.isOnline(r.id))),
     incoming: incoming.rows.map(r => ({
       requestId: r.request_id,
       createdAt: r.created_at,
-      user: safeProfile(r, isOnline(r.id))
+      user: safeProfile(r, presence.isOnline(r.id))
     })),
     outgoing: outgoing.rows.map(r => ({
       requestId: r.request_id,
       createdAt: r.created_at,
-      user: safeProfile(r, isOnline(r.id))
+      user: safeProfile(r, presence.isOnline(r.id))
     }))
   };
 }
@@ -280,12 +173,12 @@ async function identityForSocket(socket, payload = {}) {
   const profile = await ensureProfile(payload);
 
   if (socket.data.ptitUserId && socket.data.ptitUserId !== profile.id) {
-    removeActiveUser(socket.data.ptitUserId, socket.id);
+    presence.remove(socket.data.ptitUserId, socket.id);
   }
 
   socket.data.ptitUserId = profile.id;
   socket.data.ptitWalletToken = profile.wallet_token;
-  addActiveUser(profile.id, socket.id);
+  presence.add(profile.id, socket.id);
   return profile;
 }
 
@@ -336,7 +229,7 @@ function installFriends(io, game = {}) {
         }
 
         const targetResult = await pool.query(
-          `SELECT id, friend_code, username, avatar, coins, last_seen
+          `SELECT id, friend_code, username, avatar, last_seen
              FROM public.users
             WHERE upper(friend_code) = $1
             LIMIT 1`,
@@ -383,11 +276,11 @@ function installFriends(io, game = {}) {
           [profile.id, target.id]
         );
 
-        emitToUser(io, target.id, "friends:changed", { reason: "request" });
+        presence.emitToUser(io, target.id, "friends:changed", { reason: "request" });
         callback({
           ok: true,
           requestId: request.rows[0].id,
-          target: safeProfile(target, isOnline(target.id))
+          target: safeProfile(target, presence.isOnline(target.id))
         });
       } catch (err) {
         console.error("friends:send:", err.message);
@@ -434,7 +327,7 @@ function installFriends(io, game = {}) {
         );
 
         await client.query("COMMIT");
-        emitToUser(io, senderId, "friends:changed", { reason: "accepted" });
+        presence.emitToUser(io, senderId, "friends:changed", { reason: "accepted" });
         callback({ ok: true });
       } catch (err) {
         try { await client.query("ROLLBACK"); } catch {}
@@ -462,7 +355,7 @@ function installFriends(io, game = {}) {
           return callback({ ok: false, error: "Cette demande n'est plus disponible." });
         }
 
-        emitToUser(io, result.rows[0].sender_id, "friends:changed", { reason: "declined" });
+        presence.emitToUser(io, result.rows[0].sender_id, "friends:changed", { reason: "declined" });
         callback({ ok: true });
       } catch (err) {
         callback({ ok: false, error: "Impossible de refuser la demande." });
@@ -481,7 +374,7 @@ function installFriends(io, game = {}) {
           [profile.id, friendId]
         );
 
-        emitToUser(io, friendId, "friends:changed", { reason: "removed" });
+        presence.emitToUser(io, friendId, "friends:changed", { reason: "removed" });
         callback({ ok: true });
       } catch (err) {
         callback({ ok: false, error: "Impossible de supprimer cet ami." });
@@ -512,7 +405,7 @@ function installFriends(io, game = {}) {
         if (!target.rowCount || game.isBusy?.(target.rows[0].wallet_token)) {
           return callback({ ok:false, error:"Cet ami est déjà dans un salon ou en partie." });
         }
-        if (!isOnline(friendId)) return callback({ok:true,delivered:false});
+        if (!presence.isOnline(friendId)) return callback({ok:true,delivered:false});
         if (!game.canInvite?.(profile.wallet_token, roomCode)) {
           return callback({ok:false,error:"Ce salon n’est plus disponible."});
         }
@@ -522,13 +415,13 @@ function installFriends(io, game = {}) {
         }
         socket.data.lastFriendInvite = Date.now();
 
-        emitToUser(io, friendId, "friends:room-invite", {
+        presence.emitToUser(io, friendId, "friends:room-invite", {
           from: safeProfile(profile, true),
           roomCode,
           expiresAt: Date.now() + 60000
         });
 
-        callback({ ok: true, delivered: isOnline(friendId) });
+        callback({ ok: true, delivered: presence.isOnline(friendId) });
       } catch (err) {
         callback({ ok: false, error: "Impossible d'envoyer l'invitation." });
       }
@@ -537,9 +430,9 @@ function installFriends(io, game = {}) {
     socket.on("disconnect", () => {
       const userId = socket.data.ptitUserId;
       if (!userId) return;
-      removeActiveUser(userId, socket.id);
+      presence.remove(userId, socket.id);
 
-      if (!isOnline(userId)) {
+      if (!presence.isOnline(userId)) {
         pool.query(
           "UPDATE public.users SET last_seen=now(), updated_at=now() WHERE id=$1",
           [userId]

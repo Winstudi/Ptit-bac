@@ -103,7 +103,7 @@ function canEquipFromState(state, type, value) {
   return Array.isArray(state.owned?.[bucket]) && state.owned[bucket].includes(id);
 }
 
-function createInventoryService({ getPool }) {
+function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = null }) {
   if (typeof getPool !== "function") throw new TypeError("getPool requis");
 
   let schemaPromise = null;
@@ -120,32 +120,13 @@ function createInventoryService({ getPool }) {
 
     schemaPromise = (async () => {
       const db = pool();
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_items (
-          wallet_token text NOT NULL,
-          item_type text NOT NULL CHECK (item_type IN ('avatar','frame','tag')),
-          item_id text NOT NULL,
-          source text NOT NULL DEFAULT 'system',
-          acquired_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY (wallet_token, item_type, item_id)
-        )
-      `);
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_equipped (
-          wallet_token text PRIMARY KEY,
-          avatar_id text NOT NULL DEFAULT '/a1.webp',
-          frame_id text NOT NULL DEFAULT '',
-          tag_id text NOT NULL DEFAULT 'tag_debutant',
-          updated_at timestamptz NOT NULL DEFAULT now()
-        )
-      `);
-      await db.query(`
-        CREATE INDEX IF NOT EXISTS ptitbac_inventory_items_wallet_idx
-        ON public.ptitbac_inventory_items(wallet_token, item_type, acquired_at)
-      `);
+      if (typeof ensureSharedSchema === "function") {
+        await ensureSharedSchema();
+      }
 
-      // Nettoyage de l'ancien prototype cosmétique.
-      // Les cadres reviendront plus tard avec un nouveau catalogue serveur.
+      // Nettoyage métier de l'ancien prototype cosmétique.
+      // Ce n'est pas une migration de schéma : le catalogue actuel ne possède
+      // volontairement aucun cadre avancé ni tag autre que Débutant.
       await db.query(`
         DELETE FROM public.ptitbac_inventory_items
          WHERE item_type = 'frame'
