@@ -197,6 +197,97 @@
   }
 
   function bindHomeGameActions() {
+    let staleRoomCleanupPending = false;
+
+    const runAfterOldRoomCleanup = action => {
+      if (typeof action !== "function") return;
+
+      const code = String(
+        session?.code ||
+        localStorage.getItem("petitbac_code") ||
+        ""
+      ).trim().toUpperCase();
+      const playerId = String(
+        session?.playerId ||
+        localStorage.getItem("petitbac_playerId") ||
+        ""
+      ).trim();
+
+      // Aucun ancien salon connu : on peut continuer immédiatement.
+      if (!code || !playerId) {
+        action();
+        return;
+      }
+
+      if (staleRoomCleanupPending) return;
+      if (!socket?.connected) {
+        toast("Connexion interrompue. Attends la reconnexion.");
+        return;
+      }
+
+      staleRoomCleanupPending = true;
+
+      const finishWithoutOldRoom = () => {
+        staleRoomCleanupPending = false;
+        clearSession();
+        action();
+      };
+
+      const leaveOldRoom = () => {
+        socket.timeout(4500).emit(
+          "game:leave",
+          { code, playerId },
+          (leaveError, leaveResponse) => {
+            if (leaveError) {
+              staleRoomCleanupPending = false;
+              toast("Impossible de fermer l’ancienne partie. Réessaie.");
+              return;
+            }
+
+            // Si le salon/joueur a déjà disparu, la session locale était
+            // simplement périmée : elle ne doit pas empêcher une nouvelle partie.
+            if (!leaveResponse?.ok) {
+              const message = String(leaveResponse?.error || "").toLowerCase();
+              const alreadyGone =
+                message.includes("introuvable") ||
+                message.includes("invalide") ||
+                message.includes("session");
+
+              if (!alreadyGone) {
+                staleRoomCleanupPending = false;
+                toast(leaveResponse?.error || "Impossible de quitter l’ancienne partie.");
+                return;
+              }
+            }
+
+            finishWithoutOldRoom();
+          }
+        );
+      };
+
+      // Après une coupure/rechargement, le serveur conserve volontairement
+      // la place quelques secondes pour permettre une reconnexion. On reprend
+      // d'abord cette place avec le même portefeuille, puis on la quitte
+      // explicitement afin que le serveur retire réellement le joueur.
+      socket.timeout(4500).emit(
+        "room:reconnect",
+        {
+          code,
+          playerId,
+          walletToken:session.walletToken
+        },
+        (reconnectError, reconnectResponse) => {
+          if (!reconnectError && reconnectResponse?.ok) {
+            leaveOldRoom();
+            return;
+          }
+
+          // Le serveur ne connaît plus cette ancienne session : nettoyage local.
+          finishWithoutOldRoom();
+        }
+      );
+    };
+
     const ensureProfile = () => {
       const profile = getProfile();
 
@@ -234,34 +325,38 @@
         return toast(`Plus de vie. Recharge dans ${formatRecharge(eco.secondsToNext)}.`);
       }
 
-      window.startQuickPlay(profile);
+      runAfterOldRoomCleanup(() => {
+        window.startQuickPlay(profile);
+      });
     });
 
     document.getElementById("homePlaqueCreate")?.addEventListener("click", () => {
       const profile = ensureProfile();
       if (!profile) return;
 
-      socket.emit("room:create", {
-        name: profile.name.trim(),
-        rounds: 1,
-        categoryCount: 6,
-        categoryDifficulty: "medium",
-        duration: 60,
-        avatar: profile.icon,
-        friendCode: String(localStorage.getItem("petitbac_friendCode") || "").trim(),
-        walletToken: session.walletToken
-      }, response => {
-        if (!response?.ok) {
-          return toast(response?.error || "Impossible de créer le salon.");
-        }
+      runAfterOldRoomCleanup(() => {
+        socket.emit("room:create", {
+          name: profile.name.trim(),
+          rounds: 1,
+          categoryCount: 6,
+          categoryDifficulty: "medium",
+          duration: 60,
+          avatar: profile.icon,
+          friendCode: String(localStorage.getItem("petitbac_friendCode") || "").trim(),
+          walletToken: session.walletToken
+        }, response => {
+          if (!response?.ok) {
+            return toast(response?.error || "Impossible de créer le salon.");
+          }
 
-        if (response.walletToken) {
-          setWalletState(response.walletToken, response.balance);
-        }
+          if (response.walletToken) {
+            setWalletState(response.walletToken, response.balance);
+          }
 
-        saveSession(response.code, response.playerId);
-        session.state = response.state;
-        render();
+          saveSession(response.code, response.playerId);
+          session.state = response.state;
+          render();
+        });
       });
     });
 
@@ -293,25 +388,27 @@
         return toast("Entre le code à 5 caractères du salon.");
       }
 
-      socket.emit("room:join", {
-        code,
-        name: profile.name.trim(),
-        avatar: profile.icon,
-        friendCode: String(localStorage.getItem("petitbac_friendCode") || "").trim(),
-        walletToken: session.walletToken
-      }, response => {
-        if (!response?.ok) {
-          return toast(response?.error || "Impossible de rejoindre.");
-        }
+      runAfterOldRoomCleanup(() => {
+        socket.emit("room:join", {
+          code,
+          name: profile.name.trim(),
+          avatar: profile.icon,
+          friendCode: String(localStorage.getItem("petitbac_friendCode") || "").trim(),
+          walletToken: session.walletToken
+        }, response => {
+          if (!response?.ok) {
+            return toast(response?.error || "Impossible de rejoindre.");
+          }
 
-        if (response.walletToken) {
-          setWalletState(response.walletToken, response.balance);
-        }
+          if (response.walletToken) {
+            setWalletState(response.walletToken, response.balance);
+          }
 
-        saveSession(response.code, response.playerId);
-        session.state = response.state;
-        document.getElementById("homeJoinDialog")?.close();
-        render();
+          saveSession(response.code, response.playerId);
+          session.state = response.state;
+          document.getElementById("homeJoinDialog")?.close();
+          render();
+        });
       });
     });
 

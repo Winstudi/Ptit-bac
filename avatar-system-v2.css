@@ -307,12 +307,12 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
   border-radius:0 !important;
 }
 
-/* Profil : même principe, l'avatar doit remplir visuellement le cadre. */
+/* Profil : l'avatar remplit presque entièrement l'intérieur du cadre. */
 .profile-v10-avatar-visual.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
-  width:94% !important;
-  height:94% !important;
-  max-width:94% !important;
-  max-height:94% !important;
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
   border-radius:0 !important;
 }
 
