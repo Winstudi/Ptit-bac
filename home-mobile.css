@@ -199,12 +199,12 @@ body:has(.home-mobile) .economy-hud {
   font-size:.46rem;
   font-weight:700;
   white-space:nowrap;
-  transform:translateY(23px);
+  transform:translateY(9px);
 }
 
 /* La progression XP est injectée par progression-client.js : on la descend avec le niveau. */
 .home-mobile .hm-profile-copy .ptb-home-xp-bar {
-  transform:translateY(23px) !important;
+  transform:translateY(9px) !important;
 }
 
 .hm-resources {
@@ -603,23 +603,21 @@ body:has(.home-mobile) .economy-hud {
   left:5px;
   right:5px;
   bottom:4px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:3px;
+  display:block;
+  width:auto;
   color:#ffe9f1;
   font-size:.46rem;
   line-height:1.05;
   font-weight:800;
   white-space:nowrap;
+  text-align:center;
   pointer-events:none;
 }
 
-.hm-mode-grid .hm-quick-lives img {
-  width:10px;
-  height:10px;
-  margin:0;
-  flex:0 0 10px;
+.hm-quick-lives > span {
+  display:block;
+  width:100%;
+  text-align:center;
 }
 
 .hm-quick-lives strong {

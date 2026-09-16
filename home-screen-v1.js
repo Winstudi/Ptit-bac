@@ -599,9 +599,8 @@
             <button id="homePlaqueQuick" class="hm-quick" type="button">
               ${img("lightning")}
               <b>Jouer ${chevronIcon()}</b>
-              <span class="hm-quick-lives" aria-label="${lives} vie restante(s)">
-                ${img("heart")}
-                <span><strong id="homeQuickLives">${lives}</strong> vie restante(s)</span>
+              <span class="hm-quick-lives" aria-label="${lives} vie(s) restante(s)">
+                <span><strong id="homeQuickLives">${lives}</strong> vie(s) restante(s)</span>
               </span>
             </button>
 
