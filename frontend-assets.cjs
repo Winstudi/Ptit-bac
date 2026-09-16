@@ -2,8 +2,9 @@
 
 /**
  * Source de vérité de l'ordre des assets frontend regroupés en production.
- * L'ordre de chaque tableau doit rester identique à index.html : plusieurs
- * écrans modernes surchargent volontairement une base plus ancienne.
+ * L'ordre de chaque tableau doit rester identique à index.html. Chaque
+ * comportement frontend doit avoir un seul propriétaire : éviter les scripts
+ * de correction tardifs, les monkey-patchs et les observers concurrents.
  */
 const BUNDLES = Object.freeze([
   Object.freeze({
@@ -84,7 +85,6 @@ const BUNDLES = Object.freeze([
       "lobby-screen-v4.js",
       "quick-lobby-v1.js",
       "category-selection-v2.js",
-      "category-chooser-card-v1.js",
       "admin-v1.js",
       "inbox-v1.js",
       "ui-runtime-v1.js",

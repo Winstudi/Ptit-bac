@@ -102,6 +102,16 @@
     }
   }
 
+  function syncQuickModeClass() {
+    let quick = false;
+
+    try {
+      quick = session?.state?.mode === "quick";
+    } catch {}
+
+    document.documentElement.classList.toggle("ptb-quick-game", quick);
+  }
+
   function scheduleEnhance() {
     if (scheduled) return;
 
@@ -109,6 +119,7 @@
 
     requestAnimationFrame(() => {
       scheduled = false;
+      syncQuickModeClass();
       enhanceQuickLobby();
     });
   }

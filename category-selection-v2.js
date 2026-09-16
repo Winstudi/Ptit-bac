@@ -1,9 +1,6 @@
 (() => {
   "use strict";
 
-  const originalRenderCategorySelection =
-    typeof renderCategorySelection === "function" ? renderCategorySelection : null;
-
   let categoryExitMenuOpen = false;
   let pendingCategoryReroll = null;
 
@@ -15,35 +12,6 @@
     } catch {}
     return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
   }
-
-  function ptitBacImageAvatar(value) {
-    return typeof value === "string" &&
-      /^data:image\/(?:png|jpeg|webp);base64,/i.test(value);
-  }
-
-  // Les écrans historiques du jeu utilisaient avatarMarkup(),
-  // qui affichait une data URL comme du texte. On le remplace pour
-  // que TOUS les joueurs voient aussi les photos importées.
-  function ptitBacSharedAvatarMarkup(player, index = 0, extra = "") {
-    const raw = String(player?.avatar || "");
-    const safeExtra = String(extra || "").replace(/[^a-zA-Z0-9 _-]/g, "");
-
-    if (ptitBacImageAvatar(raw)) {
-      return `
-        <div class="avatar avatar-${index % 6} ptb-avatar-photo ${safeExtra}">
-          <img src="${raw}" alt="" draggable="false">
-        </div>`;
-    }
-
-    const value = raw || String(player?.name || "?").charAt(0).toUpperCase();
-    return `
-      <div class="avatar avatar-${index % 6} ${raw ? "avatar-emoji" : ""} ${safeExtra}">
-        ${escapeHtml(value)}
-      </div>`;
-  }
-
-  window.avatarMarkup = ptitBacSharedAvatarMarkup;
-  try { avatarMarkup = ptitBacSharedAvatarMarkup; } catch {}
 
   function renderForfeitWinScreen(payload = {}) {
     if (Number.isFinite(Number(payload.balance))) {
@@ -140,12 +108,39 @@
     `;
   }
 
+  function categoryChooserAvatar(player) {
+    const raw = String(player?.avatar || "").trim();
+    const seed = player?.id || player?.name || raw || "category-chooser";
+
+    if (window.PtitBacAvatars?.normalize) {
+      return window.PtitBacAvatars.normalize(raw, seed);
+    }
+
+    return "/a1.webp";
+  }
+
+  function categoryChooserCard(player) {
+    const name = String(player?.name || "Un joueur");
+    const avatar = categoryChooserAvatar(player);
+
+    return `
+      <section class="cat-existing-chooser" data-chooser-id="${escapeHtml(String(player?.id || ""))}" role="status">
+        <div class="cat-existing-chooser-avatar">
+          <img src="${escapeHtml(avatar)}" alt="" draggable="false">
+        </div>
+
+        <div class="cat-existing-chooser-copy">
+          <small>C’est à</small>
+          <strong>${escapeHtml(name)}</strong>
+          <span>de choisir les catégories</span>
+        </div>
+      </section>
+    `;
+  }
+
   let lastDraw = "";
   function renderCategorySelectionV2() {
-    if (!session?.state) {
-      if (originalRenderCategorySelection) return originalRenderCategorySelection();
-      return;
-    }
+    if (!session?.state || session.state.phase !== "category_selection") return;
 
     clearInterval(session.timerHandle);
 
@@ -191,10 +186,10 @@
           <span>Lettre</span><i aria-hidden="true">•</i><span>À vous de jouer</span>
         </nav>
         <section class="category-pick-copy cat-v2-copy">
-          <h1>Votre tirage !</h1>
           <p>${categories.length} catégories <b>•</b> Niveau ${difficultyLabel(state.categoryDifficulty)}</p>
-          <p class="cat-chooser" role="status">${host ? "C’est à toi de choisir !" : chooser ? "C’est à " + escapeHtml(chooser.name) + " de choisir." : "En attente d’un joueur connecté…"}</p>
         </section>
+
+        ${categoryChooserCard(chooser)}
 
         <section class="category-pick-grid cat-v2-grid" aria-label="Catégories tirées">
           ${categories.map(categoryCard).join("")}

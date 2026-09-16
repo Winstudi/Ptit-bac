@@ -259,3 +259,79 @@ test("les données joueur sont isolées lors d'un changement de compte", () => {
   assert.match(profile, /auth:profileStats/);
   assert.match(profile, /inventory:equip/);
 });
+
+
+test("la sélection des catégories possède directement sa carte de joueur", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const jsFiles = BUNDLES.filter(bundle => bundle.type === "js").flatMap(bundle => bundle.files);
+  const source = read("category-selection-v2.js");
+
+  assert.doesNotMatch(html, /category-chooser-card-v1\.js/);
+  assert.ok(!publicFiles.includes("/category-chooser-card-v1.js"));
+  assert.ok(!jsFiles.includes("category-chooser-card-v1.js"));
+
+  assert.match(source, /cat-existing-chooser/);
+  assert.match(source, /PtitBacAvatars\?\.normalize/);
+  assert.doesNotMatch(source, /originalRenderCategorySelection/);
+  assert.doesNotMatch(source, /window\.avatarMarkup\s*=/);
+  assert.doesNotMatch(source, /new MutationObserver\s*\(/);
+});
+
+test("le thème d'icônes ne patche plus le DOM après rendu", () => {
+  const source = read("icon-theme-v1.js");
+  const publicFiles = JSON.parse(read("public-files.json"));
+
+  assert.doesNotMatch(source, /new MutationObserver\s*\(/);
+  assert.doesNotMatch(source, /difficulty-easy\.png|difficulty-normal\.png|difficulty-hard\.png/);
+  assert.match(source, /window\.PtitBacDifficultyIcon = DIFFICULTY_ICON/);
+  assert.ok(publicFiles.includes("/difficulty.png"));
+
+  for (const missing of ["home.png", "crown.png", "arrow-right.png"]) {
+    assert.doesNotMatch(source, new RegExp(`\\"${missing.replace(".", "\\.")}\\"`));
+  }
+});
+
+test("aucun nouveau script fix ou patch n'est chargé en production", () => {
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const jsFiles = BUNDLES.filter(bundle => bundle.type === "js").flatMap(bundle => bundle.files);
+  const patchScripts = jsFiles.filter(file => /(?:^|[-_.])(fix|patch)(?:[-_.]|$)/i.test(file));
+
+  assert.deepEqual(
+    patchScripts,
+    [],
+    `les correctifs doivent être absorbés dans leur fichier propriétaire: ${patchScripts.join(", ")}`
+  );
+});
+
+test("les seuls runtimes frontend dédiés restent les deux runtimes canoniques", () => {
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const jsFiles = BUNDLES.filter(bundle => bundle.type === "js").flatMap(bundle => bundle.files);
+  const runtimes = jsFiles.filter(file => /runtime/i.test(file)).sort();
+
+  assert.deepEqual(runtimes, ["lobby-runtime-v1.js", "ui-runtime-v1.js"]);
+});
+
+
+test("le mode Quick n'est plus injecté par wallet-client", () => {
+  const wallet = read("wallet-client.js");
+  const quick = read("quick-lobby-v1.js");
+  const css = read("wallet.css");
+
+  assert.doesNotMatch(wallet, /const originalScreen\s*=\s*setScreen/);
+  assert.doesNotMatch(wallet, /setScreen\s*=\s*function/);
+  assert.doesNotMatch(wallet, /quickStatus/);
+  assert.doesNotMatch(wallet, /socket\.on\("economy:update"/);
+  assert.doesNotMatch(wallet, /socket\.on\("wallet:update"/);
+  assert.doesNotMatch(wallet, /socket\.on\("quick:error"/);
+
+  assert.match(quick, /function syncQuickModeClass\(\)/);
+  assert.match(quick, /classList\.toggle\("ptb-quick-game", quick\)/);
+
+  assert.doesNotMatch(css, /#rerollCategoriesBtn/);
+  assert.doesNotMatch(css, /#rerollLetterBtn/);
+  assert.doesNotMatch(css, /#pbw1Reroll/);
+  assert.doesNotMatch(css, /#quickStatus/);
+});
+
