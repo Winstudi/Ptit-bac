@@ -137,7 +137,7 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-profile {
   position:relative;
-  transform:translateY(5px);
+  transform:translateY(15px);
   height:33px;
   overflow:visible;
   min-width:0;
@@ -198,16 +198,17 @@ body:has(.home-mobile) .economy-hud {
   font-size:.46rem;
   font-weight:700;
   white-space:nowrap;
+  transform:translateY(15px);
 }
 
 .hm-resources {
-  width:min(100%,202px);
+  width:min(100%,177px);
   min-width:0;
   justify-self:center;
   align-self:center;
   margin-top:0;
   display:grid;
-  grid-template-columns:67px 67px 62px;
+  grid-template-columns:42px 67px 62px;
   justify-content:center;
   gap:3px;
 }
@@ -227,8 +228,14 @@ body:has(.home-mobile) .economy-hud {
   gap:2px;
 }
 
-/* Vies et pièces : +5 px uniquement vers la droite. */
-#homePlaqueLivesBtn,
+/* Pièces conservées à +5 px ; vies raccourcies de 25 px. */
+#homePlaqueLivesBtn {
+  width:42px;
+  min-width:42px;
+  padding-inline:2px;
+  grid-template-columns:14px minmax(0,1fr);
+}
+
 #homePlaqueCoinsBtn {
   width:67px;
   min-width:67px;
@@ -321,6 +328,18 @@ body:has(.home-mobile) .economy-hud {
 .hm-menu img {
   width:25px;
   height:25px;
+}
+
+/* Icône Compte : utilise l’asset existant du dépôt à la place de l’emoji. */
+.home-mobile .ptb-home-account-entry .ptb-home-account-icon {
+  width:25px !important;
+  height:25px !important;
+  flex:0 0 25px;
+  display:block;
+  font-size:0 !important;
+  line-height:0;
+  color:transparent;
+  background:url("/profile-icon.png") center / contain no-repeat;
 }
 
 .hm-menu-close {
@@ -1041,14 +1060,28 @@ body:has(.home-mobile) .economy-hud {
   align-items:center;
   justify-content:center;
   gap:6px;
-  font-size:.94rem;
+  font-size:1.222rem;
   font-weight:900;
   font-variant-numeric:tabular-nums;
 }
 
 .home-mobile .home-resource-popup-value img {
-  width:28px;
-  height:28px;
+  width:36.4px;
+  height:36.4px;
+}
+
+/* À 5/5, il ne reste que le cœur + compteur : le cadre épouse ce contenu. */
+.home-mobile .home-resource-popup-lives.is-full {
+  width:max-content;
+  min-width:0;
+  min-height:0;
+  margin-inline:auto;
+  padding:8px 10px;
+  gap:0;
+}
+
+.home-mobile .home-resource-popup-lives.is-full .home-resource-popup-value {
+  min-height:0;
 }
 
 .home-mobile .home-resource-popup-card small {
@@ -1156,8 +1189,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources {
-    width:min(100%,182px);
-    grid-template-columns:61px 61px 56px;
+    width:min(100%,157px);
+    grid-template-columns:36px 61px 56px;
     gap:2px;
   }
 
@@ -1169,7 +1202,13 @@ body:has(.home-mobile) .economy-hud {
     padding-inline:3px;
   }
 
-  #homePlaqueLivesBtn,
+  #homePlaqueLivesBtn {
+    width:36px;
+    min-width:36px;
+    padding-inline:1px;
+    grid-template-columns:12px minmax(0,1fr);
+  }
+
   #homePlaqueCoinsBtn {
     width:61px;
     min-width:61px;

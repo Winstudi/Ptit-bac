@@ -100,17 +100,15 @@
     }
 
     return `
-      <div class="home-resource-popup-card home-resource-popup-lives" role="dialog" aria-label="Mes vies">
+      <div class="home-resource-popup-card home-resource-popup-lives ${isFull ? "is-full" : ""}" role="dialog" aria-label="Mes vies">
         <strong class="home-resource-popup-value">
           <img src="/heart.png" alt="">
           <span>${lives}/${maxLives}</span>
         </strong>
 
-        <small>
-          ${isFull
-            ? "Vies rechargées"
-            : `Prochaine vie : ${formatRecharge(state.secondsToNext)}`}
-        </small>
+        ${isFull
+          ? ""
+          : `<small>Prochaine vie : ${formatRecharge(state.secondsToNext)}</small>`}
       </div>`;
   }
 
