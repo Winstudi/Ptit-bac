@@ -415,3 +415,47 @@ test("le CSS du lobby privé ne repose plus sur une seconde couche d'override", 
     assert.match(css, new RegExp(`\\.${className}\\b`));
   }
 });
+
+test("le patch CSS avatar-pages a été absorbé par ses propriétaires", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const cssFiles = BUNDLES
+    .filter(bundle => bundle.type === "css")
+    .flatMap(bundle => bundle.files);
+  const cosmetics = read("avatar-system-v2.css");
+  const quick = read("quick-lobby-v1.css");
+
+  assert.doesNotMatch(html, /avatar-pages-fix-v1\.css/);
+  assert.ok(!publicFiles.includes("/avatar-pages-fix-v1.css"));
+  assert.ok(!cssFiles.includes("avatar-pages-fix-v1.css"));
+  assert.equal(exists("avatar-pages-fix-v1.css"), false,
+    "avatar-pages-fix-v1.css doit être supprimé du dépôt après migration");
+
+  for (const selector of [
+    "ptb-base-avatar",
+    "inventory-v1-dialog",
+    "inventory-v1-avatar-grid",
+    "inv-frame-purple-flame",
+    "ptb-equipped-frame-overlay"
+  ]) {
+    assert.match(cosmetics, new RegExp(selector));
+  }
+
+  assert.match(quick, /\.quick-lobby-v1 \.lobby-v5-avatar\.ptb-has-equipped-frame/);
+  assert.match(quick, /\.ptb-quick-reroll-restored/);
+  assert.match(quick, /width:48px!important;min-width:48px!important/);
+});
+
+test("aucun CSS de correctif tardif nommé fix ou patch n'est chargé en production", () => {
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const cssFiles = BUNDLES
+    .filter(bundle => bundle.type === "css")
+    .flatMap(bundle => bundle.files);
+  const lateFixes = cssFiles.filter(file =>
+    /(?:^|[-_.])(fix|patch)(?:[-_.]|$)/i.test(file)
+  );
+
+  assert.deepEqual(lateFixes, [],
+    `les styles correctifs doivent être absorbés: ${lateFixes.join(", ")}`);
+});

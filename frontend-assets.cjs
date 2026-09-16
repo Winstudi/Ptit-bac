@@ -57,7 +57,6 @@ const BUNDLES = Object.freeze([
       "gameplay-flow.css",
       "category-prototype.css",
       "private-lobby.css",
-      "avatar-pages-fix-v1.css"
     ])
   }),
   Object.freeze({
