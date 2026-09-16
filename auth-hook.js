@@ -2,12 +2,28 @@
 
 const { createAccountAuthService } = require("./account-auth.js");
 
+const DEFAULT_ADMIN_ACCOUNT_EMAIL = "cantetkillian@gmail.com";
+
+function normalizeAccountEmail(value) {
+  return String(value || "").trim().toLowerCase().slice(0, 254);
+}
+
+function validWalletToken(value) {
+  const token = String(value || "").trim().toLowerCase();
+  return /^[a-f0-9]{48}$/i.test(token) ? token : "";
+}
+
 function installAccountAuth(io, options = {}) {
   if (!io || typeof io.on !== "function") return null;
   if (io.__ptitBacAccountAuthInstalled) return io.__ptitBacAccountAuthInstalled;
 
   const service = options.service || createAccountAuthService(options);
   const database = options.getPool || (() => require("./db.js").getPool());
+  const adminAccountEmail = normalizeAccountEmail(
+    options.adminEmail ||
+    process.env.PTITBAC_ADMIN_EMAIL ||
+    DEFAULT_ADMIN_ACCOUNT_EMAIL
+  );
 
   function reply(ack, payload) {
     if (typeof ack === "function") ack(payload);
@@ -25,13 +41,79 @@ function installAccountAuth(io, options = {}) {
     }
   }
 
+  async function syncAdminOwner(account = null) {
+    const db = database?.();
+    if (!db || !adminAccountEmail) return;
+
+    await service.ensureSchema?.();
+
+    let adminWalletToken = "";
+    const accountEmail = normalizeAccountEmail(account?.email);
+
+    if (accountEmail === adminAccountEmail) {
+      adminWalletToken = validWalletToken(account?.walletToken);
+    }
+
+    if (!adminWalletToken) {
+      const result = await db.query(
+        `SELECT u.wallet_token
+           FROM public.ptitbac_accounts a
+           JOIN public.users u ON u.id=a.user_id
+          WHERE a.email_normalized=$1
+          LIMIT 1`,
+        [adminAccountEmail]
+      );
+
+      adminWalletToken = validWalletToken(result.rows[0]?.wallet_token);
+    }
+
+    if (!adminWalletToken) {
+      await db.query(
+        "DELETE FROM public.ptitbac_admin_owner WHERE singleton=true"
+      );
+      return;
+    }
+
+    await db.query(
+      `INSERT INTO public.ptitbac_admin_owner(singleton,wallet_token)
+       VALUES(true,$1)
+       ON CONFLICT(singleton) DO UPDATE
+         SET wallet_token=EXCLUDED.wallet_token`,
+      [adminWalletToken]
+    );
+
+    await db.query(
+      `INSERT INTO public.ptitbac_admin_settings(wallet_token)
+       VALUES($1)
+       ON CONFLICT(wallet_token) DO NOTHING`,
+      [adminWalletToken]
+    );
+  }
+
+  async function bindAccountToSocket(socket, account) {
+    socket.data.accountUserId = account.userId;
+    socket.data.accountWalletToken = account.walletToken;
+    socket.data.accountEmail = normalizeAccountEmail(account.email);
+
+    try {
+      await syncAdminOwner(account);
+    } catch (error) {
+      console.error("Synchronisation admin:", error?.message || error);
+    }
+  }
+
+  Promise.resolve()
+    .then(() => syncAdminOwner())
+    .catch(error => {
+      console.error("Initialisation admin:", error?.message || error);
+    });
+
   const connectionHandler = socket => {
     socket.on("auth:register", (payload = {}, ack) => {
       run(ack, async () => {
         const result = await service.register(payload);
         if (result?.ok && result.account) {
-          socket.data.accountUserId = result.account.userId;
-          socket.data.accountWalletToken = result.account.walletToken;
+          await bindAccountToSocket(socket, result.account);
         }
         return result;
       });
@@ -41,8 +123,7 @@ function installAccountAuth(io, options = {}) {
       run(ack, async () => {
         const result = await service.login(payload);
         if (result?.ok && result.account) {
-          socket.data.accountUserId = result.account.userId;
-          socket.data.accountWalletToken = result.account.walletToken;
+          await bindAccountToSocket(socket, result.account);
         }
         return result;
       });
@@ -52,8 +133,7 @@ function installAccountAuth(io, options = {}) {
       run(ack, async () => {
         const result = await service.resume(payload);
         if (result?.ok && result.account) {
-          socket.data.accountUserId = result.account.userId;
-          socket.data.accountWalletToken = result.account.walletToken;
+          await bindAccountToSocket(socket, result.account);
         }
         return result;
       });
@@ -87,6 +167,7 @@ function installAccountAuth(io, options = {}) {
         const result = await service.logout(payload);
         socket.data.accountUserId = "";
         socket.data.accountWalletToken = "";
+        socket.data.accountEmail = "";
         return result;
       });
     });
@@ -147,9 +228,15 @@ function installAccountAuth(io, options = {}) {
 
   io.on("connection", connectionHandler);
 
-  const installed = { service, connectionHandler };
+  const installed = {
+    service,
+    connectionHandler,
+    adminAccountEmail
+  };
   io.__ptitBacAccountAuthInstalled = installed;
   return installed;
 }
 
 module.exports = installAccountAuth;
+module.exports.DEFAULT_ADMIN_ACCOUNT_EMAIL = DEFAULT_ADMIN_ACCOUNT_EMAIL;
+module.exports.normalizeAccountEmail = normalizeAccountEmail;

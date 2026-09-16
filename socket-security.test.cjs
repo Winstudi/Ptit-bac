@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 
 const {
   ADMIN_DEFAULT_POLICY,
+  DEFAULT_ADMIN_ACCOUNT_EMAIL,
   EVENT_POLICIES,
   NON_ADMIN_PAYLOAD_LIMIT,
   createRateLimiter,
@@ -41,6 +42,12 @@ function fakeSocket({
   };
 }
 
+function authorizeAdmin(socket, token = "a".repeat(48)) {
+  socket.data.accountEmail = DEFAULT_ADMIN_ACCOUNT_EMAIL;
+  socket.data.accountWalletToken = token;
+  return token;
+}
+
 function connect(io, socket) {
   let connected = false;
   io.connectionMiddleware(socket, () => {
@@ -72,16 +79,43 @@ function send(socket, event, payload = {}, callback = null) {
   };
 }
 
-test("admin:claim est limité après 5 tentatives", () => {
+test("les événements admin sont refusés aux autres comptes", () => {
   const io = fakeIo();
   const socket = fakeSocket();
+  socket.data.accountEmail = "autre@example.com";
+  socket.data.accountWalletToken = "a".repeat(48);
+
+  const security = installSocketSecurity(io);
+  connect(io, socket);
+
+  const status = send(socket, "admin:status", {
+    walletToken: "a".repeat(48)
+  });
+  assert.equal(status.dispatched, false);
+  assert.equal(status.response?.ok, true);
+  assert.equal(status.response?.admin, false);
+
+  const blocked = send(socket, "admin:playerLookup", {
+    walletToken: "a".repeat(48),
+    friendCode: "12345"
+  });
+  assert.equal(blocked.dispatched, false);
+  assert.equal(blocked.response?.error, "Accès refusé.");
+
+  security.stop();
+});
+
+test("admin:claim est limité après 5 tentatives pour le compte admin", () => {
+  const io = fakeIo();
+  const socket = fakeSocket();
+  const token = authorizeAdmin(socket, "a".repeat(48));
   const security = installSocketSecurity(io);
   connect(io, socket);
 
   for (let index = 0; index < 5; index += 1) {
     assert.equal(
       send(socket, "admin:claim", {
-        walletToken: "a".repeat(48),
+        walletToken: token,
         code: "mauvais"
       }).dispatched,
       true
@@ -89,7 +123,7 @@ test("admin:claim est limité après 5 tentatives", () => {
   }
 
   const blocked = send(socket, "admin:claim", {
-    walletToken: "a".repeat(48),
+    walletToken: token,
     code: "encore"
   });
 
@@ -195,6 +229,7 @@ test("le rate limiter remet le compteur à zéro après la fenêtre", () => {
 test("les événements admin non listés ont aussi une limite par défaut", () => {
   const io = fakeIo();
   const socket = fakeSocket();
+  const token = authorizeAdmin(socket, "f".repeat(48));
   const security = installSocketSecurity(io);
   connect(io, socket);
 
@@ -202,7 +237,7 @@ test("les événements admin non listés ont aussi une limite par défaut", () =
   for (let index = 0; index < limit; index += 1) {
     assert.equal(
       send(socket, "admin:playerLookup", {
-        walletToken:"f".repeat(48),
+        walletToken:token,
         friendCode:"12345"
       }).dispatched,
       true
@@ -210,7 +245,7 @@ test("les événements admin non listés ont aussi une limite par défaut", () =
   }
 
   const blocked = send(socket, "admin:playerLookup", {
-    walletToken:"f".repeat(48),
+    walletToken:token,
     friendCode:"12345"
   });
 

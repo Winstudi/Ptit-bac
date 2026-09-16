@@ -411,17 +411,17 @@
           <div class="hm-resources" aria-label="Mes ressources">
             <button id="homePlaqueLivesBtn" type="button" aria-label="Mes vies">
               ${img("heart")}
-              <b id="homePlaqueLives">${lives}/${maxLives}</b>
+              <b id="homePlaqueLives" style="font-size:.832rem">${lives}/${maxLives}</b>
             </button>
 
             <button id="homePlaqueCoinsBtn" type="button" aria-label="Mes pièces">
               ${img("coin")}
-              <b id="homePlaqueCoins">${coins}</b>
+              <b id="homePlaqueCoins" style="font-size:.8rem">${coins}</b>
             </button>
 
             <button id="homeGemButton" type="button" aria-label="Mes gemmes">
               ${img("gem")}
-              <b id="homeGems">${Math.max(0, Number(eco.gems) || 0)}</b>
+              <b id="homeGems" style="font-size:.832rem">${Math.max(0, Number(eco.gems) || 0)}</b>
             </button>
           </div>
 
@@ -432,6 +432,7 @@
             aria-label="Ouvrir le menu"
             aria-expanded="false"
             aria-controls="homeMenu"
+            style="position:relative"
           >
             <span></span><span></span><span></span>
             <i
@@ -439,6 +440,7 @@
               class="hm-menu-button-badge"
               hidden
               aria-label="Messages non lus"
+              style="left:auto;right:-7px;bottom:-7px;top:auto"
             >0</i>
           </button>
 

@@ -14,6 +14,8 @@ const ADMIN_DEFAULT_POLICY = Object.freeze({
   message: "Trop de requêtes administrateur."
 });
 
+const DEFAULT_ADMIN_ACCOUNT_EMAIL = "cantetkillian@gmail.com";
+
 const EVENT_POLICIES = Object.freeze({
   "admin:claim": Object.freeze({
     limit: 5,
@@ -206,9 +208,21 @@ function safeText(value, max = 120) {
   return String(value || "").trim().slice(0, max);
 }
 
+function normalizeAccountEmail(value) {
+  return safeText(value, 254).toLowerCase();
+}
+
 function walletToken(value) {
   const token = safeText(value, 64);
   return /^[a-f0-9]{48}$/i.test(token) ? token.toLowerCase() : "";
+}
+
+function isAuthorizedAdminSocket(socket, adminEmail = DEFAULT_ADMIN_ACCOUNT_EMAIL) {
+  const email = normalizeAccountEmail(socket?.data?.accountEmail);
+  const expectedEmail = normalizeAccountEmail(adminEmail);
+  const accountToken = walletToken(socket?.data?.accountWalletToken);
+
+  return !!expectedEmail && email === expectedEmail && !!accountToken;
 }
 
 function clientNetworkKey(socket) {
@@ -339,6 +353,11 @@ function installSocketSecurity(io, options = {}) {
   const limiter = options.limiter || createRateLimiter();
   const policies = options.policies || EVENT_POLICIES;
   const globalPolicy = options.globalPolicy || GLOBAL_POLICY;
+  const adminAccountEmail = normalizeAccountEmail(
+    options.adminEmail ||
+    process.env.PTITBAC_ADMIN_EMAIL ||
+    DEFAULT_ADMIN_ACCOUNT_EMAIL
+  );
 
   io.use((socket, nextConnection) => {
     socket.use((packet, dispatch) => {
@@ -357,6 +376,25 @@ function installSocketSecurity(io, options = {}) {
           ok: false,
           error: "Requête invalide."
         });
+        return;
+      }
+
+      if (
+        eventName.startsWith("admin:") &&
+        !isAuthorizedAdminSocket(socket, adminAccountEmail)
+      ) {
+        if (eventName === "admin:status") {
+          callback?.({
+            ok: true,
+            admin: false
+          });
+        } else {
+          callback?.({
+            ok: false,
+            admin: false,
+            error: "Accès refusé."
+          });
+        }
         return;
       }
 
@@ -445,7 +483,9 @@ function installSocketSecurity(io, options = {}) {
   });
 
   if (typeof io.on === "function" && options.installAccountAuth !== false) {
-    require("./auth-hook.js")(io);
+    require("./auth-hook.js")(io, {
+      adminEmail: adminAccountEmail
+    });
   }
 
   const pruneTimer = setInterval(
@@ -465,10 +505,13 @@ function installSocketSecurity(io, options = {}) {
 module.exports = {
   GLOBAL_POLICY,
   ADMIN_DEFAULT_POLICY,
+  DEFAULT_ADMIN_ACCOUNT_EMAIL,
   EVENT_POLICIES,
   NON_ADMIN_PAYLOAD_LIMIT,
   ADMIN_PAYLOAD_LIMIT,
+  normalizeAccountEmail,
   walletToken,
+  isAuthorizedAdminSocket,
   clientNetworkKey,
   knownSocketToken,
   identityKey,
