@@ -9,8 +9,33 @@
   const STORAGE_KEY = "petitbac_inventory_v1";
   const BASE_AVATARS = ["/a1.webp", "/a2.webp", "/a3.webp", "/a4.webp", "/a5.webp"];
 
-  // Infrastructure conservée : de nouveaux cadres pourront être ajoutés plus tard.
-  const FRAMES = Object.freeze({});
+  const FRAMES = Object.freeze({
+    frame_nature: {
+      id:"frame_nature",
+      name:"Nature",
+      asset:"/frame-nature.png"
+    },
+    frame_gaming: {
+      id:"frame_gaming",
+      name:"Gaming",
+      asset:"/frame-gaming.png"
+    },
+    frame_purple_flame: {
+      id:"frame_purple_flame",
+      name:"Flamme violette",
+      asset:"/frame-purple-flame.png"
+    },
+    frame_ice: {
+      id:"frame_ice",
+      name:"Glace",
+      asset:"/frame-ice.png"
+    },
+    frame_gold_stars: {
+      id:"frame_gold_stars",
+      name:"Étoiles dorées",
+      asset:"/frame-gold-stars.png"
+    }
+  });
 
   const TAGS = Object.freeze({
     tag_debutant: { id:"tag_debutant", name:"Débutant", icon:"🌱", className:"inv-tag-starter" }
@@ -70,9 +95,13 @@
       if (!raw || typeof raw !== "object") return;
       raw.owned = raw.owned && typeof raw.owned === "object" ? raw.owned : {};
       raw.equipped = raw.equipped && typeof raw.equipped === "object" ? raw.equipped : {};
-      raw.owned.frames = [];
+      raw.owned.frames = Array.isArray(raw.owned.frames)
+        ? raw.owned.frames.filter(id => FRAMES[id])
+        : [];
       raw.owned.tags = ["tag_debutant"];
-      raw.equipped.frame = "";
+      raw.equipped.frame = FRAMES[raw.equipped.frame]
+        ? raw.equipped.frame
+        : "";
       raw.equipped.tag = raw.equipped.tag === "" ? "" : "tag_debutant";
       localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
     } catch {}
@@ -196,7 +225,10 @@
   function frameMarkup(frameId, extraClass = "") {
     const frame = FRAMES[frameId];
     if (!frame) return "";
-    return `<span class="inv-frame ${frame.className} ${esc(extraClass)}" aria-hidden="true"></span>`;
+    return `
+      <span class="inv-frame ${esc(extraClass)}" aria-hidden="true">
+        <img class="inv-frame-asset" src="${esc(frame.asset)}" alt="" draggable="false">
+      </span>`;
   }
 
   function tagMarkup(tagId, extraClass = "") {

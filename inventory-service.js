@@ -11,8 +11,38 @@ const CATALOG = Object.freeze({
     "/a4.webp": Object.freeze({ id: "/a4.webp", name: "Avatar 4", defaultOwned: true }),
     "/a5.webp": Object.freeze({ id: "/a5.webp", name: "Avatar 5", defaultOwned: true })
   }),
-  // Le système de cadres reste actif, mais aucun cadre n'est publié pour le moment.
-  frame: Object.freeze({}),
+  frame: Object.freeze({
+    frame_nature: Object.freeze({
+      id: "frame_nature",
+      name: "Nature",
+      asset: "/frame-nature.png",
+      defaultOwned: false
+    }),
+    frame_gaming: Object.freeze({
+      id: "frame_gaming",
+      name: "Gaming",
+      asset: "/frame-gaming.png",
+      defaultOwned: false
+    }),
+    frame_purple_flame: Object.freeze({
+      id: "frame_purple_flame",
+      name: "Flamme violette",
+      asset: "/frame-purple-flame.png",
+      defaultOwned: false
+    }),
+    frame_ice: Object.freeze({
+      id: "frame_ice",
+      name: "Glace",
+      asset: "/frame-ice.png",
+      defaultOwned: false
+    }),
+    frame_gold_stars: Object.freeze({
+      id: "frame_gold_stars",
+      name: "Étoiles dorées",
+      asset: "/frame-gold-stars.png",
+      defaultOwned: false
+    })
+  }),
   tag: Object.freeze({
     tag_debutant: Object.freeze({ id: "tag_debutant", name: "Débutant", defaultOwned: true })
   })
@@ -46,6 +76,7 @@ function catalogEntries() {
       id: item.id,
       label: item.name,
       icon: ITEM_TYPE_ICONS[type] || "🎁",
+      asset: String(item.asset || ""),
       defaultOwned: Boolean(item.defaultOwned)
     }))
   );
@@ -160,9 +191,6 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
         throw new Error("Migration PostgreSQL centrale indisponible.");
       }
 
-      // Le service métier ne crée, ne modifie et ne nettoie plus le schéma.
-      // Toute migration doit passer par db-migrations.js afin d'éviter qu'un
-      // simple chargement d'inventaire supprime des cosmétiques futurs.
       await ensureSharedSchema();
       return db;
     })().catch(err => {
