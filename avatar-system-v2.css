@@ -186,10 +186,8 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
 
 /* ---------- Cadres équipés sur tous les écrans ---------- */
 /*
- * Un cadre équipé utilise la même géométrie partout :
- * - le conteneur devient une grille centrée ;
- * - l'avatar est carré et légèrement réduit ;
- * - le PNG du cadre est centré sur le milieu exact du conteneur.
+ * Le cadre cosmétique devient l'unique bordure visuelle de l'avatar.
+ * Le conteneur reste le repère géométrique, sans bord/fond/ombre propre.
  */
 .ptb-base-avatar.ptb-has-equipped-frame,
 .ptb-has-equipped-frame {
@@ -198,74 +196,114 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
   isolation:isolate !important;
   display:grid !important;
   place-items:center !important;
-  box-sizing:border-box !important;
   padding:0 !important;
 
-  /* Un cadre cosmétique remplace entièrement le cadre violet natif. */
   border:0 !important;
-  border-radius:0 !important;
   outline:0 !important;
+  border-radius:0 !important;
   background:transparent !important;
   box-shadow:none !important;
 }
 
-/* L'avatar ne passe plus sous les décorations du cadre. */
+/* Retire explicitement les anciens cadres violets propres aux écrans. */
+.hm-avatar.ptb-has-equipped-frame,
+.profile-v10-avatar-visual.ptb-has-equipped-frame,
+.lobby-v5-avatar.ptb-has-equipped-frame,
+.lobby-v5-host-avatar.ptb-has-equipped-frame,
+.lobby-v5-profile-avatar.ptb-has-equipped-frame,
+.lobby-v5-invite-friend-avatar.ptb-has-equipped-frame,
+.pl-avatar.ptb-has-equipped-frame,
+.wsv1-avatar.ptb-has-equipped-frame,
+.res-avatar.ptb-has-equipped-frame,
+.fin-avatar.ptb-has-equipped-frame,
+.ptb-avatar-photo.ptb-has-equipped-frame,
+.cat-existing-chooser-avatar.ptb-has-equipped-frame,
+.pbw1-chooser-avatar.ptb-has-equipped-frame {
+  border:0 !important;
+  outline:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+/* Avatar carré sous le cadre. */
 .ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
   position:relative !important;
   z-index:1 !important;
-  width:86% !important;
-  height:86% !important;
-  max-width:86% !important;
-  max-height:86% !important;
+
+  width:84% !important;
+  height:84% !important;
+  max-width:84% !important;
+  max-height:84% !important;
+
   margin:0 !important;
   padding:0 !important;
+
   object-fit:cover !important;
-  object-position:center center !important;
+  object-position:50% 50% !important;
+
+  border:0 !important;
+  outline:0 !important;
   border-radius:0 !important;
+  box-shadow:none !important;
   clip-path:none !important;
+
   transform:none !important;
 }
 
-/* Le cadre est toujours centré sur l'avatar, quelle que soit la page. */
+/*
+ * IMPORTANT :
+ * ne pas utiliser "inset" ici.
+ * left/top définissent le centre exact du conteneur avatar.
+ */
 .ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
   position:absolute !important;
   z-index:7 !important;
+
   left:50% !important;
   top:50% !important;
   right:auto !important;
   bottom:auto !important;
-  width:142% !important;
-  height:142% !important;
+
+  width:138% !important;
+  height:138% !important;
   max-width:none !important;
   max-height:none !important;
+
   margin:0 !important;
   padding:0 !important;
+
   border:0 !important;
+  outline:0 !important;
   border-radius:0 !important;
   background:transparent !important;
+  box-shadow:none !important;
+
   object-fit:contain !important;
-  object-position:center center !important;
+  object-position:50% 50% !important;
+
   transform:translate3d(-50%,-50%,0) !important;
-  transform-origin:center center !important;
+  transform-origin:50% 50% !important;
+
   pointer-events:none !important;
   box-sizing:border-box !important;
-  overflow:visible !important;
 }
 
-/* Le cadre remplace visuellement les coins arrondis de l'avatar. */
-.hm-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.profile-v10-avatar-visual.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.lobby-v5-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.lobby-v5-host-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.lobby-v5-profile-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.lobby-v5-invite-friend-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.wsv1-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.res-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.fin-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.ptb-avatar-photo.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.cat-existing-chooser-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay),
-.pbw1-chooser-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
+/*
+ * L'avatar de l'accueil est très proche du bord de l'écran :
+ * le cadre y est volontairement plus compact pour ne pas être rogné.
+ */
+.hm-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
+  width:122% !important;
+  height:122% !important;
+}
+
+/* Dans le header accueil, l'image reste bien centrée et carrée. */
+.hm-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
+  width:82% !important;
+  height:82% !important;
+  max-width:82% !important;
+  max-height:82% !important;
   border-radius:0 !important;
 }
 
