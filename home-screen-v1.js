@@ -696,23 +696,12 @@
     });
 
     document.getElementById("homeInventory")?.addEventListener("click", () => {
-      showDetails(`
-        <h2>Inventaire</h2>
-        <p>Avatar équipé</p>
-        <div class="hm-inventory-avatar">${escapeHtml(safeAvatar(getProfile().icon))}</div>
-        <button id="homeChangeAvatar" type="button">Changer mon avatar</button>
-        <p>Les autres objets arriveront plus tard.</p>
-      `);
+      if (window.PtitBacInventory?.open) {
+        window.PtitBacInventory.open();
+        return;
+      }
 
-      document.getElementById("homeChangeAvatar")?.addEventListener("click", () => {
-        document.getElementById("homeDetailDialog")?.close();
-
-        if (typeof window.openProfileAvatarPicker === "function") {
-          window.openProfileAvatarPicker();
-        } else {
-          renderProfile();
-        }
-      });
+      toast("Inventaire indisponible pour le moment.");
     });
 
     window.PtitBacEconomy?.refresh?.();
