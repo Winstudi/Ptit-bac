@@ -191,3 +191,45 @@ test("le salon Quick référence une icône de difficulté réellement publiée"
   );
 });
 
+test("tous les fichiers frontend déclarés existent réellement", () => {
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES, REQUIRED_SOURCE_ASSETS } = require("./frontend-assets.cjs");
+
+  for (const route of publicFiles) {
+    assert.equal(
+      typeof route === "string" && route.startsWith("/"),
+      true,
+      `route publique invalide: ${String(route)}`
+    );
+
+    const file = route.slice(1);
+    if (!file) continue;
+
+    assert.equal(
+      exists(file),
+      true,
+      `${file} est déclaré dans public-files.json mais absent du dépôt`
+    );
+  }
+
+  const bundleSources = BUNDLES.flatMap(bundle => bundle.files);
+  const required = new Set([
+    ...bundleSources,
+    ...(Array.isArray(REQUIRED_SOURCE_ASSETS) ? REQUIRED_SOURCE_ASSETS : [])
+  ]);
+
+  for (const file of required) {
+    assert.equal(
+      exists(file),
+      true,
+      `${file} est requis par le build frontend mais absent du dépôt`
+    );
+  }
+
+  assert.equal(
+    exists("profile-module-v1.js"),
+    true,
+    "profile-module-v1.js doit rester présent sur main"
+  );
+});
+
