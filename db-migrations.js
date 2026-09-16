@@ -111,12 +111,17 @@ async function runDatabaseMigrations(pool) {
       wallet_token text,
       kind text NOT NULL,
       coins_delta integer NOT NULL DEFAULT 0,
+      gems_delta integer NOT NULL DEFAULT 0,
       lives_delta integer NOT NULL DEFAULT 0,
       room_code text,
       note text,
       idempotency_key text UNIQUE,
       created_at timestamptz NOT NULL DEFAULT now()
     )
+  `);
+  await pool.query(`
+    ALTER TABLE public.economy_transactions
+    ADD COLUMN IF NOT EXISTS gems_delta integer NOT NULL DEFAULT 0
   `);
 
   await pool.query(`

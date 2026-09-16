@@ -65,11 +65,13 @@ function fakeDatabase({ coins = 50, gems = 3, duplicate = null, failOnUpdate = f
       }
 
       if (text.startsWith("INSERT INTO public.economy_transactions")) {
+        const gemAudit = text.includes("gems_delta");
         const noChangeAudit = params.length === 5;
         const key = noChangeAudit ? params[4] : params[5];
         const row = {
           id:"tx-db",
-          coins_delta:noChangeAudit ? 0 : params[2],
+          coins_delta:gemAudit ? 0 : (noChangeAudit ? 0 : params[2]),
+          gems_delta:gemAudit ? (noChangeAudit ? 0 : params[2]) : 0,
           kind:params[1],
           created_at:new Date()
         };
@@ -378,3 +380,36 @@ test("admin et inbox n'écrivent plus directement le solde de gemmes", () => {
   assert.doesNotMatch(admin, /ON CONFLICT\(token\) DO UPDATE SET[\s\S]{0,160}gems=\$3/);
   assert.match(server, /__ptbAdminSyncGems/);
 });
+
+test("l'audit SQL possède une colonne gems_delta migrée de façon rétrocompatible", () => {
+  const migrations = read("db-migrations.js");
+  assert.match(
+    migrations,
+    /gems_delta integer NOT NULL DEFAULT 0/
+  );
+  assert.match(
+    migrations,
+    /ALTER TABLE public\.economy_transactions[\s\S]{0,140}ADD COLUMN IF NOT EXISTS gems_delta/
+  );
+});
+
+test("les variations de gemmes écrivent leur delta dans economy_transactions", async () => {
+  const db = fakeDatabase({ coins:40, gems:7 });
+  const result = await serviceFor(db).changeGems({
+    walletToken:token,
+    delta:12,
+    kind:"ADMIN_GEM_ADD",
+    idempotencyKey:"gem-audit-1"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.transaction?.gems_delta, 12);
+  assert.equal(result.transaction?.coins_delta, 0);
+  assert.ok(
+    db.state.calls.some(call =>
+      call.text.startsWith("INSERT INTO public.economy_transactions") &&
+      call.text.includes("gems_delta")
+    )
+  );
+});
+

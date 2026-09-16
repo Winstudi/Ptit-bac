@@ -277,7 +277,7 @@ function createWalletAtomicService(options = {}) {
 
     if (requestKey) {
       const duplicate = await client.query(
-        `SELECT id,coins_delta,kind,created_at
+        `SELECT id,coins_delta,gems_delta,kind,created_at
            FROM public.economy_transactions
           WHERE idempotency_key=$1
           LIMIT 1`,
@@ -319,12 +319,12 @@ function createWalletAtomicService(options = {}) {
       if (requestKey) {
         const audit = await client.query(
           `INSERT INTO public.economy_transactions
-            (user_id,wallet_token,kind,coins_delta,lives_delta,room_code,note,idempotency_key)
+            (user_id,wallet_token,kind,coins_delta,gems_delta,lives_delta,room_code,note,idempotency_key)
            VALUES(
              (SELECT id FROM public.users WHERE wallet_token=$1 LIMIT 1),
-             $1,$2,0,0,$3,$4,$5
+             $1,$2,0,0,0,$3,$4,$5
            )
-           RETURNING id,coins_delta,kind,created_at`,
+           RETURNING id,coins_delta,gems_delta,kind,created_at`,
           [
             token,
             safeKind,
@@ -380,20 +380,18 @@ function createWalletAtomicService(options = {}) {
       [token, after, at, JSON.stringify(history)]
     );
 
-    // economy_transactions ne possède pas encore de colonne gems_delta.
-    // L'idempotence reste centralisée ici via idempotency_key et le delta
-    // détaillé est conservé dans l'historique JSON du portefeuille.
     const audit = await client.query(
       `INSERT INTO public.economy_transactions
-        (user_id,wallet_token,kind,coins_delta,lives_delta,room_code,note,idempotency_key)
+        (user_id,wallet_token,kind,coins_delta,gems_delta,lives_delta,room_code,note,idempotency_key)
        VALUES(
          (SELECT id FROM public.users WHERE wallet_token=$1 LIMIT 1),
-         $1,$2,0,0,$3,$4,$5
+         $1,$2,0,$3,0,$4,$5,$6
        )
-       RETURNING id,coins_delta,kind,created_at`,
+       RETURNING id,coins_delta,gems_delta,kind,created_at`,
       [
         token,
         safeKind,
+        appliedDelta,
         safeDetails.roomCode || null,
         safeDetails.note || null,
         requestKey || null
