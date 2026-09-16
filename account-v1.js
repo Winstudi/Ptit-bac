@@ -274,7 +274,13 @@
   }
 
   function accountContent() {
-    const account = accountState || {};
+    const storedName = String(localStorage.getItem("petitbac_profile_name") || "").trim();
+    const storedAvatar = String(localStorage.getItem("petitbac_profile_icon") || "").trim();
+    const account = {
+      ...(accountState || {}),
+      username:storedName || accountState?.username || "Joueur",
+      avatar:storedAvatar || accountState?.avatar || "/a1.webp"
+    };
     return `
       <div class="ptb-account-connected">
         <div class="ptb-account-avatar">
@@ -394,6 +400,9 @@
     localStorage.setItem("petitbac_profile_name", String(account.username || "Joueur"));
     localStorage.setItem("petitbac_profile_icon", String(account.avatar || "/a1.webp"));
     if (account.friendCode) localStorage.setItem("petitbac_friendCode", String(account.friendCode));
+
+    if (account.profileCompleted === false) markProfileSetupPending();
+    else if (account.profileCompleted === true) completeProfileSetup();
 
     accountState = { ...account };
     return true;
@@ -521,6 +530,19 @@
       return;
     }
 
+    if (accountState?.userId) {
+      const completionResult = await emitAck("auth:completeProfile", {
+        username:name,
+        avatar
+      }, 12000);
+
+      if (!completionResult?.ok) {
+        setBusy(false);
+        setMessage(completionResult?.error || "Impossible de finaliser ton profil.", "error");
+        return;
+      }
+    }
+
     try {
       if (typeof saveProfile === "function") saveProfile(name, avatar);
       else {
@@ -541,7 +563,8 @@
         ...accountState,
         username:name,
         avatar,
-        friendCode:profileResult.profile?.friendCode || accountState.friendCode || ""
+        friendCode:profileResult.profile?.friendCode || accountState.friendCode || "",
+        profileCompleted:true
       };
     }
 

@@ -9,6 +9,14 @@ const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 const USERNAME_MAX_LENGTH = 24;
+const PROFILE_USERNAME_MAX_LENGTH = 16;
+const PROFILE_AVATARS = Object.freeze([
+  "/a1.webp",
+  "/a2.webp",
+  "/a3.webp",
+  "/a4.webp",
+  "/a5.webp"
+]);
 
 let sharedSchemaPromise = null;
 
@@ -98,10 +106,22 @@ async function ensureAuthSchema(pool, ensureSharedSchema) {
         password_hash text NOT NULL,
         password_salt text NOT NULL,
         password_version integer NOT NULL DEFAULT 1,
+        profile_completed boolean NOT NULL DEFAULT false,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now(),
         last_login_at timestamptz
       )
+    `);
+
+    // Les comptes créés avant l’onboarding profil sont considérés comme déjà
+    // configurés. Les nouveaux comptes sont explicitement créés avec false.
+    await pool.query(`
+      ALTER TABLE public.ptitbac_accounts
+      ADD COLUMN IF NOT EXISTS profile_completed boolean NOT NULL DEFAULT true
+    `);
+    await pool.query(`
+      ALTER TABLE public.ptitbac_accounts
+      ALTER COLUMN profile_completed SET DEFAULT false
     `);
 
     await pool.query(`
@@ -146,6 +166,7 @@ function accountPayload(row, sessionToken = "") {
     walletToken: String(row.wallet_token || row.walletToken || ""),
     balance: Math.max(0, Number(row.coins ?? DEFAULT_COINS) || 0),
     gems: Math.max(0, Number(row.gems || 0) || 0),
+    profileCompleted: Boolean(row.profile_completed ?? row.profileCompleted),
     sessionToken
   };
 }
@@ -264,8 +285,8 @@ function createAccountAuthService(options = {}) {
 
       const accountResult = await client.query(
         `INSERT INTO public.ptitbac_accounts
-          (user_id,email_normalized,email_display,password_hash,password_salt,password_version,last_login_at)
-         VALUES($1,$2,$3,$4,$5,$6,now())
+          (user_id,email_normalized,email_display,password_hash,password_salt,password_version,profile_completed,last_login_at)
+         VALUES($1,$2,$3,$4,$5,$6,false,now())
          RETURNING id`,
         [
           user.id,
@@ -289,7 +310,8 @@ function createAccountAuthService(options = {}) {
           ...user,
           email_display: displayEmail || emailNormalized,
           coins: DEFAULT_COINS,
-          gems: 0
+          gems: 0,
+          profile_completed: false
         }, session.raw),
         expiresAt: session.expiresAt.getTime()
       };
@@ -317,6 +339,7 @@ function createAccountAuthService(options = {}) {
               a.email_display,
               a.password_hash,
               a.password_salt,
+              a.profile_completed,
               u.username,
               u.avatar,
               u.friend_code,
@@ -405,6 +428,7 @@ function createAccountAuthService(options = {}) {
               s.account_id,
               a.user_id,
               a.email_display,
+              a.profile_completed,
               u.username,
               u.avatar,
               u.friend_code,
@@ -443,6 +467,80 @@ function createAccountAuthService(options = {}) {
     };
   }
 
+  async function completeProfile({ userId, walletToken, username, avatar }) {
+    const safeUserId = String(userId || "").trim();
+    const safeWalletToken = String(walletToken || "").trim().toLowerCase();
+    const cleanUsername = normalizeUsername(username).slice(0, PROFILE_USERNAME_MAX_LENGTH);
+    const cleanAvatar = String(avatar || "").trim();
+
+    if (!safeUserId || !/^[a-f0-9]{48}$/i.test(safeWalletToken)) {
+      return { ok:false, error:"Compte non connecté." };
+    }
+    if (cleanUsername.length < 2) {
+      return { ok:false, error:"Choisis un pseudo d’au moins 2 caractères." };
+    }
+    if (!PROFILE_AVATARS.includes(cleanAvatar)) {
+      return { ok:false, error:"Choisis un avatar valide." };
+    }
+
+    const db = await schema();
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+
+      const userResult = await client.query(
+        `UPDATE public.users
+            SET username=$3, avatar=$4, updated_at=now(), last_seen=now()
+          WHERE id=$1 AND wallet_token=$2
+          RETURNING id,friend_code,username,avatar,wallet_token`,
+        [safeUserId, safeWalletToken, cleanUsername, cleanAvatar]
+      );
+
+      if (!userResult.rowCount) {
+        await client.query("ROLLBACK");
+        return { ok:false, error:"Compte introuvable." };
+      }
+
+      const accountResult = await client.query(
+        `UPDATE public.ptitbac_accounts
+            SET profile_completed=true, updated_at=now()
+          WHERE user_id=$1
+          RETURNING profile_completed`,
+        [safeUserId]
+      );
+
+      if (!accountResult.rowCount) {
+        await client.query("ROLLBACK");
+        return { ok:false, error:"Compte introuvable." };
+      }
+
+      const walletResult = await client.query(
+        `SELECT coins,gems
+           FROM public.ptitbac_wallets
+          WHERE token=$1
+          LIMIT 1`,
+        [safeWalletToken]
+      );
+
+      await client.query("COMMIT");
+
+      return {
+        ok:true,
+        account: accountPayload({
+          ...userResult.rows[0],
+          user_id:safeUserId,
+          ...(walletResult.rows[0] || {}),
+          profile_completed:true
+        })
+      };
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch {}
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async function logout({ sessionToken }) {
     const raw = String(sessionToken || "").trim();
     if (!validSessionToken(raw)) return { ok:true };
@@ -462,6 +560,7 @@ function createAccountAuthService(options = {}) {
     register,
     login,
     resume,
+    completeProfile,
     logout
   };
 }
@@ -470,6 +569,7 @@ module.exports = {
   SESSION_TTL_MS,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
+  PROFILE_AVATARS,
   normalizeEmail,
   validEmail,
   normalizeUsername,

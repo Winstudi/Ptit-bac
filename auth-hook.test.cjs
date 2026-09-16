@@ -29,6 +29,7 @@ test("auth-hook branche inscription, connexion, reprise et déconnexion", async 
     register: async payload => { calls.push(["register", payload]); return { ok:true, account:{ userId:"u1", walletToken:"a".repeat(48) } }; },
     login: async payload => { calls.push(["login", payload]); return { ok:true, account:{ userId:"u1", walletToken:"a".repeat(48) } }; },
     resume: async payload => { calls.push(["resume", payload]); return { ok:true, account:{ userId:"u1", walletToken:"a".repeat(48) } }; },
+    completeProfile: async payload => { calls.push(["completeProfile", payload]); return { ok:true, account:{ userId:"u1", walletToken:"a".repeat(48), profileCompleted:true } }; },
     logout: async payload => { calls.push(["logout", payload]); return { ok:true }; }
   };
 
@@ -55,6 +56,7 @@ test("auth-hook branche inscription, connexion, reprise et déconnexion", async 
   assert.equal((await invoke(socket, "auth:register", { email:"a@b.fr" })).ok, true);
   assert.equal((await invoke(socket, "auth:login", { email:"a@b.fr" })).ok, true);
   assert.equal((await invoke(socket, "auth:resume", { sessionToken:"x" })).ok, true);
+  assert.equal((await invoke(socket, "auth:completeProfile", { username:"Nova", avatar:"/a2.webp" })).ok, true);
 
   const stats = await invoke(socket, "auth:profileStats", {});
   assert.deepEqual(stats, {
@@ -70,5 +72,11 @@ test("auth-hook branche inscription, connexion, reprise et déconnexion", async 
 
   assert.equal((await invoke(socket, "auth:logout", { sessionToken:"x" })).ok, true);
   assert.equal((await invoke(socket, "auth:profileStats", {})).ok, false);
-  assert.deepEqual(calls.map(item => item[0]), ["register", "login", "resume", "logout"]);
+  assert.deepEqual(calls.map(item => item[0]), ["register", "login", "resume", "completeProfile", "logout"]);
+  assert.deepEqual(calls.find(item => item[0] === "completeProfile")[1], {
+    userId:"u1",
+    walletToken:"a".repeat(48),
+    username:"Nova",
+    avatar:"/a2.webp"
+  });
 });

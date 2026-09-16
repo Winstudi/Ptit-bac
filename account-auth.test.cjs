@@ -12,7 +12,8 @@ const {
   newWalletToken,
   newSessionToken,
   hashSessionToken,
-  validSessionToken
+  validSessionToken,
+  PROFILE_AVATARS
 } = require("./account-auth.js");
 
 
@@ -85,4 +86,24 @@ test("les événements de compte sont limités par la sécurité Socket.IO", () 
   assert.equal(EVENT_POLICIES["auth:login"]?.scope, "network");
   assert.equal(EVENT_POLICIES["auth:resume"]?.scope, "socket");
   assert.equal(EVENT_POLICIES["auth:logout"]?.scope, "socket");
+  assert.equal(EVENT_POLICIES["auth:completeProfile"]?.scope, "identity");
+});
+
+test("l’onboarding profil est persistant et limité aux avatars officiels", () => {
+  assert.deepEqual(PROFILE_AVATARS, [
+    "/a1.webp",
+    "/a2.webp",
+    "/a3.webp",
+    "/a4.webp",
+    "/a5.webp"
+  ]);
+
+  const source = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "account-auth.js"),
+    "utf8"
+  );
+  assert.match(source, /profile_completed boolean NOT NULL DEFAULT false/);
+  assert.match(source, /ADD COLUMN IF NOT EXISTS profile_completed boolean NOT NULL DEFAULT true/);
+  assert.match(source, /ALTER COLUMN profile_completed SET DEFAULT false/);
+  assert.match(source, /async function completeProfile/);
 });

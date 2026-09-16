@@ -57,6 +57,13 @@ const EVENT_POLICIES = Object.freeze({
     message: "Trop de demandes de déconnexion."
   }),
 
+  "auth:completeProfile": Object.freeze({
+    limit: 8,
+    windowMs: 60_000,
+    scope: "identity",
+    message: "Le profil est modifié trop rapidement."
+  }),
+
   "auth:profileStats": Object.freeze({
     limit: 30,
     windowMs: 60_000,
@@ -225,6 +232,7 @@ function clientNetworkKey(socket) {
 
 function knownSocketToken(socket) {
   return walletToken(
+    socket?.data?.accountWalletToken ||
     socket?.data?.walletToken ||
     socket?.data?.ptitWalletToken ||
     socket?.data?.ptitChatWalletToken ||
@@ -352,17 +360,31 @@ function installSocketSecurity(io, options = {}) {
         return;
       }
 
-      // Une connexion déjà liée à un portefeuille ne peut pas changer
-      // silencieusement d'identité en envoyant un autre walletToken.
+      // Une connexion authentifiée par compte est l'autorité pour le wallet.
+      // Le client ne peut ni substituer walletToken, ni utiliser wallet:init
+      // pour basculer silencieusement vers un autre portefeuille.
+      const accountBoundToken = walletToken(socket?.data?.accountWalletToken);
       const boundToken = knownSocketToken(socket);
       const suppliedToken = walletToken(payload.walletToken);
+      const suppliedDirectToken = eventName.startsWith("wallet:")
+        ? walletToken(payload.token)
+        : "";
 
-      if (boundToken && suppliedToken && boundToken !== suppliedToken) {
+      if (
+        (accountBoundToken && suppliedToken && accountBoundToken !== suppliedToken) ||
+        (accountBoundToken && suppliedDirectToken && accountBoundToken !== suppliedDirectToken) ||
+        (!accountBoundToken && boundToken && suppliedToken && boundToken !== suppliedToken)
+      ) {
         callback?.({
           ok: false,
           error: "Session invalide."
         });
         return;
+      }
+
+      if (accountBoundToken && !eventName.startsWith("auth:")) {
+        payload.walletToken = accountBoundToken;
+        if (eventName.startsWith("wallet:")) payload.token = accountBoundToken;
       }
 
       const maxPayload =

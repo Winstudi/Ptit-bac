@@ -59,6 +59,29 @@ function installAccountAuth(io, options = {}) {
       });
     });
 
+    socket.on("auth:completeProfile", (payload = {}, ack) => {
+      run(ack, async () => {
+        const userId = String(socket.data.accountUserId || "").trim();
+        const walletToken = String(socket.data.accountWalletToken || "").trim();
+        if (!userId || !/^[a-f0-9]{48}$/i.test(walletToken)) {
+          return { ok:false, error:"Compte non connecté." };
+        }
+
+        const result = await service.completeProfile({
+          userId,
+          walletToken,
+          username:payload.username,
+          avatar:payload.avatar
+        });
+
+        if (result?.ok && result.account) {
+          socket.data.accountUserId = result.account.userId || userId;
+          socket.data.accountWalletToken = result.account.walletToken || walletToken;
+        }
+        return result;
+      });
+    });
+
     socket.on("auth:logout", (payload = {}, ack) => {
       run(ack, async () => {
         const result = await service.logout(payload);
