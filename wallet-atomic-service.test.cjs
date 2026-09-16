@@ -413,3 +413,135 @@ test("les variations de gemmes écrivent leur delta dans economy_transactions", 
   );
 });
 
+
+const postgresIntegrationOptions = process.env.DATABASE_URL
+  ? { timeout: 20_000 }
+  : { skip: "DATABASE_URL absente : intégration PostgreSQL ignorée en local." };
+
+test(
+  "PostgreSQL réel: pièces, gemmes et idempotence sont vérifiés puis rollbackés sans laisser de données",
+  postgresIntegrationOptions,
+  async () => {
+    const crypto = require("node:crypto");
+    const { Pool } = require("pg");
+    const databaseUrl = String(process.env.DATABASE_URL || "").trim();
+    const pool = new Pool({
+      connectionString:databaseUrl,
+      ssl:/localhost|127\\.0\\.0\\.1/.test(databaseUrl)
+        ? false
+        : { rejectUnauthorized:false },
+      max:1,
+      connectionTimeoutMillis:10_000
+    });
+
+    const client = await pool.connect();
+    const walletToken = crypto.randomBytes(24).toString("hex");
+    const now = Date.now();
+    const coinRequestId = `integration-coin-${crypto.randomBytes(8).toString("hex")}`;
+    const gemRequestId = `integration-gem-${crypto.randomBytes(8).toString("hex")}`;
+    let transactionOpen = false;
+
+    try {
+      await client.query("BEGIN");
+      transactionOpen = true;
+
+      await client.query(
+        `INSERT INTO public.ptitbac_wallets
+          (token,coins,gems,created_at,updated_at,history)
+         VALUES($1,100,7,$2,$2,'[]'::jsonb)`,
+        [walletToken, now]
+      );
+
+      const service = createWalletAtomicService({
+        getPool:() => pool,
+        ensureSchema:async () => {}
+      });
+
+      const coinDebit = await service.changeCoinsWithClient(client, {
+        walletToken,
+        delta:-20,
+        kind:"INTEGRATION_COIN_TEST",
+        details:{ roomCode:"PGTEST", note:"Test PostgreSQL rollback" },
+        idempotencyKey:coinRequestId
+      });
+      assert.equal(coinDebit.ok, true);
+      assert.equal(coinDebit.balance, 80);
+      assert.equal(coinDebit.appliedDelta, -20);
+
+      const duplicateDebit = await service.changeCoinsWithClient(client, {
+        walletToken,
+        delta:-20,
+        kind:"INTEGRATION_COIN_TEST",
+        idempotencyKey:coinRequestId
+      });
+      assert.equal(duplicateDebit.ok, true);
+      assert.equal(duplicateDebit.duplicate, true);
+      assert.equal(duplicateDebit.balance, 80);
+
+      const gemCredit = await service.changeGemsWithClient(client, {
+        walletToken,
+        delta:5,
+        kind:"INTEGRATION_GEM_TEST",
+        details:{ roomCode:"PGTEST", note:"Test PostgreSQL rollback" },
+        idempotencyKey:gemRequestId
+      });
+      assert.equal(gemCredit.ok, true);
+      assert.equal(gemCredit.gems, 12);
+      assert.equal(gemCredit.appliedDelta, 5);
+
+      const walletRow = await client.query(
+        "SELECT coins,gems FROM public.ptitbac_wallets WHERE token=$1",
+        [walletToken]
+      );
+      assert.equal(walletRow.rowCount, 1);
+      assert.equal(Number(walletRow.rows[0].coins), 80);
+      assert.equal(Number(walletRow.rows[0].gems), 12);
+
+      const auditRows = await client.query(
+        `SELECT kind,coins_delta,gems_delta,idempotency_key
+           FROM public.economy_transactions
+          WHERE wallet_token=$1
+          ORDER BY created_at ASC`,
+        [walletToken]
+      );
+      assert.equal(auditRows.rowCount, 2);
+      assert.equal(auditRows.rows[0].kind, "INTEGRATION_COIN_TEST");
+      assert.equal(Number(auditRows.rows[0].coins_delta), -20);
+      assert.equal(Number(auditRows.rows[0].gems_delta), 0);
+      assert.equal(auditRows.rows[1].kind, "INTEGRATION_GEM_TEST");
+      assert.equal(Number(auditRows.rows[1].coins_delta), 0);
+      assert.equal(Number(auditRows.rows[1].gems_delta), 5);
+      assert.equal(
+        auditRows.rows[0].idempotency_key,
+        normalizeRequestKey(walletToken, coinRequestId)
+      );
+      assert.equal(
+        auditRows.rows[1].idempotency_key,
+        normalizeRequestKey(walletToken, gemRequestId)
+      );
+
+      await client.query("ROLLBACK");
+      transactionOpen = false;
+    } finally {
+      if (transactionOpen) {
+        try { await client.query("ROLLBACK"); } catch {}
+      }
+      client.release();
+    }
+
+    try {
+      const walletAfterRollback = await pool.query(
+        "SELECT 1 FROM public.ptitbac_wallets WHERE token=$1",
+        [walletToken]
+      );
+      const auditAfterRollback = await pool.query(
+        "SELECT 1 FROM public.economy_transactions WHERE wallet_token=$1",
+        [walletToken]
+      );
+      assert.equal(walletAfterRollback.rowCount, 0);
+      assert.equal(auditAfterRollback.rowCount, 0);
+    } finally {
+      await pool.end();
+    }
+  }
+);
