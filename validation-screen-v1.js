@@ -1,9 +1,6 @@
 (() => {
   "use strict";
 
-  const originalRenderValidation =
-    window.renderValidation;
-
   function renderValidationV2() {
     clearInterval(session.timerHandle);
 
@@ -17,13 +14,6 @@
       !state ||
       state.phase !== "validation"
     ) {
-      if (
-        typeof originalRenderValidation ===
-        "function"
-      ) {
-        return originalRenderValidation();
-      }
-
       return;
     }
 

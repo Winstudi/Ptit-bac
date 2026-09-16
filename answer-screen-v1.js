@@ -1,9 +1,6 @@
 (() => {
   "use strict";
 
-  const originalRenderRound = window.renderRound;
-  if (typeof originalRenderRound !== "function") return;
-
   let cleanupViewportBinding = null;
 
   function esc(value = "") {
@@ -176,7 +173,7 @@
     const state = session.state;
 
     if (!state || state.phase !== "round") {
-      return originalRenderRound();
+      return;
     }
 
     const categories =
@@ -582,11 +579,7 @@
       setInterval(tick, 100);
   }
 
-  window.renderRound =
-    renderAnswerScreenV1;
-
-  try {
-    renderRound =
-      renderAnswerScreenV1;
-  } catch {}
+  window.PtitBacAnswerScreen = Object.freeze({
+    render: renderAnswerScreenV1
+  });
 })();

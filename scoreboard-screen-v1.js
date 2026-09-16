@@ -1,6 +1,5 @@
 (() => {
 "use strict";
-const fallback = window.renderScoreboard;
 let viewKey = "", selected = 0;
 const reports = new Map();
 function categoryIconSafe(category) {
@@ -14,7 +13,7 @@ function avatar(p){
 }
 function render(){
  const state=session.state, user=me();
- if(!state||state.phase!=="scoreboard") return fallback?.();
+ if(!state||state.phase!=="scoreboard") return;
  const results=state.lastRoundResults||{}, categories=results.categories?.length?results.categories:(state.categories||[]);
  const round=Number(results.roundIndex??state.roundIndex??0);
  const key=JSON.stringify([state.code,state.gameSessionId,round]);

@@ -3,7 +3,6 @@
 
 const INTRO_MS = 5000;
 const introByRound = new Map();
-const originalRenderRound = window.renderRound;
 
 function nowServer() {
   return typeof serverNowMs === "function"
@@ -11,9 +10,13 @@ function nowServer() {
     : Date.now();
 }
 
-if (typeof originalRenderRound !== "function") {
-  console.warn("P'tit Bac: renderRound introuvable, intro de manche désactivée.");
-  return;
+function renderAnswerScreen() {
+  const renderer = window.PtitBacAnswerScreen?.render;
+  if (typeof renderer !== "function") {
+    console.error("P'tit Bac: écran de réponses indisponible.");
+    return;
+  }
+  return renderer();
 }
 
 function roundKey(state) {
@@ -33,7 +36,7 @@ function getIntroState(state) {
       entry.finished = true;
       const live = session?.state;
       if (!live || live.phase !== "round" || roundKey(live) !== key) return;
-      originalRenderRound();
+      renderAnswerScreen();
     }, Math.max(0, entry.endsAt - nowServer()));
     introByRound.set(key, entry);
   }
@@ -120,7 +123,7 @@ function renderRoundIntro(state, entry) {
     if (entry.timeoutId) { clearTimeout(entry.timeoutId); entry.timeoutId = null; }
     const live = session?.state;
     if (!live || live.phase !== "round" || roundKey(live) !== roundKey(state)) return;
-    originalRenderRound();
+    renderAnswerScreen();
   };
 
   const tick = () => {
@@ -135,16 +138,19 @@ function renderRoundIntro(state, entry) {
   tick();
 }
 
-function wrappedRenderRound() {
+function renderRoundPhase() {
   const state = session?.state;
-  if (!state || state.phase !== "round") return originalRenderRound();
+  if (!state || state.phase !== "round") return;
   const entry = getIntroState(state);
-  if (entry.finished || nowServer() >= entry.endsAt) { entry.finished = true; return originalRenderRound(); }
+  if (entry.finished || nowServer() >= entry.endsAt) {
+    entry.finished = true;
+    return renderAnswerScreen();
+  }
   renderRoundIntro(state, entry);
 }
 
-window.renderRound = wrappedRenderRound;
-try { renderRound = wrappedRenderRound; } catch {}
+window.renderRound = renderRoundPhase;
+try { renderRound = renderRoundPhase; } catch {}
 
 if (typeof socket !== "undefined") {
   socket.on("room:state", state => {

@@ -359,3 +359,38 @@ test("les choix du lobby privé restent limités à 6, 8, 10 catégories et 120 
   assert.match(source, /const durations = \[30, 60, 90, 120\]/);
   assert.doesNotMatch(source, /Math\.max\(6,\s*Math\.min\(10,\s*nextCategoryCount \+ dir\)\)/);
 });
+
+
+test("la phase round a un seul propriétaire et l'écran réponses n'écrase plus le renderer", () => {
+  const html = read("index.html");
+  const answer = read("answer-screen-v1.js");
+  const intro = read("round-intro-v1.js");
+
+  const answerOrder = html.indexOf('/answer-screen-v1.js');
+  const introOrder = html.indexOf('/round-intro-v1.js');
+  assert.ok(answerOrder >= 0 && introOrder >= 0 && answerOrder < introOrder,
+    "answer-screen-v1.js doit charger avant round-intro-v1.js");
+
+  assert.match(answer, /window\.PtitBacAnswerScreen\s*=\s*Object\.freeze/);
+  assert.doesNotMatch(answer, /originalRenderRound/);
+  assert.doesNotMatch(answer, /window\.renderRound\s*=/);
+  assert.doesNotMatch(answer, /renderRound\s*=\s*renderAnswerScreenV1/);
+
+  assert.match(intro, /window\.PtitBacAnswerScreen\?\.render/);
+  assert.match(intro, /window\.renderRound\s*=\s*renderRoundPhase/);
+  assert.doesNotMatch(intro, /originalRenderRound/);
+});
+
+
+test("validation et scoreboard ne rappellent plus un ancien renderer de secours", () => {
+  const validation = read("validation-screen-v1.js");
+  const scoreboard = read("scoreboard-screen-v1.js");
+
+  assert.doesNotMatch(validation, /originalRenderValidation/);
+  assert.doesNotMatch(validation, /return\s+originalRenderValidation/);
+  assert.match(validation, /window\.renderValidation\s*=/);
+
+  assert.doesNotMatch(scoreboard, /const\s+fallback\s*=\s*window\.renderScoreboard/);
+  assert.doesNotMatch(scoreboard, /return\s+fallback\?\.\(\)/);
+  assert.match(scoreboard, /window\.renderScoreboard\s*=\s*render/);
+});
