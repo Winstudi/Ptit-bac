@@ -223,13 +223,7 @@
   }
 
   function framePreview(state) {
-    if (!state.equipped.frame) {
-      return `
-        <div class="inventory-v2-frame-preview is-empty">
-          <span><i></i></span>
-          <small>Sans cadre</small>
-        </div>`;
-    }
+    if (!state.equipped.frame) return "";
 
     const frame = FRAMES[state.equipped.frame];
     return `
@@ -259,7 +253,7 @@
         </header>
 
         <div class="inventory-v2-content">
-          <section class="inventory-v2-preview" aria-label="Aperçu du joueur">
+          <section class="inventory-v2-preview ${state.equipped.frame ? "has-frame" : "is-minimal"}" aria-label="Aperçu du joueur">
             <div class="inventory-v2-preview-avatar">
               <img src="${esc(equippedAvatar)}" alt="" draggable="false">
               ${frameMarkup(state.equipped.frame, "inv-frame-preview")}
@@ -270,7 +264,7 @@
               <strong>${esc(profileName())}</strong>
               ${state.equipped.tag
                 ? tagMarkup(state.equipped.tag, "inv-tag-preview")
-                : '<span class="inventory-v2-no-tag">Aucun tag</span>'}
+                : ""}
             </div>
 
             ${framePreview(state)}
