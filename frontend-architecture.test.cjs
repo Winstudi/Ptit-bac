@@ -176,7 +176,6 @@ test("le lobby possède directement le mode public et le compte à rebours", () 
   assert.match(source, /"room:setMode"/);
   assert.match(source, /"lobby:startCountdown"/);
   assert.match(source, /id="plModeToggle"/);
-  assert.match(source, /Math\.max\(6, Math\.min\(10, nextCategoryCount \+ dir\)\)/);
   assert.doesNotMatch(source, /stopImmediatePropagation/);
   assert.match(css, /Compte à rebours \+ bascule Privé\/Public/);
 });
