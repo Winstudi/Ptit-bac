@@ -5,6 +5,8 @@
   "/answer-screen-v1.css",
   "/answer-screen-v1.js",
   "/app.js",
+  "/account-v1.css",
+  "/account-v1.js",
   "/mobile-runtime.js",
   "/inventory-client.js",
   "/progression-client.js",

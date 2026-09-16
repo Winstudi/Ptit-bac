@@ -17,6 +17,7 @@ const BUNDLES = Object.freeze([
       "chat.css",
       "economy.css",
       "home-mobile.css",
+      "account-v1.css",
       "profile-screen-v2.css",
       "profile-redesign-v1.css",
       "shop-screen-v2.css",
@@ -63,6 +64,7 @@ const BUNDLES = Object.freeze([
     type: "js",
     output: "ptb-core-client.js",
     files: Object.freeze([
+      "account-v1.js",
       "avatar-system-v1.js",
       "inventory-client.js",
       "progression-client.js",

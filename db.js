@@ -2,6 +2,7 @@
 
 const { runDatabaseMigrations } = require("./db-migrations.js");
 const { createKeyedWriteQueue } = require("./db-wallet-write-queue.js");
+const { maybeRunPlayerDataReset } = require("./player-data-reset.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const POOL_MAX = Math.max(
@@ -123,7 +124,8 @@ function ensureDatabaseSchema() {
   if (migrationPromise) return migrationPromise;
 
   migrationPromise = runDatabaseMigrations(db)
-    .then(() => {
+    .then(async () => {
+      await maybeRunPlayerDataReset(db);
       console.log("PostgreSQL: schéma central prêt.");
       return db;
     })

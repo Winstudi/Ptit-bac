@@ -29,6 +29,34 @@ const EVENT_POLICIES = Object.freeze({
     message: "Trop de requêtes admin."
   }),
 
+  "auth:register": Object.freeze({
+    limit: 5,
+    windowMs: 15 * 60_000,
+    scope: "network",
+    message: "Trop de créations de compte. Réessaie plus tard."
+  }),
+
+  "auth:login": Object.freeze({
+    limit: 10,
+    windowMs: 10 * 60_000,
+    scope: "network",
+    message: "Trop de tentatives de connexion. Réessaie plus tard."
+  }),
+
+  "auth:resume": Object.freeze({
+    limit: 30,
+    windowMs: 60_000,
+    scope: "socket",
+    message: "Trop de restaurations de session."
+  }),
+
+  "auth:logout": Object.freeze({
+    limit: 10,
+    windowMs: 60_000,
+    scope: "socket",
+    message: "Trop de demandes de déconnexion."
+  }),
+
   "chat:send": Object.freeze({
     limit: 15,
     windowMs: 10_000,
@@ -386,6 +414,10 @@ function installSocketSecurity(io, options = {}) {
 
     nextConnection();
   });
+
+  if (typeof io.on === "function" && options.installAccountAuth !== false) {
+    require("./auth-hook.js")(io);
+  }
 
   const pruneTimer = setInterval(
     () => limiter.prune(),
