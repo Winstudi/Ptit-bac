@@ -394,3 +394,24 @@ test("validation et scoreboard ne rappellent plus un ancien renderer de secours"
   assert.doesNotMatch(scoreboard, /return\s+fallback\?\.\(\)/);
   assert.match(scoreboard, /window\.renderScoreboard\s*=\s*render/);
 });
+
+test("le CSS du lobby privé ne repose plus sur une seconde couche d'override", () => {
+  const css = read("private-lobby.css");
+  const lobby = read("lobby-screen-v4.js");
+
+  assert.equal((css.match(/html main\.lobby-v5\.pl-private\s*\{/g) || []).length, 2,
+    "une règle principale + une adaptation max-height sont attendues");
+  assert.equal((css.match(/\.pl-private \.pl-setting-grid \.lobby-v5-setting-card\s*\{/g) || []).length, 2,
+    "une règle principale + une adaptation max-height sont attendues");
+  assert.equal((css.match(/\.pl-private \.pl-avatar\s*\{/g) || []).length, 1);
+  assert.doesNotMatch(css, /\/\* Format compact, identique au fond des écrans de préparation\. \*\//);
+  assert.doesNotMatch(css, /\.pl-code\b/);
+
+  for (const className of [
+    "pl-header-code", "pl-social", "pl-share", "pl-mode-toggle",
+    "pl-setting-grid", "pl-player", "pl-empty", "pl-launch"
+  ]) {
+    assert.match(lobby, new RegExp(className));
+    assert.match(css, new RegExp(`\\.${className}\\b`));
+  }
+});
