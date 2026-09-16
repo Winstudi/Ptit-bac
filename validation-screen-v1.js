@@ -135,32 +135,32 @@
             button.disabled = true;
           }
 
-          socket.timeout(8000).emit(
+          socket.emit(
             "validation:retry",
             {
               code:state.code,
               playerId:
                 session.playerId
-            },
-            error => {
-              if (!error) return;
-
-              const current = session.state;
-              const stillUnavailable =
-                current?.phase === "validation" &&
-                current?.validation?.status === "unavailable";
-
-              if (
-                button?.isConnected &&
-                stillUnavailable
-              ) {
-                button.disabled = false;
-                toast(
-                  "La relance n’a pas été confirmée. Réessaie."
-                );
-              }
             }
           );
+
+          setTimeout(() => {
+            const current = session.state;
+            const stillUnavailable =
+              current?.phase === "validation" &&
+              current?.validation?.status === "unavailable";
+
+            if (
+              socket.connected &&
+              button?.isConnected &&
+              stillUnavailable
+            ) {
+              button.disabled = false;
+              toast(
+                "La relance n’a pas été confirmée. Réessaie."
+              );
+            }
+          }, 8000);
         }
       );
   }

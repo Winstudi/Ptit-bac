@@ -486,31 +486,31 @@
         const button = event.currentTarget;
         button.disabled = true;
 
-        socket.timeout(8000).emit(
+        socket.emit(
           "round:submit",
           {
             code:state.code,
             playerId:session.playerId
-          },
-          error => {
-            if (!error) return;
-
-            const current = session.state;
-            const stillWaitingForSubmit =
-              current?.phase === "round" &&
-              !me()?.submitted;
-
-            if (
-              button.isConnected &&
-              stillWaitingForSubmit
-            ) {
-              button.disabled = false;
-              toast(
-                "La validation n’a pas été confirmée. Réessaie."
-              );
-            }
           }
         );
+
+        setTimeout(() => {
+          const current = session.state;
+          const stillWaitingForSubmit =
+            current?.phase === "round" &&
+            !me()?.submitted;
+
+          if (
+            socket.connected &&
+            button.isConnected &&
+            stillWaitingForSubmit
+          ) {
+            button.disabled = false;
+            toast(
+              "La validation n’a pas été confirmée. Réessaie."
+            );
+          }
+        }, 8000);
       });
 
     const tick = () => {
