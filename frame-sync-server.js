@@ -1,11 +1,13 @@
 "use strict";
 
-/*
- * P'tit Bac — validation serveur des cadres cosmétiques.
- * Le système de cadres reste disponible, mais aucun cadre n'est publié
- * dans le catalogue actuel. Une valeur vide signifie "Sans cadre".
- */
-const ALLOWED_FRAMES = new Set([""]);
+const { CATALOG } = require("./inventory-service.js");
+
+// Source de vérité unique : tous les cadres publiés dans l'inventaire sont
+// automatiquement autorisés dans les salons et les parties.
+const ALLOWED_FRAMES = new Set([
+  "",
+  ...Object.keys(CATALOG.frame || {})
+]);
 
 function normalizeFrameId(value) {
   const id = String(value || "").trim();
