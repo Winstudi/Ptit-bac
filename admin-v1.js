@@ -43,6 +43,16 @@
     });
   }
 
+  function mutationRequestId(prefix="admin") {
+    try {
+      if (globalThis.crypto?.randomUUID) {
+        return `${prefix}:${globalThis.crypto.randomUUID()}`;
+      }
+    } catch {}
+
+    return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,12)}`;
+  }
+
   function esc(value="") {
     if (typeof escapeHtml === "function") {
       return escapeHtml(value);
@@ -516,7 +526,8 @@
             friendCode,
             mode,
             resource,
-            amount
+            amount,
+            requestId:mutationRequestId("resource")
           }
         );
 

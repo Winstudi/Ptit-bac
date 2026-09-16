@@ -2,6 +2,7 @@
 
 const crypto = require("crypto");
 const { getPool, ensureDatabaseSchema } = require("./db.js");
+const { createWalletAtomicService } = require("./wallet-atomic-service.js");
 const {
   CATALOG: INVENTORY_CATALOG,
   catalogEntries,
@@ -26,6 +27,10 @@ const gemOverrides = new Map();
 
 const ITEM_CATALOG = Object.freeze(catalogEntries());
 const inventoryService = createInventoryService({
+  getPool: () => pool,
+  ensureSchema: ensureDatabaseSchema
+});
+const walletAtomicService = createWalletAtomicService({
   getPool: () => pool,
   ensureSchema: ensureDatabaseSchema
 });
@@ -128,7 +133,15 @@ async function applyFlags(token) {
     : infiniteLives.delete(token);
 
   if (s.infinite_coins) {
-    global.__ptbAdminSetCoins?.(token, 999999);
+    const result = await walletAtomicService.setCoins({
+      walletToken:token,
+      balance:999999,
+      kind:"ADMIN_INFINITE_COINS",
+      details:{ note:"Activation des pièces infinies" }
+    });
+    if (result?.ok) {
+      global.__ptbAdminSyncCoins?.(token, result.balance);
+    }
   }
 
   if (s.infinite_lives && pool) {
@@ -453,7 +466,8 @@ async function updateResource(io, {
   code,
   resource,
   mode,
-  amount
+  amount,
+  requestId = ""
 }) {
   const user = await findUserByCode(code);
 
@@ -466,34 +480,44 @@ async function updateResource(io, {
     throw new Error("Portefeuille du joueur introuvable.");
   }
 
-  const wallet = await getWallet(targetToken);
-  const current =
-    resource === "gems"
-      ? Number(wallet.gems || 0)
-      : Number(wallet.coins || 0);
-
   const safeAmount = clampResource(amount);
-  const next = clampResource(
-    mode === "add"
-      ? current + safeAmount
-      : safeAmount
-  );
-
-  const now = Date.now();
+  let current = 0;
+  let next = 0;
 
   if (resource === "coins") {
-    await pool.query(
-      `INSERT INTO ptitbac_wallets
-       (token,coins,gems,created_at,updated_at,history)
-       VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
-       ON CONFLICT(token) DO UPDATE SET
-         coins=$2,
-         updated_at=$4`,
-      [targetToken,next,Number(wallet.gems || 0),now]
-    );
+    const result = mode === "add"
+      ? await walletAtomicService.changeCoins({
+          walletToken:targetToken,
+          delta:safeAmount,
+          kind:"ADMIN_COIN_ADD",
+          details:{ note:`Ajout admin (+${safeAmount})` },
+          idempotencyKey:requestId ? `admin-resource:${requestId}` : ""
+        })
+      : await walletAtomicService.setCoins({
+          walletToken:targetToken,
+          balance:safeAmount,
+          kind:"ADMIN_COIN_SET",
+          details:{ note:`Solde défini par admin (${safeAmount})` },
+          idempotencyKey:requestId ? `admin-resource:${requestId}` : ""
+        });
 
-    global.__ptbAdminSetCoins?.(targetToken, next);
+    if (!result?.ok) {
+      throw new Error(result?.error || "Modification des pièces impossible.");
+    }
+
+    current = Number(result.before ?? result.balance ?? 0);
+    next = Number(result.balance ?? current);
+    global.__ptbAdminSyncCoins?.(targetToken, next);
   } else {
+    const wallet = await getWallet(targetToken);
+    current = Number(wallet.gems || 0);
+    next = clampResource(
+      mode === "add"
+        ? current + safeAmount
+        : safeAmount
+    );
+    const now = Date.now();
+
     await pool.query(
       `INSERT INTO ptitbac_wallets
        (token,coins,gems,created_at,updated_at,history)
@@ -505,8 +529,8 @@ async function updateResource(io, {
     );
 
     // Les gemmes ne sont pas encore consommées par le gameplay.
-    // Cet overlay garde l'UI du joueur synchronisée jusqu'à ce que
-    // la future économie des gemmes soit branchée partout.
+    // Leur transaction atomique complète sera traitée séparément quand
+    // l'économie des gemmes sera branchée au jeu et à la boutique.
     gemOverrides.set(targetToken, next);
   }
 
@@ -524,7 +548,8 @@ async function updateResource(io, {
     {
       before:current,
       amount:safeAmount,
-      after:next
+      after:next,
+      requestId:String(requestId || "").slice(0,80)
     }
   );
 
@@ -843,20 +868,15 @@ function installAdmin(io) {
           infiniteLives:lives
         });
 
-        let balance = null;
+        const balanceQuery = await pool.query(
+          "SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",
+          [token]
+        ).catch(() => ({ rows:[] }));
 
-        if (coins) {
-          balance =
-            global.__ptbAdminSetCoins?.(token,999999) ??
-            999999;
-        } else {
-          const q = await pool.query(
-            "SELECT coins FROM ptitbac_wallets WHERE token=$1 LIMIT 1",
-            [token]
-          ).catch(() => ({ rows:[] }));
-
-          balance = Number(q.rows[0]?.coins ?? 0);
-        }
+        const balance = Number(
+          balanceQuery.rows[0]?.coins ??
+          (coins ? 999999 : 0)
+        );
 
         if (Number.isFinite(Number(balance))) {
           socket.emit("wallet:update", {
@@ -895,7 +915,8 @@ function installAdmin(io) {
           code:payload.friendCode,
           resource:"coins",
           mode:"add",
-          amount:payload.amount
+          amount:payload.amount,
+          requestId:payload.requestId
         });
 
         cb({
@@ -947,7 +968,8 @@ function installAdmin(io) {
           code,
           resource,
           mode,
-          amount
+          amount,
+          requestId:payload.requestId
         });
 
         cb({
@@ -1640,36 +1662,46 @@ function installAdmin(io) {
         let gems = null;
         let itemLabel = "";
 
-        if (
-          message.reward_type === "coins" ||
-          message.reward_type === "gems"
-        ) {
-          const walletQuery =
-            await client.query(
-              `SELECT coins,gems
+        if (message.reward_type === "coins") {
+          const reward = await walletAtomicService.changeCoinsWithClient(
+            client,
+            {
+              walletToken:token,
+              delta:amount,
+              kind:"INBOX_COIN_REWARD",
+              details:{
+                note:`Récompense boîte de réception (+${amount})`
+              },
+              idempotencyKey:`inbox:${message.id}:coins`
+            }
+          );
+
+          if (!reward?.ok) {
+            await client.query("ROLLBACK");
+            return cb({
+              ok:false,
+              error:reward?.error || "Récompense indisponible."
+            });
+          }
+
+          coins = Number(reward.balance || 0);
+          gems = Number(reward.gems || 0);
+        }
+
+        if (message.reward_type === "gems") {
+          const walletQuery = await client.query(
+            `SELECT coins,gems
                FROM ptitbac_wallets
-               WHERE token=$1
-               LIMIT 1
-               FOR UPDATE`,
-              [token]
-            );
+              WHERE token=$1
+              LIMIT 1
+              FOR UPDATE`,
+            [token]
+          );
 
-          const currentCoins =
-            Number(walletQuery.rows[0]?.coins || 0);
-
-          const currentGems =
-            Number(walletQuery.rows[0]?.gems || 0);
-
-          coins =
-            message.reward_type === "coins"
-              ? clampResource(currentCoins + amount)
-              : currentCoins;
-
-          gems =
-            message.reward_type === "gems"
-              ? clampResource(currentGems + amount)
-              : currentGems;
-
+          const currentCoins = Number(walletQuery.rows[0]?.coins || 0);
+          const currentGems = Number(walletQuery.rows[0]?.gems || 0);
+          coins = currentCoins;
+          gems = clampResource(currentGems + amount);
           const now = Date.now();
 
           await client.query(
@@ -1677,10 +1709,9 @@ function installAdmin(io) {
              (token,coins,gems,created_at,updated_at,history)
              VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
              ON CONFLICT(token) DO UPDATE SET
-               coins=$2,
                gems=$3,
                updated_at=$4`,
-            [token,coins,gems,now]
+            [token,currentCoins,gems,now]
           );
         }
 
@@ -1726,7 +1757,7 @@ function installAdmin(io) {
         }
 
         if (Number.isFinite(coins)) {
-          global.__ptbAdminSetCoins?.(
+          global.__ptbAdminSyncCoins?.(
             token,
             coins
           );

@@ -392,16 +392,15 @@ function persistWallet(token) {
     saveWalletsToFile();
     return;
   }
+  // En PostgreSQL, cette voie ne sert plus qu'à créer un portefeuille qui
+  // n'existe pas encore. Une écriture mémoire différée ne doit jamais pouvoir
+  // écraser une transaction atomique plus récente.
   pgPool.query(
     `INSERT INTO ptitbac_wallets(token, coins, created_at, updated_at, history, gems)
      VALUES($1,$2,$3,$4,$5::jsonb,$6)
-     ON CONFLICT(token) DO UPDATE SET
-       coins=EXCLUDED.coins,
-       gems=EXCLUDED.gems,
-       updated_at=EXCLUDED.updated_at,
-       history=EXCLUDED.history`,
+     ON CONFLICT(token) DO NOTHING`,
     [token, wallet.coins, wallet.createdAt, wallet.updatedAt, JSON.stringify(wallet.history || []), wallet.gems ?? 0]
-  ).catch(err => console.error("Erreur persistance portefeuille PostgreSQL:", err.message));
+  ).catch(err => console.error("Erreur création portefeuille PostgreSQL:", err.message));
 }
 
 function saveWallets() {
@@ -433,12 +432,19 @@ function walletBalance(token) {
   return wallets.get(token)?.coins ?? 0;
 }
 
-global.__ptbAdminSetCoins = (token, value) => {
-  const ensured = ensureWallet(token);
+// Synchronisation mémoire uniquement après une transaction PostgreSQL déjà validée.
+// Cette fonction ne doit jamais écrire en base : le service atomique reste l'unique
+// source de vérité pour les mutations de pièces en production.
+global.__ptbAdminSyncCoins = (token, value) => {
+  const safeToken = typeof token === "string" && /^[a-f0-9]{48}$/i.test(token)
+    ? token
+    : "";
+  const wallet = safeToken ? wallets.get(safeToken) : null;
+  if (!wallet) return null;
+
   const target = Math.max(0, Math.min(999999, Math.floor(Number(value) || 0)));
-  ensured.wallet.coins = target;
-  ensured.wallet.updatedAt = Date.now();
-  persistWallet(ensured.token);
+  wallet.coins = target;
+  wallet.updatedAt = Date.now();
   return target;
 };
 
@@ -3330,18 +3336,45 @@ io.on("connection", socket => {
         return cb({ok:false,error:"Portefeuille introuvable."});
       }
 
-      const eventId = "dev-ad:" + Date.now() + ":" + crypto.randomBytes(4).toString("hex");
-      const tx = walletTransaction(
-        token,
-        ECONOMY_AD_REWARD,
-        "REWARDED_AD",
-        {note:`Vidéo récompensée (+${ECONOMY_AD_REWARD})`},
-        eventId
-      );
+      // Une récompense publicitaire doit venir avec l'identifiant stable de
+      // l'affichage terminé. Le même identifiant peut être renvoyé après une
+      // coupure réseau sans jamais créditer deux fois le joueur.
+      const requestId = String(payload.requestId || "").trim();
+      if (!/^[a-zA-Z0-9:_-]{8,64}$/.test(requestId)) {
+        return cb({
+          ok:false,
+          error:"Identifiant de récompense publicitaire invalide."
+        });
+      }
 
-      const balance = tx?.balance ?? walletBalance(token);
-      socket.emit("wallet:update",{balance});
-      cb({ok:true,reward:ECONOMY_AD_REWARD,balance});
+      try {
+        const tx = await changeWalletCoinsDurably({
+          walletToken:token,
+          delta:ECONOMY_AD_REWARD,
+          kind:"REWARDED_AD",
+          details:{note:`Vidéo récompensée (+${ECONOMY_AD_REWARD})`},
+          idempotencyKey:`rewarded-ad:${requestId}`
+        });
+
+        if (!tx?.ok) {
+          return cb({
+            ok:false,
+            error:tx?.error || "Récompense publicitaire indisponible."
+          });
+        }
+
+        const balance = tx.balance ?? walletBalance(token);
+        socket.emit("wallet:update",{balance});
+        cb({
+          ok:true,
+          reward:tx.duplicate ? 0 : ECONOMY_AD_REWARD,
+          balance,
+          duplicate:!!tx.duplicate
+        });
+      } catch (err) {
+        console.error("economy:rewardedAdDev:", err.message);
+        cb({ok:false,error:"Récompense publicitaire indisponible."});
+      }
     });
 
   socket.on("lobby:startCountdown", (payload = {}, cb = () => {}) => {
