@@ -5,6 +5,16 @@
     typeof renderCategorySelection === "function" ? renderCategorySelection : null;
 
   let categoryExitMenuOpen = false;
+  let pendingCategoryReroll = null;
+
+  function categoryRequestId(prefix = "category") {
+    try {
+      if (globalThis.crypto?.randomUUID) {
+        return `${prefix}:${globalThis.crypto.randomUUID()}`;
+      }
+    } catch {}
+    return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+  }
 
   function ptitBacImageAvatar(value) {
     return typeof value === "string" &&
@@ -150,6 +160,9 @@
     const insufficient = balance < categoryRerollCost;
     const missingCoins = Math.max(0, categoryRerollCost - balance);
     const drawKey = JSON.stringify([state.code, state.gameSessionId, state.roundIndex, categories]);
+    if (pendingCategoryReroll?.drawKey !== drawKey) {
+      pendingCategoryReroll = null;
+    }
     const reveal = drawKey !== lastDraw;
     lastDraw = drawKey;
     const categoryCountClass =
@@ -313,6 +326,11 @@
           }
 
           const requestedDrawKey = drawKey;
+          const requestId =
+            pendingCategoryReroll?.drawKey === requestedDrawKey
+              ? pendingCategoryReroll.requestId
+              : categoryRequestId("category-reroll");
+          pendingCategoryReroll = { drawKey: requestedDrawKey, requestId };
 
           rerollBtn.classList.add("is-loading");
           rerollBtn.disabled = true;
@@ -322,7 +340,8 @@
             "game:rerollCategories",
             {
               code: state.code,
-              playerId: session.playerId
+              playerId: session.playerId,
+              requestId
             }
           );
 

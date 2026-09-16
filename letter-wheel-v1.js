@@ -16,6 +16,17 @@
     spinAudioUnlocked: false,
     spinAudioStartedAt: 0
   };
+  let pendingLetterReroll = null;
+
+  function letterRequestId(prefix = "letter") {
+    try {
+      if (globalThis.crypto?.randomUUID) {
+        return `${prefix}:${globalThis.crypto.randomUUID()}`;
+      }
+    } catch {}
+    return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+  }
+
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
   function adminCoins() {
@@ -618,6 +629,18 @@
       Number(
         state.letterRerollCost || 20
       );
+
+    const letterRerollContextKey = JSON.stringify([
+      state.code,
+      state.gameSessionId,
+      state.roundIndex,
+      version,
+      selectedLetter
+    ]);
+
+    if (pendingLetterReroll?.contextKey !== letterRerollContextKey) {
+      pendingLetterReroll = null;
+    }
 
     const canReroll =
       typeof getCoins !== "function" ||
@@ -1254,12 +1277,22 @@
           const requestedLetter =
             selectedLetter;
 
+          const requestId =
+            pendingLetterReroll?.contextKey === letterRerollContextKey
+              ? pendingLetterReroll.requestId
+              : letterRequestId("letter-reroll");
+          pendingLetterReroll = {
+            contextKey: letterRerollContextKey,
+            requestId
+          };
+
           socket.emit(
             "game:rerollLetter",
             {
               code:state.code,
               playerId:
-                session.playerId
+                session.playerId,
+              requestId
             }
           );
 

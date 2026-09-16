@@ -94,3 +94,268 @@ test("la préparation catégories puis lettre utilise un watchdog d’état serv
   assert.match(quick, /La relance de la lettre n’a pas été confirmée\. Réessaie\./);
 });
 
+const {
+  createWalletAtomicService,
+  normalizeRequestKey
+} = require("./wallet-atomic-service.js");
+
+const atomicWalletToken = "a".repeat(48);
+
+function fakeAtomicDatabase({
+  coins = 50,
+  gems = 3,
+  duplicate = null,
+  failOnUpdate = false
+} = {}) {
+  const state = {
+    coins,
+    gems,
+    history:[],
+    audit:duplicate ? new Map([[duplicate.key, duplicate.row]]) : new Map(),
+    committed:false,
+    rolledBack:false,
+    released:false,
+    calls:[]
+  };
+
+  const client = {
+    async query(sql, params = []) {
+      const text = String(sql).replace(/\s+/g, " ").trim();
+      state.calls.push({ text, params });
+
+      if (text === "BEGIN") return { rowCount:null, rows:[] };
+      if (text === "COMMIT") {
+        state.committed = true;
+        return { rowCount:null, rows:[] };
+      }
+      if (text === "ROLLBACK") {
+        state.rolledBack = true;
+        return { rowCount:null, rows:[] };
+      }
+
+      if (
+        text.includes("FROM public.ptitbac_wallets") &&
+        text.includes("FOR UPDATE")
+      ) {
+        return {
+          rowCount:1,
+          rows:[{
+            token:atomicWalletToken,
+            coins:state.coins,
+            gems:state.gems,
+            created_at:1,
+            updated_at:1,
+            history:state.history
+          }]
+        };
+      }
+
+      if (
+        text.includes("FROM public.economy_transactions") &&
+        text.includes("idempotency_key")
+      ) {
+        const row = state.audit.get(params[0]);
+        return row
+          ? { rowCount:1, rows:[row] }
+          : { rowCount:0, rows:[] };
+      }
+
+      if (text.startsWith("UPDATE public.ptitbac_wallets")) {
+        if (failOnUpdate) throw new Error("db write failed");
+        state.coins = params[1];
+        state.history = JSON.parse(params[3]);
+        return {
+          rowCount:1,
+          rows:[{
+            token:atomicWalletToken,
+            coins:state.coins,
+            gems:state.gems,
+            created_at:1,
+            updated_at:params[2],
+            history:state.history
+          }]
+        };
+      }
+
+      if (text.startsWith("INSERT INTO public.economy_transactions")) {
+        const key = params[5];
+        const row = {
+          id:"tx-db",
+          coins_delta:params[2],
+          kind:params[1],
+          created_at:new Date()
+        };
+        if (key) state.audit.set(key, row);
+        return { rowCount:1, rows:[row] };
+      }
+
+      throw new Error(`SQL inattendu: ${text}`);
+    },
+
+    release() {
+      state.released = true;
+    }
+  };
+
+  return {
+    state,
+    pool:{
+      async connect() {
+        return client;
+      }
+    }
+  };
+}
+
+function atomicServiceFor(db) {
+  return createWalletAtomicService({
+    getPool:() => db.pool,
+    ensureSchema:async () => {}
+  });
+}
+
+test("le portefeuille atomique verrouille, audite et committe le débit", async () => {
+  const db = fakeAtomicDatabase({ coins:50 });
+
+  const result = await atomicServiceFor(db).changeCoins({
+    walletToken:atomicWalletToken,
+    delta:-20,
+    kind:"LETTER_REROLL",
+    details:{ roomCode:"ABC123", note:"Relance" },
+    idempotencyKey:"request-1"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.balance, 30);
+  assert.equal(db.state.coins, 30);
+  assert.equal(db.state.committed, true);
+  assert.equal(db.state.rolledBack, false);
+  assert.equal(db.state.released, true);
+  assert.equal(db.state.history.at(-1).after, 30);
+  assert.ok(db.state.calls.some(call => call.text.includes("FOR UPDATE")));
+  assert.ok(
+    db.state.calls.some(
+      call => call.text.startsWith("INSERT INTO public.economy_transactions")
+    )
+  );
+});
+
+test("le portefeuille atomique refuse un solde insuffisant sans écriture", async () => {
+  const db = fakeAtomicDatabase({ coins:10 });
+
+  const result = await atomicServiceFor(db).changeCoins({
+    walletToken:atomicWalletToken,
+    delta:-20,
+    kind:"CATEGORY_REROLL",
+    idempotencyKey:"request-2"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "insufficient");
+  assert.equal(result.balance, 10);
+  assert.equal(db.state.coins, 10);
+  assert.equal(db.state.rolledBack, true);
+  assert.equal(db.state.committed, false);
+});
+
+test("le portefeuille atomique ne débite jamais deux fois la même requête", async () => {
+  const key = normalizeRequestKey(atomicWalletToken, "same-request");
+  const db = fakeAtomicDatabase({
+    coins:30,
+    duplicate:{
+      key,
+      row:{
+        id:"old",
+        coins_delta:-20,
+        kind:"LETTER_REROLL",
+        created_at:new Date()
+      }
+    }
+  });
+
+  const result = await atomicServiceFor(db).changeCoins({
+    walletToken:atomicWalletToken,
+    delta:-20,
+    kind:"LETTER_REROLL",
+    idempotencyKey:"same-request"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.duplicate, true);
+  assert.equal(result.balance, 30);
+  assert.equal(db.state.coins, 30);
+  assert.equal(db.state.committed, true);
+  assert.equal(
+    db.state.calls.some(
+      call => call.text.startsWith("UPDATE public.ptitbac_wallets")
+    ),
+    false
+  );
+});
+
+test("le portefeuille atomique rollback si PostgreSQL échoue", async () => {
+  const db = fakeAtomicDatabase({ coins:50, failOnUpdate:true });
+
+  await assert.rejects(
+    atomicServiceFor(db).changeCoins({
+      walletToken:atomicWalletToken,
+      delta:-20,
+      kind:"LETTER_REROLL",
+      idempotencyKey:"request-fail"
+    }),
+    /db write failed/
+  );
+
+  assert.equal(db.state.rolledBack, true);
+  assert.equal(db.state.committed, false);
+  assert.equal(db.state.released, true);
+});
+
+test("la clé idempotente du portefeuille est liée au wallet", () => {
+  assert.equal(
+    normalizeRequestKey(atomicWalletToken, "reroll:123"),
+    `${atomicWalletToken}:reroll:123`
+  );
+});
+
+test("les relances payantes envoient une clé idempotente stable", () => {
+  const categories = source("category-selection-v2.js");
+  const letters = source("letter-wheel-v1.js");
+
+  assert.match(categories, /pendingCategoryReroll/);
+  assert.match(categories, /categoryRequestId\("category-reroll"\)/);
+  assert.match(
+    categories,
+    /"game:rerollCategories"[\s\S]{0,520}requestId/
+  );
+
+  assert.match(letters, /pendingLetterReroll/);
+  assert.match(letters, /letterRequestId\("letter-reroll"\)/);
+  assert.match(
+    letters,
+    /"game:rerollLetter"[\s\S]{0,520}requestId/
+  );
+});
+
+test("une relance non confirmée garde la même clé jusqu’au nouvel état", () => {
+  const categories = source("category-selection-v2.js");
+  const letters = source("letter-wheel-v1.js");
+
+  assert.match(
+    categories,
+    /pendingCategoryReroll\?\.drawKey === requestedDrawKey/
+  );
+  assert.match(
+    categories,
+    /pendingCategoryReroll\?\.drawKey !== drawKey/
+  );
+  assert.match(
+    letters,
+    /pendingLetterReroll\?\.contextKey === letterRerollContextKey/
+  );
+  assert.match(
+    letters,
+    /pendingLetterReroll\?\.contextKey !== letterRerollContextKey/
+  );
+});
+
