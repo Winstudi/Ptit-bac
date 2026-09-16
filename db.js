@@ -1,6 +1,7 @@
 "use strict";
 
 const { runDatabaseMigrations } = require("./db-migrations.js");
+const { createKeyedWriteQueue } = require("./db-wallet-write-queue.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const POOL_MAX = Math.max(
@@ -13,6 +14,51 @@ let migrationPromise = null;
 
 function hasDatabase() {
   return Boolean(DATABASE_URL);
+}
+
+function walletTokenFromUpsert(args) {
+  const config = args[0];
+  const text = typeof config === "string"
+    ? config
+    : String(config?.text || "");
+  const values = typeof config === "string"
+    ? args[1]
+    : config?.values;
+
+  // Les appels avec callback conservent le comportement natif de pg.
+  if (args.some((value, index) => index > 0 && typeof value === "function")) {
+    return "";
+  }
+
+  if (
+    !/^\s*INSERT\s+INTO\s+(?:public\.)?ptitbac_wallets\s*\(/i.test(text) ||
+    !Array.isArray(values)
+  ) {
+    return "";
+  }
+
+  const token = String(values[0] || "").trim();
+  return /^[a-f0-9]{48}$/i.test(token) ? token : "";
+}
+
+function installWalletWriteOrdering(shared) {
+  const originalQuery = shared.query.bind(shared);
+  const walletWrites = createKeyedWriteQueue();
+
+  shared.query = function queryWithWalletOrdering(...args) {
+    const walletToken = walletTokenFromUpsert(args);
+
+    if (!walletToken) {
+      return originalQuery(...args);
+    }
+
+    return walletWrites.enqueue(
+      walletToken,
+      () => originalQuery(...args)
+    );
+  };
+
+  return shared;
 }
 
 function createPool() {
@@ -43,6 +89,16 @@ function createPool() {
     }
     return endPromise;
   };
+
+  /*
+   * server.js conserve encore le solde en mémoire avant de déclencher
+   * l'UPSERT PostgreSQL. Deux sauvegardes rapprochées d'un même portefeuille
+   * ne doivent donc jamais terminer dans l'ordre inverse.
+   *
+   * On sérialise uniquement les UPSERT de ptitbac_wallets :
+   * toutes les autres requêtes du Pool gardent leur parallélisme normal.
+   */
+  installWalletWriteOrdering(shared);
 
   shared.on("error", error => {
     console.error(
