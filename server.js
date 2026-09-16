@@ -448,6 +448,21 @@ global.__ptbAdminSyncCoins = (token, value) => {
   return target;
 };
 
+// Même principe pour les gemmes : la base est modifiée par le service atomique,
+// puis le cache serveur est aligné sans déclencher une seconde écriture SQL.
+global.__ptbAdminSyncGems = (token, value) => {
+  const safeToken = typeof token === "string" && /^[a-f0-9]{48}$/i.test(token)
+    ? token
+    : "";
+  const wallet = safeToken ? wallets.get(safeToken) : null;
+  if (!wallet) return null;
+
+  const target = Math.max(0, Math.min(999999, Math.floor(Number(value) || 0)));
+  wallet.gems = target;
+  wallet.updatedAt = Date.now();
+  return target;
+};
+
 function walletTransaction(token, delta, type, details = {}, idempotencyKey = "") {
   const wallet = wallets.get(token);
   if (!wallet) return null;

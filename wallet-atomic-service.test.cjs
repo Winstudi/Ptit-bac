@@ -51,7 +51,8 @@ function fakeDatabase({ coins = 50, gems = 3, duplicate = null, failOnUpdate = f
 
       if (text.startsWith("UPDATE public.ptitbac_wallets")) {
         if (failOnUpdate) throw new Error("db write failed");
-        state.coins = params[1];
+        if (text.includes("SET gems=$2")) state.gems = params[1];
+        else state.coins = params[1];
         state.history = JSON.parse(params[3]);
         return { rowCount:1, rows:[{
           token,
@@ -278,4 +279,102 @@ test("la pub récompensée, l'admin et l'inbox sont branchés sur le service ato
   assert.match(admin, /idempotencyKey:`inbox:\$\{message\.id\}:coins`/);
   assert.doesNotMatch(admin, /__ptbAdminSetCoins/);
   assert.match(adminClient, /requestId:mutationRequestId\("resource"\)/);
+});
+
+
+test("un ajout de gemmes est verrouillé, historisé et commité atomiquement", async () => {
+  const db = fakeDatabase({ coins:40, gems:7 });
+  const result = await serviceFor(db).changeGems({
+    walletToken:token,
+    delta:12,
+    kind:"ADMIN_GEM_ADD",
+    idempotencyKey:"gem-add-1"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.before, 7);
+  assert.equal(result.appliedDelta, 12);
+  assert.equal(result.gems, 19);
+  assert.equal(result.balance, 40);
+  assert.equal(db.state.gems, 19);
+  assert.equal(db.state.committed, true);
+  assert.equal(db.state.history.at(-1).resource, "gems");
+  assert.equal(db.state.history.at(-1).after, 19);
+});
+
+test("une dépense de gemmes insuffisante est refusée sans modifier le solde", async () => {
+  const db = fakeDatabase({ gems:4 });
+  const result = await serviceFor(db).changeGems({
+    walletToken:token,
+    delta:-5,
+    kind:"GEM_SPEND",
+    idempotencyKey:"gem-spend-1"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "insufficient");
+  assert.equal(result.gems, 4);
+  assert.equal(db.state.gems, 4);
+  assert.equal(db.state.rolledBack, true);
+});
+
+test("setGems reste idempotent même si le solde change après la première requête", async () => {
+  const db = fakeDatabase({ gems:15 });
+  const service = serviceFor(db);
+  const requestId = "admin-gem-set-stable";
+
+  const first = await service.setGems({
+    walletToken:token,
+    balance:15,
+    kind:"ADMIN_GEM_SET",
+    idempotencyKey:requestId
+  });
+  assert.equal(first.ok, true);
+  assert.equal(first.noChange, true);
+
+  db.state.gems = 30;
+  const retry = await service.setGems({
+    walletToken:token,
+    balance:15,
+    kind:"ADMIN_GEM_SET",
+    idempotencyKey:requestId
+  });
+
+  assert.equal(retry.ok, true);
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.gems, 30);
+  assert.equal(db.state.gems, 30);
+});
+
+test("changeGemsWithClient reste dans la transaction de la boîte de réception", async () => {
+  const db = fakeDatabase({ coins:25, gems:2 });
+  const result = await serviceFor(db).changeGemsWithClient(db.client, {
+    walletToken:token,
+    delta:8,
+    kind:"INBOX_GEM_REWARD",
+    idempotencyKey:"inbox:abc:gems"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.gems, 10);
+  assert.equal(result.balance, 25);
+  assert.equal(db.state.committed, false);
+  assert.equal(db.state.rolledBack, false);
+  assert.equal(db.state.released, false);
+  assert.equal(db.state.calls.some(call => call.text === "BEGIN"), false);
+  assert.equal(db.state.calls.some(call => call.text === "COMMIT"), false);
+});
+
+test("admin et inbox n'écrivent plus directement le solde de gemmes", () => {
+  const server = read("server.js");
+  const admin = read("admin-hook.js");
+
+  assert.match(admin, /ADMIN_GEM_ADD/);
+  assert.match(admin, /ADMIN_GEM_SET/);
+  assert.match(admin, /changeGemsWithClient[\s\S]{0,700}INBOX_GEM_REWARD/);
+  assert.match(admin, /idempotencyKey:`inbox:\$\{message\.id\}:gems`/);
+  assert.match(admin, /__ptbAdminSyncGems/);
+  assert.doesNotMatch(admin, /gemOverrides/);
+  assert.doesNotMatch(admin, /ON CONFLICT\(token\) DO UPDATE SET[\s\S]{0,160}gems=\$3/);
+  assert.match(server, /__ptbAdminSyncGems/);
 });

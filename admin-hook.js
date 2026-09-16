@@ -23,7 +23,6 @@ const infiniteLives =
   global.__ptbInfiniteLives ||
   (global.__ptbInfiniteLives = new Set());
 
-const gemOverrides = new Map();
 
 const ITEM_CATALOG = Object.freeze(catalogEntries());
 const inventoryService = createInventoryService({
@@ -509,29 +508,29 @@ async function updateResource(io, {
     next = Number(result.balance ?? current);
     global.__ptbAdminSyncCoins?.(targetToken, next);
   } else {
-    const wallet = await getWallet(targetToken);
-    current = Number(wallet.gems || 0);
-    next = clampResource(
-      mode === "add"
-        ? current + safeAmount
-        : safeAmount
-    );
-    const now = Date.now();
+    const result = mode === "add"
+      ? await walletAtomicService.changeGems({
+          walletToken:targetToken,
+          delta:safeAmount,
+          kind:"ADMIN_GEM_ADD",
+          details:{ note:`Ajout admin gemmes (+${safeAmount})` },
+          idempotencyKey:requestId ? `admin-resource:${requestId}` : ""
+        })
+      : await walletAtomicService.setGems({
+          walletToken:targetToken,
+          balance:safeAmount,
+          kind:"ADMIN_GEM_SET",
+          details:{ note:`Solde gemmes défini par admin (${safeAmount})` },
+          idempotencyKey:requestId ? `admin-resource:${requestId}` : ""
+        });
 
-    await pool.query(
-      `INSERT INTO ptitbac_wallets
-       (token,coins,gems,created_at,updated_at,history)
-       VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
-       ON CONFLICT(token) DO UPDATE SET
-         gems=$3,
-         updated_at=$4`,
-      [targetToken,Number(wallet.coins || 0),next,now]
-    );
+    if (!result?.ok) {
+      throw new Error(result?.error || "Modification des gemmes impossible.");
+    }
 
-    // Les gemmes ne sont pas encore consommées par le gameplay.
-    // Leur transaction atomique complète sera traitée séparément quand
-    // l'économie des gemmes sera branchée au jeu et à la boutique.
-    gemOverrides.set(targetToken, next);
+    current = Number(result.before ?? result.gems ?? 0);
+    next = Number(result.gems ?? current);
+    global.__ptbAdminSyncGems?.(targetToken, next);
   }
 
   const fresh = await getWallet(targetToken);
@@ -577,15 +576,6 @@ function installAdmin(io) {
 
   lifeTimer.unref?.();
 
-  // Filet de synchronisation des gemmes pour les comptes modifiés
-  // depuis le panneau admin.
-  const gemTimer = setInterval(() => {
-    for (const [targetToken, gems] of gemOverrides) {
-      emitToWallet(io, targetToken, { gems });
-    }
-  }, 2500);
-
-  gemTimer.unref?.();
 
   io.on("connection", socket => {
     socket.on("profile:update", async (payload={}, cb=()=>{}) => {
@@ -1689,30 +1679,29 @@ function installAdmin(io) {
         }
 
         if (message.reward_type === "gems") {
-          const walletQuery = await client.query(
-            `SELECT coins,gems
-               FROM ptitbac_wallets
-              WHERE token=$1
-              LIMIT 1
-              FOR UPDATE`,
-            [token]
+          const reward = await walletAtomicService.changeGemsWithClient(
+            client,
+            {
+              walletToken:token,
+              delta:amount,
+              kind:"INBOX_GEM_REWARD",
+              details:{
+                note:`Récompense boîte de réception gemmes (+${amount})`
+              },
+              idempotencyKey:`inbox:${message.id}:gems`
+            }
           );
 
-          const currentCoins = Number(walletQuery.rows[0]?.coins || 0);
-          const currentGems = Number(walletQuery.rows[0]?.gems || 0);
-          coins = currentCoins;
-          gems = clampResource(currentGems + amount);
-          const now = Date.now();
+          if (!reward?.ok) {
+            await client.query("ROLLBACK");
+            return cb({
+              ok:false,
+              error:reward?.error || "Récompense indisponible."
+            });
+          }
 
-          await client.query(
-            `INSERT INTO ptitbac_wallets
-             (token,coins,gems,created_at,updated_at,history)
-             VALUES($1,$2,$3,$4,$4,'[]'::jsonb)
-             ON CONFLICT(token) DO UPDATE SET
-               gems=$3,
-               updated_at=$4`,
-            [token,currentCoins,gems,now]
-          );
+          coins = Number(reward.balance || 0);
+          gems = Number(reward.gems || 0);
         }
 
         if (message.reward_type === "item") {
@@ -1764,7 +1753,10 @@ function installAdmin(io) {
         }
 
         if (Number.isFinite(gems)) {
-          gemOverrides.set(token,gems);
+          global.__ptbAdminSyncGems?.(
+            token,
+            gems
+          );
         }
 
         if (
