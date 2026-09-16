@@ -175,7 +175,7 @@ function patchAdminClient() {
     "adminMenu"
   );
 
-  if (!s.includes('state.activeTab === "items"')) {
+  if (!s.includes('return renderItemsTab(overlay);')) {
     const routeNeedle = `    if (state.activeTab === "messages") {
       return renderMessagesTab(overlay);
     }

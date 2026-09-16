@@ -9,6 +9,7 @@
     activeTab:"tools",
     reportFilter:"all",
     itemCatalog:[],
+    itemTypeFilter:"all",
     player:null,
     messageImageData:""
   };
@@ -41,16 +42,6 @@
         response => resolve(response || {})
       );
     });
-  }
-
-  function mutationRequestId(prefix="admin") {
-    try {
-      if (globalThis.crypto?.randomUUID) {
-        return `${prefix}:${globalThis.crypto.randomUUID()}`;
-      }
-    } catch {}
-
-    return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,12)}`;
   }
 
   function esc(value="") {
@@ -144,22 +135,24 @@
 
   function shell() {
     return `
-      <button
-        class="admin-v1-x"
-        type="button"
-        aria-label="Fermer"
-      >×</button>
+      <header class="admin-page-v2-head">
+        <button
+          class="admin-page-v2-back"
+          type="button"
+          aria-label="Retour"
+        >←</button>
 
-      <header class="admin-v4-head">
-        <img src="/admin-crown.png" alt="">
-        <div>
-          <small>ESPACE PRIVÉ</small>
-          <h2>Menu admin</h2>
-          <p>Outils personnels et modération du jeu.</p>
+        <div class="admin-page-v2-brand">
+          <img src="/admin-crown.png" alt="">
+          <div>
+            <small>ESPACE PRIVÉ</small>
+            <h1>Administration</h1>
+            <p>Gestion et modération de P’tit Bac.</p>
+          </div>
         </div>
       </header>
 
-      <nav class="admin-v4-main-tabs" aria-label="Menu administrateur">
+      <nav class="admin-v4-main-tabs admin-page-v2-tabs" aria-label="Menu administrateur">
         <button data-admin-tab="tools" class="${state.activeTab === "tools" ? "active" : ""}">
           ${icon("tools")}
           <span>Outils</span>
@@ -179,9 +172,14 @@
           ${icon("messages")}
           <span>Messages</span>
         </button>
+
+        <button data-admin-tab="items" class="${state.activeTab === "items" ? "active" : ""}">
+          ${icon("gift")}
+          <span>Items</span>
+        </button>
       </nav>
 
-      <div id="adminV4Body" class="admin-v4-body"></div>
+      <main id="adminV4Body" class="admin-v4-body admin-page-v2-body"></main>
     `;
   }
 
@@ -191,6 +189,10 @@
     state.admin = !!response.admin;
     state.infiniteCoins = !!response.infiniteCoins;
     state.infiniteLives = !!response.infiniteLives;
+
+    if (!state.admin) {
+      document.querySelectorAll(".admin-v1-crown-btn").forEach(button => button.remove());
+    }
 
     decorate();
 
@@ -226,24 +228,30 @@
 
     state.activeTab = initialTab;
 
-    const overlay = modal(
-      shell(),
-      "admin-v4-overlay"
-    );
+    document.querySelector(".admin-page-v2")?.remove();
 
-    overlay
-      .querySelector(".admin-v1-x")
-      ?.addEventListener("click",() => {
-        overlay.remove();
-      });
+    const page = document.createElement("section");
+    page.className = "admin-page-v2";
+    page.innerHTML = shell();
+    document.body.appendChild(page);
+    document.body.classList.add("admin-page-v2-open");
 
-    overlay
+    const closePage = () => {
+      page.remove();
+      document.body.classList.remove("admin-page-v2-open");
+    };
+
+    page
+      .querySelector(".admin-page-v2-back")
+      ?.addEventListener("click",closePage);
+
+    page
       .querySelectorAll("[data-admin-tab]")
       .forEach(button => {
         button.addEventListener("click",() => {
           state.activeTab = button.dataset.adminTab;
 
-          overlay
+          page
             .querySelectorAll("[data-admin-tab]")
             .forEach(item => {
               item.classList.toggle(
@@ -252,11 +260,11 @@
               );
             });
 
-          renderActiveTab(overlay);
+          renderActiveTab(page);
         });
       });
 
-    await renderActiveTab(overlay);
+    await renderActiveTab(page);
   }
 
   async function renderActiveTab(overlay) {
@@ -274,7 +282,272 @@
       return renderMessagesTab(overlay);
     }
 
+    if (state.activeTab === "items") {
+      return renderItemsTab(overlay);
+    }
+
     return renderToolsTab(overlay);
+  }
+
+  const ITEM_RARITY_LABELS = Object.freeze({
+    commun:"Commun",
+    rare:"Rare",
+    epique:"Épique",
+    ultra:"Ultra",
+    exclusif:"Exclusif"
+  });
+
+  const ITEM_RARITY_HELP = Object.freeze({
+    commun:"Boutique · Coffres (à venir)",
+    rare:"Boutique · Coffres, avec une chance plus faible",
+    epique:"Boutique · Coffres très rares",
+    ultra:"Boutique · Coffres extrêmement rares",
+    exclusif:"Boutique · Niveaux · Voie des trophées · Jamais dans les coffres"
+  });
+
+  function adminItemTypeLabel(type) {
+    if (type === "avatar") return "Avatar";
+    if (type === "frame") return "Cadre";
+    if (type === "tag") return "Titre";
+    return "Item";
+  }
+
+  function rarityOptions(selected) {
+    return Object.entries(ITEM_RARITY_LABELS)
+      .map(([key,label]) => `
+        <option value="${key}" ${selected === key ? "selected" : ""}>
+          ${label}
+        </option>
+      `)
+      .join("");
+  }
+
+  async function renderItemsTab(overlay) {
+    const body = overlay.querySelector("#adminV4Body");
+    if (!body) return;
+
+    body.innerHTML = `
+      <section class="admin-v4-card admin-items-intro">
+        <div>
+          <small>CATALOGUE DU JEU</small>
+          <h3>Gestion des items</h3>
+          <p>
+            Les items sont ajoutés au jeu par code. Ici tu règles leur rareté,
+            leur prix et leur monnaie. La boutique sera gérée séparément plus tard.
+          </p>
+        </div>
+      </section>
+
+      <div class="admin-v1-empty">Chargement du catalogue…</div>
+    `;
+
+    const catalog = await emit("admin:itemCatalog");
+
+    if (!catalog.ok) {
+      body.innerHTML = `
+        <div class="admin-v1-empty">
+          ${esc(catalog.error || "Catalogue indisponible.")}
+        </div>
+      `;
+      return;
+    }
+
+    state.itemCatalog = catalog.items || [];
+
+    const render = () => {
+      const filtered = state.itemCatalog.filter(item =>
+        state.itemTypeFilter === "all" ||
+        item.type === state.itemTypeFilter
+      );
+
+      body.innerHTML = `
+        <section class="admin-v4-card admin-items-intro">
+          <div>
+            <small>CATALOGUE DU JEU</small>
+            <h3>Gestion des items</h3>
+            <p>
+              Modifie les paramètres des avatars, cadres et titres existants.
+              Aucun bouton n’ajoute directement un item à la boutique.
+            </p>
+          </div>
+
+          <div id="admItemTypeFilter" class="admin-items-filter">
+            <button data-item-filter="all" type="button">Tous</button>
+            <button data-item-filter="avatar" type="button">Avatars</button>
+            <button data-item-filter="frame" type="button">Cadres</button>
+            <button data-item-filter="tag" type="button">Titres</button>
+          </div>
+        </section>
+
+        <section class="admin-v4-card admin-rarity-guide">
+          <h3>Raretés</h3>
+          <div class="admin-rarity-guide-grid">
+            <span class="rarity-common"><b>Commun</b><small>Boutique · Coffres</small></span>
+            <span class="rarity-rare"><b>Rare</b><small>Boutique · Coffres plus rares</small></span>
+            <span class="rarity-epic"><b>Épique</b><small>Boutique · Coffres très rares</small></span>
+            <span class="rarity-ultra"><b>Ultra</b><small>Boutique · Coffres super rares</small></span>
+            <span class="rarity-exclusive"><b>Exclusif</b><small>Boutique · Niveaux · Trophées · Pas de coffre</small></span>
+          </div>
+        </section>
+
+        <section class="admin-items-list">
+          ${
+            filtered.length
+              ? filtered.map(item => {
+                  const rarity = ITEM_RARITY_LABELS[item.rarity]
+                    ? item.rarity
+                    : "commun";
+
+                  return `
+                    <article
+                      class="admin-item-card"
+                      data-admin-item-key="${esc(item.key)}"
+                      data-rarity="${esc(rarity)}"
+                    >
+                      <header class="admin-item-card-head">
+                        <div class="admin-item-card-icon">${esc(item.icon || "🎁")}</div>
+                        <div class="admin-item-card-copy">
+                          <b>${esc(item.label)}</b>
+                          <small>${esc(adminItemTypeLabel(item.type))} · ${esc(item.key)}</small>
+                        </div>
+                        <span class="admin-item-rarity" data-item-rarity-label>
+                          ${esc(ITEM_RARITY_LABELS[rarity])}
+                        </span>
+                      </header>
+
+                      <div class="admin-item-fields">
+                        <label>
+                          <span>Rareté</span>
+                          <select data-item-rarity>
+                            ${rarityOptions(rarity)}
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>Prix</span>
+                          <input
+                            data-item-price
+                            type="number"
+                            inputmode="numeric"
+                            min="0"
+                            max="999999"
+                            value="${Number(item.price || 0)}"
+                          >
+                        </label>
+
+                        <label>
+                          <span>Monnaie</span>
+                          <select data-item-currency>
+                            <option value="coins" ${item.currency === "gems" ? "" : "selected"}>🪙 Pièces</option>
+                            <option value="gems" ${item.currency === "gems" ? "selected" : ""}>💎 Gemmes</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div class="admin-item-acquisition" data-item-acquisition>
+                        ${esc(ITEM_RARITY_HELP[rarity])}
+                      </div>
+
+                      <button
+                        data-item-save
+                        class="admin-v1-primary admin-item-save"
+                        type="button"
+                      >Enregistrer</button>
+                    </article>
+                  `;
+                }).join("")
+              : `<div class="admin-v1-empty">Aucun item dans cette catégorie.</div>`
+          }
+        </section>
+      `;
+
+      body
+        .querySelectorAll("[data-item-filter]")
+        .forEach(button => {
+          button.classList.toggle(
+            "active",
+            button.dataset.itemFilter === state.itemTypeFilter
+          );
+
+          button.addEventListener("click",() => {
+            state.itemTypeFilter = button.dataset.itemFilter;
+            render();
+          });
+        });
+
+      body
+        .querySelectorAll("[data-admin-item-key]")
+        .forEach(card => {
+          const rarityField = card.querySelector("[data-item-rarity]");
+          const acquisition = card.querySelector("[data-item-acquisition]");
+          const rarityLabel = card.querySelector("[data-item-rarity-label]");
+
+          rarityField?.addEventListener("change",() => {
+            const rarity = rarityField.value;
+            card.dataset.rarity = rarity;
+
+            if (acquisition) {
+              acquisition.textContent =
+                ITEM_RARITY_HELP[rarity] ||
+                ITEM_RARITY_HELP.commun;
+            }
+
+            if (rarityLabel) {
+              rarityLabel.textContent =
+                ITEM_RARITY_LABELS[rarity] ||
+                ITEM_RARITY_LABELS.commun;
+            }
+          });
+
+          card
+            .querySelector("[data-item-save]")
+            ?.addEventListener("click",async event => {
+              const button = event.currentTarget;
+              const itemKey = card.dataset.adminItemKey;
+              const rarity = rarityField?.value || "commun";
+              const price = Number(
+                card.querySelector("[data-item-price]")?.value || 0
+              );
+              const currency =
+                card.querySelector("[data-item-currency]")?.value || "coins";
+
+              if (!Number.isFinite(price) || price < 0 || price > 999999) {
+                return toast("Prix invalide.");
+              }
+
+              button.disabled = true;
+              button.textContent = "Enregistrement…";
+
+              const response = await emit(
+                "admin:itemConfigUpdate",
+                { itemKey,rarity,price,currency }
+              );
+
+              button.disabled = false;
+              button.textContent = "Enregistrer";
+
+              if (!response.ok || !response.item) {
+                return toast(
+                  response.error ||
+                  "Configuration impossible."
+                );
+              }
+
+              const index = state.itemCatalog.findIndex(
+                item => item.key === response.item.key
+              );
+
+              if (index >= 0) {
+                state.itemCatalog[index] = response.item;
+              }
+
+              toast(`${response.item.label} enregistré.`);
+              render();
+            });
+        });
+    };
+
+    render();
   }
 
   async function renderToolsTab(overlay) {
@@ -403,6 +676,18 @@
               }
             </select>
           </label>
+
+          <label>
+            Quantité
+            <input
+              id="admItemQuantity"
+              inputmode="numeric"
+              type="number"
+              min="1"
+              max="99"
+              value="1"
+            >
+          </label>
         </div>
 
         <button
@@ -526,8 +811,7 @@
             friendCode,
             mode,
             resource,
-            amount,
-            requestId:mutationRequestId("resource")
+            amount
           }
         );
 
@@ -570,6 +854,12 @@
         const itemKey =
           body.querySelector("#admItemKey")?.value || "";
 
+        const quantity =
+          Number(
+            body.querySelector("#admItemQuantity")?.value ||
+            1
+          );
+
         if (!/^\d{5}$/.test(friendCode)) {
           return toast("Entre un ID joueur valide.");
         }
@@ -585,7 +875,8 @@
           "admin:grantItem",
           {
             friendCode,
-            itemKey
+            itemKey,
+            quantity
           }
         );
 
@@ -600,7 +891,7 @@
         }
 
         toast(
-          `${response.item} envoyé à ${response.name}.`
+          `${response.item} ×${response.quantity} envoyé à ${response.name}.`
         );
       });
   }
@@ -1055,13 +1346,13 @@
           </div>
 
           <div class="admin-v4-items">
-            <b>Inventaire</b>
+            <b>Objets</b>
             ${
               player.items?.length
                 ? `<div>${player.items.map(item => `
-                    <span>${esc(item.label)}</span>
+                    <span>${esc(item.label)} ×${Number(item.quantity || 0)}</span>
                   `).join("")}</div>`
-                : `<small>Aucun objet dans l’inventaire.</small>`
+                : `<small>Aucun objet attribué.</small>`
             }
           </div>
 
@@ -1518,6 +1809,18 @@
               }
             </select>
           </label>
+
+          <label>
+            Quantité
+            <input
+              id="admMessageRewardItemAmount"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="99"
+              value="1"
+            >
+          </label>
         </div>
       </section>
 
@@ -1590,7 +1893,8 @@
         const label =
           select?.selectedOptions?.[0]?.textContent || "Objet";
 
-        rewardText = label;
+        rewardText =
+          `${label} ×${Number(body.querySelector("#admMessageRewardItemAmount")?.value || 1)}`;
       }
 
       previewReward.hidden = !rewardText;
@@ -1658,6 +1962,10 @@
     body
       .querySelector("#admMessageRewardItem")
       ?.addEventListener("change",updatePreview);
+
+    body
+      .querySelector("#admMessageRewardItemAmount")
+      ?.addEventListener("input",updatePreview);
 
     body
       .querySelector("#admMessageImage")
@@ -1766,7 +2074,12 @@
           rewardKey =
             body.querySelector("#admMessageRewardItem")?.value ||
             "";
-          rewardAmount = 1;
+
+          rewardAmount =
+            Number(
+              body.querySelector("#admMessageRewardItemAmount")?.value ||
+              1
+            );
         }
 
         button.disabled = true;
@@ -2003,6 +2316,7 @@
       );
 
     if (
+      state.admin &&
       root &&
       !root.querySelector(".admin-v1-crown-btn")
     ) {
