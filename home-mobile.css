@@ -137,7 +137,7 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-profile {
   position:relative;
-  transform:translateY(15px);
+  transform:translateY(7px);
   height:33px;
   overflow:visible;
   min-width:0;
@@ -175,6 +175,7 @@ body:has(.home-mobile) .economy-hud {
   overflow:hidden;
   font-size:1.52rem;
   line-height:1;
+  transform:translateY(3px);
 }
 
 .hm-profile-copy {
@@ -198,17 +199,22 @@ body:has(.home-mobile) .economy-hud {
   font-size:.46rem;
   font-weight:700;
   white-space:nowrap;
-  transform:translateY(15px);
+  transform:translateY(23px);
+}
+
+/* La progression XP est injectée par progression-client.js : on la descend avec le niveau. */
+.home-mobile .hm-profile-copy .ptb-home-xp-bar {
+  transform:translateY(23px) !important;
 }
 
 .hm-resources {
-  width:min(100%,177px);
+  width:min(100%,189px);
   min-width:0;
   justify-self:center;
   align-self:center;
   margin-top:0;
   display:grid;
-  grid-template-columns:42px 67px 62px;
+  grid-template-columns:54px 67px 62px;
   justify-content:center;
   gap:3px;
 }
@@ -228,10 +234,10 @@ body:has(.home-mobile) .economy-hud {
   gap:2px;
 }
 
-/* Pièces conservées à +5 px ; vies raccourcies de 25 px. */
+/* Vies ré-agrandies de 12 px ; pièces inchangées. */
 #homePlaqueLivesBtn {
-  width:42px;
-  min-width:42px;
+  width:54px;
+  min-width:54px;
   padding-inline:2px;
   grid-template-columns:14px minmax(0,1fr);
 }
@@ -586,6 +592,39 @@ body:has(.home-mobile) .economy-hud {
   box-shadow:
     0 0 13px rgba(242,139,117,.62),
     inset 0 0 11px rgba(255,234,132,.42);
+}
+
+.hm-mode-grid .hm-quick {
+  position:relative;
+}
+
+.hm-quick-lives {
+  position:absolute;
+  left:5px;
+  right:5px;
+  bottom:4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  color:#ffe9f1;
+  font-size:.46rem;
+  line-height:1.05;
+  font-weight:800;
+  white-space:nowrap;
+  pointer-events:none;
+}
+
+.hm-mode-grid .hm-quick-lives img {
+  width:10px;
+  height:10px;
+  margin:0;
+  flex:0 0 10px;
+}
+
+.hm-quick-lives strong {
+  font-size:.52rem;
+  font-weight:900;
 }
 
 .hm-mode-grid .hm-create {
@@ -1189,8 +1228,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources {
-    width:min(100%,157px);
-    grid-template-columns:36px 61px 56px;
+    width:min(100%,169px);
+    grid-template-columns:48px 61px 56px;
     gap:2px;
   }
 
@@ -1203,8 +1242,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   #homePlaqueLivesBtn {
-    width:36px;
-    min-width:36px;
+    width:48px;
+    min-width:48px;
     padding-inline:1px;
     grid-template-columns:12px minmax(0,1fr);
   }

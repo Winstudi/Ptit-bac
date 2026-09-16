@@ -49,6 +49,7 @@
     const coin = document.getElementById("homePlaqueCoins");
     const lives = document.getElementById("homePlaqueLives");
     const gems = document.getElementById("homeGems");
+    const quickLives = document.getElementById("homeQuickLives");
 
     if (coin) coin.textContent = String(Math.max(0, Number(state.coins) || 0));
     if (lives) {
@@ -56,6 +57,7 @@
         `${Math.max(0, Number(state.lives) || 0)}/${Math.max(1, Number(state.maxLives) || 5)}`;
     }
     if (gems) gems.textContent = String(Math.max(0, Number(state.gems) || 0));
+    if (quickLives) quickLives.textContent = String(Math.max(0, Number(state.lives) || 0));
 
     refreshResourcePopup();
 
@@ -596,7 +598,11 @@
           <div class="hm-mode-grid">
             <button id="homePlaqueQuick" class="hm-quick" type="button">
               ${img("lightning")}
-              <b>Partie rapide ${chevronIcon()}</b>
+              <b>Jouer ${chevronIcon()}</b>
+              <span class="hm-quick-lives" aria-label="${lives} vie restante(s)">
+                ${img("heart")}
+                <span><strong id="homeQuickLives">${lives}</strong> vie restante(s)</span>
+              </span>
             </button>
 
             <button id="homePlaqueCreate" class="hm-create" type="button">
