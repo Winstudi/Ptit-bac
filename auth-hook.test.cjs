@@ -32,14 +32,43 @@ test("auth-hook branche inscription, connexion, reprise et déconnexion", async 
     logout: async payload => { calls.push(["logout", payload]); return { ok:true }; }
   };
 
+  const db = {
+    async query() {
+      return {
+        rowCount: 1,
+        rows: [{
+          created_at: new Date("2026-09-16T00:00:00Z"),
+          completed_games: 12,
+          wins: 5,
+          correct_answers: 73,
+          friends: 4
+        }]
+      };
+    }
+  };
+
   const io = fakeIo();
-  installAccountAuth(io, { service });
+  installAccountAuth(io, { service, getPool: () => db });
   const socket = fakeSocket();
   io.handlers.connection(socket);
 
   assert.equal((await invoke(socket, "auth:register", { email:"a@b.fr" })).ok, true);
   assert.equal((await invoke(socket, "auth:login", { email:"a@b.fr" })).ok, true);
   assert.equal((await invoke(socket, "auth:resume", { sessionToken:"x" })).ok, true);
+
+  const stats = await invoke(socket, "auth:profileStats", {});
+  assert.deepEqual(stats, {
+    ok:true,
+    stats:{
+      games:12,
+      wins:5,
+      correct:73,
+      friends:4,
+      memberSince:"2026-09-16T00:00:00.000Z"
+    }
+  });
+
   assert.equal((await invoke(socket, "auth:logout", { sessionToken:"x" })).ok, true);
+  assert.equal((await invoke(socket, "auth:profileStats", {})).ok, false);
   assert.deepEqual(calls.map(item => item[0]), ["register", "login", "resume", "logout"]);
 });

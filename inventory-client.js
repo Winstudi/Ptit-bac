@@ -16,7 +16,9 @@
   });
 
   let serverState = null;
+  let serverStateWalletToken = "";
   let loadingPromise = null;
+  let loadingWalletToken = "";
 
   function esc(value = "") {
     return String(value).replace(/[&<>"']/g, char => ({
@@ -88,9 +90,13 @@
     };
   }
 
-  function cacheState(value) {
+  function cacheState(value, token = walletToken()) {
     serverState = normalizeState(value);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serverState));
+    serverStateWalletToken = String(token || "").trim();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...serverState,
+      walletToken: serverStateWalletToken
+    }));
 
     if (serverState.equipped.avatar) {
       const name = localStorage.getItem("petitbac_profile_name") || "Joueur";
@@ -110,38 +116,54 @@
   }
 
   function fallbackState() {
-    if (serverState) return normalizeState(serverState);
+    const token = walletToken();
+    if (serverState && serverStateWalletToken === token) return normalizeState(serverState);
     try {
-      return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"));
+      const cached = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (cached?.walletToken && cached.walletToken !== token) return normalizeState(null);
+      return normalizeState(cached);
     } catch {
       return normalizeState(null);
     }
   }
 
   function requestState({ force = false } = {}) {
-    if (!force && serverState) return Promise.resolve(normalizeState(serverState));
-    if (loadingPromise) return loadingPromise;
-
     const token = walletToken();
     if (!token || typeof socket === "undefined" || !socket?.connected) {
       return Promise.reject(new Error("Connexion inventaire indisponible."));
     }
 
-    loadingPromise = new Promise((resolve, reject) => {
+    if (!force && serverState && serverStateWalletToken === token) {
+      return Promise.resolve(normalizeState(serverState));
+    }
+    if (loadingPromise && loadingWalletToken === token) return loadingPromise;
+
+    const requestToken = token;
+    let requestPromise = null;
+    requestPromise = new Promise((resolve, reject) => {
       socket.timeout(8000).emit("inventory:get", {
-        walletToken: token,
+        walletToken: requestToken,
         legacyEquipped: legacyEquipped()
       }, (err, res) => {
-        loadingPromise = null;
+        if (loadingPromise === requestPromise) {
+          loadingPromise = null;
+          loadingWalletToken = "";
+        }
+        if (walletToken() !== requestToken) {
+          reject(new Error("Identité joueur modifiée."));
+          return;
+        }
         if (err || !res?.ok || !res.state) {
           reject(new Error(res?.error || "Inventaire indisponible."));
           return;
         }
-        resolve(cacheState(res.state));
+        resolve(cacheState(res.state, requestToken));
       });
     });
 
-    return loadingPromise;
+    loadingPromise = requestPromise;
+    loadingWalletToken = requestToken;
+    return requestPromise;
   }
 
   function profileName() {
@@ -261,7 +283,8 @@
             return;
           }
 
-          const next = cacheState(res.state);
+          if (walletToken() !== token) return;
+          const next = cacheState(res.state, token);
           renderInto(dialog, next);
         });
       });
@@ -361,9 +384,20 @@
   try {
     socket?.on?.("connect", () => setTimeout(() => warm(0), 80));
     socket?.on?.("inventory:update", state => {
-      if (state) cacheState(state);
+      if (state) cacheState(state, walletToken());
     });
   } catch {}
+
+  document.addEventListener("ptitbac:identity-changed", () => {
+    serverState = null;
+    serverStateWalletToken = "";
+    loadingPromise = null;
+    loadingWalletToken = "";
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    if (walletToken() && typeof socket !== "undefined" && socket?.connected) {
+      requestState({ force:true }).catch(() => {});
+    }
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {

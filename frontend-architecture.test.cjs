@@ -233,3 +233,29 @@ test("tous les fichiers frontend déclarés existent réellement", () => {
   );
 });
 
+
+test("un navigateur neuf ne crée pas de portefeuille avant le choix du joueur", () => {
+  const app = read("app.js");
+  const account = read("account-v1.js");
+
+  assert.match(app, /const explicitGuest = localStorage\.getItem\("ptitbac_guest_mode"\) === "1"/);
+  assert.match(app, /if \(!session\.walletToken && !explicitGuest\)/);
+  assert.match(app, /ptitbac:wallet-ready/);
+  assert.match(account, /initWallet\(finishGuest\)/);
+  assert.match(account, /if \(socket\?\.connected\)/);
+});
+
+test("les données joueur sont isolées lors d'un changement de compte", () => {
+  const account = read("account-v1.js");
+  const inventory = read("inventory-client.js");
+  const friends = read("friends-client.js");
+  const profile = read("profile-module-v1.js");
+
+  assert.match(account, /ptitbac:identity-changed/);
+  assert.match(inventory, /ptitbac:identity-changed/);
+  assert.match(inventory, /serverStateWalletToken/);
+  assert.match(friends, /ptitbac:identity-changed/);
+  assert.match(friends, /identityPayload\(\)\.walletToken !== token/);
+  assert.match(profile, /auth:profileStats/);
+  assert.match(profile, /inventory:equip/);
+});

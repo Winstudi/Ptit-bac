@@ -9,6 +9,10 @@
     "/a5.webp"
   ]);
 
+  const PROFILE_STATS_CACHE_KEY = "ptitbac_profile_stats_v1";
+  let accountStatsState = null;
+  let accountStatsWalletToken = "";
+
   function esc(value = "") {
     try {
       if (typeof escapeHtml === "function") return escapeHtml(value);
@@ -112,7 +116,111 @@
     return fallback;
   }
 
+  function connectedAccount() {
+    try {
+      return window.PtitBacAccount?.state?.() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function formatMemberSince(value, fallback = "Bêta") {
+    if (!value) return fallback;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return fallback;
+    let label = date.toLocaleDateString("fr-FR", {
+      month: "short",
+      year: "numeric"
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  function normalizeAccountStats(value) {
+    if (!value || typeof value !== "object") return null;
+    const games = Math.max(0, Math.floor(Number(value.games) || 0));
+    const wins = Math.max(0, Math.floor(Number(value.wins) || 0));
+    const correct = Math.max(0, Math.floor(Number(value.correct) || 0));
+    const friends = Math.max(0, Math.floor(Number(value.friends) || 0));
+    return {
+      games,
+      wins,
+      correct,
+      friends,
+      winRate: games > 0 ? Math.min(100, Math.round((wins / games) * 100)) : 0,
+      memberSince: formatMemberSince(value.memberSince, "Compte")
+    };
+  }
+
+  function accountStatsFromCache() {
+    const token = walletToken();
+    if (!token || !connectedAccount()) return null;
+    if (accountStatsWalletToken === token && accountStatsState) {
+      return accountStatsState;
+    }
+
+    accountStatsWalletToken = token;
+    accountStatsState = null;
+    try {
+      const cached = JSON.parse(localStorage.getItem(PROFILE_STATS_CACHE_KEY) || "null");
+      if (cached?.walletToken === token) {
+        accountStatsState = normalizeAccountStats(cached.stats);
+      }
+    } catch {}
+    return accountStatsState;
+  }
+
+  function saveAccountStats(value) {
+    const token = walletToken();
+    const stats = normalizeAccountStats(value);
+    if (!token || !stats) return null;
+    accountStatsWalletToken = token;
+    accountStatsState = stats;
+    try {
+      localStorage.setItem(PROFILE_STATS_CACHE_KEY, JSON.stringify({
+        walletToken: token,
+        stats: { ...value }
+      }));
+    } catch {}
+    return stats;
+  }
+
+  function requestAccountStats() {
+    const token = walletToken();
+    if (!token || !connectedAccount() || typeof socket === "undefined" || !socket?.connected) {
+      return Promise.resolve(null);
+    }
+
+    return new Promise(resolve => {
+      socket.timeout(8000).emit("auth:profileStats", {}, (error, response) => {
+        if (error || !response?.ok || !response.stats) return resolve(null);
+        if (walletToken() !== token || !connectedAccount()) return resolve(null);
+        resolve(saveAccountStats(response.stats));
+      });
+    });
+  }
+
+  function patchProfileStats(stats) {
+    if (!stats) return;
+    const values = {
+      profileStatGames: stats.games,
+      profileStatWins: stats.wins,
+      profileStatRate: `${stats.winRate}%`,
+      profileStatCorrect: stats.correct,
+      profileStatFriends: stats.friends,
+      profileStatMember: stats.memberSince
+    };
+    for (const [id, value] of Object.entries(values)) {
+      const node = document.getElementById(id);
+      if (node) node.textContent = String(value);
+    }
+  }
+
   function getProfileStats() {
+    if (connectedAccount()) {
+      return accountStatsFromCache() || {
+        games:0, wins:0, correct:0, friends:0, winRate:0, memberSince:"Compte"
+      };
+    }
     let objectStats = {};
 
     try {
@@ -185,20 +293,7 @@
       localStorage.getItem("petitbac_memberSince") || ""
     );
 
-    if (memberSince) {
-      const date = new Date(memberSince);
-      if (!Number.isNaN(date.getTime())) {
-        memberSince = date.toLocaleDateString("fr-FR", {
-          month: "short",
-          year: "numeric"
-        });
-        memberSince =
-          memberSince.charAt(0).toUpperCase() +
-          memberSince.slice(1);
-      }
-    }
-
-    if (!memberSince) memberSince = "Bêta";
+    memberSince = formatMemberSince(memberSince, "Bêta");
 
     return {
       games,
@@ -344,11 +439,21 @@
     });
 
     overlay.querySelectorAll("[data-avatar]").forEach(button => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const nextAvatar = safeAvatar(
           button.dataset.avatar,
           current.name
         );
+
+        overlay.querySelectorAll("button").forEach(item => { item.disabled = true; });
+        const response = await equipProfileAvatarOnServer(nextAvatar);
+        if (!response?.ok) {
+          overlay.querySelectorAll("button").forEach(item => { item.disabled = false; });
+          if (typeof toast === "function") {
+            toast(response?.error || "Impossible d’équiper cet avatar.");
+          }
+          return;
+        }
 
         const latest = currentProfile();
         saveLocalProfile(latest.name, nextAvatar);
@@ -465,6 +570,28 @@
     return String(
       localStorage.getItem("petitbac_walletToken") || ""
     );
+  }
+
+  function equipProfileAvatarOnServer(avatar) {
+    return new Promise(resolve => {
+      const token = walletToken();
+      if (!token || typeof socket === "undefined" || !socket?.connected) {
+        resolve({ ok:false, error:"Inventaire indisponible." });
+        return;
+      }
+
+      socket.timeout(8000).emit("inventory:equip", {
+        walletToken: token,
+        type: "avatar",
+        id: avatar
+      }, (error, response) => {
+        if (error) {
+          resolve({ ok:false, error:"Le serveur ne répond pas. Réessaie." });
+          return;
+        }
+        resolve(response || { ok:false, error:"Impossible d’équiper cet avatar." });
+      });
+    });
   }
 
   function updateProfileNameOnServer(name) {
@@ -588,7 +715,7 @@
                 ${statIcon("games")}
               </span>
               <div>
-                <strong>${stats.games}</strong>
+                <strong id="profileStatGames">${stats.games}</strong>
                 <small>Parties jouées</small>
               </div>
             </article>
@@ -598,7 +725,7 @@
                 ${statIcon("wins")}
               </span>
               <div>
-                <strong>${stats.wins}</strong>
+                <strong id="profileStatWins">${stats.wins}</strong>
                 <small>Victoires</small>
               </div>
             </article>
@@ -608,7 +735,7 @@
                 ${statIcon("rate")}
               </span>
               <div>
-                <strong>${stats.winRate}%</strong>
+                <strong id="profileStatRate">${stats.winRate}%</strong>
                 <small>Taux de victoire</small>
               </div>
             </article>
@@ -618,7 +745,7 @@
                 ${statIcon("correct")}
               </span>
               <div>
-                <strong>${stats.correct}</strong>
+                <strong id="profileStatCorrect">${stats.correct}</strong>
                 <small>Réponses correctes</small>
               </div>
             </article>
@@ -628,8 +755,8 @@
                 ${statIcon("friends")}
               </span>
               <div>
-                <strong>${stats.friends}</strong>
-                <small>Amis ajoutés</small>
+                <strong id="profileStatFriends">${stats.friends}</strong>
+                <small>Amis</small>
               </div>
             </article>
 
@@ -639,7 +766,7 @@
               </span>
               <div>
                 <small>Membre depuis</small>
-                <strong class="profile-v10-date">
+                <strong id="profileStatMember" class="profile-v10-date">
                   ${esc(stats.memberSince)}
                 </strong>
               </div>
@@ -652,6 +779,10 @@
         </footer>
       </main>
     `);
+
+    if (connectedAccount()) {
+      requestAccountStats().then(patchProfileStats).catch(() => {});
+    }
 
     document
       .getElementById("profileV10Back")
@@ -784,6 +915,11 @@
         }
       });
   }
+
+  document.addEventListener("ptitbac:identity-changed", () => {
+    accountStatsState = null;
+    accountStatsWalletToken = "";
+  });
 
   window.openProfileAvatarPicker = openProfileAvatarPicker;
   window.renderProfileEdit = openProfileAvatarPicker;

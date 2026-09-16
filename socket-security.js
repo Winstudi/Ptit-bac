@@ -57,6 +57,13 @@ const EVENT_POLICIES = Object.freeze({
     message: "Trop de demandes de déconnexion."
   }),
 
+  "auth:profileStats": Object.freeze({
+    limit: 30,
+    windowMs: 60_000,
+    scope: "socket",
+    message: "Les statistiques du profil sont actualisées trop rapidement."
+  }),
+
   "chat:send": Object.freeze({
     limit: 15,
     windowMs: 10_000,

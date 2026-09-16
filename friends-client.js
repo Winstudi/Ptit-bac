@@ -20,6 +20,21 @@
   let bootstrapTimer = null;
   let openedFriendId = "";
   let inviteTimer = null;
+
+  function resetFriendsIdentityState() {
+    clearTimeout(bootstrapTimer);
+    bootstrapTimer = null;
+    friendsState.profile = null;
+    friendsState.friends = [];
+    friendsState.incoming = [];
+    friendsState.outgoing = [];
+    friendsState.activeTab = "friends";
+    friendsState.search = "";
+    friendsState.sort = "online";
+    friendsState.quickMenuFriendId = "";
+    openedFriendId = "";
+    closeInvite();
+  }
   const inMenus = () => typeof session !== "undefined" && (!session.state || session.state.phase === "finished");
   function closeInvite() {
     clearTimeout(inviteTimer);
@@ -184,6 +199,7 @@
     }
 
     friendSocket.emit("friends:bootstrap", identityPayload(), res => {
+      if (identityPayload().walletToken !== token) return;
       if (!res?.ok) {
         if (!silent) localToast(res?.error || "Impossible de charger les amis.");
         return;
@@ -200,7 +216,10 @@
   }
 
   function refreshFriends(showError = false) {
+    const token = identityPayload().walletToken;
+    if (!token) return;
     friendSocket.emit("friends:list", identityPayload(), res => {
+      if (identityPayload().walletToken !== token) return;
       if (!res?.ok) {
         if (showError) localToast(res?.error || "Impossible de charger les amis.");
         return;
@@ -842,6 +861,16 @@
     renderFriends();
     refreshFriends(true);
   }, true);
+
+  document.addEventListener("ptitbac:identity-changed", () => {
+    resetFriendsIdentityState();
+    if (friendSocket.connected && identityPayload().walletToken) {
+      bootstrap(true);
+    }
+    if (friendsOpen && document.querySelector(".friends-mobile")) {
+      renderFriends();
+    }
+  });
 
   friendSocket.on("connect", () => bootstrap(true));
 

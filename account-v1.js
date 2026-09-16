@@ -9,6 +9,7 @@
   let accountState = null;
   let gateRequired = false;
   let authBusy = false;
+  let announcedIdentityKey = "";
 
   function clearLegacyIdentityOnce() {
     if (localStorage.getItem(IDENTITY_EPOCH_KEY) === IDENTITY_EPOCH) return;
@@ -51,6 +52,62 @@
 
   function isGuestMode() {
     return localStorage.getItem(GUEST_MODE_KEY) === "1";
+  }
+
+  function currentWalletToken() {
+    try {
+      if (typeof session !== "undefined" && session?.walletToken) {
+        return String(session.walletToken);
+      }
+    } catch {}
+    return String(localStorage.getItem("petitbac_walletToken") || "").trim();
+  }
+
+  function identityKey() {
+    const token = currentWalletToken();
+    if (accountState?.userId) return `account:${accountState.userId}:${token}`;
+    if (isGuestMode()) return `guest:${token}`;
+    return "signed-out";
+  }
+
+  function announceIdentityChange(reason = "identity", { force = false } = {}) {
+    const nextKey = identityKey();
+    if (!force && nextKey === announcedIdentityKey) return;
+    announcedIdentityKey = nextKey;
+
+    document.dispatchEvent(new CustomEvent("ptitbac:identity-changed", {
+      detail: {
+        reason,
+        walletToken: currentWalletToken(),
+        guest: isGuestMode(),
+        accountUserId: accountState?.userId || ""
+      }
+    }));
+  }
+
+  function clearPlayerCaches({ profile = false } = {}) {
+    for (const key of [
+      "petitbac_inventory_v1",
+      "petitbac_progression_v1",
+      "ptitbac_profile_stats_v1",
+      "petitbac_stats",
+      "petitbac_stats_gamesPlayed",
+      "petitbac_stats_wins",
+      "petitbac_stats_correctAnswers",
+      "petitbac_stats_friendsAdded",
+      "petitbac_gamesPlayed",
+      "petitbac_wins",
+      "petitbac_correctAnswers",
+      "petitbac_friendsAdded",
+      "petitbac_memberSince"
+    ]) {
+      localStorage.removeItem(key);
+    }
+
+    if (profile) {
+      localStorage.removeItem("petitbac_profile_name");
+      localStorage.removeItem("petitbac_profile_icon");
+    }
   }
 
   function overlay() {
@@ -185,8 +242,29 @@
       localStorage.setItem(GUEST_MODE_KEY, "1");
       localStorage.removeItem(ACCOUNT_SESSION_KEY);
       accountState = null;
-      closeGate();
-      enhanceHome();
+
+      const finishGuest = ok => {
+        if (ok === false) {
+          setBusy(false);
+          setMessage("Impossible de créer la session invitée. Réessaie.", "error");
+          return;
+        }
+        setBusy(false);
+        closeGate();
+        announceIdentityChange("guest");
+        enhanceHome();
+      };
+
+      if (currentWalletToken()) {
+        finishGuest(true);
+      } else if (typeof initWallet === "function" && socket?.connected) {
+        setBusy(true);
+        initWallet(finishGuest);
+      } else {
+        // app.js créera le portefeuille au prochain événement « connect »,
+        // uniquement parce que le mode invité vient d'être choisi explicitement.
+        finishGuest(true);
+      }
     });
 
     document.getElementById("ptbLoginForm")?.addEventListener("submit", handleLogin);
@@ -227,6 +305,8 @@
   function switchToAccountWallet(account) {
     if (!account?.walletToken) return;
 
+    clearPlayerCaches();
+
     try {
       clearSession();
       setWalletState(account.walletToken, account.balance);
@@ -238,6 +318,7 @@
     }
 
     if (socket.connected) socket.disconnect();
+    announceIdentityChange("account-wallet", { force:true });
     setTimeout(() => socket.connect(), 0);
   }
 
@@ -305,6 +386,7 @@
     localStorage.removeItem("petitbac_walletToken");
     localStorage.removeItem("petitbac_walletBalance");
     localStorage.removeItem("petitbac_friendCode");
+    clearPlayerCaches({ profile:true });
     accountState = null;
 
     try {
@@ -312,6 +394,8 @@
       session.walletToken = "";
       session.walletBalance = 0;
     } catch {}
+
+    announceIdentityChange("logout", { force:true });
 
     if (socket.connected) socket.disconnect();
     renderGate("login", { required:true });
@@ -344,6 +428,7 @@
 
     authBusy = false;
     closeGate();
+    announceIdentityChange("account-resume");
     enhanceHome();
   }
 
@@ -378,6 +463,19 @@
   socket.on("connect", () => {
     setTimeout(resumeAccount, 0);
   });
+
+  document.addEventListener("ptitbac:wallet-ready", () => {
+    if (isGuestMode() && !accountSessionToken()) {
+      announceIdentityChange("guest-wallet");
+    }
+  });
+
+  // Avec les scripts defer, Socket.IO peut déjà être connecté lorsque ce
+  // module est évalué. Dans ce cas la session de compte doit quand même être
+  // reprise, sans attendre une future reconnexion réseau.
+  if (socket?.connected) {
+    setTimeout(resumeAccount, 0);
+  }
 
   document.addEventListener("ptitbac:screen-rendered", enhanceHome);
   document.addEventListener("ptitbac:dom-updated", enhanceHome);

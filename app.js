@@ -53,6 +53,12 @@ function initWallet(cb = () => {}) {
   socket.emit("wallet:init", { token: session.walletToken }, res => {
     if (!res?.ok) return cb(false);
     setWalletState(res.token, res.balance);
+    document.dispatchEvent(new CustomEvent("ptitbac:wallet-ready", {
+      detail: {
+        walletToken: session.walletToken,
+        balance: session.walletBalance
+      }
+    }));
     cb(true);
   });
 }
@@ -133,25 +139,42 @@ socket.on("room:state", state => {
   render();
 });
 
+function continueConnectedSession() {
+  if (session.code && session.playerId && session.walletToken) {
+    socket.emit("room:reconnect", { code: session.code, playerId: session.playerId, walletToken: session.walletToken }, res => {
+      if (res?.ok) {
+        setWalletState(session.walletToken, res.balance);
+        syncServerClock(res.state);
+        syncLocalAnswersFromState(res.state, { overwrite:true });
+        session.state = res.state;
+        render();
+      } else {
+        clearSession();
+        renderHome();
+      }
+    });
+    return;
+  }
+
+  if ((session.code || session.playerId) && !session.walletToken) {
+    clearSession();
+  }
+  renderHome();
+}
+
 socket.on("connect", () => {
-  initWallet(() => {
-    if (session.code && session.playerId) {
-      socket.emit("room:reconnect", { code: session.code, playerId: session.playerId, walletToken: session.walletToken }, res => {
-        if (res?.ok) {
-          setWalletState(session.walletToken, res.balance);
-          syncServerClock(res.state);
-          syncLocalAnswersFromState(res.state, { overwrite:true });
-          session.state = res.state;
-          render();
-        } else {
-          clearSession();
-          renderHome();
-        }
-      });
-    } else {
-      renderHome();
-    }
-  });
+  const explicitGuest = localStorage.getItem("ptitbac_guest_mode") === "1";
+
+  // Ne crée plus de portefeuille anonyme avant que le joueur ait choisi
+  // « invité » ou qu'une identité existante soit connue. Un compte déjà
+  // enregistré sera repris par account-v1.js, qui installera ensuite son
+  // portefeuille permanent avant de reconnecter le socket.
+  if (!session.walletToken && !explicitGuest) {
+    continueConnectedSession();
+    return;
+  }
+
+  initWallet(() => continueConnectedSession());
 });
 
 function saveSession(code, playerId) {
