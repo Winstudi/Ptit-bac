@@ -583,6 +583,10 @@
     setTimeout(refreshCount,450);
   });
 
+  document.addEventListener("ptitbac:screen-rendered", () => {
+    updateBadge();
+  });
+
   window.PtitBacInbox = {
     open,
     refreshCount

@@ -270,3 +270,114 @@
     min-height: 44px;
   }
 }
+
+
+/* =========================
+   Configuration initiale du profil
+   ========================= */
+.ptb-profile-setup {
+  display:grid;
+  gap:16px;
+}
+
+.ptb-profile-setup-head {
+  display:grid;
+  gap:5px;
+  text-align:center;
+}
+
+.ptb-profile-setup-head small {
+  color:#a98cff;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+
+.ptb-profile-setup-head h2 {
+  margin:0;
+  font-size:25px;
+  line-height:1.05;
+}
+
+.ptb-profile-setup-head p {
+  margin:0 auto;
+  max-width:300px;
+  color:#b8c1ea;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.ptb-profile-setup-form {
+  gap:16px;
+}
+
+.ptb-profile-setup-avatars {
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+}
+
+.ptb-profile-setup-avatars legend {
+  margin-bottom:9px;
+  color:#dbe0ff;
+  font-size:13px;
+  font-weight:800;
+}
+
+.ptb-profile-setup-avatars > div {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+
+.ptb-profile-setup-avatar {
+  position:relative;
+  aspect-ratio:1;
+  min-width:0;
+  padding:3px;
+  overflow:hidden;
+  border:1px solid rgba(174,157,255,.22);
+  border-radius:15px;
+  background:rgba(6,14,49,.70);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.ptb-profile-setup-avatar img {
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  border-radius:11px;
+}
+
+.ptb-profile-setup-avatar i {
+  position:absolute;
+  right:2px;
+  bottom:2px;
+  width:18px;
+  height:18px;
+  display:none;
+  place-items:center;
+  border:2px solid #17164d;
+  border-radius:50%;
+  color:#fff;
+  background:#9a54ff;
+  font-size:10px;
+  font-style:normal;
+  font-weight:1000;
+}
+
+.ptb-profile-setup-avatar.is-selected {
+  border-color:#d48cff;
+  box-shadow:0 0 0 2px rgba(171,83,255,.20),0 0 16px rgba(155,71,255,.28);
+}
+
+.ptb-profile-setup-avatar.is-selected i {
+  display:grid;
+}
+
+@media (max-width:350px) {
+  .ptb-profile-setup-avatars > div { gap:5px; }
+  .ptb-profile-setup-avatar { border-radius:12px; }
+}

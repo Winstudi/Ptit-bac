@@ -5,6 +5,14 @@
   const GUEST_MODE_KEY = "ptitbac_guest_mode";
   const IDENTITY_EPOCH_KEY = "ptitbac_identity_epoch";
   const IDENTITY_EPOCH = "accounts-v1-cleanstart-20260916";
+  const PROFILE_SETUP_PENDING_KEY = "ptitbac_profile_setup_pending";
+  const PROFILE_SETUP_AVATARS = Object.freeze([
+    "/a1.webp",
+    "/a2.webp",
+    "/a3.webp",
+    "/a4.webp",
+    "/a5.webp"
+  ]);
 
   let accountState = null;
   let gateRequired = false;
@@ -52,6 +60,18 @@
 
   function isGuestMode() {
     return localStorage.getItem(GUEST_MODE_KEY) === "1";
+  }
+
+  function profileSetupPending() {
+    return localStorage.getItem(PROFILE_SETUP_PENDING_KEY) === "1";
+  }
+
+  function markProfileSetupPending() {
+    localStorage.setItem(PROFILE_SETUP_PENDING_KEY, "1");
+  }
+
+  function completeProfileSetup() {
+    localStorage.removeItem(PROFILE_SETUP_PENDING_KEY);
   }
 
   function currentWalletToken() {
@@ -179,10 +199,6 @@
       </div>
       <form id="ptbRegisterForm" class="ptb-account-form">
         <label>
-          <span>Pseudo</span>
-          <input id="ptbRegisterName" type="text" autocomplete="nickname" maxlength="24" minlength="2" required placeholder="Ton pseudo">
-        </label>
-        <label>
           <span>E-mail</span>
           <input id="ptbRegisterEmail" type="email" autocomplete="email" inputmode="email" maxlength="254" required placeholder="ton@email.fr">
         </label>
@@ -196,7 +212,65 @@
         </label>
         <button class="ptb-account-primary" type="submit">Créer mon compte</button>
       </form>
-      <button class="ptb-account-guest" id="ptbContinueGuest" type="button">Continuer en invité</button>`;
+      <button class="ptb-account-guest" id="ptbContinueGuest" type="button">Continuer en invité</button>
+      <small class="ptb-account-note">Ton pseudo et ton avatar seront choisis juste après.</small>`;
+  }
+
+  function profileSetupContent() {
+    const storedName = String(localStorage.getItem("petitbac_profile_name") || "").trim();
+    const initialName = storedName && storedName.toLowerCase() !== "joueur"
+      ? storedName.slice(0, 16)
+      : "";
+    const storedAvatar = String(localStorage.getItem("petitbac_profile_icon") || "").trim();
+    const initialAvatar = PROFILE_SETUP_AVATARS.includes(storedAvatar)
+      ? storedAvatar
+      : PROFILE_SETUP_AVATARS[0];
+
+    return `
+      <section class="ptb-profile-setup" aria-labelledby="ptbProfileSetupTitle">
+        <div class="ptb-profile-setup-head">
+          <small>DERNIÈRE ÉTAPE</small>
+          <h2 id="ptbProfileSetupTitle">Crée ton profil</h2>
+          <p>Choisis le pseudo et l’avatar qui seront affichés aux autres joueurs.</p>
+        </div>
+
+        <form id="ptbProfileSetupForm" class="ptb-account-form ptb-profile-setup-form">
+          <label>
+            <span>Pseudo</span>
+            <input
+              id="ptbProfileSetupName"
+              type="text"
+              autocomplete="nickname"
+              minlength="2"
+              maxlength="16"
+              required
+              value="${esc(initialName)}"
+              placeholder="Ton pseudo"
+            >
+          </label>
+
+          <fieldset class="ptb-profile-setup-avatars">
+            <legend>Choisis ton avatar</legend>
+            <div>
+              ${PROFILE_SETUP_AVATARS.map((avatar, index) => `
+                <button
+                  type="button"
+                  class="ptb-profile-setup-avatar ${avatar === initialAvatar ? "is-selected" : ""}"
+                  data-profile-setup-avatar="${avatar}"
+                  aria-label="Avatar ${index + 1}"
+                  aria-pressed="${avatar === initialAvatar ? "true" : "false"}"
+                >
+                  <img src="${avatar}" alt="" draggable="false">
+                  <i aria-hidden="true">✓</i>
+                </button>
+              `).join("")}
+            </div>
+          </fieldset>
+
+          <input id="ptbProfileSetupAvatar" type="hidden" value="${initialAvatar}">
+          <button class="ptb-account-primary" type="submit">Continuer</button>
+        </form>
+      </section>`;
   }
 
   function accountContent() {
@@ -230,8 +304,14 @@
     layer.id = "ptbAccountGate";
     layer.className = "ptb-account-gate";
     layer.innerHTML = baseShell(
-      mode === "account" ? accountContent() : mode === "register" ? registerContent() : loginContent(),
-      { closable: !gateRequired }
+      mode === "account"
+        ? accountContent()
+        : mode === "register"
+          ? registerContent()
+          : mode === "profileSetup"
+            ? profileSetupContent()
+            : loginContent(),
+      { closable: !gateRequired && mode !== "profileSetup" }
     );
     document.body.appendChild(layer);
 
@@ -242,6 +322,7 @@
       localStorage.setItem(GUEST_MODE_KEY, "1");
       localStorage.removeItem(ACCOUNT_SESSION_KEY);
       accountState = null;
+      markProfileSetupPending();
 
       const finishGuest = ok => {
         if (ok === false) {
@@ -250,9 +331,8 @@
           return;
         }
         setBusy(false);
-        closeGate();
         announceIdentityChange("guest");
-        enhanceHome();
+        renderGate("profileSetup", { required:true });
       };
 
       if (currentWalletToken()) {
@@ -267,8 +347,25 @@
       }
     });
 
+    document.querySelectorAll("[data-profile-setup-avatar]").forEach(button => {
+      button.addEventListener("click", () => {
+        const avatar = String(button.dataset.profileSetupAvatar || "");
+        if (!PROFILE_SETUP_AVATARS.includes(avatar)) return;
+
+        const hidden = document.getElementById("ptbProfileSetupAvatar");
+        if (hidden) hidden.value = avatar;
+
+        document.querySelectorAll("[data-profile-setup-avatar]").forEach(choice => {
+          const selected = choice === button;
+          choice.classList.toggle("is-selected", selected);
+          choice.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+      });
+    });
+
     document.getElementById("ptbLoginForm")?.addEventListener("submit", handleLogin);
     document.getElementById("ptbRegisterForm")?.addEventListener("submit", handleRegister);
+    document.getElementById("ptbProfileSetupForm")?.addEventListener("submit", handleProfileSetup);
     document.getElementById("ptbAccountLogout")?.addEventListener("click", handleLogout);
   }
 
@@ -357,7 +454,7 @@
     setBusy(true);
     setMessage("Création du compte…");
     const result = await emitAck("auth:register", {
-      username: document.getElementById("ptbRegisterName")?.value || "",
+      username:"Joueur",
       email: document.getElementById("ptbRegisterEmail")?.value || "",
       password
     }, 15000);
@@ -368,8 +465,96 @@
       return;
     }
 
-    setMessage("Compte créé.", "success");
+    markProfileSetupPending();
+    setMessage("Compte créé. Choisis maintenant ton profil.", "success");
     switchToAccountWallet(result.account);
+  }
+
+  async function handleProfileSetup(event) {
+    event.preventDefault();
+    if (authBusy) return;
+
+    const name = String(document.getElementById("ptbProfileSetupName")?.value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 16);
+    const avatar = String(document.getElementById("ptbProfileSetupAvatar")?.value || "").trim();
+    const walletToken = currentWalletToken();
+
+    if (name.length < 2) {
+      setMessage("Choisis un pseudo d’au moins 2 caractères.", "error");
+      return;
+    }
+    if (!PROFILE_SETUP_AVATARS.includes(avatar)) {
+      setMessage("Choisis un avatar.", "error");
+      return;
+    }
+    if (!walletToken || !socket?.connected) {
+      setMessage("Connexion au profil en cours. Réessaie dans un instant.", "error");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("Création de ton profil…");
+
+    const profileResult = await emitAck("friends:bootstrap", {
+      walletToken,
+      username:name,
+      avatar
+    }, 12000);
+
+    if (!profileResult?.ok) {
+      setBusy(false);
+      setMessage(profileResult?.error || "Impossible d’enregistrer ton profil.", "error");
+      return;
+    }
+
+    const inventoryResult = await emitAck("inventory:equip", {
+      walletToken,
+      type:"avatar",
+      id:avatar
+    }, 12000);
+
+    if (!inventoryResult?.ok) {
+      setBusy(false);
+      setMessage(inventoryResult?.error || "Impossible d’équiper cet avatar.", "error");
+      return;
+    }
+
+    try {
+      if (typeof saveProfile === "function") saveProfile(name, avatar);
+      else {
+        localStorage.setItem("petitbac_profile_name", name);
+        localStorage.setItem("petitbac_profile_icon", avatar);
+      }
+    } catch {
+      localStorage.setItem("petitbac_profile_name", name);
+      localStorage.setItem("petitbac_profile_icon", avatar);
+    }
+
+    if (profileResult.profile?.friendCode) {
+      localStorage.setItem("petitbac_friendCode", String(profileResult.profile.friendCode));
+    }
+
+    if (accountState) {
+      accountState = {
+        ...accountState,
+        username:name,
+        avatar,
+        friendCode:profileResult.profile?.friendCode || accountState.friendCode || ""
+      };
+    }
+
+    completeProfileSetup();
+    setBusy(false);
+    closeGate();
+    announceIdentityChange("profile-setup", { force:true });
+
+    try { window.PtitBacInventory?.refresh?.(); } catch {}
+    try { window.PtitBacFriends?.myProfile?.(); } catch {}
+
+    if (typeof window.renderHome === "function") window.renderHome();
+    else enhanceHome();
   }
 
   async function handleLogout() {
@@ -386,6 +571,7 @@
     localStorage.removeItem("petitbac_walletToken");
     localStorage.removeItem("petitbac_walletBalance");
     localStorage.removeItem("petitbac_friendCode");
+    localStorage.removeItem(PROFILE_SETUP_PENDING_KEY);
     clearPlayerCaches({ profile:true });
     accountState = null;
 
@@ -406,6 +592,7 @@
     const token = accountSessionToken();
     if (!token) {
       if (!isGuestMode()) renderGate("login", { required:true });
+      else if (profileSetupPending()) renderGate("profileSetup", { required:true });
       return;
     }
 
@@ -427,6 +614,10 @@
     }
 
     authBusy = false;
+    if (profileSetupPending()) {
+      renderGate("profileSetup", { required:true });
+      return;
+    }
     closeGate();
     announceIdentityChange("account-resume");
     enhanceHome();
@@ -458,6 +649,8 @@
 
   if (!accountSessionToken() && !isGuestMode()) {
     renderGate("login", { required:true });
+  } else if (profileSetupPending()) {
+    renderGate("profileSetup", { required:true });
   }
 
   socket.on("connect", () => {
@@ -467,6 +660,7 @@
   document.addEventListener("ptitbac:wallet-ready", () => {
     if (isGuestMode() && !accountSessionToken()) {
       announceIdentityChange("guest-wallet");
+      if (profileSetupPending()) renderGate("profileSetup", { required:true });
     }
   });
 
