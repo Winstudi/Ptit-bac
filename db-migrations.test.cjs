@@ -85,3 +85,19 @@ test("la migration progression ne déclare pas deux fois event_key", () => {
   )?.[1] || "";
   assert.equal((block.match(/event_key text PRIMARY KEY/g) || []).length, 1);
 });
+
+
+test("le service inventaire ne fait plus de migration destructive au démarrage", () => {
+  const source = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "inventory-service.js"),
+    "utf8"
+  );
+  const block = source.match(
+    /async function ensureSchema\(\) \{([\s\S]*?)\n  \}\n\n  async function ensureDefaults/
+  )?.[1] || "";
+
+  assert.match(block, /await ensureSharedSchema\(\)/);
+  assert.match(block, /Migration PostgreSQL centrale indisponible/);
+  assert.doesNotMatch(block, /db\.query\(/);
+  assert.doesNotMatch(block, /DELETE FROM|ALTER TABLE|CREATE TABLE|DROP TABLE/);
+});

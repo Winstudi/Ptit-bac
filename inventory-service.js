@@ -32,7 +32,6 @@ const LEGACY_AVATAR_IDS = Object.freeze({
   "/avatar-base-05.webp": "/a5.webp"
 });
 
-
 const ITEM_TYPE_ICONS = Object.freeze({
   avatar: "👤",
   frame: "🖼️",
@@ -157,61 +156,15 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
 
     schemaPromise = (async () => {
       const db = pool();
-      if (typeof ensureSharedSchema === "function") {
-        await ensureSharedSchema();
+      if (typeof ensureSharedSchema !== "function") {
+        throw new Error("Migration PostgreSQL centrale indisponible.");
       }
 
-      // Nettoyage métier de l'ancien prototype cosmétique.
-      // On supprime uniquement les IDs absents du catalogue courant afin que
-      // les futurs cadres/tags officiels ne soient jamais effacés.
-      const frameIds = Object.keys(CATALOG.frame);
-      const tagIds = Object.keys(CATALOG.tag);
-
-      if (frameIds.length) {
-        await db.query(
-          `DELETE FROM public.ptitbac_inventory_items
-            WHERE item_type='frame'
-              AND NOT (item_id = ANY($1::text[]))`,
-          [frameIds]
-        );
-        await db.query(
-          `UPDATE public.ptitbac_inventory_equipped
-              SET frame_id='', updated_at=now()
-            WHERE frame_id <> ''
-              AND NOT (frame_id = ANY($1::text[]))`,
-          [frameIds]
-        );
-      } else {
-        await db.query(
-          `DELETE FROM public.ptitbac_inventory_items
-            WHERE item_type='frame'`
-        );
-        await db.query(
-          `UPDATE public.ptitbac_inventory_equipped
-              SET frame_id='', updated_at=now()
-            WHERE frame_id <> ''`
-        );
-      }
-
-      if (tagIds.length) {
-        await db.query(
-          `DELETE FROM public.ptitbac_inventory_items
-            WHERE item_type='tag'
-              AND NOT (item_id = ANY($1::text[]))`,
-          [tagIds]
-        );
-        await db.query(
-          `UPDATE public.ptitbac_inventory_equipped
-              SET tag_id=CASE
-                    WHEN tag_id='' THEN ''
-                    ELSE $2
-                  END,
-                  updated_at=now()
-            WHERE tag_id <> ''
-              AND NOT (tag_id = ANY($1::text[]))`,
-          [tagIds, DEFAULT_OWNED.tags[0] || ""]
-        );
-      }
+      // Le service métier ne crée, ne modifie et ne nettoie plus le schéma.
+      // Toute migration doit passer par db-migrations.js afin d'éviter qu'un
+      // simple chargement d'inventaire supprime des cosmétiques futurs.
+      await ensureSharedSchema();
+      return db;
     })().catch(err => {
       schemaPromise = null;
       throw err;
