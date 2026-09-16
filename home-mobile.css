@@ -130,7 +130,7 @@ body:has(.home-mobile) .economy-hud {
   margin:0;
   align-self:start;
   display:grid;
-  grid-template-columns:92px minmax(0,1fr) 32px;
+  grid-template-columns:107px minmax(0,1fr) 32px;
   align-items:center;
   gap:3px;
 }
@@ -138,7 +138,7 @@ body:has(.home-mobile) .economy-hud {
 .hm-profile {
   position:relative;
   transform:translateY(5px);
-  height:38px;
+  height:33px;
   overflow:visible;
   min-width:0;
   padding:0 4px 0 1px;
@@ -158,10 +158,10 @@ body:has(.home-mobile) .economy-hud {
 .hm-avatar {
   position:relative;
   z-index:2;
-  width:42px;
-  height:42px;
-  flex:0 0 42px;
-  margin-left:-2px;
+  width:46.2px;
+  height:46.2px;
+  flex:0 0 46.2px;
+  margin-left:-1.5px;
   border:2px solid #d15eff;
   border-radius:10px;
   background:
@@ -184,7 +184,7 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-profile-copy b {
-  max-width:42px;
+  max-width:57px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -201,13 +201,13 @@ body:has(.home-mobile) .economy-hud {
 }
 
 .hm-resources {
-  width:min(100%,192px);
+  width:min(100%,202px);
   min-width:0;
   justify-self:center;
   align-self:center;
   margin-top:0;
   display:grid;
-  grid-template-columns:repeat(3,62px);
+  grid-template-columns:67px 67px 62px;
   justify-content:center;
   gap:3px;
 }
@@ -225,6 +225,13 @@ body:has(.home-mobile) .economy-hud {
   grid-template-columns:16px minmax(0,1fr);
   align-items:center;
   gap:2px;
+}
+
+/* Vies et pièces : +5 px uniquement vers la droite. */
+#homePlaqueLivesBtn,
+#homePlaqueCoinsBtn {
+  width:67px;
+  min-width:67px;
 }
 
 .hm-resources img {
@@ -709,6 +716,7 @@ body:has(.home-mobile) .economy-hud {
   display:grid;
   grid-template-columns:minmax(0,2.55fr) minmax(0,1fr);
   gap:8px;
+  transform:translateY(-15px);
 }
 
 .hm-bottom > button {
@@ -1121,25 +1129,25 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-header {
-    grid-template-columns:84px minmax(0,1fr) 30px;
+    grid-template-columns:99px minmax(0,1fr) 30px;
     gap:2px;
   }
 
   .hm-profile {
-    height:36px;
+    height:31px;
     gap:3px;
     padding-right:2px;
   }
 
   .hm-avatar {
-    width:42px;
-    height:42px;
-    flex-basis:42px;
+    width:46.2px;
+    height:46.2px;
+    flex-basis:46.2px;
     font-size:1.5rem;
   }
 
   .hm-profile-copy b {
-    max-width:47px;
+    max-width:62px;
     font-size:.61rem;
   }
 
@@ -1148,8 +1156,8 @@ body:has(.home-mobile) .economy-hud {
   }
 
   .hm-resources {
-    width:min(100%,172px);
-    grid-template-columns:repeat(3,56px);
+    width:min(100%,182px);
+    grid-template-columns:61px 61px 56px;
     gap:2px;
   }
 
@@ -1159,6 +1167,12 @@ body:has(.home-mobile) .economy-hud {
     height:27px;
     grid-template-columns:14px minmax(0,1fr);
     padding-inline:3px;
+  }
+
+  #homePlaqueLivesBtn,
+  #homePlaqueCoinsBtn {
+    width:61px;
+    min-width:61px;
   }
 
   .hm-resources img {

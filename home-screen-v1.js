@@ -537,7 +537,6 @@
               class="hm-menu-button-badge"
               hidden
               aria-label="Messages non lus"
-              style="left:auto;right:-7px;bottom:-7px;top:auto"
             >0</i>
           </button>
 
