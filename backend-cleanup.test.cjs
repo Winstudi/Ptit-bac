@@ -45,19 +45,27 @@ test("la liste des conversations n’utilise plus une boucle SQL par ami", () =>
   assert.equal((block.match(/pool\.query\(/g) || []).length, 1);
 });
 
-test("les salons utilisent uniquement 6 à 10 catégories", () => {
+test("les salons configurables utilisent uniquement 6, 8 ou 10 catégories et jusqu’à 120 secondes", () => {
   const server = source("server.js");
+
+  // Le moteur de tirage garde sa protection générale 6–10.
   assert.match(
     server,
     /Math\.max\(6,\s*Math\.min\(10,\s*Number\(count\)\s*\|\|\s*6\)\)/
   );
+
+  // Mais les paramètres de salon exposés/acceptés sont volontairement limités.
   assert.equal(
-    (server.match(/\[6,\s*7,\s*8,\s*9,\s*10\]\.includes\(Number\(categoryCount\)\)/g) || []).length,
+    (server.match(/\[6,\s*8,\s*10\]\.includes\(Number\(categoryCount\)\)/g) || []).length,
+    2
+  );
+  assert.equal(
+    (server.match(/\[30,\s*60,\s*90,\s*120\]\.includes\(Number\(duration\)\)/g) || []).length,
     2
   );
   assert.doesNotMatch(
     server,
-    /\[5,\s*6,\s*7,\s*8,\s*9,\s*10\]\.includes\(Number\(categoryCount\)\)/
+    /\[6,\s*7,\s*8,\s*9,\s*10\]\.includes\(Number\(categoryCount\)\)/
   );
 });
 

@@ -93,7 +93,5 @@
   "/avatar-pages-fix-v1.css",
   "/avatar-system-v2.css",
   "/ui-runtime-v1.css",
-  "/ui-runtime-v1.js",
-  "/lobby-runtime-v1.css",
-  "/lobby-runtime-v1.js"
+  "/ui-runtime-v1.js"
 ]

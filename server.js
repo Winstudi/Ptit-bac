@@ -3401,8 +3401,8 @@ function hasActiveRoom(token) {
 function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount = 6, categoryDifficulty = "medium", avatar, frameId, friendCode, walletToken }, cb = () => {}, mode = "private") {
     const safeName = cleanName(name);
     const safeRounds = [1, 3, 5].includes(Number(rounds)) ? Number(rounds) : 1;
-    const safeDuration = [30, 60, 90].includes(Number(duration)) ? Number(duration) : 60;
-    const safeCategoryCount = [6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : 6;
+    const safeDuration = [30, 60, 90, 120].includes(Number(duration)) ? Number(duration) : 60;
+    const safeCategoryCount = [6, 8, 10].includes(Number(categoryCount)) ? Number(categoryCount) : 6;
     const safeCategoryDifficulty = ["beginner", "medium", "hard"].includes(categoryDifficulty) ? categoryDifficulty : "beginner";
     if (!safeName) return cb({ ok: false, error: "Choisis un prénom." });
     const walletResult = ensureWallet(walletToken || socket.data.walletToken);
@@ -3963,8 +3963,8 @@ io.on("connection", socket => {
 
     if (room.mode === "quick") return cb({ok:false,error:"Le format rapide est fixe."});
     const safeRounds = [1, 3, 5].includes(Number(rounds)) ? Number(rounds) : room.rounds;
-    const safeDuration = [30, 60, 90].includes(Number(duration)) ? Number(duration) : room.duration;
-    const safeCategoryCount = [6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : (room.categoryCount || room.categories.length || 6);
+    const safeDuration = [30, 60, 90, 120].includes(Number(duration)) ? Number(duration) : room.duration;
+    const safeCategoryCount = [6, 8, 10].includes(Number(categoryCount)) ? Number(categoryCount) : (room.categoryCount || room.categories.length || 6);
     const safeCategoryDifficulty = ["beginner", "medium", "hard"].includes(categoryDifficulty) ? categoryDifficulty : (room.categoryDifficulty || "beginner");
 
     resetPrivateReady(room);

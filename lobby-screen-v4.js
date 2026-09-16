@@ -14,6 +14,11 @@
   let lobbyInviteOpen = false;
   let lobbyInviteFriends = [];
   let lobbyInviteLoading = false;
+  let lobbyCountdownTimer = null;
+  let lobbyCountdownActive = false;
+  let lobbyCountdownAudio = null;
+  let lobbyCountdownLastValue = "";
+  let lobbyModeSwitching = false;
   const lobbyInviteSocket = socket;
 
   Object.values(DIFFICULTY_ICON_URLS).forEach(src => {
@@ -21,6 +26,169 @@
     img.decoding = "async";
     img.src = src;
   });
+
+  function lobbyNow() {
+    try {
+      return typeof serverNowMs === "function" ? serverNowMs() : Date.now();
+    } catch {
+      return Date.now();
+    }
+  }
+
+  function clearLobbyCountdown() {
+    clearInterval(lobbyCountdownTimer);
+    lobbyCountdownTimer = null;
+    lobbyCountdownActive = false;
+    lobbyCountdownLastValue = "";
+
+    if (lobbyCountdownAudio) {
+      try {
+        lobbyCountdownAudio.pause();
+        lobbyCountdownAudio.currentTime = 0;
+      } catch {}
+      lobbyCountdownAudio = null;
+    }
+
+    document.getElementById("lobbyStartCountdown")?.remove();
+  }
+
+  function ensureLobbyCountdownOverlay() {
+    let overlay = document.getElementById("lobbyStartCountdown");
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "lobbyStartCountdown";
+    overlay.className = "lobby-start-countdown";
+    overlay.setAttribute("role", "status");
+    overlay.setAttribute("aria-live", "assertive");
+    overlay.innerHTML = `
+      <div class="lobby-start-countdown-card">
+        <div class="lobby-countdown-rocket" aria-hidden="true">🚀</div>
+        <h2>La partie commence dans</h2>
+
+        <div class="lobby-countdown-ring" aria-hidden="true">
+          <div class="lobby-countdown-ring-track"></div>
+          <div class="lobby-countdown-ring-glow"></div>
+          <strong id="lobbyCountdownNumber">3</strong>
+          <i class="spark s1"></i>
+          <i class="spark s2"></i>
+          <i class="spark s3"></i>
+          <i class="spark s4"></i>
+        </div>
+
+        <p>Préparez-vous !</p>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function startLobbyCountdown(payload = {}) {
+    const activeCode = String(session?.state?.code || session?.code || "");
+    if (!payload.code || String(payload.code) !== activeCode) return;
+
+    clearLobbyCountdown();
+    lobbyCountdownActive = true;
+
+    const overlay = ensureLobbyCountdownOverlay();
+    const number = overlay.querySelector("#lobbyCountdownNumber");
+    const card = overlay.querySelector(".lobby-start-countdown-card");
+    const ring = overlay.querySelector(".lobby-countdown-ring");
+
+    try {
+      lobbyCountdownAudio = new Audio("/ptitbac-countdown-neon.wav");
+      lobbyCountdownAudio.preload = "auto";
+      lobbyCountdownAudio.volume = 0.78;
+      lobbyCountdownAudio.currentTime = 0;
+      const playPromise = lobbyCountdownAudio.play();
+      if (playPromise?.catch) playPromise.catch(() => {});
+    } catch {}
+
+    const startedAt = Number(payload.startedAt || lobbyNow());
+    const durationMs = Math.max(3000, Number(payload.durationMs || 3200));
+    const deadline = startedAt + durationMs;
+
+    const update = () => {
+      const remaining = deadline - lobbyNow();
+      let nextValue = "3";
+
+      if (remaining > 2200) nextValue = "3";
+      else if (remaining > 1200) nextValue = "2";
+      else if (remaining > 250) nextValue = "1";
+      else nextValue = "!";
+
+      if (number && nextValue !== lobbyCountdownLastValue) {
+        number.textContent = nextValue;
+        lobbyCountdownLastValue = nextValue;
+        ring?.classList.remove("pulse");
+        void ring?.offsetWidth;
+        ring?.classList.add("pulse");
+      }
+
+      if (nextValue === "!") card?.classList.add("is-go");
+    };
+
+    update();
+    lobbyCountdownTimer = setInterval(update, 70);
+
+    setTimeout(() => {
+      if (document.querySelector(".lobby-v5")) clearLobbyCountdown();
+    }, durationMs + 1800);
+  }
+
+  function roomModeToggleMarkup(state, user) {
+    const publicMode = state.mode === "public";
+    const host = user?.isHost === true;
+    const label = publicMode ? "Public" : "Privé";
+    const nextLabel = publicMode ? "privé" : "public";
+
+    return `
+      <div class="pl-title-mode">
+        <h1>Salon ${publicMode ? "public" : "privé"}</h1>
+        <button
+          id="plModeToggle"
+          class="pl-mode-toggle ${publicMode ? "is-public" : ""}"
+          type="button"
+          aria-pressed="${publicMode ? "true" : "false"}"
+          aria-label="${host ? `Passer le salon en mode ${nextLabel}` : `Salon ${label.toLowerCase()}`}"
+          title="${publicMode ? "Public : 1 vie, XP et trophées activés, visible en recherche rapide" : "Privé : gratuit, sans XP ni trophées, accès par code ou invitation"}"
+          ${host && !lobbyModeSwitching ? "" : "disabled"}
+        >
+          <span class="pl-mode-toggle-dot" aria-hidden="true"></span>
+          <strong>${label}</strong>
+        </button>
+      </div>
+    `;
+  }
+
+  function changeRoomMode(state, user) {
+    if (!user?.isHost || lobbyModeSwitching || state.mode === "quick") return;
+
+    const nextMode = state.mode === "public" ? "private" : "public";
+    lobbyModeSwitching = true;
+    renderLobbyV5();
+
+    socket.timeout(8000).emit(
+      "room:setMode",
+      {
+        code: state.code,
+        playerId: session.playerId,
+        mode: nextMode
+      },
+      (err, res) => {
+        lobbyModeSwitching = false;
+
+        if (err || !res?.ok) {
+          renderLobbyV5();
+          return toast(res?.error || "Impossible de modifier le type du salon.");
+        }
+
+        if (res.state) session.state = res.state;
+        renderLobbyV5();
+      }
+    );
+  }
 
   function isImageAvatar(value) {
     return (
@@ -316,8 +484,9 @@
         </div>
         ${user?.isHost && !p.isHost ? '<button class="pl-kick" data-kick-id="'+escapeHtml(p.id)+'" aria-label="Retirer ce joueur">×</button>' : ''}
       </article>`).join("");
-    return `<main class="screen lobby-v5 pl-private" data-mode="private">
-      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button><h1>Salon privé</h1><button id="copyCode" class="pl-header-code" aria-label="Copier le code du salon"><small>Code</small><strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button></header>
+    const publicMode = state.mode === "public";
+    return `<main class="screen lobby-v5 pl-private ${publicMode ? "pl-public-mode" : ""}" data-mode="${publicMode ? "public" : "private"}">
+      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button>${roomModeToggleMarkup(state, user)}<button id="copyCode" class="pl-header-code" aria-label="Copier le code du salon"><small>Code</small><strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button></header>
       <section class="pl-settings"><h2><img src="/settings.png" alt="">Paramètres de la partie${user?.isHost ? '<button id="lobbySettingsShortcut" aria-label="Modifier les paramètres"><img src="/settings.png" alt=""></button>':''}</h2>
         <div class="pl-setting-grid">
           ${settingCard({label:"Manches",value:state.rounds,icon:"/lightning.png"})}
@@ -333,7 +502,7 @@
           <button id="plReady" class="${user?.lobbyReady ? 'selected' : ''}" aria-pressed="${!!user?.lobbyReady}">${user?.lobbyReady ? 'Annuler' : '✓ Prêt'}</button>
           ${user?.isHost ? '<button id="startBtn" '+(allReady?'':'disabled')+'>▶ Lancer la partie</button>' : '<span class="pl-wait">L’hôte lancera la partie.</span>'}
         </div>
-        ${user?.isHost ? '<button class="pl-test" data-add-bot="0" '+(state.players.length>=6?'disabled':'')+'>Ajouter un bot de test</button>' : ''}
+        ${user?.isHost && state.mode === "private" ? '<button class="pl-test" data-add-bot="0" '+(state.players.length>=6?'disabled':'')+'>Ajouter un bot de test</button>' : ''}
       </div>
       ${playerProfileModal(state)}${lobbySettingsOverlay(state,user)}${lobbyInviteOverlay(state)}
     </main>`;
@@ -487,6 +656,9 @@
         if (err || !res?.ok) toast(res?.error || "Connexion interrompue. Réessaie.");
       });
     });
+    document.getElementById("plModeToggle")?.addEventListener("click", () => {
+      changeRoomMode(state, user);
+    });
     const leave = () => {
       lobbySettingsOpen = false;
       lobbyInviteOpen = false;
@@ -557,13 +729,14 @@
       }
 
       const rounds = [1, 3, 5];
-      const durations = [30, 60, 90];
+      const durations = [30, 60, 90, 120];
       const difficulties = ["beginner", "medium", "hard"];
 
       let nextRounds = Number(state.rounds || 1);
       let nextDuration = Number(state.duration || 60);
       let nextDifficulty = state.categoryDifficulty || "beginner";
       let nextCategoryCount = categoryCount;
+      const categoryCounts = [6, 8, 10];
 
       const cycle = (arr, current, direction) => {
         let i = arr.indexOf(current);
@@ -574,7 +747,10 @@
       if (setting === "rounds") nextRounds = cycle(rounds, nextRounds, dir);
       if (setting === "duration") nextDuration = cycle(durations, nextDuration, dir);
       if (setting === "categoryDifficulty") nextDifficulty = cycle(difficulties, nextDifficulty, dir);
-      if (setting === "categoryCount") nextCategoryCount = Math.max(5, Math.min(10, nextCategoryCount + dir));
+      if (setting === "categoryCount") {
+        const normalizedCount = categoryCounts.includes(nextCategoryCount) ? nextCategoryCount : 6;
+        nextCategoryCount = cycle(categoryCounts, normalizedCount, dir);
+      }
 
       document.querySelectorAll("[data-lobby-inline-step]").forEach(button => {
         button.disabled = true;
@@ -736,13 +912,33 @@
         });
       });
 
-      // Le vrai lancement est intercepté par lobby-polish-v1.js
-      // qui affiche d'abord le compte à rebours synchronisé.
-      document.getElementById("startBtn")?.addEventListener("click", () => {
-        socket.emit("game:start", { code: state.code, playerId: session.playerId });
+      document.getElementById("startBtn")?.addEventListener("click", event => {
+        const button = event.currentTarget;
+        if (button.disabled || lobbyCountdownActive) return;
+
+        button.disabled = true;
+        button.classList.add("is-counting-down");
+
+        socket.emit("lobby:startCountdown", {
+          code: state.code,
+          playerId: session.playerId
+        }, res => {
+          if (res?.ok) return;
+
+          lobbyCountdownActive = false;
+          button.disabled = false;
+          button.classList.remove("is-counting-down");
+          toast(res?.error || "Impossible de lancer le compte à rebours.");
+        });
       });
     }
   }
+
+  socket.on("lobby:countdown", startLobbyCountdown);
+
+  socket.on("room:state", state => {
+    if (state?.phase !== "lobby") clearLobbyCountdown();
+  });
 
   window.renderLobby = renderLobbyV5;
   try { renderLobby = renderLobbyV5; } catch {}

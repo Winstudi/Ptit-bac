@@ -137,7 +137,7 @@ test("le salon Quick utilise les événements partagés au lieu d'un MutationObs
   assert.match(source, /socket\?\.on\?\.\("room:state", scheduleEnhance\)/);
 });
 
-test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
+test("les assets canoniques restants sont chargés une seule fois", () => {
   const html = read("index.html");
   const { BUNDLES } = require("./frontend-assets.cjs");
   const assets = BUNDLES.flatMap(bundle => bundle.files);
@@ -145,8 +145,6 @@ test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
   for (const canonical of [
     "ui-runtime-v1.js",
     "ui-runtime-v1.css",
-    "lobby-runtime-v1.js",
-    "lobby-runtime-v1.css",
     "avatar-system-v2.css"
   ]) {
     assert.equal(
@@ -158,12 +156,29 @@ test("les runtimes UI et lobby canoniques sont chargés une seule fois", () => {
   }
 });
 
-test("le compte à rebours lobby utilise l'horloge serveur quand elle existe", () => {
-  const source = read("lobby-runtime-v1.js");
+test("le lobby possède directement le mode public et le compte à rebours", () => {
+  const html = read("index.html");
+  const publicFiles = JSON.parse(read("public-files.json"));
+  const { BUNDLES } = require("./frontend-assets.cjs");
+  const assets = BUNDLES.flatMap(bundle => bundle.files);
+  const source = read("lobby-screen-v4.js");
+  const css = read("private-lobby.css");
+
+  for (const legacy of ["lobby-runtime-v1.js", "lobby-runtime-v1.css"]) {
+    assert.equal(exists(legacy), false, `${legacy} doit être supprimé du dépôt`);
+    assert.doesNotMatch(html, new RegExp(legacy.replace(".", "\\.")));
+    assert.ok(!publicFiles.includes(`/${legacy}`));
+    assert.ok(!assets.includes(legacy));
+  }
 
   assert.match(source, /typeof serverNowMs === "function"/);
-  assert.match(source, /const remaining = deadline - runtimeNow\(\)/);
-  assert.match(source, /window\.PtitBacLobbyRuntime/);
+  assert.match(source, /const remaining = deadline - lobbyNow\(\)/);
+  assert.match(source, /"room:setMode"/);
+  assert.match(source, /"lobby:startCountdown"/);
+  assert.match(source, /id="plModeToggle"/);
+  assert.match(source, /Math\.max\(6, Math\.min\(10, nextCategoryCount \+ dir\)\)/);
+  assert.doesNotMatch(source, /stopImmediatePropagation/);
+  assert.match(css, /Compte à rebours \+ bascule Privé\/Public/);
 });
 
 test("le runtime UI tolère une socket absente ou déconnectée", () => {
@@ -305,12 +320,12 @@ test("aucun nouveau script fix ou patch n'est chargé en production", () => {
   );
 });
 
-test("les seuls runtimes frontend dédiés restent les deux runtimes canoniques", () => {
+test("le runtime UI est le seul runtime frontend dédié restant", () => {
   const { BUNDLES } = require("./frontend-assets.cjs");
   const jsFiles = BUNDLES.filter(bundle => bundle.type === "js").flatMap(bundle => bundle.files);
   const runtimes = jsFiles.filter(file => /runtime/i.test(file)).sort();
 
-  assert.deepEqual(runtimes, ["lobby-runtime-v1.js", "ui-runtime-v1.js"]);
+  assert.deepEqual(runtimes, ["ui-runtime-v1.js"]);
 });
 
 
@@ -335,3 +350,12 @@ test("le mode Quick n'est plus injecté par wallet-client", () => {
   assert.doesNotMatch(css, /#quickStatus/);
 });
 
+
+
+test("les choix du lobby privé restent limités à 6, 8, 10 catégories et 120 secondes", () => {
+  const source = read("lobby-screen-v4.js");
+
+  assert.match(source, /const categoryCounts = \[6, 8, 10\]/);
+  assert.match(source, /const durations = \[30, 60, 90, 120\]/);
+  assert.doesNotMatch(source, /Math\.max\(6,\s*Math\.min\(10,\s*nextCategoryCount \+ dir\)\)/);
+});
