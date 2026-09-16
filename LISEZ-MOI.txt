@@ -1,0 +1,27 @@
+P'TIT BAC — PAGE ADMIN > ITEMS
+
+Ce script est temporaire et ne fait pas partie du projet final.
+
+1. Place apply-admin-items.cjs à la racine du dépôt P'tit Bac.
+2. Lance :
+   node apply-admin-items.cjs
+3. Le script modifie uniquement :
+   - admin-v1.js
+   - admin-hook.js
+   - db-migrations.js
+   - db-migrations.test.cjs
+4. Supprime ensuite apply-admin-items.cjs.
+5. Commit/push les 4 fichiers modifiés.
+
+Fonctions ajoutées :
+- onglet Admin > Items
+- filtres Tous / Avatars / Cadres / Titres
+- raretés Commun / Rare / Épique / Ultra / Exclusif
+- prix de 0 à 999999
+- monnaie Pièces ou Gemmes
+- moyens d'obtention affichés automatiquement selon la rareté
+- aucune action « Ajouter à la boutique »
+- sauvegarde PostgreSQL dans ptitbac_item_catalog_settings
+- log admin à chaque modification
+
+Les items eux-mêmes restent ajoutés par code dans inventory-service.js.
