@@ -472,40 +472,760 @@
   }
 
 
+  function privateLobbyTagInfo(player) {
+    let id = String(player?.tagId || "").trim();
+
+    if (!id && String(player?.id || "") === String(session?.playerId || "")) {
+      try {
+        id = String(window.PtitBacInventory?.state?.()?.equipped?.tag || "").trim();
+      } catch {}
+    }
+
+    if (!id) return null;
+
+    const known = {
+      tag_debutant: { label:"Débutant", icon:"★" }
+    };
+
+    if (known[id]) return known[id];
+
+    const label = id
+      .replace(/^tag[_-]?/i, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\w/g, char => char.toUpperCase())
+      .trim();
+
+    return label ? { label, icon:"★" } : null;
+  }
+
+  function privateLobbyTagMarkup(player) {
+    const tag = privateLobbyTagInfo(player);
+    if (!tag) return "";
+
+    return `
+      <span class="pl-player-title" title="Titre équipé">
+        <span aria-hidden="true">${tag.icon}</span>
+        <strong>${escapeHtml(tag.label)}</strong>
+      </span>`;
+  }
+
+  function privateLobbyShareIcon() {
+    return `
+      <svg class="pl-share-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="18" cy="5" r="2.5"></circle>
+        <circle cx="6" cy="12" r="2.5"></circle>
+        <circle cx="18" cy="19" r="2.5"></circle>
+        <path d="m8.2 10.8 7.5-4.4M8.2 13.2l7.5 4.4"></path>
+      </svg>`;
+  }
+
+  function ensurePrivateLobbyV2Styles() {
+    if (document.getElementById("ptbPrivateLobbyV2Styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "ptbPrivateLobbyV2Styles";
+    style.textContent = `
+      /* =====================================================
+         Salon privé/public V2 — identité joueur mise en avant
+         Styles volontairement scopés à .pl-private.
+         ===================================================== */
+      html body .pl-private {
+        --pl-v2-line:#526ea4;
+        --pl-v2-violet:#b04cff;
+        --pl-v2-violet-soft:#7f56ff;
+        --pl-v2-panel:#0d2147;
+        --pl-v2-panel-2:#131f4b;
+      }
+
+      html body .pl-private .pl-settings {
+        padding:8px 9px 9px !important;
+        border-color:#38548a !important;
+        background:linear-gradient(145deg,rgba(18,34,78,.94),rgba(9,23,61,.96));
+        box-shadow:inset 0 0 18px rgba(94,69,216,.05);
+      }
+
+      html body .pl-private .pl-settings h2 {
+        min-height:30px;
+        margin-bottom:6px !important;
+        font-size:14px !important;
+      }
+
+      html body .pl-private .pl-settings h2 > img {
+        width:24px !important;
+        height:24px !important;
+        filter:drop-shadow(0 0 5px rgba(192,75,255,.42));
+      }
+
+      html body .pl-private .pl-settings h2 .pl-settings-edit {
+        width:auto !important;
+        min-width:0 !important;
+        height:28px !important;
+        margin-left:auto !important;
+        padding:2px 3px 2px 8px !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:4px !important;
+        border:0 !important;
+        background:transparent !important;
+        color:#b5c4ef !important;
+        font-size:11px !important;
+        font-weight:700 !important;
+      }
+
+      html body .pl-private .pl-settings h2 .pl-settings-edit b {
+        font-size:22px;
+        line-height:1;
+        font-weight:400;
+      }
+
+      html body .pl-private .pl-setting-grid {
+        gap:7px !important;
+      }
+
+      html body .pl-private .pl-setting-grid .lobby-v5-setting-card {
+        height:72px !important;
+        border-color:#3e5f98 !important;
+        background:linear-gradient(180deg,#0b254f,#0b1e43) !important;
+        box-shadow:inset 0 0 12px rgba(70,146,255,.035) !important;
+      }
+
+      html body .pl-private .pl-setting-grid .lobby-v5-setting-icon {
+        width:29px !important;
+        height:29px !important;
+        filter:drop-shadow(0 0 5px rgba(187,64,255,.34));
+      }
+
+      html body .pl-private .pl-players h2 {
+        margin-bottom:7px !important;
+        font-size:21px !important;
+        line-height:25px !important;
+      }
+
+      html body .pl-private .pl-players h2 span {
+        color:#b8c5ef !important;
+        font-size:16px !important;
+        font-weight:800;
+      }
+
+      html body .pl-private .pl-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+        grid-template-rows:repeat(3,minmax(88px,1fr)) !important;
+        gap:8px !important;
+        overflow:visible !important;
+      }
+
+      html body .pl-private .pl-player,
+      html body .pl-private .pl-empty {
+        min-width:0;
+        min-height:88px !important;
+        height:100%;
+        border-radius:15px !important;
+      }
+
+      html body .pl-private .pl-player {
+        position:relative;
+        padding:7px 8px !important;
+        display:grid !important;
+        grid-template-columns:clamp(56px,15vw,66px) minmax(0,1fr) !important;
+        align-items:center !important;
+        gap:8px !important;
+        overflow:visible;
+        border:1px solid #405b91 !important;
+        background:
+          radial-gradient(circle at 18% 38%,rgba(121,55,255,.10),transparent 42%),
+          linear-gradient(145deg,#11264d,#0c1d42 78%) !important;
+        box-shadow:inset 0 0 14px rgba(99,74,229,.035);
+        transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+      }
+
+      html body .pl-private .pl-player.is-host,
+      html body .pl-private .pl-player.is-self {
+        border-color:#b14cff !important;
+        box-shadow:
+          inset 0 0 20px rgba(138,62,255,.10),
+          0 0 11px rgba(166,54,255,.24);
+      }
+
+      html body .pl-private .pl-player.is-host::after {
+        content:"";
+        position:absolute;
+        right:9px;
+        bottom:7px;
+        width:40px;
+        height:30px;
+        opacity:.06;
+        pointer-events:none;
+        border:4px solid #c06cff;
+        border-top:0;
+        border-radius:0 0 12px 12px;
+        transform:rotate(-9deg);
+      }
+
+      html body .pl-private .pl-avatar-shell {
+        position:relative;
+        width:clamp(56px,15vw,66px);
+        height:clamp(56px,15vw,66px);
+        display:grid;
+        place-items:center;
+        overflow:visible;
+        align-self:center;
+      }
+
+      html body .pl-private .pl-avatar {
+        position:relative !important;
+        width:100% !important;
+        height:100% !important;
+        min-width:0 !important;
+        min-height:0 !important;
+        margin:0 !important;
+        flex:none !important;
+        border:1.5px solid #a657ff !important;
+        border-radius:13px !important;
+        background:#181953 !important;
+        box-shadow:0 0 9px rgba(163,66,255,.28) !important;
+        overflow:hidden !important;
+      }
+
+      html body .pl-private .pl-avatar > img:not(.ptb-equipped-frame-overlay) {
+        width:100% !important;
+        height:100% !important;
+        max-width:none !important;
+        max-height:none !important;
+        object-fit:cover !important;
+      }
+
+      html body .pl-private .pl-avatar.ptb-has-equipped-frame {
+        overflow:visible !important;
+        border:0 !important;
+        border-radius:0 !important;
+        background:transparent !important;
+        box-shadow:none !important;
+      }
+
+      html body .pl-private .pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
+        width:92% !important;
+        height:92% !important;
+        max-width:92% !important;
+        max-height:92% !important;
+        border-radius:0 !important;
+      }
+
+      html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
+        width:132% !important;
+        height:132% !important;
+      }
+
+      html body .pl-private .pl-avatar-role-crown {
+        position:absolute;
+        z-index:10;
+        left:-5px;
+        top:-5px;
+        width:23px;
+        height:23px;
+        display:grid;
+        place-items:center;
+        border:1px solid rgba(255,211,95,.58);
+        border-radius:50%;
+        background:rgba(57,23,101,.96);
+        box-shadow:0 0 9px rgba(255,184,42,.28),0 0 9px rgba(184,67,255,.28);
+        pointer-events:none;
+      }
+
+      html body .pl-private .pl-avatar-role-crown img {
+        width:17px !important;
+        height:17px !important;
+      }
+
+      html body .pl-private .pl-player-copy {
+        position:relative;
+        z-index:2;
+        min-width:0;
+        display:grid;
+        align-content:center;
+        justify-items:start;
+        gap:3px;
+      }
+
+      html body .pl-private .pl-player-copy > strong {
+        display:block;
+        width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        color:#fff;
+        font-size:clamp(14px,3.7vw,17px) !important;
+        line-height:1.05 !important;
+        font-weight:900;
+      }
+
+      html body .pl-private .pl-tags {
+        width:100%;
+        margin:0 !important;
+        display:flex !important;
+        flex-wrap:nowrap !important;
+        gap:3px !important;
+        overflow:hidden;
+      }
+
+      html body .pl-private .pl-tags span {
+        min-width:0;
+        padding:2px 5px !important;
+        border:1px solid #7356ce !important;
+        border-radius:999px !important;
+        background:rgba(48,35,105,.72);
+        color:#ded7ff !important;
+        font-size:8.5px !important;
+        line-height:1.15;
+        font-weight:800;
+        white-space:nowrap;
+      }
+
+      html body .pl-private .pl-tags .is-host {
+        border-color:#c24eff !important;
+        color:#f0c9ff !important;
+      }
+
+      html body .pl-private .pl-player-title {
+        max-width:100%;
+        min-height:20px;
+        padding:2px 7px;
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        border:1px solid #8e61ff;
+        border-radius:999px;
+        background:linear-gradient(90deg,rgba(105,42,202,.76),rgba(37,54,151,.74));
+        color:#fff;
+        box-shadow:0 0 8px rgba(172,65,255,.22);
+        font-size:9px;
+        line-height:1;
+        overflow:hidden;
+      }
+
+      html body .pl-private .pl-player-title > span {
+        flex:none;
+        color:#fff;
+        font-size:11px;
+        text-shadow:0 0 6px rgba(214,142,255,.55);
+      }
+
+      html body .pl-private .pl-player-title strong {
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        font-size:9px;
+        font-weight:900;
+      }
+
+      html body .pl-private .pl-status {
+        margin-top:0;
+        display:inline-flex;
+        align-items:center;
+        gap:4px;
+        color:#aab7d9 !important;
+        font-size:9px !important;
+        line-height:1.1;
+        white-space:nowrap;
+      }
+
+      html body .pl-private .pl-status i {
+        width:6px;
+        height:6px;
+        flex:none;
+        border-radius:50%;
+        background:#8c83ae;
+        box-shadow:0 0 5px rgba(145,130,188,.35);
+      }
+
+      html body .pl-private .pl-status.is-ready {
+        color:#67e3ba !important;
+      }
+
+      html body .pl-private .pl-status.is-ready i {
+        background:#55e7b6;
+        box-shadow:0 0 7px rgba(85,231,182,.55);
+      }
+
+      html body .pl-private .pl-status.is-offline i {
+        background:#69738f;
+        box-shadow:none;
+      }
+
+      html body .pl-private .pl-kick {
+        z-index:12;
+        right:1px !important;
+        top:0 !important;
+        width:22px;
+        height:22px;
+        padding:0 !important;
+        display:grid;
+        place-items:center;
+        border:0 !important;
+        border-radius:50%;
+        background:rgba(9,17,53,.65) !important;
+        color:#aeb7d5 !important;
+        font-size:15px !important;
+        line-height:1;
+      }
+
+      html body .pl-private .pl-empty {
+        padding:7px !important;
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:6px !important;
+        border:1px dashed #5a78b0 !important;
+        background:linear-gradient(145deg,rgba(10,27,66,.54),rgba(10,20,55,.42));
+        color:#a7b8e4 !important;
+      }
+
+      html body .pl-private .pl-empty b {
+        width:36px !important;
+        height:36px !important;
+        display:grid !important;
+        place-items:center !important;
+        border:1px solid #6988c7 !important;
+        border-radius:50% !important;
+        background:rgba(19,39,84,.55);
+        color:#adc1f5;
+        font-size:25px !important;
+        line-height:1 !important;
+        font-weight:300 !important;
+      }
+
+      html body .pl-private .pl-empty span {
+        font-size:10.5px !important;
+        font-weight:600;
+      }
+
+      html body .pl-private .pl-actions {
+        gap:7px !important;
+      }
+
+      html body .pl-private .pl-social {
+        gap:7px !important;
+      }
+
+      html body .pl-private .pl-invite,
+      html body .pl-private .pl-share {
+        min-height:43px !important;
+        border-radius:13px !important;
+      }
+
+      html body .pl-private .pl-invite {
+        border-color:#859bff !important;
+        background:linear-gradient(145deg,#152853,#102044) !important;
+        font-size:13px !important;
+        font-weight:900 !important;
+      }
+
+      html body .pl-private .pl-invite img {
+        width:26px !important;
+        height:26px !important;
+      }
+
+      html body .pl-private .pl-share {
+        min-width:94px;
+        padding:6px 10px !important;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
+        border-color:#8255cf !important;
+        background:linear-gradient(145deg,#241552,#171a49) !important;
+        color:#f1ecff;
+        font-size:11px !important;
+      }
+
+      html body .pl-private .pl-share-icon {
+        width:18px;
+        height:18px;
+        flex:none;
+        fill:none;
+        stroke:currentColor;
+        stroke-width:1.8;
+        stroke-linecap:round;
+        stroke-linejoin:round;
+      }
+
+      html body .pl-private .pl-launch {
+        gap:8px !important;
+      }
+
+      html body .pl-private .pl-launch button {
+        min-height:45px !important;
+        border-radius:13px !important;
+      }
+
+      html body .pl-private .pl-launch #plReady {
+        border-color:#b36cff !important;
+        background:linear-gradient(145deg,#5c388f,#432b79) !important;
+        font-size:15px !important;
+      }
+
+      html body .pl-private .pl-launch #plReady.selected {
+        border-color:#59ddb4 !important;
+        background:linear-gradient(145deg,#15594c,#18493f) !important;
+      }
+
+      html body .pl-private .pl-launch #startBtn {
+        background:linear-gradient(135deg,#783ee7,#5226bc) !important;
+        box-shadow:inset 0 0 13px rgba(211,159,255,.10);
+      }
+
+      html body .pl-private .pl-launch #startBtn:disabled {
+        filter:saturate(.45);
+        opacity:.42;
+      }
+
+      html body .pl-private .pl-test {
+        margin-top:-1px;
+        font-size:9px !important;
+      }
+
+      @media (max-width:370px) {
+        html body .pl-private .pl-grid {
+          gap:6px !important;
+        }
+
+        html body .pl-private .pl-player {
+          grid-template-columns:52px minmax(0,1fr) !important;
+          padding:6px !important;
+          gap:6px !important;
+        }
+
+        html body .pl-private .pl-avatar-shell {
+          width:52px;
+          height:52px;
+        }
+
+        html body .pl-private .pl-player-copy > strong {
+          font-size:13px !important;
+        }
+
+        html body .pl-private .pl-player-title,
+        html body .pl-private .pl-player-title strong {
+          font-size:8px !important;
+        }
+
+        html body .pl-private .pl-tags span {
+          padding-inline:4px !important;
+          font-size:7.7px !important;
+        }
+      }
+
+      @media (max-height:690px) {
+        html body .pl-private .pl-setting-grid .lobby-v5-setting-card {
+          height:60px !important;
+        }
+
+        html body .pl-private .pl-setting-grid .lobby-v5-setting-icon {
+          width:22px !important;
+          height:22px !important;
+        }
+
+        html body .pl-private .pl-grid {
+          grid-template-rows:repeat(3,minmax(73px,1fr)) !important;
+          gap:6px !important;
+          overflow-y:auto !important;
+          overscroll-behavior:contain;
+        }
+
+        html body .pl-private .pl-player,
+        html body .pl-private .pl-empty {
+          min-height:73px !important;
+        }
+
+        html body .pl-private .pl-player {
+          grid-template-columns:48px minmax(0,1fr) !important;
+          padding:5px 6px !important;
+          gap:6px !important;
+        }
+
+        html body .pl-private .pl-avatar-shell {
+          width:48px;
+          height:48px;
+        }
+
+        html body .pl-private .pl-player-copy {
+          gap:2px;
+        }
+
+        html body .pl-private .pl-player-copy > strong {
+          font-size:12px !important;
+        }
+
+        html body .pl-private .pl-player-title {
+          min-height:16px;
+          padding:1px 5px;
+        }
+
+        html body .pl-private .pl-player-title strong,
+        html body .pl-private .pl-status {
+          font-size:7.5px !important;
+        }
+
+        html body .pl-private .pl-avatar-role-crown {
+          width:18px;
+          height:18px;
+        }
+
+        html body .pl-private .pl-avatar-role-crown img {
+          width:13px !important;
+          height:13px !important;
+        }
+
+        html body .pl-private .pl-empty b {
+          width:30px !important;
+          height:30px !important;
+          font-size:21px !important;
+        }
+
+        html body .pl-private .pl-invite,
+        html body .pl-private .pl-share,
+        html body .pl-private .pl-launch button {
+          min-height:39px !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function privateMarkup(state, user) {
+    ensurePrivateLobbyV2Styles();
+
     const difficulty = difficultyInfo(state.categoryDifficulty);
-    const allReady = state.players.length >= 2 && state.players.every(p => p.isBot || (p.connected && p.lobbyReady));
-    const cards = state.players.map(p => `
-      <article class="pl-player" data-lobby-player-profile="${escapeHtml(p.id)}" role="button" tabindex="0">
-        <div class="pl-avatar">${avatarMarkup(p)}</div>
-        <div class="pl-player-copy"><strong>${escapeHtml(p.name || "Joueur")}</strong>
-          <div class="pl-tags">${p.isHost ? '<span>♛ Hôte</span>' : ''}${p.id === session.playerId ? '<span>Toi</span>' : ''}${p.isBot ? '<span>Bot</span>' : ''}</div>
-          <small class="${p.lobbyReady || p.isBot ? 'pl-is-ready' : ''}">${p.isBot || (p.connected && p.lobbyReady) ? '✓ Prêt' : p.connected ? 'Pas prêt' : 'Hors ligne'}</small>
-        </div>
-        ${user?.isHost && !p.isHost ? '<button class="pl-kick" data-kick-id="'+escapeHtml(p.id)+'" aria-label="Retirer ce joueur">×</button>' : ''}
-      </article>`).join("");
+    const allReady = state.players.length >= 2 && state.players.every(
+      player => player.isBot || (player.connected && player.lobbyReady)
+    );
+
+    const cards = state.players.map(player => {
+      const self = String(player.id) === String(session.playerId);
+      const ready = player.isBot || (player.connected && player.lobbyReady);
+      const offline = !player.isBot && !player.connected;
+      const canKick = user?.isHost && !player.isHost;
+
+      return `
+        <article
+          class="pl-player pl-player-v2 ${player.isHost ? "is-host" : ""} ${self ? "is-self" : ""} ${ready ? "is-ready" : ""}"
+          data-lobby-player-profile="${escapeHtml(player.id)}"
+          role="button"
+          tabindex="0"
+          aria-label="Profil de ${escapeHtml(player.name || "Joueur")}"
+        >
+          <div class="pl-avatar-shell">
+            <div class="pl-avatar">${avatarMarkup(player)}</div>
+            ${player.isHost
+              ? `<span class="pl-avatar-role-crown" aria-hidden="true"><img src="/admin-crown.png" alt=""></span>`
+              : ""}
+          </div>
+
+          <div class="pl-player-copy">
+            <strong>${escapeHtml(player.name || "Joueur")}</strong>
+
+            <div class="pl-tags">
+              ${player.isHost ? '<span class="is-host">♛ Hôte</span>' : ""}
+              ${self ? '<span>Toi</span>' : ""}
+              ${player.isBot ? '<span>Bot</span>' : ""}
+            </div>
+
+            ${privateLobbyTagMarkup(player)}
+
+            <small class="pl-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
+              <i aria-hidden="true"></i>
+              ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
+            </small>
+          </div>
+
+          ${canKick
+            ? `<button class="pl-kick" data-kick-id="${escapeHtml(player.id)}" type="button" aria-label="Retirer ce joueur">×</button>`
+            : ""}
+        </article>`;
+    }).join("");
+
+    const emptySlots = Array.from(
+      { length:Math.max(0, LOBBY_MAX_PLAYERS - state.players.length) },
+      () => `
+        <div class="pl-empty" aria-label="Place libre">
+          <b aria-hidden="true">＋</b>
+          <span>Place libre</span>
+        </div>`
+    ).join("");
+
     const publicMode = state.mode === "public";
-    return `<main class="screen lobby-v5 pl-private ${publicMode ? "pl-public-mode" : ""}" data-mode="${publicMode ? "public" : "private"}">
-      <header class="pl-header"><button id="lobbyV5Leave" aria-label="Quitter le salon"><img src="/back-arrow.png" alt=""></button>${roomModeToggleMarkup(state, user)}<button id="copyCode" class="pl-header-code" aria-label="Copier le code du salon"><small>Code</small><strong>${escapeHtml(state.code)}</strong><img src="/lobby-copy.png" alt=""></button></header>
-      <section class="pl-settings"><h2><img src="/settings.png" alt="">Paramètres de la partie${user?.isHost ? '<button id="lobbySettingsShortcut" aria-label="Modifier les paramètres"><img src="/settings.png" alt=""></button>':''}</h2>
-        <div class="pl-setting-grid">
-          ${settingCard({label:"Manches",value:state.rounds,icon:"/lightning.png"})}
-          ${settingCard({label:"Catégories",value:state.categoryCount || 6,icon:"/lobby-categories.png"})}
-          ${settingCard({label:"Temps",value:state.duration+"s",icon:"/lobby-clock.png"})}
-          ${settingCard({label:"Difficulté",value:difficulty.label,icon:difficulty.icon,difficulty:true})}
+
+    return `
+      <main class="screen lobby-v5 pl-private ${publicMode ? "pl-public-mode" : ""}" data-mode="${publicMode ? "public" : "private"}">
+        <header class="pl-header">
+          <button id="lobbyV5Leave" type="button" aria-label="Quitter le salon">
+            <img src="/back-arrow.png" alt="">
+          </button>
+          ${roomModeToggleMarkup(state, user)}
+          <button id="copyCode" class="pl-header-code" type="button" aria-label="Copier le code du salon">
+            <small>Code</small>
+            <strong>${escapeHtml(state.code)}</strong>
+            <img src="/lobby-copy.png" alt="">
+          </button>
+        </header>
+
+        <section class="pl-settings">
+          <h2>
+            <img src="/settings.png" alt="">
+            <span>Paramètres de la partie</span>
+            ${user?.isHost
+              ? `<button id="lobbySettingsShortcut" class="pl-settings-edit" type="button" aria-label="Modifier les paramètres"><span>Modifier</span><b aria-hidden="true">›</b></button>`
+              : ""}
+          </h2>
+
+          <div class="pl-setting-grid">
+            ${settingCard({label:"Manches",value:state.rounds,icon:"/lightning.png"})}
+            ${settingCard({label:"Catégories",value:state.categoryCount || 6,icon:"/lobby-categories.png"})}
+            ${settingCard({label:"Temps",value:state.duration+"s",icon:"/lobby-clock.png"})}
+            ${settingCard({label:"Difficulté",value:difficulty.label,icon:difficulty.icon,difficulty:true})}
+          </div>
+        </section>
+
+        <section class="pl-players">
+          <h2>Joueurs <span>${state.players.length}/${LOBBY_MAX_PLAYERS}</span></h2>
+          <div class="pl-grid">${cards}${emptySlots}</div>
+        </section>
+
+        <div class="pl-actions">
+          <div class="pl-social">
+            <button id="inviteFriendsBtn" class="pl-invite" type="button">
+              <img src="/friends.png" alt="">
+              <span>Inviter des amis</span>
+            </button>
+            <button id="plShare" class="pl-share" type="button" aria-label="Partager le code du salon">
+              ${privateLobbyShareIcon()}
+              <span>Partager</span>
+            </button>
+          </div>
+
+          <div class="pl-launch">
+            <button
+              id="plReady"
+              class="${user?.lobbyReady ? "selected" : ""}"
+              type="button"
+              aria-pressed="${!!user?.lobbyReady}"
+            >${user?.lobbyReady ? "Annuler" : "✓ Prêt"}</button>
+
+            ${user?.isHost
+              ? `<button id="startBtn" type="button" ${allReady ? "" : "disabled"}>▶ Lancer la partie</button>`
+              : `<span class="pl-wait">L’hôte lancera la partie.</span>`}
+          </div>
+
+          ${user?.isHost && state.mode === "private"
+            ? `<button class="pl-test" data-add-bot="0" type="button" ${state.players.length >= LOBBY_MAX_PLAYERS ? "disabled" : ""}>Ajouter un bot de test</button>`
+            : ""}
         </div>
-      </section>
-      <section class="pl-players"><h2>Joueurs <span>${state.players.length}/6</span></h2><div class="pl-grid">${cards}${Array.from({length:Math.max(0,6-state.players.length)},()=>'<div class="pl-empty"><b>＋</b><span>Place libre</span></div>').join("")}</div></section>
-      <div class="pl-actions">
-        <div class="pl-social"><button id="inviteFriendsBtn" class="pl-invite"><img src="/friends.png" alt="">Inviter des amis</button><button id="plShare" class="pl-share" aria-label="Partager le code du salon">Partager</button></div>
-        <div class="pl-launch">
-          <button id="plReady" class="${user?.lobbyReady ? 'selected' : ''}" aria-pressed="${!!user?.lobbyReady}">${user?.lobbyReady ? 'Annuler' : '✓ Prêt'}</button>
-          ${user?.isHost ? '<button id="startBtn" '+(allReady?'':'disabled')+'>▶ Lancer la partie</button>' : '<span class="pl-wait">L’hôte lancera la partie.</span>'}
-        </div>
-        ${user?.isHost && state.mode === "private" ? '<button class="pl-test" data-add-bot="0" '+(state.players.length>=6?'disabled':'')+'>Ajouter un bot de test</button>' : ''}
-      </div>
-      ${playerProfileModal(state)}${lobbySettingsOverlay(state,user)}${lobbyInviteOverlay(state)}
-    </main>`;
+
+        ${playerProfileModal(state)}
+        ${lobbySettingsOverlay(state,user)}
+        ${lobbyInviteOverlay(state)}
+      </main>`;
   }
 
   function renderLobbyV5() {
