@@ -402,10 +402,59 @@ html body .letter-prototype .pbw1-chooser
   height:128% !important;
 }
 
-/* Attente : cadre un peu plus présent autour de l'avatar. */
-.wsv1-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-  width:150% !important;
-  height:150% !important;
+/* Attente : un cadre cosmétique remplace totalement le cadre violet natif. */
+html body .wsv1-screen .wsv1-player
+.wsv1-avatar.ptb-has-equipped-frame {
+  padding:0 !important;
+  border:0 !important;
+  outline:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+
+/* L'avatar devient carré et remplit tout son conteneur. */
+html body .wsv1-screen .wsv1-player
+.wsv1-avatar.ptb-has-equipped-frame
+> img:not(.ptb-equipped-frame-overlay) {
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+  border:0 !important;
+  outline:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+
+/* Le cadre n'est plus rogné par le conteneur de l'écran d'attente. */
+html body .wsv1-screen .wsv1-player
+.wsv1-avatar.ptb-has-equipped-frame
+> .ptb-equipped-frame-overlay {
+  left:50% !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  width:166% !important;
+  height:166% !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  outline:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  transform:translate3d(-50%,-50%,0) !important;
+  pointer-events:none !important;
 }
 
 @media (max-width:430px) {
