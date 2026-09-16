@@ -198,6 +198,15 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
   isolation:isolate !important;
   display:grid !important;
   place-items:center !important;
+  box-sizing:border-box !important;
+  padding:0 !important;
+
+  /* Un cadre cosmétique remplace entièrement le cadre violet natif. */
+  border:0 !important;
+  border-radius:0 !important;
+  outline:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
 }
 
 /* L'avatar ne passe plus sous les décorations du cadre. */
@@ -225,7 +234,6 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
   top:50% !important;
   right:auto !important;
   bottom:auto !important;
-  inset:auto !important;
   width:142% !important;
   height:142% !important;
   max-width:none !important;
@@ -237,7 +245,7 @@ body:has(.inventory-v2-page) .economy-hud {display:none !important;}
   background:transparent !important;
   object-fit:contain !important;
   object-position:center center !important;
-  transform:translate(-50%,-50%) !important;
+  transform:translate3d(-50%,-50%,0) !important;
   transform-origin:center center !important;
   pointer-events:none !important;
   box-sizing:border-box !important;
