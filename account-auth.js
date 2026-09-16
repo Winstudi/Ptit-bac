@@ -93,61 +93,11 @@ async function ensureAuthSchema(pool, ensureSharedSchema) {
   if (sharedSchemaPromise) return sharedSchemaPromise;
 
   sharedSchemaPromise = (async () => {
-    if (typeof ensureSharedSchema === "function") {
-      await ensureSharedSchema();
+    if (typeof ensureSharedSchema !== "function") {
+      throw new Error("Migration PostgreSQL centrale indisponible.");
     }
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ptitbac_accounts (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id uuid UNIQUE NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-        email_normalized text UNIQUE NOT NULL,
-        email_display text NOT NULL,
-        password_hash text NOT NULL,
-        password_salt text NOT NULL,
-        password_version integer NOT NULL DEFAULT 1,
-        profile_completed boolean NOT NULL DEFAULT false,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now(),
-        last_login_at timestamptz
-      )
-    `);
-
-    // Les comptes créés avant l’onboarding profil sont considérés comme déjà
-    // configurés. Les nouveaux comptes sont explicitement créés avec false.
-    await pool.query(`
-      ALTER TABLE public.ptitbac_accounts
-      ADD COLUMN IF NOT EXISTS profile_completed boolean NOT NULL DEFAULT true
-    `);
-    await pool.query(`
-      ALTER TABLE public.ptitbac_accounts
-      ALTER COLUMN profile_completed SET DEFAULT false
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS public.ptitbac_auth_sessions (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        account_id uuid NOT NULL REFERENCES public.ptitbac_accounts(id) ON DELETE CASCADE,
-        token_hash text UNIQUE NOT NULL,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        last_seen_at timestamptz NOT NULL DEFAULT now(),
-        expires_at timestamptz NOT NULL,
-        revoked_at timestamptz
-      )
-    `);
-
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_accounts_email_idx
-      ON public.ptitbac_accounts(email_normalized)
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_auth_sessions_account_idx
-      ON public.ptitbac_auth_sessions(account_id, expires_at DESC)
-    `);
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS ptitbac_auth_sessions_token_idx
-      ON public.ptitbac_auth_sessions(token_hash)
-    `);
+    await ensureSharedSchema();
+    return pool;
   })().catch(error => {
     sharedSchemaPromise = null;
     throw error;
@@ -500,6 +450,31 @@ function createAccountAuthService(options = {}) {
         await client.query("ROLLBACK");
         return { ok:false, error:"Compte introuvable." };
       }
+
+      for (const profileAvatar of PROFILE_AVATARS) {
+        await client.query(
+          `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+           VALUES($1,'avatar',$2,'default')
+           ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+          [safeWalletToken, profileAvatar]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+         VALUES($1,'tag','tag_debutant','default')
+         ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+        [safeWalletToken]
+      );
+
+      await client.query(
+        `INSERT INTO public.ptitbac_inventory_equipped(wallet_token,avatar_id,frame_id,tag_id)
+         VALUES($1,$2,'','tag_debutant')
+         ON CONFLICT(wallet_token) DO UPDATE
+           SET avatar_id=EXCLUDED.avatar_id,
+               updated_at=now()`,
+        [safeWalletToken, cleanAvatar]
+      );
 
       const accountResult = await client.query(
         `UPDATE public.ptitbac_accounts

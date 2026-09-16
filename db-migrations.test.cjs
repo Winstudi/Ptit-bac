@@ -32,10 +32,17 @@ test("toutes les tables principales sont créées par le module central", async 
 
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_wallets/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.users/);
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_accounts/);
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_auth_sessions/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.friendships/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_messages/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_inventory_items/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_progression/);
+  assert.match(sql, /profile_completed boolean NOT NULL DEFAULT false/);
+  assert.match(sql, /ALTER COLUMN profile_completed SET DEFAULT false/);
+  assert.match(sql, /ptitbac_accounts_email_idx/);
+  assert.match(sql, /ptitbac_auth_sessions_account_idx/);
+  assert.match(sql, /ptitbac_auth_sessions_token_idx/);
   assert.match(sql, /trophies integer NOT NULL DEFAULT 0/);
   assert.match(sql, /trophy_delta integer NOT NULL DEFAULT 0/);
   assert.match(sql, /ptitbac_assign_friend_code_5/);
@@ -57,7 +64,6 @@ test("une base déjà migrée n'essaie plus de supprimer users.coins", async () 
   const sql = pool.queries.join("\n");
   assert.doesNotMatch(sql, /DROP COLUMN IF EXISTS coins/);
 });
-
 
 test("l’ancien inventaire admin est migré si compatible puis supprimé", async () => {
   const pool = fakePool({ legacyAdminItems:true });

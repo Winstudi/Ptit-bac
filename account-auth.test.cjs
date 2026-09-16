@@ -16,7 +16,6 @@ const {
   PROFILE_AVATARS
 } = require("./account-auth.js");
 
-
 const { EVENT_POLICIES } = require("./socket-security.js");
 
 const {
@@ -80,7 +79,6 @@ test("le reset joueur est volontaire, versionné et couvre les données d'identi
   );
 });
 
-
 test("les événements de compte sont limités par la sécurité Socket.IO", () => {
   assert.equal(EVENT_POLICIES["auth:register"]?.scope, "network");
   assert.equal(EVENT_POLICIES["auth:login"]?.scope, "network");
@@ -89,7 +87,7 @@ test("les événements de compte sont limités par la sécurité Socket.IO", () 
   assert.equal(EVENT_POLICIES["auth:completeProfile"]?.scope, "identity");
 });
 
-test("l’onboarding profil est persistant et limité aux avatars officiels", () => {
+test("l’onboarding profil utilise le schéma central et équipe l’avatar atomiquement", () => {
   assert.deepEqual(PROFILE_AVATARS, [
     "/a1.webp",
     "/a2.webp",
@@ -102,8 +100,11 @@ test("l’onboarding profil est persistant et limité aux avatars officiels", ()
     require("node:path").join(__dirname, "account-auth.js"),
     "utf8"
   );
-  assert.match(source, /profile_completed boolean NOT NULL DEFAULT false/);
-  assert.match(source, /ADD COLUMN IF NOT EXISTS profile_completed boolean NOT NULL DEFAULT true/);
-  assert.match(source, /ALTER COLUMN profile_completed SET DEFAULT false/);
+
+  assert.doesNotMatch(source, /CREATE TABLE IF NOT EXISTS public\.ptitbac_accounts/);
+  assert.doesNotMatch(source, /CREATE TABLE IF NOT EXISTS public\.ptitbac_auth_sessions/);
   assert.match(source, /async function completeProfile/);
+  assert.match(source, /INSERT INTO public\.ptitbac_inventory_equipped/);
+  assert.match(source, /ON CONFLICT\(wallet_token\) DO UPDATE/);
+  assert.match(source, /SET profile_completed=true/);
 });

@@ -506,32 +506,11 @@
     setBusy(true);
     setMessage("Création de ton profil…");
 
-    const profileResult = await emitAck("friends:bootstrap", {
-      walletToken,
-      username:name,
-      avatar
-    }, 12000);
-
-    if (!profileResult?.ok) {
-      setBusy(false);
-      setMessage(profileResult?.error || "Impossible d’enregistrer ton profil.", "error");
-      return;
-    }
-
-    const inventoryResult = await emitAck("inventory:equip", {
-      walletToken,
-      type:"avatar",
-      id:avatar
-    }, 12000);
-
-    if (!inventoryResult?.ok) {
-      setBusy(false);
-      setMessage(inventoryResult?.error || "Impossible d’équiper cet avatar.", "error");
-      return;
-    }
+    let profileResult = null;
+    let completionResult = null;
 
     if (accountState?.userId) {
-      const completionResult = await emitAck("auth:completeProfile", {
+      completionResult = await emitAck("auth:completeProfile", {
         username:name,
         avatar
       }, 12000);
@@ -539,6 +518,42 @@
       if (!completionResult?.ok) {
         setBusy(false);
         setMessage(completionResult?.error || "Impossible de finaliser ton profil.", "error");
+        return;
+      }
+
+      // Le profil du compte, l'avatar équipé et le statut d'onboarding sont
+      // désormais enregistrés atomiquement côté serveur. Le bootstrap amis
+      // ne sert plus qu'à synchroniser la partie sociale et ne peut plus
+      // laisser le compte à moitié configuré en cas d'échec réseau.
+      profileResult = await emitAck("friends:bootstrap", {
+        walletToken,
+        username:name,
+        avatar
+      }, 12000);
+    } else {
+      // Un invité n'a pas de compte permanent : il conserve le flux social +
+      // inventaire historique, qui sont ses seules sources de persistance.
+      profileResult = await emitAck("friends:bootstrap", {
+        walletToken,
+        username:name,
+        avatar
+      }, 12000);
+
+      if (!profileResult?.ok) {
+        setBusy(false);
+        setMessage(profileResult?.error || "Impossible d’enregistrer ton profil.", "error");
+        return;
+      }
+
+      const inventoryResult = await emitAck("inventory:equip", {
+        walletToken,
+        type:"avatar",
+        id:avatar
+      }, 12000);
+
+      if (!inventoryResult?.ok) {
+        setBusy(false);
+        setMessage(inventoryResult?.error || "Impossible d’équiper cet avatar.", "error");
         return;
       }
     }
@@ -554,8 +569,14 @@
       localStorage.setItem("petitbac_profile_icon", avatar);
     }
 
-    if (profileResult.profile?.friendCode) {
-      localStorage.setItem("petitbac_friendCode", String(profileResult.profile.friendCode));
+    const friendCode =
+      profileResult?.profile?.friendCode ||
+      completionResult?.account?.friendCode ||
+      accountState?.friendCode ||
+      "";
+
+    if (friendCode) {
+      localStorage.setItem("petitbac_friendCode", String(friendCode));
     }
 
     if (accountState) {
@@ -563,7 +584,7 @@
         ...accountState,
         username:name,
         avatar,
-        friendCode:profileResult.profile?.friendCode || accountState.friendCode || "",
+        friendCode,
         profileCompleted:true
       };
     }

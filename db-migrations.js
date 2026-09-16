@@ -53,6 +53,46 @@ async function runDatabaseMigrations(pool) {
   await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS admin_ban_reason text`);
   await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS admin_banned_at timestamptz`);
 
+  // Compte permanent + sessions : le schéma est centralisé ici.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.ptitbac_accounts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid UNIQUE NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+      email_normalized text UNIQUE NOT NULL,
+      email_display text NOT NULL,
+      password_hash text NOT NULL,
+      password_salt text NOT NULL,
+      password_version integer NOT NULL DEFAULT 1,
+      profile_completed boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      last_login_at timestamptz
+    )
+  `);
+
+  // Les comptes créés avant l'onboarding profil sont considérés comme déjà
+  // configurés. Les nouveaux comptes conservent ensuite false par défaut.
+  await pool.query(`
+    ALTER TABLE public.ptitbac_accounts
+    ADD COLUMN IF NOT EXISTS profile_completed boolean NOT NULL DEFAULT true
+  `);
+  await pool.query(`
+    ALTER TABLE public.ptitbac_accounts
+    ALTER COLUMN profile_completed SET DEFAULT false
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.ptitbac_auth_sessions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      account_id uuid NOT NULL REFERENCES public.ptitbac_accounts(id) ON DELETE CASCADE,
+      token_hash text UNIQUE NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      last_seen_at timestamptz NOT NULL DEFAULT now(),
+      expires_at timestamptz NOT NULL,
+      revoked_at timestamptz
+    )
+  `);
+
   // Migration sûre de l'ancien public.users.coins vers le portefeuille.
   const legacyCoins = await pool.query(`
     SELECT 1
@@ -393,6 +433,9 @@ async function runDatabaseMigrations(pool) {
   const indexes = [
     `CREATE INDEX IF NOT EXISTS users_wallet_token_idx ON public.users(wallet_token)`,
     `CREATE INDEX IF NOT EXISTS users_friend_code_idx ON public.users(friend_code)`,
+    `CREATE INDEX IF NOT EXISTS ptitbac_accounts_email_idx ON public.ptitbac_accounts(email_normalized)`,
+    `CREATE INDEX IF NOT EXISTS ptitbac_auth_sessions_account_idx ON public.ptitbac_auth_sessions(account_id, expires_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS ptitbac_auth_sessions_token_idx ON public.ptitbac_auth_sessions(token_hash)`,
     `CREATE INDEX IF NOT EXISTS friend_requests_sender_idx ON public.friend_requests(sender_id)`,
     `CREATE INDEX IF NOT EXISTS friend_requests_receiver_idx ON public.friend_requests(receiver_id)`,
     `CREATE INDEX IF NOT EXISTS friendships_user_idx ON public.friendships(user_id)`,
