@@ -10,6 +10,7 @@ const { normalizeFrameId } = require("./frame-sync-server.js");
 const { isEconomyMode, isPublicRoomDiscoverable } = require("./room-mode-rules.js");
 const { createInventoryService, normalizeAvatarId } = require("./inventory-service.js");
 const { createProgressionService } = require("./progression-service.js");
+const { createWalletAtomicService } = require("./wallet-atomic-service.js");
 const { installSocketSecurity } = require("./socket-security.js");
 const {
   shouldRefundEntryOnLeave,
@@ -284,6 +285,10 @@ const progressionService = createProgressionService({
   getPool: () => pgPool,
   ensureSchema: ensureDatabaseSchema
 });
+const walletAtomicService = createWalletAtomicService({
+  getPool: () => pgPool,
+  ensureSchema: ensureDatabaseSchema
+});
 
 function normalizeWalletRecord(wallet) {
   const history = Array.isArray(wallet?.history) ? wallet.history.slice(-100) : [];
@@ -470,6 +475,106 @@ function walletTransaction(token, delta, type, details = {}, idempotencyKey = ""
   persistWallet(token);
   recordEconomyCoinTransaction(token, transaction.type, appliedDelta, details, transaction.idempotencyKey);
   return { balance: after, transaction, duplicate: false };
+}
+
+function syncWalletCacheFromAtomicResult(token, result) {
+  const wallet = wallets.get(token);
+  if (!wallet || !result?.ok) return;
+
+  if (result.wallet) {
+    Object.assign(wallet, normalizeWalletRecord(result.wallet));
+    return;
+  }
+
+  if (Number.isFinite(Number(result.balance))) {
+    wallet.coins = Math.max(0, Math.floor(Number(result.balance)));
+  }
+  if (Number.isFinite(Number(result.gems))) {
+    wallet.gems = Math.max(0, Math.floor(Number(result.gems)));
+  }
+  wallet.updatedAt = Date.now();
+}
+
+async function changeWalletCoinsDurably({
+  walletToken,
+  delta,
+  kind,
+  details = {},
+  idempotencyKey = ""
+} = {}) {
+  const token = String(walletToken || "").trim();
+  const safeDelta = Math.trunc(Number(delta) || 0);
+
+  if (!wallets.has(token)) {
+    return { ok:false, code:"not_found", error:"Portefeuille introuvable." };
+  }
+
+  // L'outil admin de développement garde son comportement historique.
+  if (safeDelta < 0 && global.__ptbInfiniteCoins?.has(token)) {
+    return {
+      ok:true,
+      duplicate:false,
+      infinite:true,
+      balance:999999,
+      gems:wallets.get(token)?.gems ?? 0
+    };
+  }
+
+  // Le stockage JSON local reste utilisable pour le développement hors Render.
+  if (!pgPool) {
+    const before = walletBalance(token);
+    if (safeDelta < 0 && before + safeDelta < 0) {
+      return {
+        ok:false,
+        code:"insufficient",
+        error:"Solde de pièces insuffisant.",
+        balance:before
+      };
+    }
+
+    const legacy = walletTransaction(
+      token,
+      safeDelta,
+      kind,
+      details,
+      idempotencyKey
+    );
+    if (!legacy) {
+      return { ok:false, code:"not_found", error:"Portefeuille introuvable." };
+    }
+    return {
+      ok:true,
+      duplicate:!!legacy.duplicate,
+      balance:legacy.balance,
+      gems:wallets.get(token)?.gems ?? 0,
+      transaction:legacy.transaction
+    };
+  }
+
+  const result = await walletAtomicService.changeCoins({
+    walletToken:token,
+    delta:safeDelta,
+    kind,
+    details,
+    idempotencyKey
+  });
+  syncWalletCacheFromAtomicResult(token, result);
+  return result;
+}
+
+function fallbackRerollRequestId(kind, room, extra = "") {
+  const fingerprint = crypto
+    .createHash("sha256")
+    .update(JSON.stringify([
+      room?.code || "",
+      room?.gameSessionId || "",
+      room?.roundIndex ?? -1,
+      kind,
+      extra
+    ]))
+    .digest("hex")
+    .slice(0, 20);
+  return `${kind}:${fingerprint}`;
 }
 
 function setWalletBalance(token, balance, type = "admin_set", details = {}) {
@@ -3652,30 +3757,95 @@ io.on("connection", socket => {
     });
   });
 
-  socket.on("game:rerollCategories", payload => {
+  socket.on("game:rerollCategories", async payload => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player || room.phase !== "category_selection" || player.id !== room.categoryChooserPlayerId) return;
     if (player.isBot || !player.walletToken) return;
 
-    if (walletBalance(player.walletToken) < CATEGORY_REROLL_COST) {
-      socket.emit("toast", `Il te faut ${CATEGORY_REROLL_COST} pièces pour relancer les catégories.`);
-      emitWallet(player);
-      emitRoom(room);
+    const requestId = String(payload?.requestId || "").trim() ||
+      fallbackRerollRequestId("category-reroll", room, room.categories);
+
+    if (room.categoryRerollPending && room.categoryRerollPending !== requestId) {
       return;
     }
+    room.categoryRerollPending = requestId;
 
-    walletTransaction(player.walletToken, -CATEGORY_REROLL_COST, "CATEGORY_REROLL", {
-      roomCode: room.code,
-      note: `Relance des catégories (-${CATEGORY_REROLL_COST})`
-    });
-    emitWallet(player);
-    room.categories = pickCategories(room.categoryDifficulty || "beginner", room.categoryCount || 6);
-    emitRoom(room);
+    try {
+      const debit = await changeWalletCoinsDurably({
+        walletToken:player.walletToken,
+        delta:-CATEGORY_REROLL_COST,
+        kind:"CATEGORY_REROLL",
+        details:{
+          roomCode:room.code,
+          note:`Relance des catégories (-${CATEGORY_REROLL_COST})`
+        },
+        idempotencyKey:requestId
+      });
+
+      emitWallet(player);
+
+      if (!debit?.ok) {
+        if (debit?.code === "insufficient") {
+          socket.emit("toast", `Il te faut ${CATEGORY_REROLL_COST} pièces pour relancer les catégories.`);
+        } else {
+          socket.emit("toast", debit?.error || "Impossible de relancer les catégories pour le moment.");
+        }
+        emitRoom(room);
+        return;
+      }
+
+      // Un retry du même paquet ne doit ni redébiter ni effectuer un second tirage.
+      if (debit.duplicate) {
+        emitRoom(room);
+        return;
+      }
+
+      const current = rooms.get(room.code);
+      if (
+        current !== room ||
+        room.phase !== "category_selection" ||
+        player.id !== room.categoryChooserPlayerId ||
+        !room.players.includes(player)
+      ) {
+        // Le débit a été validé mais l'état du salon a changé entre-temps :
+        // rendre automatiquement les pièces, une seule fois.
+        if (!debit.infinite) {
+          await changeWalletCoinsDurably({
+            walletToken:player.walletToken,
+            delta:CATEGORY_REROLL_COST,
+            kind:"CATEGORY_REROLL_REFUND",
+            details:{
+              roomCode:room.code,
+              note:`Relance catégories annulée (+${CATEGORY_REROLL_COST})`
+            },
+            idempotencyKey:`refund:${requestId}`
+          });
+          emitWallet(player);
+        }
+        return;
+      }
+
+      room.categories = pickCategories(
+        room.categoryDifficulty || "beginner",
+        room.categoryCount || 6
+      );
+      emitRoom(room);
+    } catch (err) {
+      console.error("Relance catégories atomique:", err.message);
+      socket.emit("toast", "Impossible de relancer les catégories pour le moment.");
+      emitWallet(player);
+      emitRoom(room);
+    } finally {
+      if (room.categoryRerollPending === requestId) {
+        room.categoryRerollPending = "";
+      }
+    }
   });
 
   socket.on("game:confirmCategories", payload => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player || room.phase !== "category_selection" || player.id !== room.categoryChooserPlayerId) return;
+    if (room.categoryRerollPending) return;
     prepareLetterSelection(room);
   });
 
@@ -3688,28 +3858,98 @@ io.on("connection", socket => {
     emitRoom(room);
   });
 
-  socket.on("game:rerollLetter", payload => {
+  socket.on("game:rerollLetter", async payload => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player || room.phase !== "letter_selection") return;
     if (player.id !== room.letterChooserPlayerId || !room.pendingLetter) return;
     if (player.isBot || !player.walletToken) return;
-    if (walletBalance(player.walletToken) < LETTER_REROLL_COST) {
-      return socket.emit("toast", `Il te faut ${LETTER_REROLL_COST} pièces pour relancer la roue.`);
-    }
 
-    walletTransaction(player.walletToken, -LETTER_REROLL_COST, "LETTER_REROLL", {
-      roomCode: room.code,
-      note: `Relance de la lettre (-${LETTER_REROLL_COST})`
-    });
-    emitWallet(player);
-    spinLetter(room, room.pendingLetter);
-    emitRoom(room);
+    const pendingLetterAtRequest = room.pendingLetter;
+    const requestId = String(payload?.requestId || "").trim() ||
+      fallbackRerollRequestId(
+        "letter-reroll",
+        room,
+        `${room.letterSpinVersion || 0}:${pendingLetterAtRequest}`
+      );
+
+    if (room.letterRerollPending && room.letterRerollPending !== requestId) {
+      return;
+    }
+    room.letterRerollPending = requestId;
+
+    try {
+      const debit = await changeWalletCoinsDurably({
+        walletToken:player.walletToken,
+        delta:-LETTER_REROLL_COST,
+        kind:"LETTER_REROLL",
+        details:{
+          roomCode:room.code,
+          note:`Relance de la lettre (-${LETTER_REROLL_COST})`
+        },
+        idempotencyKey:requestId
+      });
+
+      emitWallet(player);
+
+      if (!debit?.ok) {
+        if (debit?.code === "insufficient") {
+          socket.emit("toast", `Il te faut ${LETTER_REROLL_COST} pièces pour relancer la roue.`);
+        } else {
+          socket.emit("toast", debit?.error || "Impossible de relancer la roue pour le moment.");
+        }
+        emitRoom(room);
+        return;
+      }
+
+      // Une répétition du même requestId resynchronise uniquement l'état.
+      if (debit.duplicate) {
+        emitRoom(room);
+        return;
+      }
+
+      const current = rooms.get(room.code);
+      if (
+        current !== room ||
+        room.phase !== "letter_selection" ||
+        player.id !== room.letterChooserPlayerId ||
+        room.pendingLetter !== pendingLetterAtRequest ||
+        !room.players.includes(player)
+      ) {
+        if (!debit.infinite) {
+          await changeWalletCoinsDurably({
+            walletToken:player.walletToken,
+            delta:LETTER_REROLL_COST,
+            kind:"LETTER_REROLL_REFUND",
+            details:{
+              roomCode:room.code,
+              note:`Relance lettre annulée (+${LETTER_REROLL_COST})`
+            },
+            idempotencyKey:`refund:${requestId}`
+          });
+          emitWallet(player);
+        }
+        return;
+      }
+
+      spinLetter(room, pendingLetterAtRequest);
+      emitRoom(room);
+    } catch (err) {
+      console.error("Relance lettre atomique:", err.message);
+      socket.emit("toast", "Impossible de relancer la roue pour le moment.");
+      emitWallet(player);
+      emitRoom(room);
+    } finally {
+      if (room.letterRerollPending === requestId) {
+        room.letterRerollPending = "";
+      }
+    }
   });
 
   socket.on("game:confirmLetter", payload => {
     const { room, player } = requireMember(socket, payload);
     if (!room || !player || room.phase !== "letter_selection") return;
     if (player.id !== room.letterChooserPlayerId || !room.pendingLetter) return;
+    if (room.letterRerollPending) return;
 
     const nextRoundIndex = room.roundIndex + 1;
     room.letters[nextRoundIndex] = room.pendingLetter;

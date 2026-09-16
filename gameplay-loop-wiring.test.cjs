@@ -359,3 +359,50 @@ test("une relance non confirmée garde la même clé jusqu’au nouvel état", (
   );
 });
 
+
+test("le serveur branche les relances payantes sur le portefeuille atomique", () => {
+  const server = source("server.js");
+
+  assert.match(
+    server,
+    /createWalletAtomicService[^\n]*require\("\.\/wallet-atomic-service\.js"\)/
+  );
+  assert.match(server, /const walletAtomicService = createWalletAtomicService\(/);
+  assert.match(server, /async function changeWalletCoinsDurably\(/);
+
+  const categories = server.match(
+    /socket\.on\("game:rerollCategories", async payload => \{([\s\S]*?)\n  \}\);\n\n  socket\.on\("game:confirmCategories"/
+  )?.[1] || "";
+  assert.match(categories, /payload\?\.requestId/);
+  assert.match(categories, /changeWalletCoinsDurably\(\{/);
+  assert.match(categories, /kind:"CATEGORY_REROLL"/);
+  assert.match(categories, /idempotencyKey:requestId/);
+  assert.match(categories, /if \(debit\.duplicate\)/);
+  assert.match(categories, /CATEGORY_REROLL_REFUND/);
+  assert.doesNotMatch(categories, /walletTransaction\(/);
+
+  const letter = server.match(
+    /socket\.on\("game:rerollLetter", async payload => \{([\s\S]*?)\n  \}\);\n\n  socket\.on\("game:confirmLetter"/
+  )?.[1] || "";
+  assert.match(letter, /payload\?\.requestId/);
+  assert.match(letter, /changeWalletCoinsDurably\(\{/);
+  assert.match(letter, /kind:"LETTER_REROLL"/);
+  assert.match(letter, /idempotencyKey:requestId/);
+  assert.match(letter, /if \(debit\.duplicate\)/);
+  assert.match(letter, /LETTER_REROLL_REFUND/);
+  assert.doesNotMatch(letter, /walletTransaction\(/);
+});
+
+test("la validation d'un tirage attend la fin du débit atomique", () => {
+  const server = source("server.js");
+
+  const confirmCategories = server.match(
+    /socket\.on\("game:confirmCategories", payload => \{([\s\S]*?)\n  \}\);/
+  )?.[1] || "";
+  assert.match(confirmCategories, /room\.categoryRerollPending/);
+
+  const confirmLetter = server.match(
+    /socket\.on\("game:confirmLetter", payload => \{([\s\S]*?)\n  \}\);/
+  )?.[1] || "";
+  assert.match(confirmLetter, /room\.letterRerollPending/);
+});
