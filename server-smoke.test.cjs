@@ -71,6 +71,93 @@ async function stopChild(child) {
   }
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function emitAck(socket, event, payload = {}, timeoutMs = 5_000) {
+  return new Promise((resolve, reject) => {
+    socket.timeout(timeoutMs).emit(event, payload, (error, response) => {
+      if (error) return reject(error);
+      resolve(response || {});
+    });
+  });
+}
+
+function waitForEvent(socket, event, predicate = () => true, timeoutMs = 6_000) {
+  return new Promise((resolve, reject) => {
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      socket.off(event, handler);
+    };
+
+    const handler = payload => {
+      let matches = false;
+      try {
+        matches = !!predicate(payload);
+      } catch (error) {
+        cleanup();
+        reject(error);
+        return;
+      }
+      if (!matches) return;
+      cleanup();
+      resolve(payload);
+    };
+
+    socket.on(event, handler);
+    timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timeout en attente de ${event}.`));
+    }, timeoutMs);
+  });
+}
+
+function trackRoomState(socket) {
+  let latest = null;
+  const handler = state => {
+    latest = state;
+  };
+  socket.on("room:state", handler);
+
+  return {
+    latest: () => latest,
+    stop: () => socket.off("room:state", handler)
+  };
+}
+
+async function connectGameClient(baseUrl) {
+  const { io } = require("socket.io-client");
+
+  return await new Promise((resolve, reject) => {
+    const socket = io(baseUrl, {
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: false,
+      timeout: 5_000
+    });
+
+    const timer = setTimeout(() => {
+      socket.close();
+      reject(new Error("Timeout de connexion Socket.IO."));
+    }, 6_000);
+
+    socket.once("connect", () => {
+      clearTimeout(timer);
+      resolve(socket);
+    });
+
+    socket.once("connect_error", error => {
+      clearTimeout(timer);
+      socket.close();
+      reject(error);
+    });
+  });
+}
+
+
 test(
   "le serveur démarre et répond sur /health",
   { timeout: 20_000 },
@@ -199,3 +286,349 @@ test(
     );
   }
 );
+
+
+test(
+  "deux joueurs terminent une partie avec relance idempotente et reconnexion",
+  { timeout: 38_000 },
+  async () => {
+    const port = await freePort();
+    const tempDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "ptitbac-e2e-")
+    );
+    const walletFile = path.join(tempDir, "wallets.json");
+
+    const child = spawn(
+      process.execPath,
+      ["server.js"],
+      {
+        cwd: __dirname,
+        env: {
+          ...process.env,
+          PORT: String(port),
+          DATABASE_URL: "",
+          OPENAI_API_KEY: "",
+          OPENAI_BOT_API_KEY: "",
+          BOT_AI_ENABLED: "false",
+          RENDER: "false",
+          PTITBAC_WALLET_FILE: walletFile
+        },
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+
+    let stdout = "";
+    let stderr = "";
+    let alice = null;
+    let bob = null;
+    let bobReconnect = null;
+    let aliceTracker = null;
+    let bobTracker = null;
+    let bobReconnectTracker = null;
+
+    child.stdout.on("data", chunk => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", chunk => {
+      stderr += chunk.toString();
+    });
+
+    const baseUrl = `http://127.0.0.1:${port}`;
+
+    try {
+      await waitForHealth(`${baseUrl}/health`, child);
+
+      alice = await connectGameClient(baseUrl);
+      bob = await connectGameClient(baseUrl);
+      aliceTracker = trackRoomState(alice);
+      bobTracker = trackRoomState(bob);
+
+      const aliceWallet = await emitAck(alice, "wallet:init", { token:"" });
+      const bobWallet = await emitAck(bob, "wallet:init", { token:"" });
+
+      assert.equal(aliceWallet.ok, true);
+      assert.equal(bobWallet.ok, true);
+      assert.match(aliceWallet.token, /^[a-f0-9]{48}$/i);
+      assert.match(bobWallet.token, /^[a-f0-9]{48}$/i);
+      assert.equal(aliceWallet.balance, 25);
+      assert.equal(bobWallet.balance, 25);
+      assert.notEqual(aliceWallet.token, bobWallet.token);
+
+      const created = await emitAck(alice, "room:create", {
+        name:"Alice",
+        rounds:1,
+        duration:30,
+        categoryCount:6,
+        categoryDifficulty:"beginner",
+        avatar:"/a1.webp",
+        walletToken:aliceWallet.token
+      });
+
+      assert.equal(created.ok, true);
+      assert.match(created.code, /^[A-Z0-9]+$/);
+      assert.ok(created.playerId);
+      assert.equal(created.state?.phase, "lobby");
+
+      const joined = await emitAck(bob, "room:join", {
+        code:created.code,
+        name:"Bob",
+        avatar:"/a2.webp",
+        walletToken:bobWallet.token
+      });
+
+      assert.equal(joined.ok, true);
+      assert.ok(joined.playerId);
+      assert.equal(joined.state?.players?.length, 2);
+
+      const readyAlice = await emitAck(alice, "lobby:setReady", {
+        code:created.code,
+        playerId:created.playerId,
+        ready:true
+      });
+      const readyBob = await emitAck(bob, "lobby:setReady", {
+        code:created.code,
+        playerId:joined.playerId,
+        ready:true
+      });
+
+      assert.equal(readyAlice.ok, true);
+      assert.equal(readyBob.ok, true);
+
+      const categorySelectionPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "category_selection",
+        8_000
+      );
+
+      const countdown = await emitAck(alice, "lobby:startCountdown", {
+        code:created.code,
+        playerId:created.playerId
+      });
+      assert.equal(countdown.ok, true);
+
+      const categoryState = await categorySelectionPromise;
+      assert.ok(categoryState.categoryChooserPlayerId);
+      assert.equal(categoryState.categories?.length, 6);
+
+      const chooserIsAlice =
+        categoryState.categoryChooserPlayerId === created.playerId;
+      const categoryChooser = chooserIsAlice ? alice : bob;
+      const categoryChooserToken = chooserIsAlice
+        ? aliceWallet.token
+        : bobWallet.token;
+      const categoryChooserPlayerId = categoryState.categoryChooserPlayerId;
+
+      const beforeReroll = await emitAck(categoryChooser, "economy:get", {
+        walletToken:categoryChooserToken
+      });
+      assert.equal(beforeReroll.ok, true);
+      assert.equal(beforeReroll.coins, 25);
+
+      const requestId = "e2e-category-reroll-0001";
+      const paidUpdatePromise = waitForEvent(
+        categoryChooser,
+        "wallet:update",
+        payload => Number(payload?.balance) === 5,
+        5_000
+      );
+      const rerolledStatePromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code &&
+          state?.phase === "category_selection" &&
+          state?.categoryChooserPlayerId === categoryChooserPlayerId,
+        5_000
+      );
+
+      categoryChooser.emit("game:rerollCategories", {
+        code:created.code,
+        playerId:categoryChooserPlayerId,
+        requestId
+      });
+
+      await paidUpdatePromise;
+      const rerolledState = await rerolledStatePromise;
+      const categoriesAfterFirstReroll = [...(rerolledState.categories || [])];
+
+      // Même identifiant réseau : ni second débit ni second tirage.
+      categoryChooser.emit("game:rerollCategories", {
+        code:created.code,
+        playerId:categoryChooserPlayerId,
+        requestId
+      });
+      await sleep(250);
+
+      const afterDuplicate = await emitAck(categoryChooser, "economy:get", {
+        walletToken:categoryChooserToken
+      });
+      assert.equal(afterDuplicate.ok, true);
+      assert.equal(afterDuplicate.coins, 5);
+      assert.deepEqual(
+        aliceTracker.latest()?.categories,
+        categoriesAfterFirstReroll
+      );
+
+      const letterSelectionPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "letter_selection",
+        5_000
+      );
+      categoryChooser.emit("game:confirmCategories", {
+        code:created.code,
+        playerId:categoryChooserPlayerId
+      });
+      const letterState = await letterSelectionPromise;
+
+      assert.ok(letterState.letterChooserPlayerId);
+      const letterChooser =
+        letterState.letterChooserPlayerId === created.playerId
+          ? alice
+          : bob;
+
+      const spunPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code &&
+          state?.phase === "letter_selection" &&
+          /^[A-Z]$/.test(String(state?.pendingLetter || "")),
+        5_000
+      );
+      letterChooser.emit("game:spinLetter", {
+        code:created.code,
+        playerId:letterState.letterChooserPlayerId
+      });
+      const spunState = await spunPromise;
+      assert.match(spunState.pendingLetter, /^[A-Z]$/);
+
+      const roundPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "round",
+        5_000
+      );
+      letterChooser.emit("game:confirmLetter", {
+        code:created.code,
+        playerId:letterState.letterChooserPlayerId
+      });
+      const roundState = await roundPromise;
+
+      assert.equal(roundState.roundIndex, 0);
+      assert.ok(Number(roundState.roundStartsAt) > 0);
+      assert.equal(roundState.currentLetter, spunState.pendingLetter);
+
+      const waitUntilRound = Math.max(
+        0,
+        Number(roundState.roundStartsAt) - Date.now() + 120
+      );
+      if (waitUntilRound) await sleep(waitUntilRound);
+
+      const scoreboardPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "scoreboard",
+        5_000
+      );
+      alice.emit("round:submit", {
+        code:created.code,
+        playerId:created.playerId
+      });
+      bob.emit("round:submit", {
+        code:created.code,
+        playerId:joined.playerId
+      });
+      const scoreboard = await scoreboardPromise;
+
+      assert.equal(scoreboard.roundIndex, 0);
+      assert.equal(scoreboard.players.length, 2);
+      assert.ok(scoreboard.lastRoundResults);
+
+      // Bob perd sa socket puis reprend exactement le même joueur/wallet.
+      bobTracker.stop();
+      bob.close();
+      bob = null;
+      await sleep(120);
+
+      bobReconnect = await connectGameClient(baseUrl);
+      bobReconnectTracker = trackRoomState(bobReconnect);
+
+      const restoredWallet = await emitAck(bobReconnect, "wallet:init", {
+        token:bobWallet.token
+      });
+      assert.equal(restoredWallet.ok, true);
+      assert.equal(restoredWallet.token, bobWallet.token);
+
+      const reconnected = await emitAck(bobReconnect, "room:reconnect", {
+        code:created.code,
+        playerId:joined.playerId,
+        walletToken:bobWallet.token,
+        frameId:"",
+        tagId:""
+      });
+
+      assert.equal(reconnected.ok, true);
+      assert.equal(reconnected.state?.phase, "scoreboard");
+      assert.equal(
+        reconnected.state?.players?.find(p => p.id === joined.playerId)?.connected,
+        true
+      );
+
+      const aliceFinishedPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "finished",
+        5_000
+      );
+      const bobFinishedPromise = waitForEvent(
+        bobReconnect,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "finished",
+        5_000
+      );
+
+      alice.emit("game:nextRound", {
+        code:created.code,
+        playerId:created.playerId
+      });
+
+      const [aliceFinished, bobFinished] = await Promise.all([
+        aliceFinishedPromise,
+        bobFinishedPromise
+      ]);
+
+      assert.equal(aliceFinished.phase, "finished");
+      assert.equal(bobFinished.phase, "finished");
+      assert.equal(bobReconnectTracker.latest()?.phase, "finished");
+
+      const aliceLeave = await emitAck(alice, "room:leave", {
+        code:created.code,
+        playerId:created.playerId
+      });
+      assert.equal(aliceLeave.ok, true);
+
+      const bobLeave = await emitAck(bobReconnect, "room:leave", {
+        code:created.code,
+        playerId:joined.playerId
+      });
+      assert.equal(bobLeave.ok, true);
+    } catch (error) {
+      throw new Error(
+        `${error.message}\n--- stdout ---\n${stdout}\n--- stderr ---\n${stderr}`
+      );
+    } finally {
+      aliceTracker?.stop();
+      bobTracker?.stop();
+      bobReconnectTracker?.stop();
+      alice?.close();
+      bob?.close();
+      bobReconnect?.close();
+      await stopChild(child);
+      fs.rmSync(tempDir, {
+        recursive:true,
+        force:true
+      });
+    }
+  }
+);
+
