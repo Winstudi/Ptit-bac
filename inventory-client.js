@@ -272,7 +272,6 @@
 
           <section class="inventory-v2-section inventory-v2-avatars">
             <header class="inventory-v2-section-head">
-              <span class="inventory-v2-section-icon"><img src="/profile-icon.png" alt=""></span>
               <div>
                 <h2>Avatars</h2>
                 <p>Choisis ton avatar</p>
@@ -302,7 +301,6 @@
 
           <section class="inventory-v2-section inventory-v2-frames">
             <header class="inventory-v2-section-head">
-              <span class="inventory-v2-section-icon"><img src="/inventaire.png" alt=""></span>
               <div>
                 <h2>Cadres</h2>
                 <p>Habille ton avatar</p>
@@ -349,10 +347,9 @@
 
           <section class="inventory-v2-section inventory-v2-tags">
             <header class="inventory-v2-section-head">
-              <span class="inventory-v2-section-icon"><img src="/rewards.png" alt=""></span>
               <div>
-                <h2>Tags</h2>
-                <p>Affiche un tag sur ton profil</p>
+                <h2>Titre</h2>
+                <p>Affiche un titre sur ton profil</p>
               </div>
               <small>${ownedLabel(state.owned.tags.length)}</small>
               ${chevronIcon()}
@@ -366,7 +363,7 @@
                 data-inventory-id=""
                 aria-pressed="${state.equipped.tag === ""}"
               >
-                <span>Aucun tag</span>
+                <span>Aucun titre</span>
                 <i class="inventory-v2-check" aria-hidden="true">✓</i>
               </button>
 
