@@ -609,7 +609,7 @@
 
       html body .pl-private .pl-grid {
         grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-        grid-template-rows:repeat(3,minmax(88px,1fr)) !important;
+        grid-template-rows:repeat(3,minmax(96px,1fr)) !important;
         gap:8px !important;
         overflow:visible !important;
       }
@@ -617,18 +617,18 @@
       html body .pl-private .pl-player,
       html body .pl-private .pl-empty {
         min-width:0;
-        min-height:88px !important;
+        min-height:96px !important;
         height:100%;
         border-radius:15px !important;
       }
 
       html body .pl-private .pl-player {
         position:relative;
-        padding:7px 8px !important;
+        padding:8px 9px !important;
         display:grid !important;
-        grid-template-columns:clamp(56px,15vw,66px) minmax(0,1fr) !important;
+        grid-template-columns:clamp(66px,18vw,78px) minmax(0,1fr) !important;
         align-items:center !important;
-        gap:8px !important;
+        gap:10px !important;
         overflow:visible;
         border:1px solid #405b91 !important;
         background:
@@ -640,10 +640,10 @@
 
       html body .pl-private .pl-player.is-host,
       html body .pl-private .pl-player.is-self {
-        border-color:#b14cff !important;
+        border-color:rgba(177,76,255,.50) !important;
         box-shadow:
-          inset 0 0 20px rgba(138,62,255,.10),
-          0 0 11px rgba(166,54,255,.24);
+          inset 0 0 20px rgba(138,62,255,.08),
+          0 0 11px rgba(166,54,255,.16);
       }
 
       html body .pl-private .pl-player.is-host::after {
@@ -663,8 +663,8 @@
 
       html body .pl-private .pl-avatar-shell {
         position:relative;
-        width:clamp(56px,15vw,66px);
-        height:clamp(56px,15vw,66px);
+        width:clamp(66px,18vw,78px);
+        height:clamp(66px,18vw,78px);
         display:grid;
         place-items:center;
         overflow:visible;
@@ -746,9 +746,19 @@
         gap:3px;
       }
 
-      html body .pl-private .pl-player-copy > strong {
-        display:block;
+      html body .pl-private .pl-player-head {
         width:100%;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+      }
+
+      html body .pl-private .pl-player-copy > strong,
+      html body .pl-private .pl-player-head > strong {
+        display:block;
+        min-width:0;
+        flex:1 1 auto;
         overflow:hidden;
         text-overflow:ellipsis;
         white-space:nowrap;
@@ -821,11 +831,13 @@
         margin-top:0;
         display:inline-flex;
         align-items:center;
+        justify-content:flex-end;
         gap:4px;
         color:#aab7d9 !important;
         font-size:9px !important;
         line-height:1.1;
         white-space:nowrap;
+        flex:none;
       }
 
       html body .pl-private .pl-status i {
@@ -990,14 +1002,14 @@
         }
 
         html body .pl-private .pl-player {
-          grid-template-columns:52px minmax(0,1fr) !important;
+          grid-template-columns:58px minmax(0,1fr) !important;
           padding:6px !important;
           gap:6px !important;
         }
 
         html body .pl-private .pl-avatar-shell {
-          width:52px;
-          height:52px;
+          width:58px;
+          height:58px;
         }
 
         html body .pl-private .pl-player-copy > strong {
@@ -1026,7 +1038,7 @@
         }
 
         html body .pl-private .pl-grid {
-          grid-template-rows:repeat(3,minmax(73px,1fr)) !important;
+          grid-template-rows:repeat(3,minmax(80px,1fr)) !important;
           gap:6px !important;
           overflow-y:auto !important;
           overscroll-behavior:contain;
@@ -1034,18 +1046,18 @@
 
         html body .pl-private .pl-player,
         html body .pl-private .pl-empty {
-          min-height:73px !important;
+          min-height:80px !important;
         }
 
         html body .pl-private .pl-player {
-          grid-template-columns:48px minmax(0,1fr) !important;
+          grid-template-columns:54px minmax(0,1fr) !important;
           padding:5px 6px !important;
           gap:6px !important;
         }
 
         html body .pl-private .pl-avatar-shell {
-          width:48px;
-          height:48px;
+          width:54px;
+          height:54px;
         }
 
         html body .pl-private .pl-player-copy {
@@ -1123,20 +1135,19 @@
           </div>
 
           <div class="pl-player-copy">
-            <strong>${escapeHtml(player.name || "Joueur")}</strong>
-
-            <div class="pl-tags">
-              ${player.isHost ? '<span class="is-host">♛ Hôte</span>' : ""}
-              ${self ? '<span>Toi</span>' : ""}
-              ${player.isBot ? '<span>Bot</span>' : ""}
+            <div class="pl-player-head">
+              <strong>${escapeHtml(player.name || "Joueur")}</strong>
+              <small class="pl-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
+                <i aria-hidden="true"></i>
+                ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
+              </small>
             </div>
 
             ${privateLobbyTagMarkup(player)}
 
-            <small class="pl-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
-              <i aria-hidden="true"></i>
-              ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
-            </small>
+            ${player.isBot
+              ? `<div class="pl-tags"><span>Bot</span></div>`
+              : ""}
           </div>
 
           ${canKick
