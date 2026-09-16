@@ -1,0 +1,40 @@
+P'TIT BAC — ADMIN PAGE V2 + ITEMS
+
+Cette mise à jour transforme le menu admin principal en vraie page plein écran.
+Les fenêtres d'activation / feedback restent des modales séparées.
+
+ONGLETS CONSERVÉS / AJOUTÉS
+- Outils
+- Reports
+- Joueurs
+- Messages
+- Items (nouveau)
+
+PAGE ITEMS
+- Tous / Avatars / Cadres / Titres
+- Rareté : Commun / Rare / Épique / Ultra / Exclusif
+- Prix : 0 à 999999
+- Monnaie : Pièces ou Gemmes
+- Explication des moyens d'obtention selon la rareté
+- Aucun bouton « Ajouter à la boutique »
+- Les items eux-mêmes restent ajoutés par code dans inventory-service.js
+
+RARETÉS
+- Commun : Boutique + Coffres
+- Rare : Boutique + Coffres, plus rare
+- Épique : Boutique + Coffres, très rare
+- Ultra : Boutique + Coffres, super rare
+- Exclusif : Boutique + Niveaux + Voie des trophées, jamais dans les coffres
+
+INSTALLATION
+1. Mets apply-admin-page-v2.cjs à la racine du dépôt P'tit Bac.
+2. Lance : node apply-admin-page-v2.cjs
+3. Le script modifie uniquement ces fichiers existants :
+   - admin-v1.js
+   - admin-v1.css
+   - admin-hook.js
+   - db-migrations.js
+   - db-migrations.test.cjs
+4. Le script vérifie la syntaxe JS et exécute db-migrations.test.cjs.
+5. Si une étape échoue, il restaure automatiquement les fichiers d'origine.
+6. Si tout passe, supprime apply-admin-page-v2.cjs puis commit/push uniquement les 5 fichiers modifiés.
