@@ -526,7 +526,7 @@
     style.id = "ptbPrivateLobbyV2Styles";
     style.textContent = `
       /* =====================================================
-         Salon privé/public V2 — identité joueur mise en avant
+         Salon privé/public V2 — identité joueur mise en avant — avatar x1,6
          Styles volontairement scopés à .pl-private.
          ===================================================== */
       html body .pl-private {
@@ -609,7 +609,7 @@
 
       html body .pl-private .pl-grid {
         grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-        grid-template-rows:repeat(3,minmax(96px,1fr)) !important;
+        grid-template-rows:repeat(3,minmax(132px,1fr)) !important;
         gap:8px !important;
         overflow:visible !important;
       }
@@ -617,7 +617,7 @@
       html body .pl-private .pl-player,
       html body .pl-private .pl-empty {
         min-width:0;
-        min-height:96px !important;
+        min-height:132px !important;
         height:100%;
         border-radius:15px !important;
       }
@@ -626,7 +626,7 @@
         position:relative;
         padding:8px 9px !important;
         display:grid !important;
-        grid-template-columns:clamp(66px,18vw,78px) minmax(0,1fr) !important;
+        grid-template-columns:clamp(106px,28vw,124px) minmax(0,1fr) !important;
         align-items:center !important;
         gap:10px !important;
         overflow:visible;
@@ -663,8 +663,8 @@
 
       html body .pl-private .pl-avatar-shell {
         position:relative;
-        width:clamp(66px,18vw,78px);
-        height:clamp(66px,18vw,78px);
+        width:clamp(106px,28vw,124px);
+        height:clamp(106px,28vw,124px);
         display:grid;
         place-items:center;
         overflow:visible;
@@ -703,16 +703,16 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
-        width:92% !important;
-        height:92% !important;
-        max-width:92% !important;
-        max-height:92% !important;
+        width:100% !important;
+        height:100% !important;
+        max-width:100% !important;
+        max-height:100% !important;
         border-radius:0 !important;
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:132% !important;
-        height:132% !important;
+        width:138% !important;
+        height:138% !important;
       }
 
       html body .pl-private .pl-avatar-role-crown {
@@ -1002,14 +1002,14 @@
         }
 
         html body .pl-private .pl-player {
-          grid-template-columns:58px minmax(0,1fr) !important;
+          grid-template-columns:92px minmax(0,1fr) !important;
           padding:6px !important;
           gap:6px !important;
         }
 
         html body .pl-private .pl-avatar-shell {
-          width:58px;
-          height:58px;
+          width:92px;
+          height:92px;
         }
 
         html body .pl-private .pl-player-copy > strong {
@@ -1038,7 +1038,7 @@
         }
 
         html body .pl-private .pl-grid {
-          grid-template-rows:repeat(3,minmax(80px,1fr)) !important;
+          grid-template-rows:repeat(3,minmax(102px,1fr)) !important;
           gap:6px !important;
           overflow-y:auto !important;
           overscroll-behavior:contain;
@@ -1046,18 +1046,18 @@
 
         html body .pl-private .pl-player,
         html body .pl-private .pl-empty {
-          min-height:80px !important;
+          min-height:102px !important;
         }
 
         html body .pl-private .pl-player {
-          grid-template-columns:54px minmax(0,1fr) !important;
+          grid-template-columns:86px minmax(0,1fr) !important;
           padding:5px 6px !important;
           gap:6px !important;
         }
 
         html body .pl-private .pl-avatar-shell {
-          width:54px;
-          height:54px;
+          width:86px;
+          height:86px;
         }
 
         html body .pl-private .pl-player-copy {
