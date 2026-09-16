@@ -111,3 +111,35 @@ test("une réponse encore incertaine après seconde vérification reste neutre",
   assert.match(automatic, /validation\.neutralCategories = \[\.\.\.neutralCategories\]/);
   assert.match(automatic, /if \(validation\.status === "complete"\) return;/);
 });
+
+test("une nouvelle partie libère automatiquement l’ancien salon du même profil", () => {
+  const server = source("server.js");
+  const cleanup = server.match(
+    /async function ptitBacReleaseRoomsBeforeNewSession\([\s\S]*?\n\}\n\nfunction hasActiveRoom/
+  )?.[0] || "";
+
+  assert.match(cleanup, /room\.phase !== "finished"/);
+  assert.match(cleanup, /io\.sockets\.sockets\.get\(player\.socketId\)/);
+  assert.match(cleanup, /player\.socketId = socket\.id/);
+  assert.match(cleanup, /ptitBacHandleExplicitLeave/);
+  assert.match(cleanup, /queueRoomPersist\(room, 0\)/);
+
+  const quick = server.match(
+    /async eligible\(socket, profile\) \{([\s\S]*?)\n  \},\n  admit/
+  )?.[1] || "";
+  assert.match(quick, /ptitBacReleaseRoomsBeforeNewSession/);
+  assert.match(quick, /if \(!release\.ok\) throw new Error\(release\.error\)/);
+
+  const create = server.match(
+    /socket\.on\("room:create", async \(payload = \{\}, cb = \(\) => \{\}\) => \{([\s\S]*?)\n  \}\);/
+  )?.[1] || "";
+  assert.match(create, /ptitBacReleaseRoomsBeforeNewSession/);
+  assert.match(create, /createGameRoom\(socket, payload, cb\)/);
+
+  const join = server.match(
+    /socket\.on\("room:join", async \(payload = \{\}, cb = \(\) => \{\}\) => \{([\s\S]*?)\n  \}\);/
+  )?.[1] || "";
+  assert.match(join, /ptitBacReleaseRoomsBeforeNewSession/);
+  assert.match(join, /joinGameRoom\(socket, payload, cb\)/);
+});
+

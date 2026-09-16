@@ -3394,6 +3394,113 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
   });
 }
 
+async function ptitBacReleaseRoomsBeforeNewSession(socket, token) {
+  const safeToken = String(token || "").trim();
+  if (!/^[a-f0-9]{48}$/i.test(safeToken)) {
+    return { ok:true, released:0 };
+  }
+
+  const memberships = [...rooms.values()]
+    .filter(room => room.phase !== "finished")
+    .map(room => ({
+      room,
+      player:room.players.find(
+        candidate =>
+          !candidate.isBot &&
+          candidate.walletToken === safeToken
+      )
+    }))
+    .filter(entry => entry.player);
+
+  // Ne jamais expulser silencieusement une vraie session encore ouverte
+  // sur un autre onglet/appareil. Les anciennes présences sans socket vivant,
+  // elles, sont considérées comme orphelines et peuvent être nettoyées.
+  const liveElsewhere = memberships.find(({ player }) => {
+    if (!player.socketId || player.socketId === socket.id) return false;
+    return !!io.sockets.sockets.get(player.socketId)?.connected;
+  });
+
+  if (liveElsewhere) {
+    return {
+      ok:false,
+      released:0,
+      error:"Ce profil est déjà dans une partie sur un autre onglet ou appareil."
+    };
+  }
+
+  let released = 0;
+
+  for (const entry of memberships) {
+    const { room, player } = entry;
+    if (rooms.get(room.code) !== room || !room.players.includes(player)) {
+      continue;
+    }
+
+    const claimedGhost = player.socketId !== socket.id;
+    const previousSocketId = player.socketId || null;
+    const previousConnected = !!player.connected;
+
+    // Si l'ancien socket a disparu (rechargement, navigation, crash navigateur),
+    // on rattache brièvement cette présence au socket courant afin de réutiliser
+    // l'unique logique de sortie du jeu. Cela conserve les transferts d'hôte,
+    // remboursements et clôtures de duel déjà gérés par le serveur.
+    if (claimedGhost) {
+      player.socketId = socket.id;
+      player.connected = true;
+      socket.join(room.code);
+      socket.data.code = room.code;
+      socket.data.playerId = player.id;
+    }
+
+    const result = await new Promise(resolve => {
+      let settled = false;
+      const finish = response => {
+        if (settled) return;
+        settled = true;
+        resolve(response || { ok:false });
+      };
+
+      Promise.resolve(
+        ptitBacHandleExplicitLeave(
+          socket,
+          { code:room.code, playerId:player.id },
+          finish
+        )
+      ).catch(err => {
+        console.error("Nettoyage ancien salon:", err.message);
+        finish({
+          ok:false,
+          error:"Impossible de quitter l’ancienne partie."
+        });
+      });
+    });
+
+    if (!result?.ok) {
+      // Si on avait seulement récupéré une présence orpheline et que la sortie
+      // a été refusée (par exemple pendant un lancement atomique), remettre
+      // exactement son état précédent avant de rendre l'erreur au client.
+      if (claimedGhost && room.players.includes(player)) {
+        player.socketId = previousSocketId;
+        player.connected = previousConnected;
+        try { socket.leave(room.code); } catch {}
+        if (socket.data?.code === room.code) socket.data.code = "";
+        if (socket.data?.playerId === player.id) socket.data.playerId = "";
+        queueRoomPersist(room, 0);
+      }
+
+      return {
+        ok:false,
+        released,
+        error:result?.error || "Impossible de quitter l’ancienne partie."
+      };
+    }
+
+    released += 1;
+  }
+
+  return { ok:true, released };
+}
+
 function hasActiveRoom(token) {
   return [...rooms.values()].some(room => room.phase !== "finished" && room.players.some(p => p.walletToken === token));
 }
@@ -3619,7 +3726,14 @@ const quickMatch = require("./quick-match.js")({
     if (!cleanName(profile.name)) throw new Error("Choisis d’abord ton pseudo.");
     const result = ensureWallet(profile.walletToken || socket.data.walletToken);
     socket.data.walletToken = result.token;
+
+    const release = await ptitBacReleaseRoomsBeforeNewSession(
+      socket,
+      result.token
+    );
+    if (!release.ok) throw new Error(release.error);
     if (hasActiveRoom(result.token)) throw new Error("Quitte ta partie actuelle avant de chercher.");
+
     const state = await economyState(result.token);
     if (!state) throw new Error("Les parties rapides nécessitent la base de données.");
     if (state.lives < 1) throw new Error("Tu n’as plus de vie pour une partie rapide.");
@@ -3900,9 +4014,30 @@ io.on("connection", socket => {
       cb({ ok: false, error: message });
     }
   });
-  socket.on("room:create", (payload, cb) => {
-    if (!quickMatch.cancel(socket)) return cb?.({ok:false,error:"Une partie rapide se prépare."});
-    createGameRoom(socket, payload, cb);
+  socket.on("room:create", async (payload = {}, cb = () => {}) => {
+    if (!quickMatch.cancel(socket)) {
+      return cb({ok:false,error:"Une partie rapide se prépare."});
+    }
+
+    try {
+      const token = String(
+        payload.walletToken || socket.data.walletToken || ""
+      ).trim();
+      const release = await ptitBacReleaseRoomsBeforeNewSession(
+        socket,
+        token
+      );
+      if (!release.ok) {
+        return cb({ ok:false, error:release.error });
+      }
+      createGameRoom(socket, payload, cb);
+    } catch (err) {
+      console.error("room:create cleanup:", err.message);
+      cb({
+        ok:false,
+        error:"Impossible de fermer l’ancienne partie. Réessaie."
+      });
+    }
   });
 
   socket.on("lobby:setReady", (payload = {}, cb = () => {}) => {
@@ -3979,9 +4114,30 @@ io.on("connection", socket => {
     emitRoom(room);
   });
 
-  socket.on("room:join", (payload, cb) => {
-    if (!quickMatch.cancel(socket)) return cb?.({ok:false,error:"Une partie rapide se prépare."});
-    joinGameRoom(socket, payload, cb);
+  socket.on("room:join", async (payload = {}, cb = () => {}) => {
+    if (!quickMatch.cancel(socket)) {
+      return cb({ok:false,error:"Une partie rapide se prépare."});
+    }
+
+    try {
+      const token = String(
+        payload.walletToken || socket.data.walletToken || ""
+      ).trim();
+      const release = await ptitBacReleaseRoomsBeforeNewSession(
+        socket,
+        token
+      );
+      if (!release.ok) {
+        return cb({ ok:false, error:release.error });
+      }
+      joinGameRoom(socket, payload, cb);
+    } catch (err) {
+      console.error("room:join cleanup:", err.message);
+      cb({
+        ok:false,
+        error:"Impossible de fermer l’ancienne partie. Réessaie."
+      });
+    }
   });
 
   socket.on("room:reconnect", async ({ code, playerId, walletToken, frameId, tagId }, cb = () => {}) => {
