@@ -32,10 +32,11 @@ function render(){
  const pending=reportState==="pending";
  const rows=players.map(p=>{
    const r=results.byPlayer?.[p.id]?.[category]||{};
-   const status=!String(r.answer||"").trim()?"empty":r.status==="valid"?"valid":r.status==="duplicate"?"duplicate":"invalid";
-   const symbol={empty:"—",valid:"✓",duplicate:"=",invalid:"×"}[status];
-   const reason=status==="invalid"?(r.correction||"Réponse refusée"):status==="duplicate"?(r.correction||"Réponse partagée"):"";
-   return '<article class="res-row '+status+'"><div class="res-player"><div class="res-avatar">'+avatar(p)+'</div><strong>'+esc(p.name||"Joueur")+'</strong>'+(p.id===session.playerId?'<small>Toi</small>':'')+'</div><div class="res-answer"><strong>'+esc(status==="empty"?"Aucune réponse":r.answer)+'</strong>'+(reason?'<small>'+esc(reason)+'</small>':'')+'</div><div class="res-score"><b aria-label="'+({empty:"Sans réponse",valid:"Valide",duplicate:"Doublon",invalid:"Refusée"}[status])+'">'+symbol+'</b><span>'+(status==="valid"?"+1 pt":"0 pt")+'</span></div></article>';
+   const status=!String(r.answer||"").trim()?"empty":r.status==="valid"?"valid":r.status==="duplicate"?"duplicate":r.status==="unverified"?"unverified":"invalid";
+   const rowClass=status==="unverified"?"empty":status;
+   const symbol={empty:"—",valid:"✓",duplicate:"=",unverified:"?",invalid:"×"}[status];
+   const reason=status==="invalid"?(r.correction||"Réponse refusée"):status==="duplicate"?(r.correction||"Réponse partagée"):status==="unverified"?(r.correction||"Non vérifiée — aucun point"):"";
+   return '<article class="res-row '+rowClass+'"><div class="res-player"><div class="res-avatar">'+avatar(p)+'</div><strong>'+esc(p.name||"Joueur")+'</strong>'+(p.id===session.playerId?'<small>Toi</small>':'')+'</div><div class="res-answer"><strong>'+esc(status==="empty"?"Aucune réponse":r.answer)+'</strong>'+(reason?'<small>'+esc(reason)+'</small>':'')+'</div><div class="res-score"><b aria-label="'+({empty:"Sans réponse",valid:"Valide",duplicate:"Doublon",unverified:"Non vérifiée",invalid:"Refusée"}[status])+'">'+symbol+'</b><span>'+(status==="valid"?"+1 pt":"0 pt")+'</span></div></article>';
  }).join("");
  const last=round+1>=Number(state.rounds||1);
  setScreen('<main class="ssv1-screen results-screen"><header class="res-top"><button id="resExit" class="res-exit" aria-label="Quitter la partie"><img src="/lobby-exit.png" alt=""></button><img class="res-brand" src="/ptitbac.logo.png" alt="P’tit Bac"><span class="res-pill">Manche '+(round+1)+'/'+Number(state.rounds||1)+'</span></header>'+
@@ -46,7 +47,7 @@ function render(){
  '<p class="res-swipe-hint">Glisse pour changer de catégorie</p><div class="res-dots">'+categories.map((c,i)=>'<button data-res-index="'+i+'" aria-label="'+esc(c)+'" '+(i===selected?'aria-current="true"':'')+'></button>').join("")+'</div>'+
  '<div class="res-rows">'+rows+'</div>'+
  '<button class="res-report" id="resReport" '+(!eligible||reported||pending?'disabled':'')+'>ⓘ '+(reported?'Signalé ✓':pending?'Envoi…':'Signaler une correction')+'</button>'+
- '<p class="res-legend"><span>✓ Valide</span><span>— Sans réponse</span><span>× Refusée</span><span>= Doublon</span></p></section>'+
+ '<p class="res-legend"><span>✓ Valide</span><span>— Sans réponse</span><span>? Non vérifiée</span><span>× Refusée</span><span>= Doublon</span></p></section>'+
  ((user?.isHost||state.mode==="quick")?'<button id="resContinue" class="res-continue">'+(last?'Afficher le classement':'Prochaine manche')+' →</button>':'<p class="res-wait">En attente de l’hôte pour continuer</p>')+'</main>');
  const navigate=index=>{
   selected=Math.max(0,Math.min(categories.length-1,index));

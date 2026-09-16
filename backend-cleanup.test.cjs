@@ -44,3 +44,62 @@ test("la liste des conversations n’utilise plus une boucle SQL par ami", () =>
   assert.doesNotMatch(block, /for \(const friend of friends\)/);
   assert.equal((block.match(/pool\.query\(/g) || []).length, 1);
 });
+
+test("les salons utilisent uniquement 6 à 10 catégories", () => {
+  const server = source("server.js");
+  assert.match(
+    server,
+    /Math\.max\(6,\s*Math\.min\(10,\s*Number\(count\)\s*\|\|\s*6\)\)/
+  );
+  assert.equal(
+    (server.match(/\[6,\s*7,\s*8,\s*9,\s*10\]\.includes\(Number\(categoryCount\)\)/g) || []).length,
+    2
+  );
+  assert.doesNotMatch(
+    server,
+    /\[5,\s*6,\s*7,\s*8,\s*9,\s*10\]\.includes\(Number\(categoryCount\)\)/
+  );
+});
+
+test("une panne IA ne transforme plus les réponses non vérifiées en réponses fausses", () => {
+  const server = source("server.js");
+  const fallback = server.match(
+    /function completeValidationFallback\([\s\S]*?\n\}\n\nasync function runAutomaticValidation/
+  )?.[0] || "";
+
+  assert.match(fallback, /item\.status = "unverified"/);
+  assert.match(fallback, /neutralCategories/);
+  assert.doesNotMatch(fallback, /item\.status = "invalid"/);
+
+  const finalize = server.match(
+    /function finalizeRound\(room\) \{([\s\S]*?)\n\}\n\nfunction endRound/
+  )?.[1] || "";
+  assert.match(finalize, /neutralCategories/);
+  assert.match(finalize, /neutralCategories\.has\(category\)/);
+
+  const results = server.match(
+    /function buildRoundResults\(room\) \{([\s\S]*?)\n\}\n\nfunction finalizeRound/
+  )?.[1] || "";
+  assert.match(results, /source\.status === "unverified"/);
+  assert.match(results, /reportable: status === "invalid"/);
+
+  const scoreboard = source("scoreboard-screen-v1.js");
+  assert.match(scoreboard, /r\.status==="unverified"\?"unverified"/);
+  assert.match(scoreboard, /status==="unverified"\?"empty":status/);
+  assert.match(scoreboard, /unverified:"\?"/);
+  assert.match(scoreboard, /unverified:"Non vérifiée"/);
+  assert.match(scoreboard, /\? Non vérifiée/);
+});
+
+test("une réponse encore incertaine après seconde vérification reste neutre", () => {
+  const server = source("server.js");
+  assert.match(server, /let finalVerdict = "uncertain"/);
+  assert.match(server, /if \(finalVerdict === "uncertain"\) item\.reason = "review_unresolved"/);
+
+  const automatic = server.match(
+    /async function runAutomaticValidation\([\s\S]*?\n\}\n\n\nasync function reviewReportedAnswer/
+  )?.[0] || "";
+  assert.match(automatic, /item\.status = "unverified"/);
+  assert.match(automatic, /validation\.neutralCategories = \[\.\.\.neutralCategories\]/);
+  assert.match(automatic, /if \(validation\.status === "complete"\) return;/);
+});

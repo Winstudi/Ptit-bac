@@ -1416,7 +1416,7 @@ function allocateWeightedCounts(total, weights) {
 
 function pickCategories(difficulty = "beginner", count = 6) {
   const safeDifficulty = ["beginner", "medium", "hard"].includes(difficulty) ? difficulty : "beginner";
-  const safeCount = Math.max(1, Math.min(10, Number(count) || 6));
+  const safeCount = Math.max(6, Math.min(10, Number(count) || 6));
   const counts = allocateWeightedCounts(safeCount, DIFFICULTY_WEIGHTS[safeDifficulty]);
   const picked = [];
   for (const [level, amount] of Object.entries(counts)) {
@@ -1735,7 +1735,7 @@ function buildValidation(room) {
     }
   });
 
-  return { items, autoResults, status: items.length ? "checking" : "complete" };
+  return { items, autoResults, status: items.length ? "checking" : "complete", neutralCategories: [] };
 }
 
 
@@ -2299,22 +2299,38 @@ function completeValidationFallback(
     current !== room ||
     current.phase !== "validation" ||
     current.roundIndex !== roundAtStart ||
-    !current.validation
+    !current.validation ||
+    current.validation.status === "complete"
   ) {
     return false;
   }
 
   const validation = current.validation;
+  const neutralCategories = new Set(
+    (validation.items || [])
+      .filter(item => item.status === "pending")
+      .map(item => item.category)
+  );
 
+  // Une panne de l'arbitre ne doit jamais transformer une réponse inconnue
+  // en réponse fausse. Dès qu'une catégorie contient une réponse que l'IA
+  // n'a pas pu trancher, la catégorie devient neutre pour tous les joueurs.
   for (const item of validation.items || []) {
-    if (item.status !== "pending") continue;
-    item.status = "invalid";
+    if (!neutralCategories.has(item.category)) continue;
+    item.status = "unverified";
     item.reason = code;
     item.validationSource = "fallback";
     item.aiConfidence = 0;
     item.correction = "";
+    delete item.primaryDecision;
   }
 
+  validation.neutralCategories = [
+    ...new Set([
+      ...(validation.neutralCategories || []),
+      ...neutralCategories
+    ])
+  ];
   validation.status = "complete";
   validation.error = {
     code,
@@ -2405,6 +2421,7 @@ async function runAutomaticValidation(room, roundAtStart) {
   try {
     if (unresolved.length) {
       const primaryResults = await validateInBatches(unresolved, letter, { review: false });
+      if (validation.status === "complete") return;
       const primaryById = new Map(primaryResults.map(result => [result.id, result]));
 
       for (const item of unresolved) {
@@ -2436,6 +2453,7 @@ async function runAutomaticValidation(room, roundAtStart) {
 
       if (needsReview.length) {
         const reviewResults = await validateInBatches(needsReview, letter, { review: true });
+        if (validation.status === "complete") return;
         const reviewById = new Map(reviewResults.map(result => [result.id, result]));
 
         for (const item of needsReview) {
@@ -2447,7 +2465,7 @@ async function runAutomaticValidation(room, roundAtStart) {
 
           const reviewValidThreshold = type === "subjective" ? 80 : type === "lexical" ? 92 : 90;
           const reviewInvalidThreshold = type === "subjective" ? 76 : 80;
-          let finalVerdict = "invalid";
+          let finalVerdict = "uncertain";
           if (review.verdict === "valid" && review.confidence >= reviewValidThreshold) {
             if (!(primary?.verdict === "invalid" && primary.confidence >= 85 && type !== "subjective")) finalVerdict = "valid";
           } else if (review.verdict === "invalid" && review.confidence >= reviewInvalidThreshold) {
@@ -2455,12 +2473,13 @@ async function runAutomaticValidation(room, roundAtStart) {
           }
 
           applyAiDecision(item, { ...rawReview, verdict: finalVerdict }, letter, "ai_review");
-          if (finalVerdict === "invalid" && review.verdict === "uncertain") item.reason = "review_unresolved";
+          if (finalVerdict === "uncertain") item.reason = "review_unresolved";
           delete item.primaryDecision;
         }
       }
     }
   } catch (err) {
+    if (validation.status === "complete") return;
     console.error(
       `Validation IA indisponible [${err?.status || "réseau"}/${err?.code || "erreur"}]:`,
       sanitizeOpenAIErrorMessage(err?.message)
@@ -2472,14 +2491,25 @@ async function runAutomaticValidation(room, roundAtStart) {
     return;
   }
 
+  const neutralCategories = new Set(validation.neutralCategories || []);
   for (const item of validation.items) {
-    if (item.status === "pending") {
-      item.status = "invalid";
-      item.reason = "review_unresolved";
-      item.validationSource = "ai_review";
+    if (item.status === "pending") neutralCategories.add(item.category);
+  }
+
+  if (neutralCategories.size) {
+    for (const item of validation.items) {
+      if (!neutralCategories.has(item.category)) continue;
+      item.status = "unverified";
+      item.reason = item.reason || "review_unresolved";
+      item.validationSource = item.validationSource || "ai_review";
       item.aiConfidence = Number(item.aiConfidence || 0);
       item.correction = "";
+      delete item.primaryDecision;
     }
+    validation.neutralCategories = [...neutralCategories];
+  }
+
+  for (const item of validation.items) {
     if (shouldCacheDecision(item)) {
       validationCache.set(validationCacheKey(item.category, item.answer), {
         engineVersion: VALIDATION_ENGINE_VERSION,
@@ -2664,6 +2694,7 @@ async function distributeProgression(room) {
 function resultLabel(result, letter) {
   if (!result) return "";
   const reason = result.reason || "";
+  if (result.status === "unverified") return "Non vérifiée — aucun point";
   if (result.status === "duplicate" || reason === "duplicate") return "Doublon";
   if (reason === "empty") return "Aucune réponse";
   if (reason === "letter") return `Doit commencer par ${letter}`;
@@ -2694,7 +2725,11 @@ function buildRoundResults(room) {
       const auto = room.validation.autoResults[player.id]?.[category];
       const item = room.validation.items.find(i => i.playerId === player.id && i.category === category);
       const source = auto || item || { status: "invalid", reason: "unknown" };
-      const status = source.status === "valid" ? "valid" : source.status === "duplicate" ? "duplicate" : "invalid";
+      const status =
+        source.status === "valid" ? "valid" :
+        source.status === "duplicate" ? "duplicate" :
+        source.status === "unverified" ? "unverified" :
+        "invalid";
       const nonReportableReasons = new Set(["empty", "letter", "length", "duplicate"]);
       byPlayer[player.id][category] = {
         answer,
@@ -2711,6 +2746,7 @@ function buildRoundResults(room) {
     roundIndex: round,
     letter,
     categories: [...room.categories],
+    neutralCategories: [...new Set(room.validation?.neutralCategories || [])],
     byPlayer
   };
 }
@@ -2718,10 +2754,12 @@ function buildRoundResults(room) {
 function finalizeRound(room) {
   const round = room.roundIndex;
   const scores = {};
+  const neutralCategories = new Set(room.validation?.neutralCategories || []);
 
   room.players.forEach(player => {
     let gained = 0;
     room.categories.forEach(category => {
+      if (neutralCategories.has(category)) return;
       const auto = room.validation.autoResults[player.id]?.[category];
       if (auto) return;
 
@@ -3364,7 +3402,7 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
     const safeName = cleanName(name);
     const safeRounds = [1, 3, 5].includes(Number(rounds)) ? Number(rounds) : 1;
     const safeDuration = [30, 60, 90].includes(Number(duration)) ? Number(duration) : 60;
-    const safeCategoryCount = [5, 6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : 6;
+    const safeCategoryCount = [6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : 6;
     const safeCategoryDifficulty = ["beginner", "medium", "hard"].includes(categoryDifficulty) ? categoryDifficulty : "beginner";
     if (!safeName) return cb({ ok: false, error: "Choisis un prénom." });
     const walletResult = ensureWallet(walletToken || socket.data.walletToken);
@@ -3926,7 +3964,7 @@ io.on("connection", socket => {
     if (room.mode === "quick") return cb({ok:false,error:"Le format rapide est fixe."});
     const safeRounds = [1, 3, 5].includes(Number(rounds)) ? Number(rounds) : room.rounds;
     const safeDuration = [30, 60, 90].includes(Number(duration)) ? Number(duration) : room.duration;
-    const safeCategoryCount = [5, 6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : (room.categoryCount || room.categories.length || 6);
+    const safeCategoryCount = [6, 7, 8, 9, 10].includes(Number(categoryCount)) ? Number(categoryCount) : (room.categoryCount || room.categories.length || 6);
     const safeCategoryDifficulty = ["beginner", "medium", "hard"].includes(categoryDifficulty) ? categoryDifficulty : (room.categoryDifficulty || "beginner");
 
     resetPrivateReady(room);
