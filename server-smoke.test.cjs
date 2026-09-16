@@ -57,7 +57,7 @@ async function waitForHealth(url, child, timeoutMs = 12_000) {
 }
 
 async function stopChild(child) {
-  if (!child || child.exitCode !== null) return;
+  if (!child || child.exitCode !== null || child.signalCode) return;
 
   child.kill("SIGTERM");
 
@@ -211,6 +211,8 @@ test(
       assert.equal(health?.environment, "local");
       assert.equal(health?.databaseReady, false);
       assert.equal(health?.storage, "json");
+      assert.equal(health?.roomStorage, "json");
+      assert.equal(health?.activeRooms, 0);
       assert.equal(health?.database, "json");
       assert.equal(health?.commit, null);
       assert.equal(typeof health?.uptimeSeconds, "number");
@@ -224,6 +226,149 @@ test(
         recursive: true,
         force: true
       });
+    }
+  }
+);
+
+
+test(
+  "un salon survit à un crash serveur et les joueurs peuvent le reprendre",
+  { timeout: 32_000 },
+  async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ptitbac-room-restart-"));
+    const walletFile = path.join(tempDir, "wallets.json");
+    const roomFile = path.join(tempDir, "rooms.json");
+    let first = null;
+    let second = null;
+    let alice = null;
+    let bob = null;
+    let alice2 = null;
+    let bob2 = null;
+
+    const spawnServer = async () => {
+      const port = await freePort();
+      const child = spawn(process.execPath, ["server.js"], {
+        cwd:__dirname,
+        env:{
+          ...process.env,
+          PORT:String(port),
+          DATABASE_URL:"",
+          OPENAI_API_KEY:"",
+          OPENAI_BOT_API_KEY:"",
+          BOT_AI_ENABLED:"false",
+          RENDER:"false",
+          PTITBAC_WALLET_FILE:walletFile,
+          PTITBAC_ROOM_FILE:roomFile
+        },
+        stdio:["ignore", "pipe", "pipe"]
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", chunk => { stdout += chunk.toString(); });
+      child.stderr.on("data", chunk => { stderr += chunk.toString(); });
+      await waitForHealth(`http://127.0.0.1:${port}/health`, child);
+      return { child, port, baseUrl:`http://127.0.0.1:${port}`, logs:() => ({stdout,stderr}) };
+    };
+
+    try {
+      first = await spawnServer();
+      alice = await connectGameClient(first.baseUrl);
+      bob = await connectGameClient(first.baseUrl);
+
+      const aliceWallet = await emitAck(alice, "wallet:init", { token:"" });
+      const bobWallet = await emitAck(bob, "wallet:init", { token:"" });
+      const created = await emitAck(alice, "room:create", {
+        name:"Alice",
+        rounds:1,
+        duration:30,
+        categoryCount:6,
+        categoryDifficulty:"beginner",
+        avatar:"/a1.webp",
+        walletToken:aliceWallet.token
+      });
+      const joined = await emitAck(bob, "room:join", {
+        code:created.code,
+        name:"Bob",
+        avatar:"/a2.webp",
+        walletToken:bobWallet.token
+      });
+
+      assert.equal(created.ok, true);
+      assert.equal(joined.ok, true);
+      await emitAck(alice, "lobby:setReady", {
+        code:created.code,
+        playerId:created.playerId,
+        ready:true
+      });
+      await emitAck(bob, "lobby:setReady", {
+        code:created.code,
+        playerId:joined.playerId,
+        ready:true
+      });
+
+      const categoryPromise = waitForEvent(
+        alice,
+        "room:state",
+        state => state?.code === created.code && state?.phase === "category_selection",
+        8_000
+      );
+      const countdown = await emitAck(alice, "lobby:startCountdown", {
+        code:created.code,
+        playerId:created.playerId
+      });
+      assert.equal(countdown.ok, true);
+      const beforeCrash = await categoryPromise;
+      const categoriesBeforeCrash = [...beforeCrash.categories];
+
+      // La sauvegarde est débouncée de quelques dizaines de ms : on laisse le
+      // snapshot atteindre le disque puis on simule un crash brutal (SIGKILL).
+      await sleep(220);
+      alice.close();
+      bob.close();
+      const firstExit = new Promise(resolve => first.child.once("exit", resolve));
+      first.child.kill("SIGKILL");
+      await firstExit;
+      assert.equal(fs.existsSync(roomFile), true);
+
+      second = await spawnServer();
+      alice2 = await connectGameClient(second.baseUrl);
+      bob2 = await connectGameClient(second.baseUrl);
+
+      const reconnectAlice = await emitAck(alice2, "room:reconnect", {
+        code:created.code,
+        playerId:created.playerId,
+        walletToken:aliceWallet.token
+      });
+      const reconnectBob = await emitAck(bob2, "room:reconnect", {
+        code:created.code,
+        playerId:joined.playerId,
+        walletToken:bobWallet.token
+      });
+
+      assert.equal(reconnectAlice.ok, true);
+      assert.equal(reconnectBob.ok, true);
+      assert.equal(reconnectAlice.state?.phase, "category_selection");
+      assert.deepEqual(reconnectAlice.state?.categories, categoriesBeforeCrash);
+      assert.equal(reconnectBob.state?.players?.length, 2);
+      assert.equal(
+        reconnectBob.state.players.filter(player => player.connected).length,
+        2
+      );
+    } catch (error) {
+      const logs1 = first?.logs?.() || {stdout:"",stderr:""};
+      const logs2 = second?.logs?.() || {stdout:"",stderr:""};
+      throw new Error(
+        `${error.message}\n--- serveur 1 stdout ---\n${logs1.stdout}\n--- serveur 1 stderr ---\n${logs1.stderr}` +
+        `\n--- serveur 2 stdout ---\n${logs2.stdout}\n--- serveur 2 stderr ---\n${logs2.stderr}`
+      );
+    } finally {
+      alice?.close?.();
+      bob?.close?.();
+      alice2?.close?.();
+      bob2?.close?.();
+      await stopChild(first?.child);
+      await stopChild(second?.child);
+      fs.rmSync(tempDir, { recursive:true, force:true });
     }
   }
 );
@@ -631,4 +776,20 @@ test(
     }
   }
 );
+
+test("la reprise des salons est aussi configurée pour PostgreSQL", () => {
+  const serverSource = fs.readFileSync(path.join(__dirname, "server.js"), "utf8");
+  const migrationSource = fs.readFileSync(path.join(__dirname, "db-migrations.js"), "utf8");
+
+  assert.match(migrationSource, /CREATE TABLE IF NOT EXISTS public\.ptitbac_active_rooms/);
+  assert.match(serverSource, /INSERT INTO public\.ptitbac_active_rooms/);
+  assert.match(serverSource, /SELECT code,snapshot,[\s\S]*FROM public\.ptitbac_active_rooms/);
+  assert.match(serverSource, /resumeRestoredRoomRuntime/);
+  assert.match(serverSource, /queueRoomPersist\(room, 120\)/);
+  assert.equal(
+    (serverSource.match(/rooms\.delete\(/g) || []).length,
+    1,
+    "les suppressions de salons doivent passer par removeRoom()"
+  );
+});
 

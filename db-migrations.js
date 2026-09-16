@@ -124,6 +124,16 @@ async function runDatabaseMigrations(pool) {
     ADD COLUMN IF NOT EXISTS gems_delta integer NOT NULL DEFAULT 0
   `);
 
+  // Snapshots des salons/parties actives pour reprise après redéploiement.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.ptitbac_active_rooms (
+      code text PRIMARY KEY,
+      snapshot jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.ptitbac_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -388,6 +398,7 @@ async function runDatabaseMigrations(pool) {
     `CREATE INDEX IF NOT EXISTS friendships_user_idx ON public.friendships(user_id)`,
     `CREATE INDEX IF NOT EXISTS economy_transactions_user_idx ON public.economy_transactions(user_id, created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS economy_transactions_wallet_idx ON public.economy_transactions(wallet_token, created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS ptitbac_active_rooms_updated_idx ON public.ptitbac_active_rooms(updated_at DESC)`,
     `CREATE INDEX IF NOT EXISTS ptitbac_messages_pair_created_idx ON public.ptitbac_messages(sender_id, receiver_id, created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS ptitbac_messages_receiver_unread_idx ON public.ptitbac_messages(receiver_id, read_at, created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS ptitbac_player_reports_target_idx ON public.ptitbac_player_reports(reported_friend_code, created_at DESC)`,

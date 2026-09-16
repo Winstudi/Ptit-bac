@@ -131,6 +131,8 @@ app.get("/health", async (req, res) => {
     databaseReady:database.ready,
     databaseLatencyMs:database.latencyMs,
     storage:walletStorageMode,
+    roomStorage:roomStorageMode,
+    activeRooms:rooms.size,
     uptimeSeconds:Math.max(
       0,
       Math.floor((Date.now() - PROCESS_STARTED_AT) / 1000)
@@ -224,10 +226,14 @@ app.use((req, res, next) => {
 
 const GAME_COST = 0; // Economie: entree payee en vies, pas en pièces.
 const HOST_RECONNECT_GRACE_MS = 15 * 1000;
+const ROOM_SNAPSHOT_TTL_MS = 3 * 60 * 60 * 1000;
 const ADMIN_DIAGNOSTIC_CODE = String(process.env.PTITBAC_ADMIN_CODE || "").trim();
 const WALLET_FILE = process.env.PTITBAC_WALLET_FILE
   ? path.resolve(process.env.PTITBAC_WALLET_FILE)
   : path.join(__dirname, "wallets.json");
+const ROOM_FILE = process.env.PTITBAC_ROOM_FILE
+  ? path.resolve(process.env.PTITBAC_ROOM_FILE)
+  : path.join(path.dirname(WALLET_FILE), "rooms.json");
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const VALIDATION_ENGINE_VERSION = "v2.2.0";
 const LEARNING_ENGINE_VERSION = "learn-v1.0.0";
@@ -1059,6 +1065,327 @@ const DIFFICULTY_WEIGHTS = {
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const rooms = new Map();
+const roomPersistTimers = new Map();
+let roomPersistenceReady = false;
+let roomStorageMode = "initializing";
+
+function roomSnapshot(room) {
+  if (!room || !room.code) return null;
+
+  const validation = room.validation
+    ? { ...room.validation, watchdogId:null }
+    : null;
+
+  const snapshot = {
+    ...room,
+    economyStartPending:false,
+    categoryRerollPending:"",
+    letterRerollPending:"",
+    progressionDistributionPending:false,
+    ptbCountdownUntil:0,
+    validation,
+    players:(room.players || []).map(player => ({
+      ...player,
+      // Les identifiants Socket.IO ne survivent jamais à un redémarrage.
+      socketId:null
+    }))
+  };
+
+  return JSON.parse(JSON.stringify(snapshot));
+}
+
+function normalizeRestoredRoom(raw, persistedAt = Date.now()) {
+  const source = raw?.snapshot && typeof raw.snapshot === "object"
+    ? raw.snapshot
+    : raw;
+  if (!source || typeof source !== "object") return null;
+
+  const code = String(source.code || "").trim().toUpperCase();
+  const phase = String(source.phase || "");
+  const allowedPhases = new Set([
+    "lobby",
+    "category_selection",
+    "letter_selection",
+    "round",
+    "validation",
+    "scoreboard",
+    "finished"
+  ]);
+  if (!/^[A-Z0-9]{4,8}$/.test(code) || !allowedPhases.has(phase)) return null;
+  if (!Array.isArray(source.players) || !source.players.some(player => !player?.isBot)) return null;
+
+  const room = {
+    ...source,
+    code,
+    phase,
+    createdAt:Number(source.createdAt) || Number(persistedAt) || Date.now(),
+    economyStartPending:false,
+    categoryRerollPending:"",
+    letterRerollPending:"",
+    progressionDistributionPending:false,
+    ptbCountdownUntil:0,
+    validation:source.validation && typeof source.validation === "object"
+      ? { ...source.validation, watchdogId:null }
+      : null,
+    players:source.players.map(player => ({
+      ...player,
+      socketId:null,
+      connected:!!player?.isBot,
+      lobbyReady:!!player?.isBot,
+      submitted:!!player?.submitted,
+      answers:player?.answers && typeof player.answers === "object"
+        ? player.answers
+        : {}
+    }))
+  };
+
+  const humanHosts = room.players.filter(player => !player.isBot && player.isHost);
+  if (humanHosts.length !== 1) {
+    let hostAssigned = false;
+    room.players.forEach(player => {
+      if (player.isBot) {
+        player.isHost = false;
+        return;
+      }
+      player.isHost = !hostAssigned;
+      if (player.isHost) hostAssigned = true;
+    });
+  }
+
+  return room;
+}
+
+function saveRoomsToFile() {
+  try {
+    const savedAt = Date.now();
+    const serialized = {};
+    for (const [code, room] of rooms) {
+      const snapshot = roomSnapshot(room);
+      if (snapshot) serialized[code] = { updatedAt:savedAt, snapshot };
+    }
+
+    const dir = path.dirname(ROOM_FILE);
+    fs.mkdirSync(dir, { recursive:true });
+    const tmp = `${ROOM_FILE}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify({ version:1, savedAt, rooms:serialized }, null, 2));
+    fs.renameSync(tmp, ROOM_FILE);
+  } catch (err) {
+    console.error(`Impossible de sauvegarder ${path.basename(ROOM_FILE)}:`, err.message);
+  }
+}
+
+async function persistRoomNow(room) {
+  if (!roomPersistenceReady || !room?.code || rooms.get(room.code) !== room) return;
+  const snapshot = roomSnapshot(room);
+  if (!snapshot) return;
+
+  if (!pgPool) {
+    saveRoomsToFile();
+    return;
+  }
+
+  await pgPool.query(
+    `INSERT INTO public.ptitbac_active_rooms(code,snapshot,created_at,updated_at)
+     VALUES($1,$2::jsonb,now(),now())
+     ON CONFLICT(code) DO UPDATE
+       SET snapshot=EXCLUDED.snapshot,
+           updated_at=now()`,
+    [room.code, JSON.stringify(snapshot)]
+  );
+}
+
+function queueRoomPersist(room, delayMs = 60) {
+  if (!roomPersistenceReady || !room?.code || rooms.get(room.code) !== room) return;
+  const previous = roomPersistTimers.get(room.code);
+  if (previous) clearTimeout(previous);
+
+  const timer = setTimeout(() => {
+    roomPersistTimers.delete(room.code);
+    persistRoomNow(room).catch(err => {
+      console.error(`Persistance salon ${room.code}:`, err.message);
+    });
+  }, Math.max(0, Number(delayMs) || 0));
+  timer.unref?.();
+  roomPersistTimers.set(room.code, timer);
+}
+
+async function flushRoomPersistence() {
+  for (const timer of roomPersistTimers.values()) clearTimeout(timer);
+  roomPersistTimers.clear();
+  if (!roomPersistenceReady) return;
+
+  if (!pgPool) {
+    saveRoomsToFile();
+    return;
+  }
+
+  await Promise.all(
+    [...rooms.values()].map(room => persistRoomNow(room))
+  );
+}
+
+function removeRoom(code) {
+  const safeCode = String(code || "").trim().toUpperCase();
+  if (!safeCode) return false;
+
+  const timer = roomPersistTimers.get(safeCode);
+  if (timer) clearTimeout(timer);
+  roomPersistTimers.delete(safeCode);
+
+  const removed = rooms.delete(safeCode);
+  if (!roomPersistenceReady) return removed;
+
+  if (!pgPool) {
+    saveRoomsToFile();
+  } else {
+    pgPool.query(
+      "DELETE FROM public.ptitbac_active_rooms WHERE code=$1",
+      [safeCode]
+    ).catch(err => {
+      console.error(`Suppression snapshot salon ${safeCode}:`, err.message);
+    });
+  }
+  return removed;
+}
+
+function scheduleRestoredRoomExpiry(room, persistedAt) {
+  const age = Math.max(0, Date.now() - Number(persistedAt || Date.now()));
+  const delay = Math.max(500, ROOM_SNAPSHOT_TTL_MS - age);
+  const timer = setTimeout(() => {
+    const current = rooms.get(room.code);
+    if (current === room && current.players.every(player => player.isBot || !player.connected)) {
+      removeRoom(room.code);
+    }
+  }, delay);
+  timer.unref?.();
+}
+
+function resumeRestoredRoomRuntime(room) {
+  if (!room) return;
+
+  ensureCategoryChooser(room);
+  ensureLetterChooser(room);
+
+  if (room.phase === "round") {
+    const roundAtRestore = room.roundIndex;
+    const now = Date.now();
+    const startsAt = Number(room.roundStartsAt) || now;
+    const endsAt = Number(room.roundEndsAt) || now;
+
+    if (room.players.some(player => player.isBot && !player.submitted)) {
+      const botTimer = setTimeout(() => {
+        const current = rooms.get(room.code);
+        if (current === room && current.phase === "round" && current.roundIndex === roundAtRestore) {
+          playBots(current);
+        }
+      }, Math.max(0, startsAt - now));
+      botTimer.unref?.();
+    }
+
+    const roundTimer = setTimeout(() => {
+      const current = rooms.get(room.code);
+      if (current === room && current.phase === "round" && current.roundIndex === roundAtRestore) {
+        endRound(current);
+      }
+    }, Math.max(50, endsAt - now + 300));
+    roundTimer.unref?.();
+  }
+
+  if (room.phase === "validation") {
+    if (!room.validation) room.validation = buildValidation(room);
+    const roundAtRestore = room.roundIndex;
+    room.validation.watchdogId = setTimeout(() => {
+      completeValidationFallback(room, roundAtRestore, {
+        code:"validation_timeout",
+        message:"La correction a dépassé le délai maximal. La partie continue."
+      });
+    }, AUTO_VALIDATION_HARD_LIMIT_MS);
+    room.validation.watchdogId.unref?.();
+
+    const validationTimer = setTimeout(() => {
+      const current = rooms.get(room.code);
+      if (current !== room || current.phase !== "validation" || current.roundIndex !== roundAtRestore) return;
+      runAutomaticValidation(current, roundAtRestore).catch(err => {
+        console.error("Reprise validation après redémarrage:", err.message);
+        completeValidationFallback(current, roundAtRestore, {
+          code:"restart_validation_error",
+          message:"La correction a été reprise après redémarrage avec le mode de secours."
+        });
+      });
+    }, 50);
+    validationTimer.unref?.();
+  }
+
+  if (room.phase === "finished" && !room.progressionDistributed && isEconomyMode(room.mode)) {
+    const progressionTimer = setTimeout(() => {
+      const current = rooms.get(room.code);
+      if (current !== room || current.phase !== "finished") return;
+      distributeProgression(current)
+        .then(() => emitRoom(current))
+        .catch(err => console.error("Reprise progression après redémarrage:", err.message));
+    }, 100);
+    progressionTimer.unref?.();
+  }
+}
+
+async function initRoomPersistence() {
+  const restored = [];
+  const now = Date.now();
+
+  if (pgPool) {
+    await ensureDatabaseSchema();
+    await pgPool.query(
+      "DELETE FROM public.ptitbac_active_rooms WHERE updated_at < now() - interval '3 hours'"
+    );
+    // Une recherche rapide encore au lobby dépend de la file de matchmaking
+    // en mémoire. Après redémarrage on la supprime proprement : aucun joueur
+    // n'a encore payé de vie et il peut simplement relancer une recherche.
+    await pgPool.query(
+      `DELETE FROM public.ptitbac_active_rooms
+        WHERE snapshot->>'mode'='quick'
+          AND snapshot->>'phase'='lobby'`
+    );
+    const { rows } = await pgPool.query(
+      "SELECT code,snapshot,extract(epoch FROM updated_at)*1000 AS updated_at_ms FROM public.ptitbac_active_rooms ORDER BY updated_at ASC"
+    );
+
+    for (const row of rows) {
+      const persistedAt = Number(row.updated_at_ms) || now;
+      const room = normalizeRestoredRoom(row.snapshot, persistedAt);
+      if (!room) continue;
+      rooms.set(room.code, room);
+      restored.push({ room, persistedAt });
+    }
+    roomStorageMode = "postgres";
+  } else {
+    try {
+      if (fs.existsSync(ROOM_FILE)) {
+        const payload = JSON.parse(fs.readFileSync(ROOM_FILE, "utf8"));
+        for (const entry of Object.values(payload?.rooms || {})) {
+          const persistedAt = Number(entry?.updatedAt || payload?.savedAt) || now;
+          if (now - persistedAt > ROOM_SNAPSHOT_TTL_MS) continue;
+          const room = normalizeRestoredRoom(entry?.snapshot, persistedAt);
+          if (!room || (room.mode === "quick" && room.phase === "lobby")) continue;
+          rooms.set(room.code, room);
+          restored.push({ room, persistedAt });
+        }
+      }
+    } catch (err) {
+      console.warn(`Impossible de charger ${path.basename(ROOM_FILE)}:`, err.message);
+    }
+    roomStorageMode = "json";
+  }
+
+  roomPersistenceReady = true;
+
+  for (const { room, persistedAt } of restored) {
+    scheduleRestoredRoomExpiry(room, persistedAt);
+    resumeRestoredRoomRuntime(room);
+    queueRoomPersist(room, 0);
+  }
+
+  console.log(`Salons: ${roomStorageMode} (${restored.length} salon(s) restauré(s)).`);
+}
 
 function id() {
   return crypto.randomBytes(10).toString("hex");
@@ -1132,6 +1459,19 @@ function ensureCategoryChooser(room) {
     const eligible = room.players.filter(p => p.connected && !p.isBot);
     room.categoryChooserPlayerId = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)].id : null;
   }
+}
+
+function ensureLetterChooser(room) {
+  if (room.phase !== "letter_selection") return;
+  const current = room.players.find(
+    p => p.id === room.letterChooserPlayerId && p.connected && !p.isBot
+  );
+  if (current) return;
+
+  const eligible = room.players.filter(p => p.connected && !p.isBot);
+  room.letterChooserPlayerId = eligible.length
+    ? eligible[Math.floor(Math.random() * eligible.length)].id
+    : null;
 }
 
 function prepareCategorySelection(room) {
@@ -1305,6 +1645,7 @@ function emitRoom(room) {
       io.to(player.socketId).emit("room:state", publicRoom(room, player.id));
     }
   });
+  queueRoomPersist(room);
 }
 
 function getRoom(code) {
@@ -2872,7 +3213,7 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
     ptitBacDetachSocketFromRoom(socket, room, player);
 
     if (!room.players.length) {
-      rooms.delete(room.code);
+      removeRoom(room.code);
       return cb({
         ok:true,
         outcome:"room_closed",
@@ -2918,7 +3259,7 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
   // Départ classique depuis le salon ou après la fin.
   if (!isActiveGame) {
     if (room.players.length === 0) {
-      rooms.delete(room.code);
+      removeRoom(room.code);
       return cb({ ok:true, outcome:"room_closed" });
     }
 
@@ -2935,7 +3276,7 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
 
   // Aucun humain restant : la partie et les bots sont clôturés.
   if (remainingHumans.length === 0) {
-    rooms.delete(room.code);
+    removeRoom(room.code);
 
     return cb({
       ok:true,
@@ -2968,7 +3309,7 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
       lifeRefunded:true
     });
 
-    rooms.delete(room.code);
+    removeRoom(room.code);
 
     return cb({
       ok:true,
@@ -3313,7 +3654,7 @@ const quickMatch = require("./quick-match.js")({
     } catch (err) {
       if (room) {
         ptitBacCloseRoomSockets(room,{reason:"match_cancelled",message:err.message});
-        rooms.delete(room.code);
+        removeRoom(room.code);
       }
       throw err;
     }
@@ -3626,6 +3967,15 @@ io.on("connection", socket => {
 
     setPlayerSocket(room, player, socket);
     ensureCategoryChooser(room);
+    ensureLetterChooser(room);
+
+    const disconnectedHost = room.players.find(
+      candidate => !candidate.isBot && candidate.isHost && !candidate.connected
+    );
+    if (disconnectedHost && disconnectedHost.id !== player.id) {
+      ptitBacScheduleHostTransfer(room, disconnectedHost);
+    }
+
     cb({ ok: true, balance: player.walletToken ? walletBalance(player.walletToken) : 0, state: publicRoom(room, player.id) });
     emitRoom(room);
   });
@@ -4014,6 +4364,7 @@ io.on("connection", socket => {
 
     if (!player.answers[room.roundIndex]) player.answers[room.roundIndex] = {};
     player.answers[room.roundIndex][category] = String(value || "").slice(0, 60);
+    queueRoomPersist(room, 120);
   });
 
   socket.on("round:submit", payload => {
@@ -4138,9 +4489,9 @@ io.on("connection", socket => {
 
     ensureCategoryChooser(room);
     if (room.phase === "letter_selection" && room.letterChooserPlayerId === player.id) {
-      const chooser = chooseLetterPlayer(room);
-      room.letterChooserPlayerId = chooser?.id || null;
+      room.letterChooserPlayerId = null;
       room.letterSpinVersion = (room.letterSpinVersion || 0) + 1;
+      ensureLetterChooser(room);
     }
     emitRoom(room);
 
@@ -4152,7 +4503,7 @@ io.on("connection", socket => {
         Date.now() - current.createdAt > 3 * 60 * 60 * 1000 &&
         current.players.every(p => !p.connected)
       ) {
-        rooms.delete(current.code);
+        removeRoom(current.code);
       }
     }, 3 * 60 * 60 * 1000);
   });
@@ -4168,6 +4519,7 @@ async function startApplication() {
   try {
     await initWalletPersistence();
     await initLearningPersistence();
+    await initRoomPersistence();
 
     if (IS_RENDER && walletStorageMode !== "postgres") {
       throw new Error(
@@ -4202,6 +4554,7 @@ async function startApplication() {
         }`
       );
       console.log(`Stockage portefeuille: ${walletStorageMode}`);
+      console.log(`Stockage salons: ${roomStorageMode}`);
       console.log(
         `Mémoire IA: ${pgPool ? "PostgreSQL" : "JSON local"} ` +
         `(${learnedAnswers.size} réponse(s) apprise(s))`
@@ -4229,6 +4582,31 @@ async function startApplication() {
     setImmediate(() => process.exit(1));
   }
 }
+
+let shutdownInProgress = false;
+async function shutdownApplication(signal) {
+  if (shutdownInProgress) return;
+  shutdownInProgress = true;
+  startupReady = false;
+
+  try {
+    await Promise.race([
+      flushRoomPersistence(),
+      new Promise(resolve => setTimeout(resolve, 1500))
+    ]);
+  } catch (err) {
+    console.warn(`Flush salons (${signal}):`, err.message);
+  }
+
+  try {
+    await new Promise(resolve => io.close(() => resolve()));
+  } catch {}
+  try { await pgPool?.end?.(); } catch {}
+  process.exit(0);
+}
+
+process.once("SIGTERM", () => { void shutdownApplication("SIGTERM"); });
+process.once("SIGINT", () => { void shutdownApplication("SIGINT"); });
 
 startApplication();
 
