@@ -19,6 +19,7 @@
   let lobbyCountdownAudio = null;
   let lobbyCountdownLastValue = "";
   let lobbyModeSwitching = false;
+  let lobbyInventoryReturnToLobby = false;
   const lobbyInviteSocket = socket;
 
   Object.values(DIFFICULTY_ICON_URLS).forEach(src => {
@@ -233,25 +234,49 @@
     const self = String(player.id) === String(session.playerId);
     const code = friendCodeFor(player);
     const canSocial = !self && !player.isBot && !!code;
+    const ready = player.isBot || (player.connected && player.lobbyReady);
+    const offline = !player.isBot && !player.connected;
 
     return `
-      <div class="lobby-v5-profile-backdrop" id="lobbyPlayerProfileBackdrop">
-        <section class="lobby-v5-profile-modal" role="dialog" aria-modal="true">
-          <button id="lobbyPlayerProfileClose" class="lobby-v5-profile-close" type="button">×</button>
-          <div class="lobby-v5-profile-avatar">${avatarMarkup(player)}</div>
-          <h2>${escapeHtml(player.name || "Joueur")}</h2>
-          <p>${player.isBot ? "Joueur test" : (player.connected ? "En ligne" : "Hors ligne")}</p>
-          <div class="lobby-v5-profile-code">
+      <div class="lobby-v5-profile-backdrop pl-profile-v2-backdrop" id="lobbyPlayerProfileBackdrop">
+        <section class="lobby-v5-profile-modal pl-profile-v2-modal" role="dialog" aria-modal="true" aria-label="Profil de ${escapeHtml(player.name || "Joueur")}">
+          <button id="lobbyPlayerProfileClose" class="lobby-v5-profile-close pl-profile-v2-close" type="button" aria-label="Fermer">×</button>
+
+          <div class="pl-profile-v2-card ${player.isHost ? "is-host" : ""} ${self ? "is-self" : ""}">
+            <div class="pl-profile-v2-avatar-shell">
+              <div class="lobby-v5-profile-avatar pl-profile-v2-avatar">${avatarMarkup(player)}</div>
+              ${player.isHost
+                ? `<span class="pl-profile-v2-crown" aria-hidden="true"><img src="/admin-crown.png" alt=""></span>`
+                : ""}
+            </div>
+
+            <div class="pl-profile-v2-copy">
+              <strong>${escapeHtml(player.name || "Joueur")}</strong>
+              ${privateLobbyTagMarkup(player)}
+              <small class="pl-profile-v2-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
+                <i aria-hidden="true"></i>
+                ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
+              </small>
+            </div>
+          </div>
+
+          <div class="pl-profile-v2-code">
             <small>Code ami</small>
             <strong>${player.isBot ? "Joueur test" : (code ? `#${escapeHtml(code)}` : "Indisponible")}</strong>
           </div>
 
-          ${self ? `<div class="lobby-v5-profile-self">C’est ton profil.</div>` :
-            player.isBot ? `<div class="lobby-v5-profile-self">Les joueurs test ne peuvent pas recevoir de demande d’ami.</div>` :
-            `<div class="lobby-v5-profile-actions">
-              <button id="lobbyPlayerAddFriend" type="button" ${canSocial ? "" : "disabled"}>Ajouter en ami</button>
-              <button id="lobbyPlayerReport" class="danger" type="button" ${code ? "" : "disabled"}>Signaler</button>
-            </div>`}
+          ${self
+            ? `<button id="lobbyPlayerInventory" class="pl-profile-v2-inventory" type="button">
+                <img src="/inventaire.png" alt="">
+                <span>Inventaire</span>
+                <small>Modifier mon apparence</small>
+              </button>`
+            : player.isBot
+              ? `<div class="pl-profile-v2-note">Les joueurs test n’ont pas de profil personnalisable.</div>`
+              : `<div class="lobby-v5-profile-actions pl-profile-v2-actions">
+                  <button id="lobbyPlayerAddFriend" type="button" ${canSocial ? "" : "disabled"}>Ajouter en ami</button>
+                  <button id="lobbyPlayerReport" class="danger" type="button" ${code ? "" : "disabled"}>Signaler</button>
+                </div>`}
         </section>
       </div>`;
   }
@@ -711,8 +736,8 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:166% !important;
-        height:166% !important;
+        width:178% !important;
+        height:178% !important;
       }
 
       html body .pl-private .pl-avatar-role-crown {
@@ -840,6 +865,17 @@
         flex:none;
       }
 
+      html body .pl-private .pl-card-status {
+        position:absolute;
+        z-index:5;
+        right:8px;
+        bottom:7px;
+        padding:3px 5px;
+        border-radius:999px;
+        background:rgba(7,18,50,.55);
+        backdrop-filter:blur(4px);
+      }
+
       html body .pl-private .pl-status i {
         width:6px;
         height:6px;
@@ -909,6 +945,290 @@
       html body .pl-private .pl-empty span {
         font-size:10.5px !important;
         font-weight:600;
+      }
+
+      /* ---------- Profil joueur V2 ---------- */
+      html body .pl-private .pl-profile-v2-backdrop {
+        position:fixed !important;
+        inset:0 !important;
+        z-index:100020 !important;
+        padding:18px !important;
+        display:grid !important;
+        place-items:center !important;
+        background:rgba(3,8,31,.76) !important;
+        backdrop-filter:blur(10px);
+      }
+
+      html body .pl-private .pl-profile-v2-modal {
+        position:relative;
+        width:min(100%,360px) !important;
+        max-width:360px !important;
+        padding:18px !important;
+        display:grid !important;
+        gap:14px !important;
+        border:1px solid rgba(165,83,255,.72) !important;
+        border-radius:22px !important;
+        background:
+          radial-gradient(circle at 18% 6%,rgba(140,58,255,.22),transparent 38%),
+          linear-gradient(155deg,#111b50,#09153c 75%) !important;
+        box-shadow:0 22px 65px rgba(0,0,0,.48),0 0 28px rgba(142,56,255,.18) !important;
+        color:#fff !important;
+        overflow:visible !important;
+      }
+
+      html body .pl-private .pl-profile-v2-close {
+        position:absolute !important;
+        z-index:20;
+        right:10px !important;
+        top:9px !important;
+        width:32px !important;
+        height:32px !important;
+        padding:0 !important;
+        display:grid !important;
+        place-items:center !important;
+        border:1px solid rgba(130,104,212,.46) !important;
+        border-radius:50% !important;
+        background:rgba(12,23,65,.84) !important;
+        color:#d8d3ee !important;
+        font-size:23px !important;
+        line-height:1 !important;
+      }
+
+      html body .pl-private .pl-profile-v2-card {
+        position:relative;
+        min-height:142px;
+        padding:12px 12px 12px 10px;
+        display:grid;
+        grid-template-columns:126px minmax(0,1fr);
+        align-items:center;
+        gap:12px;
+        border:1px solid rgba(83,111,166,.66);
+        border-radius:18px;
+        background:
+          radial-gradient(circle at 19% 44%,rgba(131,58,255,.13),transparent 42%),
+          linear-gradient(145deg,#11264d,#0b1c42 78%);
+        box-shadow:inset 0 0 16px rgba(110,83,245,.055);
+        overflow:visible;
+      }
+
+      html body .pl-private .pl-profile-v2-card.is-host,
+      html body .pl-private .pl-profile-v2-card.is-self {
+        border-color:rgba(177,76,255,.50);
+        box-shadow:inset 0 0 22px rgba(138,62,255,.08),0 0 13px rgba(166,54,255,.16);
+      }
+
+      html body .pl-private .pl-profile-v2-avatar-shell {
+        position:relative;
+        width:126px;
+        height:126px;
+        display:grid;
+        place-items:center;
+        overflow:visible;
+      }
+
+      html body .pl-private .pl-profile-v2-avatar {
+        position:relative !important;
+        width:100% !important;
+        height:100% !important;
+        display:grid !important;
+        place-items:center !important;
+        overflow:hidden !important;
+        border:1.5px solid #a657ff !important;
+        border-radius:15px !important;
+        background:#181953 !important;
+        box-shadow:0 0 10px rgba(163,66,255,.27) !important;
+      }
+
+      html body .pl-private .pl-profile-v2-avatar > img:not(.ptb-equipped-frame-overlay) {
+        width:100% !important;
+        height:100% !important;
+        max-width:none !important;
+        max-height:none !important;
+        object-fit:cover !important;
+      }
+
+      html body .pl-private .pl-profile-v2-avatar.ptb-has-equipped-frame {
+        overflow:visible !important;
+        border:0 !important;
+        border-radius:0 !important;
+        background:transparent !important;
+        box-shadow:none !important;
+      }
+
+      html body .pl-private .pl-profile-v2-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
+        width:85% !important;
+        height:85% !important;
+        max-width:85% !important;
+        max-height:85% !important;
+        border-radius:0 !important;
+      }
+
+      html body .pl-private .pl-profile-v2-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
+        width:178% !important;
+        height:178% !important;
+      }
+
+      html body .pl-private .pl-profile-v2-crown {
+        position:absolute;
+        z-index:12;
+        left:-3px;
+        top:-4px;
+        width:27px;
+        height:27px;
+        display:grid;
+        place-items:center;
+        border:1px solid rgba(255,211,95,.58);
+        border-radius:50%;
+        background:rgba(57,23,101,.96);
+        box-shadow:0 0 10px rgba(255,184,42,.24),0 0 10px rgba(184,67,255,.25);
+      }
+
+      html body .pl-private .pl-profile-v2-crown img {
+        width:20px !important;
+        height:20px !important;
+      }
+
+      html body .pl-private .pl-profile-v2-copy {
+        min-width:0;
+        min-height:104px;
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        justify-content:center;
+        gap:8px;
+      }
+
+      html body .pl-private .pl-profile-v2-copy > strong {
+        width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        font-size:22px !important;
+        line-height:1.05;
+        font-weight:900;
+      }
+
+      html body .pl-private .pl-profile-v2-copy .pl-player-title {
+        min-height:25px;
+        padding:4px 10px;
+        font-size:11px;
+      }
+
+      html body .pl-private .pl-profile-v2-copy .pl-player-title strong {
+        font-size:11px;
+      }
+
+      html body .pl-private .pl-profile-v2-status {
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        color:#aab7d9;
+        font-size:11px;
+        font-weight:700;
+        white-space:nowrap;
+      }
+
+      html body .pl-private .pl-profile-v2-status i {
+        width:7px;
+        height:7px;
+        border-radius:50%;
+        background:#8c83ae;
+        box-shadow:0 0 5px rgba(145,130,188,.35);
+      }
+
+      html body .pl-private .pl-profile-v2-status.is-ready {
+        color:#67e3ba;
+      }
+
+      html body .pl-private .pl-profile-v2-status.is-ready i {
+        background:#55e7b6;
+        box-shadow:0 0 7px rgba(85,231,182,.55);
+      }
+
+      html body .pl-private .pl-profile-v2-status.is-offline i {
+        background:#69738f;
+        box-shadow:none;
+      }
+
+      html body .pl-private .pl-profile-v2-code {
+        min-height:52px;
+        padding:9px 12px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        border:1px solid rgba(63,83,137,.72);
+        border-radius:13px;
+        background:rgba(10,27,66,.72);
+      }
+
+      html body .pl-private .pl-profile-v2-code small {
+        color:#9faed3;
+        font-size:10px;
+        font-weight:700;
+      }
+
+      html body .pl-private .pl-profile-v2-code strong {
+        color:#eeeaff;
+        font-size:12px;
+        font-weight:900;
+      }
+
+      html body .pl-private .pl-profile-v2-inventory {
+        width:100%;
+        min-height:58px;
+        padding:8px 12px;
+        display:grid;
+        grid-template-columns:38px minmax(0,1fr);
+        grid-template-rows:auto auto;
+        align-items:center;
+        column-gap:10px;
+        border:1px solid #8e61ff;
+        border-radius:14px;
+        background:linear-gradient(135deg,rgba(91,48,171,.90),rgba(48,35,122,.94));
+        box-shadow:inset 0 0 13px rgba(189,127,255,.10),0 0 11px rgba(137,64,246,.15);
+        text-align:left;
+      }
+
+      html body .pl-private .pl-profile-v2-inventory img {
+        grid-row:1 / 3;
+        width:36px !important;
+        height:36px !important;
+      }
+
+      html body .pl-private .pl-profile-v2-inventory span {
+        align-self:end;
+        font-size:14px;
+        font-weight:900;
+      }
+
+      html body .pl-private .pl-profile-v2-inventory small {
+        align-self:start;
+        color:#c3b6ed;
+        font-size:9px;
+        font-weight:700;
+      }
+
+      html body .pl-private .pl-profile-v2-actions {
+        display:grid !important;
+        grid-template-columns:1fr 1fr;
+        gap:8px !important;
+      }
+
+      html body .pl-private .pl-profile-v2-actions button {
+        min-height:46px !important;
+        border-radius:13px !important;
+      }
+
+      html body .pl-private .pl-profile-v2-note {
+        padding:10px 12px;
+        border:1px solid rgba(63,83,137,.55);
+        border-radius:12px;
+        background:rgba(10,27,66,.58);
+        color:#a9b4d3;
+        text-align:center;
+        font-size:10px;
+        line-height:1.35;
       }
 
       html body .pl-private .pl-actions {
@@ -1137,10 +1457,6 @@
           <div class="pl-player-copy">
             <div class="pl-player-head">
               <strong>${escapeHtml(player.name || "Joueur")}</strong>
-              <small class="pl-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
-                <i aria-hidden="true"></i>
-                ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
-              </small>
             </div>
 
             ${privateLobbyTagMarkup(player)}
@@ -1149,6 +1465,11 @@
               ? `<div class="pl-tags"><span>Bot</span></div>`
               : ""}
           </div>
+
+          <small class="pl-status pl-card-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
+            <i aria-hidden="true"></i>
+            ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
+          </small>
 
           ${canKick
             ? `<button class="pl-kick" data-kick-id="${escapeHtml(player.id)}" type="button" aria-label="Retirer ce joueur">×</button>`
@@ -1601,6 +1922,19 @@
       if (event.target.id === "lobbyPlayerProfileBackdrop") closeProfile();
     });
 
+    document.getElementById("lobbyPlayerInventory")?.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!window.PtitBacInventory?.open) {
+        return toast("Inventaire indisponible pour le moment.");
+      }
+
+      lobbyInventoryReturnToLobby = true;
+      lobbyOpenedPlayerId = "";
+      window.PtitBacInventory.open();
+    });
+
     document.getElementById("lobbyPlayerAddFriend")?.addEventListener("click", () => {
       const target = state.players.find(p => String(p.id) === String(lobbyOpenedPlayerId));
       const code = friendCodeFor(target);
@@ -1664,6 +1998,23 @@
       });
     }
   }
+
+  document.addEventListener("click", event => {
+    if (!lobbyInventoryReturnToLobby) return;
+    if (!event.target.closest?.("#inventoryV2Back")) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    lobbyInventoryReturnToLobby = false;
+
+    try {
+      window.PtitBacInventory?.close?.();
+    } catch {}
+
+    if (session?.state?.phase === "lobby") {
+      renderLobbyV5();
+    }
+  }, true);
 
   socket.on("lobby:countdown", startLobbyCountdown);
 
