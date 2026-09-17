@@ -38,239 +38,321 @@
 }
 
 /* =========================================================
-   P'tit Bac — Accueil : badge niveau + barre XP V2
-   Inspiré d'un badge étoilé de jeu mobile.
+   P'tit Bac — Accueil : badge niveau + barre XP V3
+   Cristal premium + capsule néon, inspiré du nouveau visuel.
    ========================================================= */
 
-/* Badge étoilé */
+/* Badge de niveau cristallin — superposé à la capsule XP. */
 .home-mobile .hm-profile-copy > small{
   position:absolute !important;
-  z-index:12 !important;
-  top:48px !important;
-  left:-2px !important;
+  z-index:14 !important;
+  top:47px !important;
+  left:-6px !important;
 
-  width:39px !important;
-  height:39px !important;
+  width:52px !important;
+  height:52px !important;
   margin:0 !important;
-  padding:0 3px !important;
+  padding:0 !important;
 
   display:grid !important;
   place-items:center !important;
+  isolation:isolate !important;
+  overflow:hidden !important;
+  transform:none !important;
 
   clip-path:polygon(
     50% 0%,
-    63% 16%,
-    82% 12%,
-    86% 32%,
+    62% 13%,
+    79% 9%,
+    84% 27%,
     100% 50%,
-    86% 67%,
-    82% 88%,
-    63% 84%,
+    84% 73%,
+    79% 91%,
+    62% 87%,
     50% 100%,
-    37% 84%,
-    18% 88%,
-    14% 67%,
+    38% 87%,
+    21% 91%,
+    16% 73%,
     0% 50%,
-    14% 32%,
-    18% 12%,
-    37% 16%
+    16% 27%,
+    21% 9%,
+    38% 13%
   ) !important;
 
   border:0 !important;
   border-radius:0 !important;
-  overflow:hidden !important;
-
   background:
-    radial-gradient(circle at 38% 30%,rgba(120,220,255,.72),transparent 34%),
-    linear-gradient(145deg,#23c8ff 0%,#426cff 48%,#8d3fff 100%) !important;
-
-  filter:
-    drop-shadow(0 0 1px #8dd9ff)
-    drop-shadow(0 0 4px rgba(97,79,255,.88))
-    drop-shadow(0 4px 5px rgba(0,0,0,.28)) !important;
+    linear-gradient(145deg,#9bf5ff 0%,#2bc8ff 18%,#3572ff 49%,#7a46ff 72%,#d05cff 100%) !important;
 
   color:#fff !important;
-  text-shadow:0 1px 3px rgba(22,19,84,.65) !important;
-  font-size:1.12rem !important;
-  line-height:1.05 !important;
+  font-size:1.44rem !important;
+  line-height:1 !important;
   font-weight:1000 !important;
+  letter-spacing:-.04em !important;
   text-align:center !important;
   white-space:nowrap !important;
+  text-shadow:
+    0 2px 3px rgba(10,14,68,.78),
+    0 0 8px rgba(255,255,255,.2) !important;
+
+  filter:
+    drop-shadow(0 0 2px rgba(109,226,255,.98))
+    drop-shadow(0 0 7px rgba(65,106,255,.84))
+    drop-shadow(0 0 11px rgba(162,62,255,.42))
+    drop-shadow(0 5px 6px rgba(0,0,0,.30)) !important;
+
   pointer-events:none !important;
 }
 
-/* Petit contour intérieur du badge */
-.home-mobile .hm-profile-copy > small::after{
+/* Facettes internes du cristal. */
+.home-mobile .hm-profile-copy > small::before{
   content:"" !important;
   position:absolute !important;
   inset:4px !important;
   z-index:-1 !important;
   clip-path:inherit !important;
   background:
-    linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,0)) !important;
+    radial-gradient(circle at 30% 22%,rgba(255,255,255,.62),transparent 24%),
+    linear-gradient(150deg,rgba(73,226,255,.80) 0 24%,rgba(62,108,255,.72) 46%,rgba(142,70,255,.78) 72%,rgba(226,91,255,.62) 100%) !important;
+  box-shadow:inset 0 0 0 1px rgba(221,244,255,.52) !important;
   pointer-events:none !important;
 }
 
-/* Capsule attachée au badge */
-.home-mobile .hm-profile-copy > .ptb-home-xp-bar{
+/* Reflet diagonal façon gemme taillée. */
+.home-mobile .hm-profile-copy > small::after{
+  content:"" !important;
   position:absolute !important;
-  z-index:10 !important;
-  top:55px !important;
-  left:25px !important;
+  z-index:1 !important;
+  inset:5px !important;
+  clip-path:polygon(0 0,72% 0,38% 100%,0 100%) !important;
+  background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.02) 62%,transparent) !important;
+  mix-blend-mode:screen !important;
+  pointer-events:none !important;
+}
 
-  width:78px !important;
-  height:26px !important;
+/* Grande capsule attachée au badge. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+  position:absolute !important;
+  z-index:11 !important;
+  top:55px !important;
+  left:29px !important;
+
+  width:132px !important;
+  height:37px !important;
   margin:0 !important;
-  padding:0 7px 0 12px !important;
+  padding:0 9px 0 28px !important;
   box-sizing:border-box !important;
 
   display:flex !important;
   align-items:center !important;
-
   overflow:hidden !important;
-  border:1.5px solid #5d75ff !important;
-  border-radius:0 9px 9px 0 !important;
+  transform:none !important;
 
+  border:2px solid transparent !important;
+  border-radius:19px !important;
   background:
-    linear-gradient(180deg,rgba(35,38,115,.98),rgba(12,22,71,.99)) !important;
+    linear-gradient(180deg,rgba(20,27,88,.99),rgba(7,14,55,.99)) padding-box,
+    linear-gradient(100deg,#36d7ff 0%,#5576ff 48%,#a94dff 100%) border-box !important;
 
   box-shadow:
-    inset 0 0 9px rgba(73,157,255,.15),
-    0 0 7px rgba(84,72,255,.27),
-    0 4px 8px rgba(0,0,0,.18) !important;
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -4px 10px rgba(0,0,0,.30),
+    0 0 5px rgba(62,198,255,.38),
+    0 0 11px rgba(104,74,255,.28),
+    0 5px 10px rgba(0,0,0,.22) !important;
 
   pointer-events:none !important;
 }
 
-/* Rail intérieur derrière le remplissage */
-.home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
+/* Rail sombre intérieur. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar::before{
   content:"" !important;
   position:absolute !important;
-  left:12px !important;
-  right:7px !important;
+  z-index:0 !important;
+  left:26px !important;
+  right:8px !important;
   top:50% !important;
-  height:9px !important;
+  height:15px !important;
   transform:translateY(-50%) !important;
 
+  border:1px solid rgba(140,160,255,.42) !important;
   border-radius:999px !important;
-  background:rgba(5,11,42,.90) !important;
+  background:
+    repeating-linear-gradient(120deg,rgba(255,255,255,.022) 0 4px,transparent 4px 8px),
+    linear-gradient(180deg,#080d30,#05091f) !important;
   box-shadow:
-    inset 0 1px 3px rgba(0,0,0,.55),
-    0 0 0 1px rgba(181,196,255,.24) !important;
+    inset 0 2px 5px rgba(0,0,0,.78),
+    0 0 0 1px rgba(48,76,182,.28),
+    0 0 8px rgba(76,91,255,.10) !important;
+  pointer-events:none !important;
 }
 
-/* XP réellement remplie */
-.home-mobile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+/* Trait de lumière sur le haut de la capsule. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar::after{
+  content:"" !important;
+  position:absolute !important;
+  z-index:4 !important;
+  left:34px !important;
+  right:14px !important;
+  top:4px !important;
+  height:1px !important;
+  border-radius:999px !important;
+  background:linear-gradient(90deg,transparent,rgba(185,235,255,.78),rgba(212,187,255,.45),transparent) !important;
+  opacity:.72 !important;
+  pointer-events:none !important;
+}
+
+/* XP réellement remplie. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
   position:relative !important;
   z-index:2 !important;
 
   display:block !important;
-  height:7px !important;
+  height:12px !important;
   min-width:0 !important;
+  overflow:hidden !important;
+  transform:none !important;
 
   border-radius:999px !important;
   background:
-    linear-gradient(90deg,#20cfff 0%,#4b79ff 48%,#c049ff 100%) !important;
+    linear-gradient(90deg,#27ddff 0%,#2fbefb 18%,#4e79ff 52%,#8d52ff 76%,#dc51ff 100%) !important;
 
   box-shadow:
-    0 0 6px rgba(71,183,255,.78),
-    0 0 9px rgba(176,64,255,.40) !important;
+    inset 0 1px 1px rgba(255,255,255,.48),
+    0 0 5px rgba(55,216,255,.96),
+    0 0 10px rgba(93,106,255,.60),
+    0 0 13px rgba(208,73,255,.30) !important;
 
-  transition:width .45s ease !important;
+  transition:width .48s cubic-bezier(.22,.8,.28,1) !important;
 }
 
-/* Les deux colonnes latérales restent parfaitement en face. */
+/* Reflet vivant très léger sur le remplissage. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill::after{
+  content:"" !important;
+  position:absolute !important;
+  inset:1px 5px auto 5px !important;
+  height:3px !important;
+  border-radius:999px !important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.62),transparent) !important;
+  opacity:.82 !important;
+  animation:ptbHomeXpGlow 2.8s ease-in-out infinite !important;
+}
+
+@keyframes ptbHomeXpGlow{
+  0%,100%{opacity:.38;transform:translateX(-8%)}
+  50%{opacity:.90;transform:translateX(8%)}
+}
+
+/* Laisse un peu plus de respiration sous la nouvelle barre premium. */
 body .home-mobile .hm-side,
 body .home-mobile .hm-left,
 body .home-mobile .hm-right{
-  top:82px !important;
+  top:94px !important;
 }
 
-/* Petits iPhone */
+/* Petits iPhone. */
 @media(max-width:370px){
   .home-mobile .hm-profile-copy > small{
-    top:51px !important;
-    left:-2px !important;
-    width:36px !important;
-    height:36px !important;
-    font-size:1.03rem !important;
+    top:48px !important;
+    left:-5px !important;
+    width:48px !important;
+    height:48px !important;
+    font-size:1.30rem !important;
   }
 
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:52px !important;
-    left:23px !important;
-    width:72px !important;
-    height:25px !important;
-    padding-left:10px !important;
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+    top:55px !important;
+    left:27px !important;
+    width:118px !important;
+    height:34px !important;
+    padding-left:25px !important;
   }
 
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
-    left:12px !important;
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar::before{
+    left:24px !important;
+    height:13px !important;
+  }
+
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+    height:10px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:77px !important;
+    top:89px !important;
   }
 }
 
-/* Écrans moins hauts */
+/* Écrans moins hauts. */
 @media(max-height:760px){
   .home-mobile .hm-profile-copy > small{
-    top:45px !important;
-    width:36px !important;
-    height:36px !important;
+    top:44px !important;
+    width:47px !important;
+    height:47px !important;
+    font-size:1.28rem !important;
   }
 
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:46px !important;
-    left:23px !important;
-    height:24px !important;
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+    top:51px !important;
+    left:27px !important;
+    width:118px !important;
+    height:33px !important;
+  }
+
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar::before{
+    height:13px !important;
+  }
+
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+    height:10px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:74px !important;
+    top:85px !important;
   }
 }
 
 @media(max-height:670px){
   .home-mobile .hm-profile-copy > small{
-    top:42px !important;
-    left:-3px !important;
-    width:34px !important;
-    height:34px !important;
-    font-size:.95rem !important;
+    top:41px !important;
+    left:-4px !important;
+    width:43px !important;
+    height:43px !important;
+    font-size:1.16rem !important;
   }
 
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar{
-    top:48px !important;
-    left:22px !important;
-    width:68px !important;
-    height:23px !important;
-    padding-left:10px !important;
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+    top:47px !important;
+    left:25px !important;
+    width:108px !important;
+    height:30px !important;
+    padding-left:22px !important;
   }
 
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar::before{
-    left:11px !important;
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar::before{
+    left:21px !important;
+    right:7px !important;
+    height:11px !important;
+  }
+
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
     height:8px !important;
-  }
-
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
-    height:6px !important;
   }
 
   body .home-mobile .hm-side,
   body .home-mobile .hm-left,
   body .home-mobile .hm-right{
-    top:69px !important;
+    top:79px !important;
   }
 }
 
 @media(prefers-reduced-motion:reduce){
-  .home-mobile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill,
+  .home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill::after{
     transition:none !important;
+    animation:none !important;
   }
 }
