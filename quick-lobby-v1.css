@@ -657,3 +657,43 @@ body:has(.quick-lobby-v1){background:#09143d!important;}
   .quick-search-icon{width:54px!important;height:52px!important;}
   .quick-search-icon img{width:48px!important;height:48px!important;}
 }
+
+/* =========================================================
+   Partie rapide / public — avatar strictement identique au privé
+   Neutralise l'ancienne règle avatar-system-v2.css (44/42px).
+   ========================================================= */
+html body .lobby-v5[data-mode="quick"].quick-lobby-v1 .lobby-v5-player .lobby-v5-avatar {
+  width:clamp(106px,28vw,124px) !important;
+  height:clamp(106px,28vw,124px) !important;
+  min-width:clamp(106px,28vw,124px) !important;
+  min-height:clamp(106px,28vw,124px) !important;
+  align-self:center !important;
+  justify-self:center !important;
+}
+
+html body .lobby-v5[data-mode="quick"].quick-lobby-v1 .lobby-v5-player .lobby-v5-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
+  width:85% !important;
+  height:85% !important;
+  max-width:85% !important;
+  max-height:85% !important;
+  object-fit:cover !important;
+  object-position:center center !important;
+}
+
+html body .lobby-v5[data-mode="quick"].quick-lobby-v1 .lobby-v5-player .lobby-v5-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
+  inset:auto !important;
+  left:50% !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  width:118% !important;
+  height:118% !important;
+  max-width:none !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  object-fit:contain !important;
+  object-position:center center !important;
+  transform:translate3d(-50%,-50%,0) !important;
+  transform-origin:center center !important;
+}
