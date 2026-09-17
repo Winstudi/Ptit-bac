@@ -731,8 +731,8 @@
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
         left:50% !important;
         top:50% !important;
-        width:208% !important;
-        height:208% !important;
+        width:158% !important;
+        height:158% !important;
         max-width:none !important;
         max-height:none !important;
         transform:translate3d(-50%,-50%,0) !important;
@@ -1154,11 +1154,11 @@
       }
 
       html body .pl-private .pl-profile-v2-code {
-        width:40%;
-        min-width:132px;
-        min-height:52px;
-        justify-self:start;
-        padding:8px 11px;
+        width:102px;
+        min-width:102px;
+        min-height:44px;
+        justify-self:end;
+        padding:6px 9px;
         display:flex;
         flex-direction:column;
         align-items:flex-start;
