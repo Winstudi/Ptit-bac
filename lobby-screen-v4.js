@@ -234,9 +234,6 @@
     const self = String(player.id) === String(session.playerId);
     const code = friendCodeFor(player);
     const canSocial = !self && !player.isBot && !!code;
-    const ready = player.isBot || (player.connected && player.lobbyReady);
-    const offline = !player.isBot && !player.connected;
-
     return `
       <div class="lobby-v5-profile-backdrop pl-profile-v2-backdrop" id="lobbyPlayerProfileBackdrop">
         <section class="lobby-v5-profile-modal pl-profile-v2-modal" role="dialog" aria-modal="true" aria-label="Profil de ${escapeHtml(player.name || "Joueur")}">
@@ -253,10 +250,6 @@
             <div class="pl-profile-v2-copy">
               <strong>${escapeHtml(player.name || "Joueur")}</strong>
               ${privateLobbyTagMarkup(player)}
-              <small class="pl-profile-v2-status ${ready ? "is-ready" : ""} ${offline ? "is-offline" : ""}">
-                <i aria-hidden="true"></i>
-                ${ready ? "Prêt" : offline ? "Hors ligne" : "Pas prêt"}
-              </small>
             </div>
           </div>
 
@@ -736,8 +729,13 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:193% !important;
-        height:193% !important;
+        left:50% !important;
+        top:50% !important;
+        width:208% !important;
+        height:208% !important;
+        max-width:none !important;
+        max-height:none !important;
+        transform:translate3d(-50%,-50%,0) !important;
       }
 
       html body .pl-private .pl-avatar-role-crown {
@@ -1064,8 +1062,13 @@
       }
 
       html body .pl-private .pl-profile-v2-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:148% !important;
-        height:148% !important;
+        left:50% !important;
+        top:50% !important;
+        width:118% !important;
+        height:118% !important;
+        max-width:none !important;
+        max-height:none !important;
+        transform:translate3d(-50%,-50%,0) !important;
       }
 
       html body .pl-private .pl-profile-v2-crown {
@@ -1151,12 +1154,16 @@
       }
 
       html body .pl-private .pl-profile-v2-code {
+        width:40%;
+        min-width:132px;
         min-height:52px;
-        padding:9px 12px;
+        justify-self:start;
+        padding:8px 11px;
         display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
+        flex-direction:column;
+        align-items:flex-start;
+        justify-content:center;
+        gap:2px;
         border:1px solid rgba(63,83,137,.72);
         border-radius:13px;
         background:rgba(10,27,66,.72);
