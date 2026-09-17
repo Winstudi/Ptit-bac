@@ -251,11 +251,11 @@
               <strong>${escapeHtml(player.name || "Joueur")}</strong>
               ${privateLobbyTagMarkup(player)}
             </div>
-          </div>
 
-          <div class="pl-profile-v2-code">
-            <small>Code ami</small>
-            <strong>${player.isBot ? "Joueur test" : (code ? `#${escapeHtml(code)}` : "Indisponible")}</strong>
+            <div class="pl-profile-v2-code">
+              <small>Code ami</small>
+              <strong>${player.isBot ? "Joueur test" : (code ? `#${escapeHtml(code)}` : "Indisponible")}</strong>
+            </div>
           </div>
 
           ${self
@@ -731,8 +731,8 @@
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
         left:50% !important;
         top:50% !important;
-        width:158% !important;
-        height:158% !important;
+        width:90% !important;
+        height:90% !important;
         max-width:none !important;
         max-height:none !important;
         transform:translate3d(-50%,-50%,0) !important;
@@ -1154,30 +1154,33 @@
       }
 
       html body .pl-private .pl-profile-v2-code {
-        width:102px;
-        min-width:102px;
-        min-height:44px;
-        justify-self:end;
-        padding:6px 9px;
+        position:absolute;
+        z-index:6;
+        right:10px;
+        bottom:9px;
+        width:82px;
+        min-width:82px;
+        min-height:39px;
+        padding:5px 8px;
         display:flex;
         flex-direction:column;
         align-items:flex-start;
         justify-content:center;
-        gap:2px;
+        gap:1px;
         border:1px solid rgba(63,83,137,.72);
-        border-radius:13px;
-        background:rgba(10,27,66,.72);
+        border-radius:11px;
+        background:rgba(10,27,66,.78);
       }
 
       html body .pl-private .pl-profile-v2-code small {
         color:#9faed3;
-        font-size:10px;
+        font-size:9px;
         font-weight:700;
       }
 
       html body .pl-private .pl-profile-v2-code strong {
         color:#eeeaff;
-        font-size:12px;
+        font-size:11px;
         font-weight:900;
       }
 
