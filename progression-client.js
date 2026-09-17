@@ -231,7 +231,11 @@
       }
 
       const medal = card.querySelector(".fin-medal");
-      if (medal && !card.querySelector(".fin-rank-crown")) {
+      const isWinner = card.classList.contains("place-1");
+
+      if (!isWinner) {
+        card.querySelectorAll(".fin-rank-crown").forEach(crown => crown.remove());
+      } else if (medal && !card.querySelector(".fin-rank-crown")) {
         const crown = document.createElement("img");
         crown.className = "fin-rank-crown";
         crown.src = "/admin-crown.png";
@@ -296,17 +300,28 @@
     const home = root.querySelector("#finHome");
     const replay = root.querySelector("#finReplay, #finQuick");
 
-    if (home) {
-      home.textContent = "↻ Continuer";
-      home.classList.add("fin-continue");
-      if (actions && actions.firstElementChild !== home) {
-        actions.insertBefore(home, actions.firstElementChild);
+    if (replay) {
+      replay.textContent = "Retour au salon";
+      replay.classList.remove("fin-replay-secondary");
+      replay.classList.add("fin-return-lobby");
+
+      if (actions && actions.firstElementChild !== replay) {
+        actions.insertBefore(replay, actions.firstElementChild);
       }
     }
 
-    if (replay) {
-      replay.textContent = "↻ Rejouer";
-      replay.classList.add("fin-replay-secondary");
+    if (home) {
+      home.textContent = "Retour à l’accueil";
+      home.classList.remove("fin-continue");
+      home.classList.add("fin-home-secondary");
+
+      if (actions) {
+        if (replay && replay.nextElementSibling !== home) {
+          replay.insertAdjacentElement("afterend", home);
+        } else if (!replay && actions.lastElementChild !== home) {
+          actions.appendChild(home);
+        }
+      }
     }
   }
 
@@ -387,7 +402,6 @@
         card.innerHTML = `
           <div class="ptb-final-reward-heading">
             <small>TES GAINS</small>
-            <h2>Récompenses <span>obtenues</span></h2>
             <p>Chargement de ta progression…</p>
           </div>`;
       }
@@ -445,7 +459,6 @@
       card.innerHTML = `
         <div class="ptb-final-reward-heading">
           <small>TES GAINS</small>
-          <h2>Récompenses <span>obtenues</span></h2>
           <p>${rewardSubtitle(roomState, progressionEnabled)}</p>
         </div>
 
