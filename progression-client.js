@@ -156,167 +156,190 @@
 
       .ptb-levels-overlay{
         position:fixed;inset:0;z-index:100030;display:flex;align-items:stretch;justify-content:center;
-        background:rgba(1,4,20,.76);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+        background:rgba(0,0,0,.32);
         opacity:0;pointer-events:none;transition:opacity .24s ease;
       }
       .ptb-levels-overlay.is-open{opacity:1;pointer-events:auto}
       .ptb-levels-panel{
-        width:min(100vw,520px);height:100%;overflow:hidden;position:relative;
+        width:min(100vw,430px);height:100%;overflow:hidden;position:relative;
         background:
-          radial-gradient(circle at top right,rgba(110,69,255,.20),transparent 32%),
-          radial-gradient(circle at left center,rgba(27,190,255,.14),transparent 28%),
-          linear-gradient(180deg,#07164b 0%,#08194d 38%,#071543 100%);
+          radial-gradient(circle at 85% 3%,rgba(172,80,255,.20),transparent 15%),
+          radial-gradient(circle at 14% 95%,rgba(76,107,255,.34),transparent 18%),
+          radial-gradient(circle at 8% 100%,rgba(93,54,255,.26),transparent 24%),
+          linear-gradient(180deg,#07134b 0%,#061446 100%);
         color:#fff;
         font-family:"DM Sans",system-ui,sans-serif;
       }
       .ptb-levels-panel::before{
-        content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;
-        background:linear-gradient(135deg,transparent 0 72%,rgba(255,255,255,.05) 82%,transparent 100%);
+        content:"";position:absolute;inset:0;pointer-events:none;opacity:.9;
+        background:
+          radial-gradient(circle at 15% 8%,rgba(255,255,255,.18) 0 1.2px,transparent 1.4px),
+          radial-gradient(circle at 72% 10%,rgba(255,255,255,.15) 0 1.2px,transparent 1.4px),
+          radial-gradient(circle at 40% 36%,rgba(255,255,255,.12) 0 1px,transparent 1.2px),
+          radial-gradient(circle at 90% 42%,rgba(255,255,255,.10) 0 1.1px,transparent 1.3px),
+          radial-gradient(circle at 62% 68%,rgba(255,255,255,.08) 0 .9px,transparent 1.1px);
       }
-      .ptb-levels-scroll{position:relative;height:100%;overflow:auto;padding:18px 16px 34px;scroll-behavior:smooth}
-      .ptb-levels-header{display:flex;align-items:center;justify-content:center;position:relative;padding:6px 0 18px}
+      .ptb-levels-scroll{position:relative;height:100%;overflow:auto;padding:18px 16px 28px;scroll-behavior:smooth}
+      .ptb-levels-scroll::-webkit-scrollbar{width:0;height:0}
+      .ptb-levels-header{display:flex;align-items:center;justify-content:center;position:relative;padding:0 0 14px}
       .ptb-levels-back{
-        position:absolute;left:0;top:0;width:54px;height:54px;border:1px solid rgba(114,160,255,.22);border-radius:50%;
-        background:linear-gradient(180deg,rgba(36,82,210,.92),rgba(20,44,123,.9));box-shadow:inset 0 1px 1px rgba(255,255,255,.15),0 12px 32px rgba(0,0,0,.22);
+        position:absolute;left:0;top:0;width:52px;height:52px;border:1px solid rgba(82,158,255,.68);border-radius:16px;
+        background:linear-gradient(180deg,#164ac9,#0b2f8b);box-shadow:inset 0 1px 2px rgba(255,255,255,.16),0 0 0 2px rgba(25,108,255,.12),0 10px 22px rgba(0,0,0,.22),0 0 24px rgba(63,154,255,.32);
         display:grid;place-items:center;cursor:pointer;
       }
-      .ptb-levels-back img{width:24px;height:24px;object-fit:contain;display:block}
-      .ptb-levels-title{margin:0;font-size:2rem;font-weight:900;letter-spacing:-.02em}
+      .ptb-levels-back img{width:22px;height:22px;object-fit:contain;display:block;filter:brightness(1.18)}
+      .ptb-levels-title{
+        margin:0;font-size:3.05rem;font-weight:1000;letter-spacing:-.03em;color:#fff;
+        text-shadow:0 0 12px rgba(125,229,255,.35),0 0 18px rgba(185,96,255,.40),0 4px 10px rgba(0,0,0,.28)
+      }
 
       .ptb-levels-hero{
-        border:1px solid rgba(107,153,255,.26);border-radius:30px;padding:18px 16px 16px;position:relative;overflow:hidden;
-        background:linear-gradient(180deg,rgba(16,41,130,.96),rgba(11,24,89,.95));
-        box-shadow:inset 0 0 0 1px rgba(88,117,255,.20),0 24px 44px rgba(0,0,0,.24),0 0 0 1px rgba(93,54,255,.20);
+        position:relative;overflow:hidden;border-radius:32px;padding:20px 18px 18px;
+        background:linear-gradient(180deg,rgba(11,33,119,.97),rgba(6,19,78,.98));
+        border:1px solid rgba(78,194,255,.62);
+        box-shadow:inset 0 0 0 1px rgba(115,105,255,.22),0 0 0 2px rgba(65,75,255,.10),0 0 18px rgba(53,173,255,.28),0 0 28px rgba(200,75,255,.20);
       }
       .ptb-levels-hero::after{
-        content:"";position:absolute;inset:0;pointer-events:none;
-        background:radial-gradient(circle at 85% 6%,rgba(134,74,255,.18),transparent 18%),linear-gradient(180deg,rgba(255,255,255,.05),transparent 38%);
+        content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+        box-shadow:inset -4px -3px 18px rgba(217,77,255,.18),inset 4px 3px 18px rgba(80,221,255,.12);
       }
-      .ptb-levels-hero-top{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:center}
-      .ptb-levels-hero-badge{position:relative;width:132px;height:132px;display:grid;place-items:center;flex:none}
-      .ptb-levels-hero-badge img{width:132px;height:132px;display:block;object-fit:contain;filter:drop-shadow(0 12px 18px rgba(0,0,0,.28))}
-      .ptb-levels-hero-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:3.3rem;font-weight:1000;letter-spacing:-.05em;text-shadow:0 3px 8px rgba(8,10,43,.95)}
-      .ptb-levels-hero-copy h2{margin:0;font-size:1.18rem;font-weight:900}
-      .ptb-levels-hero-copy p{margin:4px 0 14px;color:#c6d4ff;font-size:.95rem;line-height:1.25}
+      .ptb-levels-hero-top{display:grid;grid-template-columns:124px minmax(0,1fr);gap:18px;align-items:center}
+      .ptb-levels-hero-badge{position:relative;width:124px;height:124px;display:grid;place-items:center}
+      .ptb-levels-hero-badge img{width:124px;height:124px;display:block;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.28))}
+      .ptb-levels-hero-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:4rem;font-weight:1000;letter-spacing:-.06em;text-shadow:0 4px 8px rgba(8,10,43,.96)}
+      .ptb-levels-hero-copy h2{margin:0 0 14px;font-size:1.12rem;font-weight:900;color:#f5dbff}
       .ptb-levels-hero-track{
-        width:100%;height:58px;padding:0 13%;box-sizing:border-box;display:flex;align-items:center;
+        width:100%;height:50px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
         background:url('/level-bar-shell-v1.png') center/100% 100% no-repeat;
-        filter:drop-shadow(0 10px 18px rgba(0,0,0,.20));
+        filter:drop-shadow(0 8px 14px rgba(0,0,0,.22));
       }
       .ptb-levels-hero-fill{
         position:relative;display:block;height:15px;width:0;border-radius:999px;overflow:hidden;min-width:0;
-        background:linear-gradient(90deg,#29e1ff 0%,#2ec5ff 20%,#5379ff 52%,#9551ff 76%,#e250ff 100%);
-        box-shadow:inset 0 1px 1px rgba(255,255,255,.72),0 0 6px rgba(47,214,255,.95),0 0 9px rgba(88,96,255,.6),0 0 12px rgba(211,75,255,.35);
+        background:linear-gradient(90deg,#69e6ff 0%,#45d6ff 20%,#4d8fff 48%,#8c5bff 74%,#f257ff 100%);
+        box-shadow:inset 0 1px 1px rgba(255,255,255,.72),0 0 6px rgba(47,214,255,.95),0 0 10px rgba(88,96,255,.64),0 0 12px rgba(211,75,255,.35);
         transition:width .48s cubic-bezier(.22,.8,.28,1);
       }
       .ptb-levels-hero-fill::after{
         content:"";position:absolute;left:8px;right:8px;top:2px;height:3px;border-radius:999px;
-        background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);opacity:.7;
+        background:linear-gradient(90deg,transparent,rgba(255,255,255,.82),transparent);opacity:.72;
       }
-      .ptb-levels-hero-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:.94rem;color:#f1f3ff}
+      .ptb-levels-hero-meta{margin-top:8px;display:block;font-size:1.04rem;font-weight:1000;color:#eef5ff}
+      .ptb-levels-hero-meta strong{font-size:1.34rem;letter-spacing:-.02em}
       .ptb-levels-hero-reward{
-        margin-top:14px;border:1px solid rgba(82,112,255,.16);border-radius:19px;padding:12px 14px;
-        display:flex;align-items:center;gap:12px;background:rgba(4,14,60,.55);
+        margin-top:16px;border-radius:22px;padding:14px 18px;display:flex;align-items:center;gap:14px;
+        background:linear-gradient(180deg,rgba(7,25,95,.95),rgba(8,20,78,.95));
+        border:1px solid rgba(84,113,255,.28);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
       }
-      .ptb-levels-hero-reward img{width:36px;height:36px;object-fit:contain;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.24))}
-      .ptb-levels-hero-reward b{color:#ffd75e}
+      .ptb-levels-hero-reward img{width:42px;height:42px;object-fit:contain;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))}
+      .ptb-levels-hero-reward span{font-size:1rem;font-weight:800;color:#edf0ff}
+      .ptb-levels-hero-reward b{color:#ffd85f;font-size:1.12rem}
 
-      .ptb-levels-list{
-        position:relative;margin-top:18px;padding-left:34px;
-      }
+      .ptb-levels-list{position:relative;margin-top:16px;padding-left:28px}
       .ptb-levels-line{
-        position:absolute;left:11px;top:14px;bottom:22px;width:2px;border-radius:999px;
-        background:linear-gradient(180deg,rgba(71,205,255,.82),rgba(75,127,255,.55));
-        box-shadow:0 0 10px rgba(71,205,255,.35);
+        position:absolute;left:7px;top:8px;bottom:70px;width:3px;border-radius:999px;
+        background:linear-gradient(180deg,#49e1ff 0%,#66dbff 30%,#8a93ff 64%,#afb8ff 100%);
+        box-shadow:0 0 10px rgba(87,209,255,.45);
       }
-      .ptb-level-row{position:relative;margin-bottom:14px}
+      .ptb-level-row{position:relative;margin:0 0 12px}
       .ptb-level-dot{
-        position:absolute;left:-34px;top:36px;width:18px;height:18px;border-radius:50%;
-        border:2px solid rgba(96,167,255,.8);background:linear-gradient(180deg,#84ebff,#59a4ff);
-        box-shadow:0 0 12px rgba(87,190,255,.45);
+        position:absolute;left:-32px;top:34px;width:18px;height:18px;border-radius:50%;
+        border:3px solid rgba(169,192,255,.88);background:transparent;box-shadow:0 0 0 2px rgba(0,0,0,.06);
+      }
+      .ptb-level-row.is-completed .ptb-level-dot{
+        width:32px;height:32px;left:-39px;top:27px;border:none;
+        background:radial-gradient(circle at 35% 35%,#abf4ff 0 32%,#62d7ff 33%,#53bfff 62%,#1c85d6 100%);
+        box-shadow:0 0 18px rgba(84,214,255,.55);
       }
       .ptb-level-row.is-current .ptb-level-dot{
-        width:28px;height:28px;left:-39px;top:31px;border:4px solid rgba(90,223,255,.45);background:#8fedff;
-        box-shadow:0 0 0 4px rgba(49,93,255,.20),0 0 16px rgba(84,217,255,.6);
-      }
-      .ptb-level-row.is-locked .ptb-level-dot{
-        background:transparent;border-color:rgba(129,151,218,.7);box-shadow:none;
+        width:34px;height:34px;left:-40px;top:26px;border:5px solid rgba(228,145,255,.55);background:#ffffff;
+        box-shadow:0 0 0 2px rgba(112,112,255,.12),0 0 22px rgba(221,108,255,.45);
       }
       .ptb-level-card{
-        display:grid;grid-template-columns:78px minmax(0,1fr) auto auto;align-items:center;gap:12px;
-        border:1px solid rgba(90,110,255,.14);border-radius:24px;padding:12px 12px 12px 10px;
-        background:linear-gradient(180deg,rgba(11,32,105,.95),rgba(8,24,80,.95));
-        box-shadow:0 14px 28px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.04);
+        min-height:104px;border-radius:24px;padding:14px 16px;display:grid;align-items:center;
+        grid-template-columns:104px minmax(0,1fr) 170px 54px;gap:14px;
+        background:linear-gradient(180deg,rgba(10,32,111,.98),rgba(6,24,91,.98));
+        border:1px solid rgba(77,121,255,.28);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 12px 24px rgba(0,0,0,.16);
       }
       .ptb-level-row.is-current .ptb-level-card{
-        border-color:rgba(132,100,255,.55);
-        box-shadow:0 0 0 1px rgba(34,209,255,.34),0 16px 30px rgba(0,0,0,.20),0 0 24px rgba(172,61,255,.18);
-        background:linear-gradient(90deg,rgba(10,46,132,.98),rgba(34,32,136,.98) 62%,rgba(68,24,125,.98));
+        background:linear-gradient(90deg,rgba(10,43,141,.98) 0%,rgba(28,49,166,.98) 52%,rgba(89,31,154,.98) 100%);
+        border-color:rgba(105,216,255,.58);
+        box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 0 16px rgba(61,194,255,.32),0 0 18px rgba(213,86,255,.26);
       }
-      .ptb-level-row.is-locked .ptb-level-card{opacity:.82}
-      .ptb-level-mini-badge{position:relative;width:74px;height:74px;display:grid;place-items:center;flex:none}
-      .ptb-level-mini-badge img{width:74px;height:74px;object-fit:contain;display:block;filter:drop-shadow(0 8px 12px rgba(0,0,0,.22))}
-      .ptb-level-row.is-locked .ptb-level-mini-badge img{filter:grayscale(.35) saturate(.45) brightness(.86) drop-shadow(0 8px 12px rgba(0,0,0,.20))}
-      .ptb-level-mini-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:2rem;font-weight:1000;letter-spacing:-.04em;text-shadow:0 2px 4px rgba(6,10,40,.95)}
-      .ptb-level-copy strong{display:block;font-size:1.08rem;line-height:1.1}
-      .ptb-level-copy small{display:block;margin-top:4px;font-size:.86rem;color:#b8c4f5}
+      .ptb-level-row.is-locked .ptb-level-card{opacity:.98}
+      .ptb-level-mini-badge{position:relative;width:104px;height:104px;display:grid;place-items:center;justify-self:start}
+      .ptb-level-mini-badge img{width:104px;height:104px;object-fit:contain;display:block;filter:drop-shadow(0 7px 10px rgba(0,0,0,.22))}
+      .ptb-level-row.is-completed .ptb-level-mini-badge img{width:88px;height:88px}
+      .ptb-level-row.is-locked .ptb-level-mini-badge img{filter:grayscale(.35) saturate(.58) brightness(.88) drop-shadow(0 7px 10px rgba(0,0,0,.20))}
+      .ptb-level-mini-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:3.28rem;font-weight:1000;letter-spacing:-.05em;text-shadow:0 3px 6px rgba(7,10,41,.98)}
+      .ptb-level-row.is-completed .ptb-level-mini-badge b,
+      .ptb-level-row.is-locked .ptb-level-mini-badge b{font-size:2.35rem}
+      .ptb-level-copy{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+      .ptb-level-copy strong{display:block;font-size:1.18rem;line-height:1.06;color:#fff}
+      .ptb-level-copy small{display:block;font-size:1rem;line-height:1.06;color:#9fb0ef;font-weight:700}
+      .ptb-level-row.is-completed .ptb-level-copy small{color:#50f4ff}
+      .ptb-level-row.is-current .ptb-level-copy small{
+        color:#fff;border-radius:999px;padding:8px 18px;font-weight:900;
+        background:linear-gradient(90deg,#36d7ff,#7a8aff 56%,#e55bff);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 12px rgba(94,207,255,.30)
+      }
       .ptb-level-reward{
-        min-width:116px;border-radius:999px;padding:10px 14px;display:flex;align-items:center;justify-content:center;gap:8px;
-        background:linear-gradient(180deg,rgba(32,53,139,.95),rgba(25,40,112,.95));border:1px solid rgba(96,118,223,.22);
-        color:#fff;font-weight:900;white-space:nowrap
+        justify-self:end;width:100%;height:58px;border-radius:20px;padding:0 18px;box-sizing:border-box;
+        display:flex;align-items:center;justify-content:flex-start;gap:12px;
+        background:linear-gradient(180deg,rgba(8,22,76,.95),rgba(7,18,62,.95));
+        border:1px solid rgba(71,90,194,.36);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
       }
-      .ptb-level-reward img{width:22px;height:22px;object-fit:contain;display:block}
-      .ptb-level-status{width:36px;height:36px;display:grid;place-items:center;flex:none}
-      .ptb-level-status i,
-      .ptb-level-status img{display:block}
+      .ptb-level-reward img{width:36px;height:36px;object-fit:contain;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18))}
+      .ptb-level-reward span{font-size:1rem;font-weight:900;color:#ffe26f;white-space:nowrap}
+      .ptb-level-status{display:grid;place-items:center;justify-self:end;width:54px;height:54px}
+      .ptb-level-status i,.ptb-level-status img{display:block}
       .ptb-level-status .ptb-check{
-        width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,#5cd7ff,#5e9fff);
-        color:#05225a;font-weight:1000;font-style:normal;font-size:1.2rem;box-shadow:0 0 14px rgba(95,178,255,.34);
+        width:50px;height:50px;border-radius:50%;display:grid;place-items:center;
+        border:4px solid rgba(72,225,255,.95);background:rgba(10,31,104,.84);color:#7af0ff;font-weight:1000;font-style:normal;font-size:1.8rem;
+        box-shadow:0 0 18px rgba(72,225,255,.30);
       }
-      .ptb-level-status .ptb-lock{
-        width:26px;height:26px;opacity:.9;filter:brightness(1.16)
-      }
-      .ptb-level-status .ptb-current{
-        width:12px;height:12px;border-radius:50%;background:#dff8ff;box-shadow:0 0 16px rgba(115,233,255,.8);
-      }
-      .ptb-levels-help{
-        margin-top:18px;border:1px solid rgba(82,112,255,.14);border-radius:28px;padding:18px 16px;display:flex;align-items:center;gap:14px;
-        background:linear-gradient(180deg,rgba(9,26,92,.94),rgba(7,20,72,.96));box-shadow:0 18px 30px rgba(0,0,0,.16)
-      }
-      .ptb-levels-help-icon{
-        width:64px;height:64px;border-radius:20px;display:grid;place-items:center;background:rgba(8,18,73,.78);border:1px solid rgba(90,121,246,.22)
-      }
-      .ptb-levels-help-icon span{display:flex;align-items:flex-end;gap:5px;height:28px}
-      .ptb-levels-help-icon i{display:block;width:8px;border-radius:999px;background:linear-gradient(180deg,#8ae3ff,#4d8fff);box-shadow:0 0 10px rgba(97,190,255,.45)}
-      .ptb-levels-help-icon i:nth-child(1){height:14px}
-      .ptb-levels-help-icon i:nth-child(2){height:22px}
-      .ptb-levels-help-icon i:nth-child(3){height:30px}
-      .ptb-levels-help-copy strong{display:block;font-size:1.15rem;line-height:1.15}
-      .ptb-levels-help-copy small{display:block;margin-top:6px;font-size:.96rem;color:#b8c4f5;line-height:1.3}
+      .ptb-level-status .ptb-empty{width:50px;height:50px}
+
+      .ptb-levels-footer{padding:10px 0 0;text-align:center}
+      .ptb-levels-footer-dots{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+      .ptb-levels-footer-dots i{width:7px;height:7px;border-radius:50%;background:#9baeff;box-shadow:0 0 10px rgba(155,174,255,.35)}
+      .ptb-levels-footer p{margin:0;color:#b9bffc;font-size:1rem;font-weight:600}
 
       @media (max-width:420px){
-        .ptb-levels-scroll{padding:16px 12px 28px}
-        .ptb-levels-title{font-size:1.84rem}
-        .ptb-levels-hero{padding:16px 14px 14px}
-        .ptb-levels-hero-top{grid-template-columns:114px minmax(0,1fr);gap:10px}
-        .ptb-levels-hero-badge,
-        .ptb-levels-hero-badge img{width:114px;height:114px}
-        .ptb-levels-hero-badge b{font-size:2.85rem}
-        .ptb-levels-hero-track{height:52px}
+        .ptb-levels-scroll{padding:16px 14px 24px}
+        .ptb-levels-title{font-size:2.75rem}
+        .ptb-levels-hero{padding:18px 16px 16px}
+        .ptb-levels-hero-top{grid-template-columns:112px minmax(0,1fr);gap:14px}
+        .ptb-levels-hero-badge,.ptb-levels-hero-badge img{width:112px;height:112px}
+        .ptb-levels-hero-badge b{font-size:3.65rem}
+        .ptb-levels-hero-track{height:46px}
         .ptb-levels-hero-fill{height:13px}
-        .ptb-level-card{grid-template-columns:70px minmax(0,1fr);grid-template-areas:'badge copy' 'reward status';gap:10px;padding:11px 11px 11px 9px}
-        .ptb-level-mini-badge{grid-area:badge;width:66px;height:66px}
-        .ptb-level-mini-badge img{width:66px;height:66px}
-        .ptb-level-mini-badge b{font-size:1.76rem}
-        .ptb-level-copy{grid-area:copy}
-        .ptb-level-reward{grid-area:reward;justify-self:start;min-width:0}
-        .ptb-level-status{grid-area:status;justify-self:end}
+        .ptb-levels-hero-meta strong{font-size:1.22rem}
+        .ptb-levels-hero-reward{padding:12px 14px;gap:12px}
+        .ptb-levels-hero-reward img{width:38px;height:38px}
+        .ptb-levels-line{left:8px}
+        .ptb-level-card{min-height:98px;grid-template-columns:86px minmax(0,1fr) 136px 42px;gap:10px;padding:12px 12px 12px 12px}
+        .ptb-level-mini-badge{width:86px;height:86px}
+        .ptb-level-mini-badge img{width:86px;height:86px}
+        .ptb-level-row.is-completed .ptb-level-mini-badge img{width:74px;height:74px}
+        .ptb-level-mini-badge b{font-size:2.8rem}
+        .ptb-level-row.is-completed .ptb-level-mini-badge b,.ptb-level-row.is-locked .ptb-level-mini-badge b{font-size:2rem}
+        .ptb-level-copy strong{font-size:1rem}
+        .ptb-level-copy small{font-size:.92rem}
+        .ptb-level-row.is-current .ptb-level-copy small{padding:7px 14px}
+        .ptb-level-reward{height:54px;padding:0 14px;gap:10px;border-radius:18px}
+        .ptb-level-reward img{width:32px;height:32px}
+        .ptb-level-reward span{font-size:.92rem}
+        .ptb-level-status,.ptb-level-status .ptb-empty{width:42px;height:42px}
+        .ptb-level-status .ptb-check{width:42px;height:42px;font-size:1.55rem;border-width:3px}
       }
     `;
     document.head.appendChild(style);
   }
 
   function levelRewardCoins() {
+
     return LEVEL_REWARD_COINS;
   }
 
@@ -327,24 +350,20 @@
   }
 
   function levelSubtitle(level, currentLevel) {
-    if (level < currentLevel) {
-      const lines = ["Bien joué !", "Toujours plus loin !", "Tu assures !", "Bravo !", "Excellent rythme !"];
-      return lines[(level - 1) % lines.length];
-    }
-    if (level === currentLevel) return "C'est parti !";
-    const delta = level - currentLevel;
-    if (delta === 1) return "Encore un peu...";
-    if (delta <= 3) return "Bientôt !";
-    return "Continue à jouer !";
+    if (level < currentLevel) return "Complété !";
+    if (level === currentLevel) return "Actuel";
+    return "À venir";
   }
 
   function lockIconMarkup() {
-    return `
-      <svg class="ptb-lock" viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M7.5 10V7.8a4.5 4.5 0 119 0V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <rect x="5.2" y="10" width="13.6" height="10.6" rx="3.2" fill="currentColor" opacity=".92"/>
-        <circle cx="12" cy="15.2" r="1.5" fill="#07184d"/>
-      </svg>`;
+    return "";
+  }
+
+  function visibleLevelWindow(currentLevel) {
+    const safeLevel = Math.max(1, Math.min(50, Math.floor(Number(currentLevel) || 1)));
+    const start = Math.max(1, Math.min(safeLevel - 3, 44));
+    const end = Math.min(50, start + 6);
+    return { start, end };
   }
 
   function ensureLevelsOverlay() {
@@ -372,7 +391,6 @@
 
               <div class="ptb-levels-hero-copy">
                 <h2>Niveau actuel</h2>
-                <p data-level-next-message>Continue de jouer pour atteindre le niveau 2 !</p>
                 <div class="ptb-levels-hero-track" role="progressbar" aria-label="Progression du niveau actuel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                   <i class="ptb-levels-hero-fill"></i>
                 </div>
@@ -383,21 +401,17 @@
             </div>
             <div class="ptb-levels-hero-reward">
               <img src="/coin.png" alt="">
-              <span>Récompense du niveau : <b data-level-reward>50 pièces</b></span>
+              <span>Récompense à chaque niveau : <b data-level-reward>50 pièces</b></span>
             </div>
           </section>
 
           <section class="ptb-levels-list" aria-label="Progression des niveaux">
             <span class="ptb-levels-line" aria-hidden="true"></span>
             <div data-level-rows></div>
-          </section>
-
-          <section class="ptb-levels-help">
-            <div class="ptb-levels-help-icon" aria-hidden="true"><span><i></i><i></i><i></i></span></div>
-            <div class="ptb-levels-help-copy">
-              <strong>Joue des parties et gagne de l’XP</strong>
-              <small>Plus tu joues, plus tu montes de niveau !</small>
-            </div>
+            <footer class="ptb-levels-footer">
+              <div class="ptb-levels-footer-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <p>Jusqu’au niveau 50...</p>
+            </footer>
           </section>
         </div>
       </div>`;
@@ -422,7 +436,6 @@
     const current = readCache() || normalizeState({ level:1, totalXp:0, xpIntoLevel:0, xpForNext:100, progress:0, progressPercent:0, maxLevel:false, trophies:0, completedGames:0, wins:0 });
 
     const levelNode = overlay.querySelector("[data-level-current]");
-    const nextNode = overlay.querySelector("[data-level-next-message]");
     const xpNode = overlay.querySelector("[data-level-xp]");
     const rewardNode = overlay.querySelector("[data-level-reward]");
     const track = overlay.querySelector(".ptb-levels-hero-track");
@@ -430,11 +443,6 @@
     const rowsHost = overlay.querySelector("[data-level-rows]");
 
     if (levelNode) levelNode.textContent = String(current.level);
-    if (nextNode) {
-      nextNode.textContent = current.maxLevel
-        ? "Niveau maximum atteint !"
-        : `Continue de jouer pour atteindre le niveau ${Math.min(50, current.level + 1)} !`;
-    }
     if (xpNode) {
       xpNode.textContent = current.maxLevel
         ? "Niveau maximum"
@@ -444,14 +452,13 @@
     if (track) track.setAttribute("aria-valuenow", String(Math.round(current.progressPercent)));
     if (fill) fill.style.width = `${current.progressPercent}%`;
 
+    const { start, end } = visibleLevelWindow(current.level);
     const parts = [];
-    for (let level = 1; level <= 50; level += 1) {
+    for (let level = start; level <= end; level += 1) {
       const status = levelStatus(level, current.level);
       const statusMarkup = status === "completed"
         ? '<i class="ptb-check">✓</i>'
-        : status === "current"
-          ? '<i class="ptb-current"></i>'
-          : lockIconMarkup();
+        : '<i class="ptb-empty"></i>';
 
       parts.push(`
         <article class="ptb-level-row is-${status}" data-level-row="${level}">
