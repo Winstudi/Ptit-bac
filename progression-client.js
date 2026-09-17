@@ -506,26 +506,33 @@
   }
 
   function bindLevelEntry(copy, target) {
-    if (!copy || !target || target.dataset.ptbLevelTriggerBound === "1") return;
-    target.dataset.ptbLevelTriggerBound = "1";
-    target.classList.add("ptb-level-entry-trigger");
-    target.setAttribute("role", "button");
-    target.setAttribute("tabindex", "0");
-    target.setAttribute("aria-label", "Ouvrir la page des niveaux");
+    const profileButton = copy?.closest?.(".hm-profile");
+    if (!copy || !profileButton || profileButton.dataset.ptbLevelTriggerBound === "1") return;
 
-    const open = event => {
-      event.preventDefault();
-      event.stopPropagation();
-      requestState({ force:false }).catch(() => readCache()).finally(() => openLevelsOverlay(target));
+    profileButton.dataset.ptbLevelTriggerBound = "1";
+
+    const isInside = (event, node) => {
+      if (!node || !Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return false;
+      const rect = node.getBoundingClientRect();
+      return event.clientX >= rect.left && event.clientX <= rect.right &&
+        event.clientY >= rect.top && event.clientY <= rect.bottom;
     };
 
-    target.addEventListener("click", open);
-    target.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        open(event);
-      }
-    });
+    profileButton.addEventListener("click", event => {
+      const levelNode = copy.querySelector("small");
+      const barNode = copy.querySelector(".ptb-home-xp-bar");
+      if (!isInside(event, levelNode) && !isInside(event, barNode)) return;
+
+      // Le badge et la barre sont des éléments décoratifs en pointer-events:none :
+      // le tap arrive donc sur le bouton Profil. On l'intercepte seulement dans
+      // leur zone pour ouvrir Niveaux, sans casser le clic avatar/pseudo.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      requestState({ force:false })
+        .catch(() => readCache())
+        .finally(() => openLevelsOverlay(profileButton));
+    }, true);
   }
 
   function patchHome() {
@@ -558,7 +565,6 @@
     const fill = bar.querySelector(".ptb-home-xp-fill");
     if (fill) fill.style.width = `${current.progressPercent}%`;
 
-    bindLevelEntry(copy, level);
     bindLevelEntry(copy, bar);
   }
 
