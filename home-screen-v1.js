@@ -505,6 +505,13 @@
             </span>
           </button>
 
+          <button
+            id="homeLevelsOpen"
+            type="button"
+            aria-label="Ouvrir la page des niveaux"
+            style="position:absolute;left:0;top:38px;width:168px;height:68px;padding:0;border:0;background:transparent;z-index:35;opacity:0;pointer-events:auto;touch-action:manipulation;"
+          ></button>
+
           <div class="hm-resources" aria-label="Mes ressources">
             <button id="homePlaqueLivesBtn" type="button" aria-label="Mes vies">
               ${img("heart")}
@@ -684,6 +691,18 @@
     `);
 
     bindHomeGameActions();
+
+    document.getElementById("homeLevelsOpen")?.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (window.PtitBacProgression?.openLevels) {
+        window.PtitBacProgression.openLevels(event.currentTarget);
+        return;
+      }
+
+      toast("Page des niveaux indisponible pour le moment.");
+    });
 
     const menu = document.getElementById("homeMenu");
     const trigger = document.getElementById("homeMenuButton");
