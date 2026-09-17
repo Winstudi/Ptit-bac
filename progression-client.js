@@ -147,7 +147,7 @@
       @keyframes ptbLevelBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.72)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}32%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-58%) scale(.94)}}
       @keyframes ptbStarSpin{0%{opacity:0;transform:scale(.4) rotate(0)}30%,75%{opacity:1}100%{opacity:0;transform:scale(1.4) rotate(180deg)}}
 
-      .ptb-level-entry-trigger{cursor:pointer}
+      .ptb-level-entry-trigger{cursor:pointer;pointer-events:auto!important;touch-action:manipulation}
       .ptb-level-entry-trigger:focus-visible{
         outline:2px solid rgba(118,224,255,.95);
         outline-offset:2px;
