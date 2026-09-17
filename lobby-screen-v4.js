@@ -703,16 +703,16 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
-        width:100% !important;
-        height:100% !important;
-        max-width:100% !important;
-        max-height:100% !important;
+        width:95% !important;
+        height:95% !important;
+        max-width:95% !important;
+        max-height:95% !important;
         border-radius:0 !important;
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:138% !important;
-        height:138% !important;
+        width:143% !important;
+        height:143% !important;
       }
 
       html body .pl-private .pl-avatar-role-crown {
