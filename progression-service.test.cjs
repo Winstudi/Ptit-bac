@@ -16,15 +16,9 @@ const token = suffix => (String(suffix).padStart(48, "a")).slice(-48);
 
 function room(overrides = {}) {
   return {
-    code: "ABCDE",
-    mode: "quick",
-    phase: "finished",
-    rounds: 1,
-    roundIndex: 0,
-    entryDebited: true,
-    gameSessionId: "session-1",
-    paidPlayerIds: ["p1", "p2"],
-    players: [
+    code:"ABCDE", mode:"quick", phase:"finished", rounds:1, roundIndex:0,
+    entryDebited:true, gameSessionId:"session-1", paidPlayerIds:["p1","p2"],
+    players:[
       { id:"p1", score:6, walletToken:token("1"), isBot:false },
       { id:"p2", score:4, walletToken:token("2"), isBot:false }
     ],
@@ -60,10 +54,8 @@ test("une partie rapide gagnée avec 6 réponses valides rapporte 42 XP", () => 
 
 test("5 manches, 25 réponses valides et deuxième place rapportent 112 XP", () => {
   const xp = calculateRoomXp(room({
-    rounds: 5,
-    roundIndex: 4,
-    paidPlayerIds: ["p1", "p2", "p3"],
-    players: [
+    rounds:5, roundIndex:4, paidPlayerIds:["p1","p2","p3"],
+    players:[
       { id:"p1", score:30, walletToken:token("1"), isBot:false },
       { id:"p2", score:25, walletToken:token("2"), isBot:false },
       { id:"p3", score:20, walletToken:token("3"), isBot:false }
@@ -74,51 +66,44 @@ test("5 manches, 25 réponses valides et deuxième place rapportent 112 XP", () 
 });
 
 test("les trophées suivent le classement 10 / 6 / 3 / 1", () => {
-  assert.deepEqual(
-    {
-      first:TROPHY_REWARDS[1],
-      second:TROPHY_REWARDS[2],
-      third:TROPHY_REWARDS[3],
-      other:TROPHY_REWARDS.default
-    },
-    { first:10, second:6, third:3, other:1 }
-  );
-
-  const result = calculateRoomXp(room({
-    paidPlayerIds:["p1","p2","p3","p4"],
-    players:[
-      { id:"p1", score:12, walletToken:token("1"), isBot:false },
-      { id:"p2", score:9, walletToken:token("2"), isBot:false },
-      { id:"p3", score:6, walletToken:token("3"), isBot:false },
-      { id:"p4", score:2, walletToken:token("4"), isBot:false }
-    ]
-  }));
-
-  assert.equal(result.p1.trophies, 10);
-  assert.equal(result.p2.trophies, 6);
-  assert.equal(result.p3.trophies, 3);
-  assert.equal(result.p4.trophies, 1);
+  assert.deepEqual({
+    first:TROPHY_REWARDS[1], second:TROPHY_REWARDS[2],
+    third:TROPHY_REWARDS[3], other:TROPHY_REWARDS.default
+  }, { first:10, second:6, third:3, other:1 });
 });
 
 test("le salon privé ne donne jamais d'XP", () => {
   const xp = calculateRoomXp(room({ mode:"private" }));
   assert.equal(xp.p1.xp, 0);
   assert.equal(xp.p2.xp, 0);
-  assert.equal(xp.p1.trophies, 0);
-  assert.equal(xp.p2.trophies, 0);
 });
 
-test("une partie avec bot ne donne jamais d'XP", () => {
+test("un humain contre un bot matchmaking garde seulement le XP de jeu", () => {
   const xp = calculateRoomXp(room({
-    players: [
+    paidPlayerIds:["p1"],
+    players:[
+      { id:"p1", score:6, validAnswerCount:6, walletToken:token("1"), isBot:false },
+      { id:"bot", score:8, walletToken:null, isBot:true, botKind:"matchmaking" }
+    ]
+  }));
+  assert.equal(xp.p1.xp, 22);
+  assert.equal(xp.p1.rank, 0);
+  assert.equal(xp.p1.trophies, 0);
+  assert.equal(xp.p1.eligible, true);
+});
+
+test("un bot de test classique ne débloque pas la progression solo", () => {
+  const xp = calculateRoomXp(room({
+    paidPlayerIds:["p1"],
+    players:[
       { id:"p1", score:6, walletToken:token("1"), isBot:false },
-      { id:"bot", score:3, walletToken:null, isBot:true }
+      { id:"bot", score:3, walletToken:null, isBot:true, botKind:"test" }
     ]
   }));
   assert.equal(xp.p1.xp, 0);
 });
 
-test("une partie à un seul vrai joueur ne donne jamais d'XP", () => {
+test("un vrai joueur complètement seul ne donne jamais d'XP", () => {
   const xp = calculateRoomXp(room({
     paidPlayerIds:["p1"],
     players:[{ id:"p1", score:6, walletToken:token("1"), isBot:false }]
@@ -126,7 +111,25 @@ test("une partie à un seul vrai joueur ne donne jamais d'XP", () => {
   assert.equal(xp.p1.xp, 0);
 });
 
-test("les égalités utilisent un classement de compétition", () => {
+test("avec plusieurs humains le bot compte dans le classement mais ne reçoit rien", () => {
+  const xp = calculateRoomXp(room({
+    paidPlayerIds:["p1","p2"],
+    players:[
+      { id:"bot", score:9, walletToken:null, isBot:true, botKind:"matchmaking" },
+      { id:"p1", score:6, validAnswerCount:6, walletToken:token("1"), isBot:false },
+      { id:"p2", score:4, validAnswerCount:4, walletToken:token("2"), isBot:false }
+    ]
+  }));
+  assert.equal(xp.p1.rank, 2);
+  assert.equal(xp.p1.trophies, 6);
+  assert.equal(xp.p1.xp, 34);
+  assert.equal(xp.p2.rank, 3);
+  assert.equal(xp.p2.trophies, 3);
+  assert.equal(xp.bot.xp, 0);
+  assert.equal(xp.bot.eligible, false);
+});
+
+test("les égalités humaines utilisent toujours un classement de compétition", () => {
   const ranks = rankingForPlayers([
     { id:"a", score:10, walletToken:token("1") },
     { id:"b", score:10, walletToken:token("2") },
@@ -135,16 +138,9 @@ test("les égalités utilisent un classement de compétition", () => {
   assert.deepEqual(ranks, { a:1, b:1, c:3 });
 });
 
-
 test("un salon privé ne touche pas PostgreSQL pour distribuer l’XP", async () => {
   let poolTouched = false;
-  const service = createProgressionService({
-    getPool() {
-      poolTouched = true;
-      return null;
-    }
-  });
-
+  const service = createProgressionService({ getPool() { poolTouched = true; return null; } });
   const result = await service.awardRoom(room({ mode:"private" }));
   assert.deepEqual(result, {});
   assert.equal(poolTouched, false);
