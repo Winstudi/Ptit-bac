@@ -722,10 +722,10 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
-        width:84% !important;
-        height:84% !important;
-        max-width:84% !important;
-        max-height:84% !important;
+        width:85% !important;
+        height:85% !important;
+        max-width:85% !important;
+        max-height:85% !important;
         object-fit:cover !important;
         object-position:center center !important;
         border-radius:0 !important;
@@ -736,8 +736,8 @@
         top:50% !important;
         right:auto !important;
         bottom:auto !important;
-        width:138% !important;
-        height:138% !important;
+        width:118% !important;
+        height:118% !important;
         max-width:none !important;
         max-height:none !important;
         margin:0 !important;
