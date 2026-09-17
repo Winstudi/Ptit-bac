@@ -736,8 +736,8 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:178% !important;
-        height:178% !important;
+        width:193% !important;
+        height:193% !important;
       }
 
       html body .pl-private .pl-avatar-role-crown {
@@ -1064,8 +1064,8 @@
       }
 
       html body .pl-private .pl-profile-v2-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
-        width:178% !important;
-        height:178% !important;
+        width:148% !important;
+        height:148% !important;
       }
 
       html body .pl-private .pl-profile-v2-crown {
