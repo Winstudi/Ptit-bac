@@ -21,6 +21,34 @@
     return Math.max(0, Math.min(100, Number(value) || 0));
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+  }
+
+  function winnerHeadingMarkup(value) {
+    const text = String(value || "").trim();
+    const winner = text.match(/^(.+?)\s+remporte la partie\s*!$/i);
+    if (winner) {
+      return `<span>${escapeHtml(winner[1])}</span> remporte la partie !`;
+    }
+
+    const shared = text.match(/^Victoire partagée\s*:\s*(.+)$/i);
+    if (shared) {
+      return `Victoire partagée : <span>${escapeHtml(shared[1])}</span>`;
+    }
+
+    return escapeHtml(text || "Partie terminée !");
+  }
+
   function normalizeState(value) {
     if (!value || typeof value !== "object") return null;
     const level = Math.max(1, Math.min(50, Math.floor(Number(value.level) || 1)));
@@ -281,8 +309,7 @@
         </button>
         <div class="fin-heading-copy">
           <small>PARTIE TERMINÉE</small>
-          <h1>Classement <span>final</span></h1>
-          <p>${winnerText || "Bravo à tous !"}</p>
+          <h1>${winnerHeadingMarkup(winnerText)}</h1>
         </div>`;
     }
 
@@ -385,9 +412,18 @@
     patchFinalVisual(root);
 
     const roomState = liveRoomState();
-    const current = readCache();
+    const progressionEnabled = roomState?.progressionEnabled === true;
 
     let card = root.querySelector(".ptb-final-xp-card");
+
+    // Aucun bloc de gains si la progression est désactivée (ex. salon privé).
+    if (!progressionEnabled) {
+      card?.remove();
+      return;
+    }
+
+    const current = readCache();
+
     if (!card) {
       card = document.createElement("section");
       card.className = "ptb-final-xp-card";
@@ -408,7 +444,6 @@
       return;
     }
 
-    const progressionEnabled = roomState?.progressionEnabled === true;
     const roomAward = roomState?.myProgression || null;
     const award = progressionEnabled ? (roomAward || lastAward) : null;
 

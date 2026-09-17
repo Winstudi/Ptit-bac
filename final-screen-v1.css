@@ -69,7 +69,7 @@ html .fsv1-screen.final-mobile::-webkit-scrollbar {display:none;}
 /* ---------- En-tête ---------- */
 .fin-heading {
   position:relative;
-  min-height:86px;
+  min-height:68px;
   padding:4px 46px 0;
   text-align:center;
 }
@@ -109,7 +109,7 @@ html .fsv1-screen.final-mobile::-webkit-scrollbar {display:none;}
 html .final-mobile .fin-heading h1 {
   margin:0 !important;
   color:#fff;
-  font-size:clamp(27px,7.4vw,36px) !important;
+  font-size:clamp(22px,6.2vw,30px) !important;
   line-height:1.02 !important;
   font-weight:1000 !important;
   letter-spacing:-.04em;
@@ -137,7 +137,7 @@ html .final-mobile .fin-heading h1 {
 
 /* ---------- Podium ---------- */
 .fin-podium {
-  min-height:260px;
+  min-height:238px;
   padding:29px 2px 0 !important;
   display:flex !important;
   align-items:flex-end !important;
@@ -150,7 +150,7 @@ html .final-mobile .fin-heading h1 {
   flex:1 1 0;
   min-width:0;
   max-width:145px;
-  min-height:214px;
+  min-height:210px;
   padding:35px 7px 10px !important;
   display:flex;
   flex-direction:column;
@@ -171,9 +171,9 @@ html .final-mobile .fin-heading h1 {
 .fin-podium-card.place-1 {
   z-index:4;
   flex:1.12 1 0;
-  min-height:252px;
+  min-height:220px;
   max-width:158px;
-  padding-top:43px !important;
+  padding-top:32px !important;
   border-color:#ffd45e !important;
   background:
     radial-gradient(circle at 50% 16%,rgba(255,195,61,.19),transparent 43%),
@@ -181,7 +181,12 @@ html .final-mobile .fin-heading h1 {
   box-shadow:inset 0 0 24px rgba(255,203,80,.06),0 0 28px rgba(255,190,48,.13),0 14px 28px rgba(0,0,0,.2) !important;
 }
 
+.fin-podium-card.place-2 {
+  min-height:210px;
+}
+
 .fin-podium-card.place-3 {
+  min-height:200px;
   border-color:rgba(224,139,104,.86) !important;
   background:
     radial-gradient(circle at 50% 11%,rgba(223,124,107,.13),transparent 42%),
@@ -411,7 +416,7 @@ html body .fsv1-screen.final-mobile .fin-avatar.ptb-has-equipped-frame > .ptb-eq
 
 /* ---------- Egalités ---------- */
 .fin-podium-shared-win .fin-podium-card.place-1 {
-  min-height:230px !important;
+  min-height:220px !important;
   height:auto !important;
   max-height:none !important;
   transform:none !important;
@@ -804,8 +809,9 @@ html body .fsv1-screen.final-mobile .fin-avatar.ptb-has-equipped-frame > .ptb-eq
 }
 
 @media(max-width:350px) {
-  .fin-podium-card {min-height:196px;}
-  .fin-podium-card.place-1 {min-height:228px;}
+  .fin-podium-card.place-1 {min-height:200px;}
+  .fin-podium-card.place-2 {min-height:190px;}
+  .fin-podium-card.place-3 {min-height:180px;}
   html body .fsv1-screen.final-mobile .fin-podium-card > .fin-avatar {
     width:62px !important;height:62px !important;min-width:62px !important;min-height:62px !important;flex-basis:62px !important;
   }
