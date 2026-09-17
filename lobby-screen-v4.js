@@ -722,21 +722,30 @@
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > img:not(.ptb-equipped-frame-overlay) {
-        width:85% !important;
-        height:85% !important;
-        max-width:85% !important;
-        max-height:85% !important;
+        width:84% !important;
+        height:84% !important;
+        max-width:84% !important;
+        max-height:84% !important;
+        object-fit:cover !important;
+        object-position:center center !important;
         border-radius:0 !important;
       }
 
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
         left:50% !important;
         top:50% !important;
-        width:105% !important;
-        height:105% !important;
+        right:auto !important;
+        bottom:auto !important;
+        width:138% !important;
+        height:138% !important;
         max-width:none !important;
         max-height:none !important;
+        margin:0 !important;
+        padding:0 !important;
+        object-fit:contain !important;
+        object-position:center center !important;
         transform:translate3d(-50%,-50%,0) !important;
+        transform-origin:center center !important;
       }
 
       html body .pl-private .pl-player-copy {
