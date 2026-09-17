@@ -289,28 +289,25 @@
 
   function playerRow(player, index, user) {
     const online = player.connected || player.isBot;
-    const privateLobby = session.state?.mode !== "quick";
-    const canKick = privateLobby && user?.isHost && !player.isHost && String(player.id) !== String(session.playerId);
-    const code = friendCodeFor(player);
 
     return `
-      <article class="lobby-v5-player ${canKick ? "has-kick" : ""}"
-        data-lobby-player-profile="${player.id}" tabindex="0" role="button">
+      <article class="lobby-v5-player quick-player-card"
+        data-lobby-player-profile="${player.id}" tabindex="0" role="button"
+        aria-label="Profil de ${escapeHtml(player.name || "Joueur")}">
         <div class="lobby-v5-avatar">${avatarMarkup(player)}</div>
 
         <div class="lobby-v5-player-copy">
           <div class="lobby-v5-player-name-row">
             <strong>${escapeHtml(player.name || "Joueur")}</strong>
-            ${privateLobby && player.isHost
-              ? `<span class="host-badge"><img src="/admin-crown.png" alt=""> Hôte</span>`
-              : online
-                ? `<span class="ready-badge">✓ Prêt</span>`
-                : `<span class="offline-badge">Pas prêt</span>`}
+            ${online
+              ? `<span class="ready-badge">Pas prêt</span>`
+              : `<span class="offline-badge">Hors ligne</span>`}
           </div>
-          ${code ? `<small># ${escapeHtml(code)}</small>` : ""}
-        </div>
 
-        ${canKick ? `<button class="lobby-v5-kick" data-kick-id="${player.id}" type="button" aria-label="Retirer">×</button>` : ""}
+          <div class="quick-player-title-row">
+            ${privateLobbyTagMarkup(player)}
+          </div>
+        </div>
       </article>`;
   }
 
@@ -1672,10 +1669,6 @@
                 En attente de l’hôte…
               </div>`}
         </section>
-
-        <footer class="ptb-shared-footer" aria-hidden="true">
-          <img src="/shared-footer-v1.png" alt="">
-        </footer>
 
         ${playerProfileModal(state)}
         ${lobbySettingsOverlay(state, user)}
