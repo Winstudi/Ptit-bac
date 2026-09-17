@@ -242,19 +242,21 @@
           <div class="pl-profile-v2-card ${player.isHost ? "is-host" : ""} ${self ? "is-self" : ""}">
             <div class="pl-profile-v2-avatar-shell">
               <div class="lobby-v5-profile-avatar pl-profile-v2-avatar">${avatarMarkup(player)}</div>
-              ${player.isHost
-                ? `<span class="pl-profile-v2-crown" aria-hidden="true"><img src="/admin-crown.png" alt=""></span>`
-                : ""}
             </div>
 
             <div class="pl-profile-v2-copy">
-              <strong>${escapeHtml(player.name || "Joueur")}</strong>
-              ${privateLobbyTagMarkup(player)}
-            </div>
-
-            <div class="pl-profile-v2-code">
-              <small>Code ami</small>
-              <strong>${player.isBot ? "Joueur test" : (code ? `#${escapeHtml(code)}` : "Indisponible")}</strong>
+              <div class="pl-profile-v2-name-row">
+                <strong>${escapeHtml(player.name || "Joueur")}</strong>
+                ${!player.isBot && code
+                  ? `<span class="pl-profile-v2-player-code">#${escapeHtml(code)}</span>`
+                  : ""}
+              </div>
+              <div class="pl-profile-v2-title-row">
+                ${privateLobbyTagMarkup(player)}
+                ${player.isHost
+                  ? `<img class="pl-host-crown-inline" src="/admin-crown.png" alt="Hôte">`
+                  : ""}
+              </div>
             </div>
           </div>
 
@@ -522,7 +524,6 @@
 
     return `
       <span class="pl-player-title" title="Titre équipé">
-        <span aria-hidden="true">${tag.icon}</span>
         <strong>${escapeHtml(tag.label)}</strong>
       </span>`;
   }
@@ -731,32 +732,11 @@
       html body .pl-private .pl-avatar.ptb-has-equipped-frame > .ptb-equipped-frame-overlay {
         left:50% !important;
         top:50% !important;
-        width:90% !important;
-        height:90% !important;
+        width:105% !important;
+        height:105% !important;
         max-width:none !important;
         max-height:none !important;
         transform:translate3d(-50%,-50%,0) !important;
-      }
-
-      html body .pl-private .pl-avatar-role-crown {
-        position:absolute;
-        z-index:10;
-        left:-5px;
-        top:-5px;
-        width:23px;
-        height:23px;
-        display:grid;
-        place-items:center;
-        border:1px solid rgba(255,211,95,.58);
-        border-radius:50%;
-        background:rgba(57,23,101,.96);
-        box-shadow:0 0 9px rgba(255,184,42,.28),0 0 9px rgba(184,67,255,.28);
-        pointer-events:none;
-      }
-
-      html body .pl-private .pl-avatar-role-crown img {
-        width:17px !important;
-        height:17px !important;
       }
 
       html body .pl-private .pl-player-copy {
@@ -848,6 +828,22 @@
         white-space:nowrap;
         font-size:9px;
         font-weight:900;
+      }
+
+      html body .pl-private .pl-player-title-row {
+        max-width:100%;
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+      }
+
+      html body .pl-private .pl-host-crown-inline {
+        width:18px !important;
+        height:18px !important;
+        flex:none;
+        display:block;
+        object-fit:contain;
+        filter:drop-shadow(0 0 5px rgba(255,196,64,.30));
       }
 
       html body .pl-private .pl-status {
@@ -1071,44 +1067,52 @@
         transform:translate3d(-50%,-50%,0) !important;
       }
 
-      html body .pl-private .pl-profile-v2-crown {
-        position:absolute;
-        z-index:12;
-        left:-3px;
-        top:-4px;
-        width:27px;
-        height:27px;
-        display:grid;
-        place-items:center;
-        border:1px solid rgba(255,211,95,.58);
-        border-radius:50%;
-        background:rgba(57,23,101,.96);
-        box-shadow:0 0 10px rgba(255,184,42,.24),0 0 10px rgba(184,67,255,.25);
-      }
-
-      html body .pl-private .pl-profile-v2-crown img {
-        width:20px !important;
-        height:20px !important;
-      }
-
       html body .pl-private .pl-profile-v2-copy {
         min-width:0;
         min-height:104px;
         display:flex;
         flex-direction:column;
-        align-items:flex-start;
+        align-items:center;
         justify-content:center;
         gap:8px;
+        text-align:center;
       }
 
-      html body .pl-private .pl-profile-v2-copy > strong {
+      html body .pl-private .pl-profile-v2-name-row {
         width:100%;
+        min-width:0;
+        display:flex;
+        align-items:baseline;
+        justify-content:center;
+        gap:6px;
+      }
+
+      html body .pl-private .pl-profile-v2-name-row > strong {
+        min-width:0;
         overflow:hidden;
         text-overflow:ellipsis;
         white-space:nowrap;
         font-size:22px !important;
         line-height:1.05;
         font-weight:900;
+      }
+
+      html body .pl-private .pl-profile-v2-player-code {
+        flex:none;
+        color:#b25cff;
+        font-size:11px;
+        line-height:1;
+        font-weight:900;
+        white-space:nowrap;
+        text-shadow:0 0 7px rgba(178,92,255,.26);
+      }
+
+      html body .pl-private .pl-profile-v2-title-row {
+        max-width:100%;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
       }
 
       html body .pl-private .pl-profile-v2-copy .pl-player-title {
@@ -1119,6 +1123,11 @@
 
       html body .pl-private .pl-profile-v2-copy .pl-player-title strong {
         font-size:11px;
+      }
+
+      html body .pl-private .pl-profile-v2-title-row .pl-host-crown-inline {
+        width:20px !important;
+        height:20px !important;
       }
 
       html body .pl-private .pl-profile-v2-status {
@@ -1151,37 +1160,6 @@
       html body .pl-private .pl-profile-v2-status.is-offline i {
         background:#69738f;
         box-shadow:none;
-      }
-
-      html body .pl-private .pl-profile-v2-code {
-        position:absolute;
-        z-index:6;
-        right:10px;
-        bottom:9px;
-        width:82px;
-        min-width:82px;
-        min-height:39px;
-        padding:5px 8px;
-        display:flex;
-        flex-direction:column;
-        align-items:flex-start;
-        justify-content:center;
-        gap:1px;
-        border:1px solid rgba(63,83,137,.72);
-        border-radius:11px;
-        background:rgba(10,27,66,.78);
-      }
-
-      html body .pl-private .pl-profile-v2-code small {
-        color:#9faed3;
-        font-size:9px;
-        font-weight:700;
-      }
-
-      html body .pl-private .pl-profile-v2-code strong {
-        color:#eeeaff;
-        font-size:11px;
-        font-weight:900;
       }
 
       html body .pl-private .pl-profile-v2-inventory {
@@ -1408,16 +1386,6 @@
           font-size:7.5px !important;
         }
 
-        html body .pl-private .pl-avatar-role-crown {
-          width:18px;
-          height:18px;
-        }
-
-        html body .pl-private .pl-avatar-role-crown img {
-          width:13px !important;
-          height:13px !important;
-        }
-
         html body .pl-private .pl-empty b {
           width:30px !important;
           height:30px !important;
@@ -1459,9 +1427,6 @@
         >
           <div class="pl-avatar-shell">
             <div class="pl-avatar">${avatarMarkup(player)}</div>
-            ${player.isHost
-              ? `<span class="pl-avatar-role-crown" aria-hidden="true"><img src="/admin-crown.png" alt=""></span>`
-              : ""}
           </div>
 
           <div class="pl-player-copy">
@@ -1469,7 +1434,12 @@
               <strong>${escapeHtml(player.name || "Joueur")}</strong>
             </div>
 
-            ${privateLobbyTagMarkup(player)}
+            <div class="pl-player-title-row">
+              ${privateLobbyTagMarkup(player)}
+              ${player.isHost
+                ? `<img class="pl-host-crown-inline" src="/admin-crown.png" alt="Hôte">`
+                : ""}
+            </div>
 
             ${player.isBot
               ? `<div class="pl-tags"><span>Bot</span></div>`
