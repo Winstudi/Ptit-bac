@@ -25,6 +25,125 @@ const infiniteLives =
 
 
 const ITEM_CATALOG = Object.freeze(catalogEntries());
+
+const ITEM_RARITY_RULES = Object.freeze({
+  commun:Object.freeze({
+    label:"Commun",
+    sources:Object.freeze(["Boutique","Coffres (à venir)"]),
+    note:"Disponible dans les coffres."
+  }),
+  rare:Object.freeze({
+    label:"Rare",
+    sources:Object.freeze(["Boutique","Coffres (à venir)"]),
+    note:"Plus rare dans les coffres."
+  }),
+  epique:Object.freeze({
+    label:"Épique",
+    sources:Object.freeze(["Boutique","Coffres (à venir)"]),
+    note:"Très rare dans les coffres."
+  }),
+  ultra:Object.freeze({
+    label:"Ultra",
+    sources:Object.freeze(["Boutique","Coffres (à venir)"]),
+    note:"Super rare dans les coffres."
+  }),
+  exclusif:Object.freeze({
+    label:"Exclusif",
+    sources:Object.freeze(["Boutique","Niveaux","Voie des trophées"]),
+    note:"Jamais disponible dans les coffres."
+  })
+});
+
+function normalizeItemRarity(value) {
+  const rarity = String(value || "").trim().toLowerCase();
+  return ITEM_RARITY_RULES[rarity] ? rarity : "commun";
+}
+
+function normalizeItemCurrency(value) {
+  return value === "gems" ? "gems" : "coins";
+}
+
+function normalizeItemPrice(value) {
+  return Math.max(0, Math.min(999999, Math.floor(Number(value) || 0)));
+}
+
+function itemAcquisition(rarity) {
+  const rule = ITEM_RARITY_RULES[normalizeItemRarity(rarity)];
+  return {
+    sources:[...rule.sources],
+    note:rule.note
+  };
+}
+
+async function loadAdminItemCatalog() {
+  await schema();
+
+  const q = await pool.query(
+    `SELECT item_key,rarity,price,currency,updated_at
+       FROM public.ptitbac_item_catalog_settings`
+  ).catch(() => ({ rows:[] }));
+
+  const byKey = new Map(
+    (q.rows || []).map(row => [String(row.item_key || ""), row])
+  );
+
+  return ITEM_CATALOG.map(item => {
+    const saved = byKey.get(item.key) || {};
+    const rarity = normalizeItemRarity(saved.rarity);
+
+    return {
+      ...item,
+      rarity,
+      rarityLabel:ITEM_RARITY_RULES[rarity].label,
+      price:normalizeItemPrice(saved.price),
+      currency:normalizeItemCurrency(saved.currency),
+      acquisition:itemAcquisition(rarity),
+      updatedAt:saved.updated_at || null
+    };
+  });
+}
+
+async function saveAdminItemConfig(adminToken, payload = {}) {
+  await schema();
+
+  const itemKey = String(payload.itemKey || "").trim();
+  const item = ITEM_CATALOG.find(entry => entry.key === itemKey);
+
+  if (!item) throw new Error("Objet invalide.");
+
+  const rarity = normalizeItemRarity(payload.rarity);
+  const price = normalizeItemPrice(payload.price);
+  const currency = normalizeItemCurrency(payload.currency);
+
+  await pool.query(
+    `INSERT INTO public.ptitbac_item_catalog_settings
+       (item_key,rarity,price,currency,updated_by_wallet_token,updated_at)
+     VALUES($1,$2,$3,$4,$5,now())
+     ON CONFLICT(item_key) DO UPDATE SET
+       rarity=EXCLUDED.rarity,
+       price=EXCLUDED.price,
+       currency=EXCLUDED.currency,
+       updated_by_wallet_token=EXCLUDED.updated_by_wallet_token,
+       updated_at=now()`,
+    [itemKey,rarity,price,currency,adminToken]
+  );
+
+  await audit(adminToken,"item_config_update",null,{
+    itemKey,
+    rarity,
+    price,
+    currency
+  });
+
+  return {
+    ...item,
+    rarity,
+    rarityLabel:ITEM_RARITY_RULES[rarity].label,
+    price,
+    currency,
+    acquisition:itemAcquisition(rarity)
+  };
+}
 const inventoryService = createInventoryService({
   getPool: () => pool,
   ensureSchema: ensureDatabaseSchema
@@ -987,12 +1106,37 @@ function installAdmin(io) {
 
         cb({
           ok:true,
-          items:ITEM_CATALOG
+          items:await loadAdminItemCatalog()
         });
       } catch {
         cb({
           ok:false,
           error:"Catalogue indisponible."
+        });
+      }
+    });
+
+    socket.on("admin:itemConfigUpdate", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
+          return cb({
+            ok:false,
+            error:"Accès refusé."
+          });
+        }
+
+        const item = await saveAdminItemConfig(token,payload);
+
+        cb({
+          ok:true,
+          item
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Configuration de l’objet impossible."
         });
       }
     });

@@ -18,6 +18,9 @@ const {
   nextHostCandidate,
   canAdvanceScoreboard
 } = require("./game-loop-rules.js");
+const validationEngine = require("./validation-engine-v26.cjs");
+const validationCacheStore = require("./validation-cache-v25.cjs");
+const publicBotEngine = require("./public-bot-engine-v1.cjs");
 const {
   DEFAULT_COINS,
   MAX_LIVES: ECONOMY_MAX_LIVES,
@@ -58,7 +61,8 @@ require("./friends-hook.js")(io, {
   canInvite: (token, code) => {
     const room = rooms.get(code);
     return !!room && room.mode !== "quick" && room.phase === "lobby" &&
-      !room.economyStartPending && room.players.length < 6 &&
+      !room.economyStartPending &&
+      (room.players.length < 6 || room.players.some(publicBotEngine.isMatchmakingBot)) &&
       room.players.some(p => !p.isBot && p.walletToken === token && p.connected);
   },
   isBusy: token => hasActiveRoom(token)
@@ -69,6 +73,7 @@ require("./admin-hook.js")(io);
 
 const PORT = process.env.PORT || 3000;
 const BUILD_VERSION = require("./package.json").version;
+const SOURCE_RELEASE = "1.48.0-stable";
 const IS_RENDER = String(process.env.RENDER || "").toLowerCase() === "true";
 const RENDER_GIT_COMMIT = String(process.env.RENDER_GIT_COMMIT || "").trim();
 const PROCESS_STARTED_AT = Date.now();
@@ -235,36 +240,99 @@ const ROOM_FILE = process.env.PTITBAC_ROOM_FILE
   ? path.resolve(process.env.PTITBAC_ROOM_FILE)
   : path.join(path.dirname(WALLET_FILE), "rooms.json");
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
-const VALIDATION_ENGINE_VERSION = "v2.2.0";
+const VALIDATION_ENGINE_VERSION = "v2.7.0";
 const LEARNING_ENGINE_VERSION = "learn-v1.0.0";
+const PUBLIC_BOT_ENGINE_VERSION = "public-bots-v1.0.0";
 
 // Validation automatique des réponses.
 // Sur Render, ajoute OPENAI_API_KEY dans Environment pour activer la vérification sémantique.
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_VALIDATION_MODEL = process.env.OPENAI_VALIDATION_MODEL || "gpt-5-mini";
-const OPENAI_VALIDATION_REVIEW_MODEL = process.env.OPENAI_VALIDATION_REVIEW_MODEL || OPENAI_VALIDATION_MODEL;
+const DEFAULT_VALIDATION_MODEL = "gpt-5.6-luna";
+
+function configuredValidationModel(value, fallback = DEFAULT_VALIDATION_MODEL) {
+  const configured = String(value || "").trim();
+  // Migration transparente de l'ancien réglage : même si Render contient
+  // encore OPENAI_VALIDATION_MODEL=gpt-5-mini, on évite le modèle qui a
+  // provoqué les timeouts observés sur le service.
+  if (!configured || configured === "gpt-5-mini") return fallback;
+  return configured;
+}
+
+const OPENAI_VALIDATION_MODEL = configuredValidationModel(
+  process.env.OPENAI_VALIDATION_MODEL
+);
+const OPENAI_VALIDATION_REVIEW_MODEL = configuredValidationModel(
+  process.env.OPENAI_VALIDATION_REVIEW_MODEL,
+  OPENAI_VALIDATION_MODEL
+);
 const OPENAI_VALIDATION_WEB_SEARCH = String(process.env.OPENAI_VALIDATION_WEB_SEARCH || "false").toLowerCase() === "true";
 const AUTO_VALIDATION_TIMEOUT_MS = Math.max(
-  5000,
+  6000,
   Math.min(
     15000,
-    Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 9000
+    Number(process.env.AUTO_VALIDATION_TIMEOUT_MS) || 11000
   )
 );
-const AUTO_VALIDATION_HARD_LIMIT_MS = Math.max(
-  10000,
+const AUTO_VALIDATION_HARD_LIMIT_MS = Math.min(
+  36000,
+  Math.max(
+    24000,
+    Number(process.env.AUTO_VALIDATION_HARD_LIMIT_MS) || 30000,
+    AUTO_VALIDATION_TIMEOUT_MS * 2 + 5000
+  )
+);
+const OPENAI_VALIDATION_BATCH_SIZE = Math.max(
+  5,
   Math.min(
-    25000,
-    Number(process.env.AUTO_VALIDATION_HARD_LIMIT_MS) || 18000
+    16,
+    Number(process.env.OPENAI_VALIDATION_BATCH_SIZE) || 12
+  )
+);
+const OPENAI_VALIDATION_CONCURRENCY = Math.max(
+  1,
+  Math.min(
+    4,
+    Number(process.env.OPENAI_VALIDATION_CONCURRENCY) || 3
   )
 );
 // IA des joueurs test : moteur séparé de l'arbitre de correction.
 // Elle peut utiliser le même compte API, mais possède son propre modèle, prompt, timeout et logique.
 const BOT_AI_ENABLED = String(process.env.BOT_AI_ENABLED || "true").toLowerCase() !== "false";
-const OPENAI_BOT_MODEL = process.env.OPENAI_BOT_MODEL || "gpt-5-mini";
+function configuredBotModel(value) {
+  const configured = String(value || "").trim();
+  if (!configured || configured === "gpt-5-mini") return "gpt-5.6-luna";
+  return configured;
+}
+const OPENAI_BOT_MODEL = configuredBotModel(process.env.OPENAI_BOT_MODEL);
 const OPENAI_BOT_API_KEY = process.env.OPENAI_BOT_API_KEY || OPENAI_API_KEY;
-const BOT_AI_TIMEOUT_MS = Math.max(30000, Number(process.env.BOT_AI_TIMEOUT_MS) || 30000);
+const BOT_AI_TIMEOUT_MS = Math.max(
+  4000,
+  Math.min(12000, Number(process.env.BOT_AI_TIMEOUT_MS) || 7000)
+);
+const PUBLIC_MATCHMAKING_BOTS_ENABLED =
+  String(process.env.PUBLIC_MATCHMAKING_BOTS_ENABLED || "true").toLowerCase() !== "false";
+const PUBLIC_MATCHMAKING_BOT_DELAY_MS = publicBotEngine.clampInteger(
+  process.env.PUBLIC_MATCHMAKING_BOT_DELAY_MS,
+  3000,
+  30000,
+  8000
+);
 const VALIDATION_CACHE_FILE = path.join(__dirname, "validation-cache-v2.json");
+const VALIDATION_CACHE_MEMORY_MAX = validationCacheStore.clampInteger(
+  process.env.VALIDATION_CACHE_MEMORY_MAX,
+  1000,
+  50000,
+  25000
+);
+const VALIDATION_CACHE_DB_LOAD_LIMIT = Math.min(
+  VALIDATION_CACHE_MEMORY_MAX,
+  validationCacheStore.clampInteger(
+    process.env.VALIDATION_CACHE_DB_LOAD_LIMIT,
+    1000,
+    50000,
+    25000
+  )
+);
 const VALIDATION_LEARNING_FILE = path.join(__dirname, "validation-learning-v1.json");
 const VALIDATION_REPORTS_FILE = path.join(__dirname, "validation-reports-v1.json");
 const validationCache = new Map();
@@ -272,6 +340,8 @@ const learnedAnswers = new Map();
 const answerReports = new Map();
 const reportQueue = [];
 let reportWorkerRunning = false;
+const validationPrewarmJobs = new Map();
+const publicBotFillTimers = new Map();
 const validationServiceState = {
   lastSuccessAt: null,
   lastErrorAt: null,
@@ -974,57 +1044,153 @@ function persistAnswerReport(report) {
   ).catch(err => console.error("Erreur persistance signalement IA:", err.message));
 }
 
-function loadValidationCache() {
+function loadValidationCacheFromFile() {
   try {
     if (!fs.existsSync(VALIDATION_CACHE_FILE)) return;
     const data = JSON.parse(fs.readFileSync(VALIDATION_CACHE_FILE, "utf8"));
     for (const [key, value] of Object.entries(data || {})) {
-      if (value && ["valid", "invalid"].includes(value.status)) validationCache.set(key, value);
+      if (value?.engineVersion !== VALIDATION_ENGINE_VERSION) continue;
+      validationCacheStore.put(
+        validationCache,
+        key,
+        value,
+        VALIDATION_CACHE_MEMORY_MAX
+      );
     }
   } catch (err) {
     console.warn("Impossible de charger validation-cache-v2.json:", err.message);
   }
 }
 
-function saveValidationCache() {
-  try {
-    const tmp = `${VALIDATION_CACHE_FILE}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(Object.fromEntries(validationCache), null, 2));
-    fs.renameSync(tmp, VALIDATION_CACHE_FILE);
-  } catch (err) {
-    console.warn("Impossible de sauvegarder validation-cache-v2.json:", err.message);
+async function initValidationCachePersistence() {
+  validationCache.clear();
+
+  if (!pgPool) {
+    loadValidationCacheFromFile();
+    return;
   }
+
+  await ensureDatabaseSchema();
+  const { rows } = await pgPool.query(
+    `SELECT cache_key, engine_version, payload, updated_at
+       FROM public.ptitbac_validation_cache
+      WHERE engine_version=$1
+      ORDER BY updated_at DESC
+      LIMIT $2`,
+    [VALIDATION_ENGINE_VERSION, VALIDATION_CACHE_DB_LOAD_LIMIT]
+  );
+
+  // On réinsère du plus ancien au plus récent afin que l'ordre de la Map
+  // corresponde à un petit LRU en mémoire.
+  for (const row of [...rows].reverse()) {
+    const payload = validationCacheStore.fromDatabaseRow(
+      row,
+      VALIDATION_ENGINE_VERSION
+    );
+    if (!payload) continue;
+    validationCacheStore.put(
+      validationCache,
+      row.cache_key,
+      payload,
+      VALIDATION_CACHE_MEMORY_MAX
+    );
+  }
+
+  // Les caches d'une ancienne politique ne sont jamais utilisés. Leur
+  // suppression est non bloquante et n'affecte pas le démarrage du jeu.
+  pgPool.query(
+    "DELETE FROM public.ptitbac_validation_cache WHERE engine_version <> $1",
+    [VALIDATION_ENGINE_VERSION]
+  ).catch(err => console.warn("Nettoyage ancien cache IA:", err.message));
 }
 
-loadValidationCache();
+function getValidationCacheEntry(key) {
+  return validationCacheStore.touch(validationCache, key);
+}
+
+function saveValidationCache() {
+  validationCacheStore.trim(validationCache, VALIDATION_CACHE_MEMORY_MAX);
+
+  if (!pgPool) {
+    try {
+      const tmp = `${VALIDATION_CACHE_FILE}.tmp`;
+      fs.writeFileSync(
+        tmp,
+        JSON.stringify(Object.fromEntries(validationCache), null, 2)
+      );
+      fs.renameSync(tmp, VALIDATION_CACHE_FILE);
+    } catch (err) {
+      console.warn("Impossible de sauvegarder validation-cache-v2.json:", err.message);
+    }
+    return;
+  }
+
+  // Une manche contient au maximum quelques dizaines de nouvelles réponses.
+  // On écrit donc seulement la queue récente du LRU et jamais tout le cache.
+  const query = validationCacheStore.buildUpsertQuery(
+    validationCacheStore.newestEntries(validationCache, 120)
+  );
+  if (!query) return;
+
+  pgPool.query(query.text, query.values).catch(err => {
+    console.error("Erreur persistance cache IA:", err.message);
+  });
+}
 
 app.get("/api/validation-health", async (req, res) => {
+  const authorized =
+    !!ADMIN_DIAGNOSTIC_CODE &&
+    req.get("Authorization") === `Bearer ${ADMIN_DIAGNOSTIC_CODE}`;
+
+  const validationStatus = !OPENAI_API_KEY
+    ? "disabled"
+    : validationServiceState.lastErrorAt &&
+      (!validationServiceState.lastSuccessAt ||
+       validationServiceState.lastErrorAt > validationServiceState.lastSuccessAt)
+      ? "degraded"
+      : validationServiceState.lastSuccessAt
+        ? "operational"
+        : "unknown";
+
+  if (!authorized) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({
+      ok:true,
+      buildVersion:BUILD_VERSION,
+      engineVersion:VALIDATION_ENGINE_VERSION,
+      validationStatus
+    });
+  }
+
   let liveCheck = null;
   if (String(req.query.live || "") === "1") {
-    if (!ADMIN_DIAGNOSTIC_CODE || req.get("Authorization") !== `Bearer ${ADMIN_DIAGNOSTIC_CODE}`) {
-      return res.status(403).json({ ok: false, error: "Diagnostic réservé à l’administrateur." });
-    }
     liveCheck = await testOpenAIConnection();
   }
-  res.json({
-    ok: true,
-    buildVersion: BUILD_VERSION,
-    engineVersion: VALIDATION_ENGINE_VERSION,
-    learningEngineVersion: LEARNING_ENGINE_VERSION,
-    aiConfigured: Boolean(OPENAI_API_KEY),
-    model: OPENAI_VALIDATION_MODEL,
-    reviewModel: OPENAI_VALIDATION_REVIEW_MODEL,
-    webSearchReview: OPENAI_VALIDATION_WEB_SEARCH,
-    cacheEntries: validationCache.size,
-    learnedAnswers: learnedAnswers.size,
-    answerReports: answerReports.size,
-    learningStorage: pgPool ? "postgres" : "json",
-    walletStorage: walletStorageMode,
-    lastSuccessAt: validationServiceState.lastSuccessAt,
-    lastErrorAt: validationServiceState.lastErrorAt,
-    lastErrorStatus: validationServiceState.lastErrorStatus,
-    lastErrorCode: validationServiceState.lastErrorCode,
-    lastErrorMessage: validationServiceState.lastErrorMessage,
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({
+    ok:true,
+    buildVersion:BUILD_VERSION,
+    engineVersion:VALIDATION_ENGINE_VERSION,
+    learningEngineVersion:LEARNING_ENGINE_VERSION,
+    validationStatus,
+    aiConfigured:Boolean(OPENAI_API_KEY),
+    model:OPENAI_VALIDATION_MODEL,
+    reviewModel:OPENAI_VALIDATION_REVIEW_MODEL,
+    botModel:OPENAI_BOT_MODEL,
+    webSearchReview:OPENAI_VALIDATION_WEB_SEARCH,
+    cacheEntries:validationCache.size,
+    cacheStorage:validationCacheStorageMode,
+    cacheMemoryLimit:VALIDATION_CACHE_MEMORY_LIMIT,
+    learnedAnswers:learnedAnswers.size,
+    answerReports:answerReports.size,
+    learningStorage:pgPool ? "postgres" : "json",
+    walletStorage:walletStorageMode,
+    lastSuccessAt:validationServiceState.lastSuccessAt,
+    lastErrorAt:validationServiceState.lastErrorAt,
+    lastErrorStatus:validationServiceState.lastErrorStatus,
+    lastErrorCode:validationServiceState.lastErrorCode,
+    lastErrorMessage:validationServiceState.lastErrorMessage,
     liveCheck
   });
 });
@@ -1228,6 +1394,7 @@ function removeRoom(code) {
   const safeCode = String(code || "").trim().toUpperCase();
   if (!safeCode) return false;
 
+  cancelMatchmakingBotFill(safeCode);
   const timer = roomPersistTimers.get(safeCode);
   if (timer) clearTimeout(timer);
   roomPersistTimers.delete(safeCode);
@@ -1527,7 +1694,7 @@ function publicPlayer(p) {
     connected: p.connected,
     score: p.score,
     isHost: p.isHost,
-    isBot: !!p.isBot,
+    isBot: !!p.isBot && !publicBotEngine.isMatchmakingBot(p),
     lobbyReady: !!p.isBot || (p.connected && p.lobbyReady === true),
     submitted: p.submitted,
     avatar: p.avatar || "",
@@ -1675,6 +1842,18 @@ function setPlayerSocket(room, player, socket) {
   if (room.mode !== "quick" && player.socketId !== socket.id) player.lobbyReady = false;
   player.socketId = socket.id;
   player.connected = true;
+
+  if (
+    !player.isBot &&
+    room.phase === "lobby" &&
+    ["public", "quick"].includes(room.mode)
+  ) {
+    if (publicBotEngine.connectedHumanCount(room) >= 2) {
+      removeOneMatchmakingBot(room);
+    }
+    scheduleMatchmakingBotFill(room);
+  }
+
   socket.join(room.code);
   socket.data.code = room.code;
   socket.data.playerId = player.id;
@@ -1963,49 +2142,7 @@ function extractOutputText(data) {
 }
 
 function validationSchema(name) {
-  return {
-    type: "json_schema",
-    name,
-    strict: true,
-    schema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        results: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              id: { type: "string" },
-              verdict: { type: "string", enum: ["valid", "invalid", "uncertain"] },
-              confidence: { type: "integer", minimum: 0, maximum: 100 },
-              reason_code: {
-                type: "string",
-                enum: [
-                  "recognized",
-                  "recognizable_typo",
-                  "subjective_reasonable",
-                  "category_mismatch",
-                  "unknown_or_invented",
-                  "too_vague",
-                  "factual_unverified",
-                  "other"
-                ]
-              },
-              explanation: { type: "string" },
-              canonical_answer: { type: "string" },
-              correction: { type: "string" }
-            },
-            required: [
-              "id", "verdict", "confidence", "reason_code", "explanation", "canonical_answer", "correction"
-            ]
-          }
-        }
-      },
-      required: ["results"]
-    }
-  };
+  return validationEngine.validationSchema(name);
 }
 
 const VALIDATION_SYSTEM_PROMPT = `
@@ -2111,6 +2248,7 @@ async function testOpenAIConnection() {
       body: JSON.stringify({
         model: OPENAI_VALIDATION_MODEL,
         store: false,
+        reasoning: { effort: "none" },
         input: "Réponds uniquement: OK",
         max_output_tokens: 32
       }),
@@ -2149,14 +2287,14 @@ async function callValidationModel(items, letter, { review = false } = {}) {
     model: review ? OPENAI_VALIDATION_REVIEW_MODEL : OPENAI_VALIDATION_MODEL,
     store: false,
     prompt_cache_key: `ptit-bac-${VALIDATION_ENGINE_VERSION}-${review ? "review" : "primary"}`,
-    reasoning: { effort: review ? "medium" : "low" },
+    reasoning: { effort: review ? "low" : "none" },
     instructions: reviewInstructions,
     input: JSON.stringify(payloadItems),
     text: {
       format: validationSchema(review ? "ptit_bac_validation_review" : "ptit_bac_validation_primary"),
       verbosity: "low"
     },
-    max_output_tokens: Math.max(900, Math.min(6000, items.length * 150))
+    max_output_tokens: validationEngine.outputTokenBudget(items.length, review)
   };
 
   if (review && OPENAI_VALIDATION_WEB_SEARCH) {
@@ -2202,10 +2340,7 @@ async function callValidationModel(items, letter, { review = false } = {}) {
 }
 
 function decisionThresholds(category) {
-  const type = categoryRule(category).type;
-  if (type === "subjective") return { valid: 76, invalid: 78 };
-  if (type === "lexical") return { valid: 88, invalid: 82 };
-  return { valid: 82, invalid: 80 };
+  return validationEngine.decisionThresholds(categoryRule(category).type);
 }
 
 function normalizeAiResult(raw) {
@@ -2259,30 +2394,160 @@ function shouldCacheDecision(item) {
 }
 
 async function validateInBatches(items, letter, options = {}) {
-  const all = [];
-  const batchSize = Math.max(1, Math.min(15, Number(process.env.OPENAI_VALIDATION_BATCH_SIZE) || 15));
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    let results = null;
-    let lastError = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        results = await callValidationModel(batch, letter, options);
-        break;
-      } catch (err) {
-        lastError = err;
-        if (!err?.retryable || attempt >= 2) throw err;
-        await wait(900 * attempt);
-      }
-    }
-    if (!results) throw lastError || new OpenAIRequestError("Aucun résultat de validation", { code: "missing_results", retryable: true });
-    const returnedIds = new Set(results.map(r => r?.id).filter(Boolean));
-    if (batch.some(item => !returnedIds.has(item.id))) {
-      throw new OpenAIRequestError("Réponse IA incomplète", { code: "incomplete_results", retryable: true });
-    }
-    all.push(...results);
+  const batches = [];
+  for (let i = 0; i < items.length; i += OPENAI_VALIDATION_BATCH_SIZE) {
+    batches.push(items.slice(i, i + OPENAI_VALIDATION_BATCH_SIZE));
   }
-  return all;
+
+  const groupedResults = await validationEngine.mapWithConcurrency(
+    batches,
+    OPENAI_VALIDATION_CONCURRENCY,
+    async batch => {
+      // Une seule tentative par passe. La passe primaire est déjà rapide et
+      // la seconde passe de review est réservée aux cas réellement ambigus.
+      // Empiler des retries ici pouvait dépasser le watchdog de la manche.
+      const results = await callValidationModel(batch, letter, options);
+
+      if (!results) {
+        throw new OpenAIRequestError(
+          "Aucun résultat de validation",
+          { code: "missing_results", retryable: false }
+        );
+      }
+
+      const returnedIds = new Set(
+        results.map(result => result?.id).filter(Boolean)
+      );
+      if (batch.some(item => !returnedIds.has(item.id))) {
+        throw new OpenAIRequestError(
+          "Réponse IA incomplète",
+          { code: "incomplete_results", retryable: true }
+        );
+      }
+
+      return results;
+    }
+  );
+
+  return groupedResults.flat();
+}
+
+function validationPrewarmKey(room, player, roundIndex) {
+  return `${room.code}:${roundIndex}:${player.id}`;
+}
+
+function prewarmItemsForPlayer(room, player, roundIndex) {
+  const letter = room.letters[roundIndex];
+  const items = [];
+
+  for (const category of room.categories) {
+    const answer = String(player.answers?.[roundIndex]?.[category] || "").trim();
+    if (!answer || !startsWithLetter(answer, letter)) continue;
+    if (category === "Mot de 4 lettres" && countLetters(answer) !== 4) continue;
+
+    items.push({
+      id: id(),
+      category,
+      playerId: player.id,
+      playerName: player.name,
+      answer,
+      status: "pending",
+      reason: "",
+      correction: ""
+    });
+  }
+
+  return items;
+}
+
+function queuePlayerValidationPrewarm(room, player) {
+  if (!OPENAI_API_KEY || !room || !player || room.phase !== "round") return null;
+
+  const roundIndex = room.roundIndex;
+  const key = validationPrewarmKey(room, player, roundIndex);
+  const existing = validationPrewarmJobs.get(key);
+  if (existing) return existing;
+
+  const job = (async () => {
+    const letter = room.letters[roundIndex];
+    const items = prewarmItemsForPlayer(room, player, roundIndex);
+    const unresolved = [];
+
+    for (const item of items) {
+      const local = localSemanticDecision(item);
+      if (local) continue;
+
+      const learned = learnedAnswers.get(
+        learnedAnswerKey(item.category, item.answer)
+      );
+      if (
+        learned &&
+        ["valid", "invalid"].includes(learned.status) &&
+        Number(learned.confidence || 0) >= 95
+      ) {
+        continue;
+      }
+
+      const cached = validationCache.get(
+        validationCacheKey(item.category, item.answer)
+      );
+      if (cached && cached.engineVersion === VALIDATION_ENGINE_VERSION) {
+        continue;
+      }
+
+      unresolved.push(item);
+    }
+
+    if (!unresolved.length) return;
+
+    const primaryResults = await validateInBatches(
+      unresolved,
+      letter,
+      { review: false }
+    );
+    const primaryById = new Map(
+      primaryResults.map(result => [result.id, result])
+    );
+    let cacheChanged = false;
+
+    for (const item of unresolved) {
+      const result = primaryById.get(item.id);
+      if (!shouldAcceptPrimary(item, result)) continue;
+      if (!applyAiDecision(item, result, letter, "ai_prewarm")) continue;
+      if (!shouldCacheDecision(item)) continue;
+
+      validationCache.set(
+        validationCacheKey(item.category, item.answer),
+        {
+          engineVersion: VALIDATION_ENGINE_VERSION,
+          status: item.status,
+          reason: item.reason,
+          correction: item.correction || "",
+          canonicalAnswer: item.canonicalAnswer || "",
+          confidence: item.aiConfidence || 0,
+          explanation: item.aiExplanation || "",
+          updatedAt: Date.now()
+        }
+      );
+      cacheChanged = true;
+    }
+
+    if (cacheChanged) saveValidationCache();
+  })()
+    .catch(err => {
+      // La prévalidation est uniquement une optimisation : son échec ne doit
+      // jamais modifier la manche ni afficher une erreur aux joueurs.
+      console.warn(
+        "Prévalidation silencieuse:",
+        sanitizeOpenAIErrorMessage(err?.message)
+      );
+    })
+    .finally(() => {
+      validationPrewarmJobs.delete(key);
+    });
+
+  validationPrewarmJobs.set(key, job);
+  return job;
 }
 
 function completeValidationFallback(
@@ -2306,31 +2571,15 @@ function completeValidationFallback(
   }
 
   const validation = current.validation;
-  const neutralCategories = new Set(
-    (validation.items || [])
-      .filter(item => item.status === "pending")
-      .map(item => item.category)
-  );
 
-  // Une panne de l'arbitre ne doit jamais transformer une réponse inconnue
-  // en réponse fausse. Dès qu'une catégorie contient une réponse que l'IA
-  // n'a pas pu trancher, la catégorie devient neutre pour tous les joueurs.
-  for (const item of validation.items || []) {
-    if (!neutralCategories.has(item.category)) continue;
-    item.status = "unverified";
-    item.reason = code;
-    item.validationSource = "fallback";
-    item.aiConfidence = 0;
-    item.correction = "";
-    delete item.primaryDecision;
-  }
-
-  validation.neutralCategories = [
-    ...new Set([
-      ...(validation.neutralCategories || []),
-      ...neutralCategories
-    ])
-  ];
+  // v2.6 : un problème sur UNE réponse ne neutralise plus les autres joueurs
+  // de la même catégorie. Les décisions déjà obtenues restent intactes.
+  validationEngine.markPendingUnverified(validation.items, {
+    code,
+    source:"fallback",
+    resetConfidence:true
+  });
+  validation.neutralCategories = [];
   validation.status = "complete";
   validation.error = {
     code,
@@ -2393,7 +2642,7 @@ async function runAutomaticValidation(room, roundAtStart) {
       continue;
     }
 
-    const cached = validationCache.get(validationCacheKey(item.category, item.answer));
+    const cached = getValidationCacheEntry(validationCacheKey(item.category, item.answer));
     if (cached && cached.engineVersion === VALIDATION_ENGINE_VERSION) {
       item.status = cached.status;
       item.reason = cached.reason || "cache";
@@ -2437,15 +2686,9 @@ async function runAutomaticValidation(room, roundAtStart) {
           item.primaryDecision = normalized;
           item.aiConfidence = normalized.confidence;
           item.aiExplanation = normalized.explanation;
-          // Mode rapide : une décision explicite >= 76% évite un second appel.
-          // La seconde passe est réservée aux véritables cas ambigus.
-          if (normalized.verdict === "valid" && normalized.confidence >= 76) {
-            applyAiDecision(item, result, letter, "ai_primary_fast");
-          } else if (normalized.verdict === "invalid" && normalized.confidence >= 76) {
-            applyAiDecision(item, result, letter, "ai_primary_fast");
-          } else {
-            needsReview.push(item);
-          }
+          // Les seuils propres à la catégorie sont désormais stricts.
+          // Tout cas sous le seuil passe à la seconde vérification.
+          needsReview.push(item);
         }
       }
 
@@ -2491,23 +2734,14 @@ async function runAutomaticValidation(room, roundAtStart) {
     return;
   }
 
-  const neutralCategories = new Set(validation.neutralCategories || []);
-  for (const item of validation.items) {
-    if (item.status === "pending") neutralCategories.add(item.category);
-  }
-
-  if (neutralCategories.size) {
-    for (const item of validation.items) {
-      if (!neutralCategories.has(item.category)) continue;
-      item.status = "unverified";
-      item.reason = item.reason || "review_unresolved";
-      item.validationSource = item.validationSource || "ai_review";
-      item.aiConfidence = Number(item.aiConfidence || 0);
-      item.correction = "";
-      delete item.primaryDecision;
-    }
-    validation.neutralCategories = [...neutralCategories];
-  }
+  // Une ambiguïté restante concerne uniquement l'item en question.
+  // Les réponses déjà validées/refusées gardent leur décision et leurs points.
+  validationEngine.markPendingUnverified(validation.items, {
+    code:"review_unresolved",
+    source:"ai_review",
+    resetConfidence:false
+  });
+  validation.neutralCategories = [];
 
   for (const item of validation.items) {
     if (shouldCacheDecision(item)) {
@@ -2754,12 +2988,9 @@ function buildRoundResults(room) {
 function finalizeRound(room) {
   const round = room.roundIndex;
   const scores = {};
-  const neutralCategories = new Set(room.validation?.neutralCategories || []);
-
   room.players.forEach(player => {
     let gained = 0;
     room.categories.forEach(category => {
-      if (neutralCategories.has(category)) return;
       const auto = room.validation.autoResults[player.id]?.[category];
       if (auto) return;
 
@@ -2884,10 +3115,13 @@ const BOT_PERSONAS = [
 ];
 
 function botPersonaFor(bot, botIndex = 0) {
-  if (bot.botPersona) return BOT_PERSONAS.find(p => p.id === bot.botPersona) || BOT_PERSONAS[botIndex % BOT_PERSONAS.length];
-  const persona = BOT_PERSONAS[Math.floor(Math.random() * BOT_PERSONAS.length)];
-  bot.botPersona = persona.id;
-  return persona;
+  let persona = bot.botPersona
+    ? (BOT_PERSONAS.find(p => p.id === bot.botPersona) || BOT_PERSONAS[botIndex % BOT_PERSONAS.length])
+    : BOT_PERSONAS[Math.floor(Math.random() * BOT_PERSONAS.length)];
+
+  if (!bot.botPersona) bot.botPersona = persona.id;
+  if (!bot.botDifficulty) bot.botDifficulty = publicBotEngine.pickDifficulty();
+  return publicBotEngine.applyDifficulty(persona, bot.botDifficulty);
 }
 
 function normalizeInitialLetter(value) {
@@ -2961,7 +3195,13 @@ async function generateBotPlansWithAI(room, bots, roundIndex, letter) {
   try {
     const botDescriptions = bots.map((bot, index) => {
       const persona = botPersonaFor(bot, index);
-      return { id: bot.id, name: bot.name, persona: persona.label, instruction: persona.instruction };
+      return {
+        id: bot.id,
+        name: bot.name,
+        persona: persona.label,
+        difficulty: persona.difficultyLabel,
+        instruction: persona.instruction
+      };
     });
     const prompt = `Tu incarnes plusieurs joueurs DISTINCTS d'une partie de P'tit Bac. Tu n'es PAS l'arbitre et tu ne dois jamais évaluer les réponses : ton seul rôle est de proposer ce que chaque joueur taperait pendant la manche.\n\nLettre: ${letter}\nCatégories: ${JSON.stringify(room.categories)}\nJoueurs simulés: ${JSON.stringify(botDescriptions)}\n\nRègles de génération:\n- Chaque réponse non vide doit commencer par la lettre ${letter} (accents tolérés).\n- Utilise de vrais mots, noms, marques, lieux ou références existantes adaptées à la catégorie. N'invente pas de faux mots.\n- Les joueurs doivent avoir des réponses DIFFÉRENTES entre eux dès qu'une alternative raisonnable existe. Évite absolument de copier la même grille d'un joueur à l'autre.\n- Un joueur peut laisser quelques réponses vides.\n- Les personnalités doivent se ressentir légèrement : certains choisissent des évidences, d'autres des réponses plus originales.\n- Ne cherche pas à provoquer volontairement des doublons. Un doublon occasionnel reste possible, mais ne doit pas être systématique.\n- Retourne exactement une entrée par catégorie et par joueur, dans le même ordre que les catégories.\n- Ne fais aucun commentaire et n'ajoute aucun verdict de validité.`;
 
@@ -2971,6 +3211,7 @@ async function generateBotPlansWithAI(room, bots, roundIndex, letter) {
       body: JSON.stringify({
         model: OPENAI_BOT_MODEL,
         store: false,
+        reasoning: { effort: "none" },
         input: prompt,
         max_output_tokens: Math.max(800, Math.min(4500, bots.length * room.categories.length * 55)),
         text: { format: { type: "json_schema", name: "ptitbac_bot_answers", strict: true, schema: botAnswerSchema() } }
@@ -3026,6 +3267,26 @@ function buildLocalBotPlans(room, bots, letter) {
   return plans;
 }
 
+function humanizeAiBotPlans(room, bots, plans) {
+  bots.forEach((bot, botIndex) => {
+    const persona = botPersonaFor(bot, botIndex);
+    const answers = plans.get(bot.id) || {};
+
+    for (const category of room.categories) {
+      if (!answers[category]) continue;
+      // Même l'IA ne doit pas rendre chaque joueur artificiellement parfait.
+      // Une partie des cases trouvées est donc laissée vide selon le niveau.
+      if (Math.random() < Math.min(0.42, persona.missRate * 0.65)) {
+        answers[category] = "";
+      }
+    }
+
+    plans.set(bot.id, answers);
+  });
+
+  return plans;
+}
+
 function diversifyBotPlans(room, bots, plans, letter) {
   // Même si l'IA propose accidentellement la même réponse à plusieurs joueurs,
   // on tente une alternative locale avant de laisser un doublon.
@@ -3035,7 +3296,9 @@ function diversifyBotPlans(room, bots, plans, letter) {
       const answers = plans.get(bot.id) || {};
       let answer = String(answers[category] || "").trim();
       const key = normalizeAnswer(answer);
-      if (answer && seen.has(key)) {
+      // Les humains peuvent aussi tomber sur le même mot : on conserve
+      // volontairement une partie des vrais doublons.
+      if (answer && seen.has(key) && Math.random() < 0.72) {
         const alternative = localBotAnswer(category, letter, seen);
         if (alternative) answer = alternative;
       }
@@ -3095,7 +3358,10 @@ function playBots(room) {
   generateBotPlansWithAI(room, bots, roundIndex, letter).then(aiPlans => {
     const current = rooms.get(room.code);
     if (!current || current.phase !== "round" || current.roundIndex !== roundIndex) return;
-    const plans = diversifyBotPlans(current, bots, aiPlans || buildLocalBotPlans(current, bots, letter), letter);
+    const sourcePlans = aiPlans
+      ? humanizeAiBotPlans(current, bots, aiPlans)
+      : buildLocalBotPlans(current, bots, letter);
+    const plans = diversifyBotPlans(current, bots, sourcePlans, letter);
     scheduleBotPlans(current, bots, roundIndex, plans);
   }).catch(err => {
     console.warn("Erreur moteur joueurs test:", err?.message || err);
@@ -3296,6 +3562,10 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
 
   // Départ classique depuis le salon ou après la fin.
   if (!isActiveGame) {
+    if (!room.players.some(p => !p.isBot)) {
+      removeAllMatchmakingBots(room);
+    }
+
     if (room.players.length === 0) {
       removeRoom(room.code);
       return cb({ ok:true, outcome:"room_closed" });
@@ -3306,6 +3576,7 @@ async function ptitBacHandleExplicitLeave(socket, payload = {}, cb = () => {}) {
     }
 
     emitRoom(room);
+    scheduleMatchmakingBotFill(room);
     return cb({ ok:true, outcome:"left_room" });
   }
 
@@ -3566,6 +3837,7 @@ function createGameRoom(socket, { name, rounds = 1, duration = 60, categoryCount
     };
 
     rooms.set(code, room);
+    scheduleMatchmakingBotFill(room);
     setPlayerSocket(room, player, socket);
     hydratePlayerInventory(room, player, { avatar, frame: frameId, tag: "tag_debutant" });
     cb({ ok: true, code, playerId: player.id, walletToken: walletResult.token, balance: walletResult.wallet.coins, state: publicRoom(room, player.id) });
@@ -3580,15 +3852,28 @@ function joinGameRoom(socket, { code, name, avatar, frameId, friendCode, walletT
     if (!room) return cb({ ok: false, error: "Partie introuvable." });
     if (room.phase !== "lobby") return cb({ ok: false, error: "La partie a déjà commencé." });
     if (!safeName) return cb({ ok: false, error: "Choisis un prénom." });
-    if (room.players.length >= 6) return cb({ ok: false, error: "Cette partie est pleine (6 joueurs maximum)." });
+    if (
+      room.players.length >= 6 &&
+      !room.players.some(publicBotEngine.isMatchmakingBot)
+    ) {
+      return cb({ ok: false, error: "Cette partie est pleine (6 joueurs maximum)." });
+    }
     const walletResult = ensureWallet(walletToken || socket.data.walletToken);
     if (hasActiveRoom(walletResult.token)) return cb({ok:false,error:"Quitte ta partie actuelle avant d’en rejoindre une autre."});
     socket.data.walletToken = walletResult.token;
     if (walletResult.wallet.coins < GAME_COST) return cb({ ok: false, error: `Il te faut ${GAME_COST} pièces pour jouer.` });
     if (room.players.some(p => !p.isBot && p.walletToken === walletResult.token)) return cb({ ok: false, error: "Ce profil est déjà dans le salon." });
 
-    const duplicateName = room.players.some(p => p.name.toLowerCase() === safeName.toLowerCase());
+    const duplicateName = room.players.some(
+      p =>
+        !publicBotEngine.isMatchmakingBot(p) &&
+        p.name.toLowerCase() === safeName.toLowerCase()
+    );
     if (duplicateName) return cb({ ok: false, error: "Ce prénom est déjà utilisé." });
+
+    if (["public", "quick"].includes(room.mode)) {
+      removeOneMatchmakingBot(room);
+    }
 
     const player = {
       id: id(),
@@ -3608,6 +3893,7 @@ function joinGameRoom(socket, { code, name, avatar, frameId, friendCode, walletT
     };
 
     room.players.push(player);
+    scheduleMatchmakingBotFill(room);
     setPlayerSocket(room, player, socket);
     hydratePlayerInventory(room, player, { avatar, frame: frameId, tag: "tag_debutant" });
     cb({ ok: true, code: room.code, playerId: player.id, walletToken: walletResult.token, balance: walletResult.wallet.coins, state: publicRoom(room, player.id) });
@@ -3622,6 +3908,7 @@ async function startGame(socket, payload, automatic = false) {
     if (room.players.length < 2) {
       return socket.emit("toast", "Il faut au moins 2 joueurs.");
     }
+    cancelMatchmakingBotFill(room.code);
 
     if (isEconomyMode(room.mode) && !room.entryDebited) {
       if (room.economyStartPending) {
@@ -3708,6 +3995,85 @@ function uniqueRoomPlayerName(room, requestedName) {
   return name;
 }
 
+
+function cancelMatchmakingBotFill(roomCode) {
+  const code = String(roomCode || "").trim().toUpperCase();
+  const timer = publicBotFillTimers.get(code);
+  if (timer) clearTimeout(timer);
+  publicBotFillTimers.delete(code);
+}
+
+function removeOneMatchmakingBot(room) {
+  if (!room?.players) return false;
+  const index = room.players.findIndex(publicBotEngine.isMatchmakingBot);
+  if (index < 0) return false;
+  room.players.splice(index, 1);
+  cancelMatchmakingBotFill(room.code);
+  return true;
+}
+
+function removeAllMatchmakingBots(room) {
+  if (!room?.players) return 0;
+  const before = room.players.length;
+  room.players = room.players.filter(
+    player => !publicBotEngine.isMatchmakingBot(player)
+  );
+  cancelMatchmakingBotFill(room.code);
+  return before - room.players.length;
+}
+
+function addMatchmakingBot(room) {
+  if (!PUBLIC_MATCHMAKING_BOTS_ENABLED || !publicBotEngine.shouldFillRoom(room)) {
+    return null;
+  }
+
+  const identity = publicBotEngine.pickIdentity(room.players);
+  const bot = {
+    id: id(),
+    name: identity.name,
+    connected: true,
+    socketId: null,
+    score: 0,
+    isHost: false,
+    isBot: true,
+    botKind: publicBotEngine.MATCHMAKING_BOT_KIND,
+    botDifficulty: publicBotEngine.pickDifficulty(),
+    botPersona: BOT_PERSONAS[Math.floor(Math.random() * BOT_PERSONAS.length)].id,
+    walletToken: null,
+    avatar: identity.avatar,
+    frameId: "",
+    tagId: "tag_debutant",
+    friendCode: "",
+    lobbyReady: true,
+    submitted: false,
+    answers: {}
+  };
+
+  room.players.push(bot);
+  emitRoom(room);
+  try { quickMatch.refreshByCode(room.code); } catch {}
+  return bot;
+}
+
+function scheduleMatchmakingBotFill(room) {
+  if (!room?.code) return;
+  cancelMatchmakingBotFill(room.code);
+
+  if (!PUBLIC_MATCHMAKING_BOTS_ENABLED || !publicBotEngine.shouldFillRoom(room)) {
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    publicBotFillTimers.delete(room.code);
+    const current = rooms.get(room.code);
+    if (current !== room || !publicBotEngine.shouldFillRoom(current)) return;
+    addMatchmakingBot(current);
+  }, PUBLIC_MATCHMAKING_BOT_DELAY_MS);
+
+  timer.unref?.();
+  publicBotFillTimers.set(room.code, timer);
+}
+
 function findPublicLobbyForQuick(walletToken) {
   return [...rooms.values()]
     .filter(room =>
@@ -3720,8 +4086,20 @@ function findPublicLobbyForQuick(walletToken) {
     )[0] || null;
 }
 
-const quickMatch = require("./quick-match.js")({
+const quickMatch = require("./quick-match-v2.js")({
   io,
+  participantCount(entries) {
+    const code = entries.find(entry => entry.code)?.code;
+    const room = getRoom(code);
+    return room
+      ? room.players.filter(player => player.isBot || player.connected).length
+      : entries.length;
+  },
+  hasReplaceableFiller(entries) {
+    const code = entries.find(entry => entry.code)?.code;
+    const room = getRoom(code);
+    return !!room?.players?.some(publicBotEngine.isMatchmakingBot);
+  },
   async eligible(socket, profile) {
     if (!cleanName(profile.name)) throw new Error("Choisis d’abord ton pseudo.");
     const result = ensureWallet(profile.walletToken || socket.data.walletToken);
@@ -4067,7 +4445,9 @@ io.on("connection", socket => {
       return cb({ ok: false, error: "Type de salon invalide." });
     }
 
-    if (nextMode === "public" && room.players.some(p => p.isBot)) {
+    if (nextMode === "public" && room.players.some(
+      p => p.isBot && !publicBotEngine.isMatchmakingBot(p)
+    )) {
       return cb({
         ok: false,
         error: "Retire les bots de test avant de rendre le salon public."
@@ -4076,6 +4456,8 @@ io.on("connection", socket => {
 
     if (room.mode !== nextMode) {
       room.mode = nextMode;
+      if (nextMode === "private") removeAllMatchmakingBots(room);
+      else scheduleMatchmakingBotFill(room);
       room.players.forEach(p => { p.lobbyReady = false; });
       room.progressionDistributed = false;
       room.progressionDistributionPending = false;
@@ -4334,6 +4716,7 @@ io.on("connection", socket => {
       avatar: identity.avatar,
       frameId: "",
       botPersona: BOT_PERSONAS[Math.floor(Math.random() * BOT_PERSONAS.length)].id,
+      botDifficulty: publicBotEngine.pickDifficulty(),
       submitted: false,
       answers: {}
     };
@@ -4566,10 +4949,16 @@ io.on("connection", socket => {
     if (!room || !player || room.phase !== "round") return;
     if (Date.now() < (room.roundStartsAt || 0)) return;
     player.submitted = true;
+    const allSubmitted = room.players.every(p => p.submitted);
+
+    // Prévalidation invisible : on profite du temps restant pendant que les
+    // autres joueurs répondent. Le dernier joueur ne lance pas de doublon.
+    if (!allSubmitted) queuePlayerValidationPrewarm(room, player);
+
     emitRoom(room);
 
     // Dès que tous les joueurs ont validé, la manche se termine.
-    if (room.players.every(p => p.submitted)) endRound(room);
+    if (allSubmitted) endRound(room);
   });
 
   // La validation est désormais entièrement automatique côté serveur.
@@ -4688,6 +5077,7 @@ io.on("connection", socket => {
       ensureLetterChooser(room);
     }
     emitRoom(room);
+    scheduleMatchmakingBotFill(room);
 
     // Nettoyage après 3 heures d'inactivité totale.
     setTimeout(() => {
@@ -4713,6 +5103,7 @@ async function startApplication() {
   try {
     await initWalletPersistence();
     await initLearningPersistence();
+    await initValidationCachePersistence();
     await initRoomPersistence();
 
     if (IS_RENDER && walletStorageMode !== "postgres") {
@@ -4752,6 +5143,10 @@ async function startApplication() {
       console.log(
         `Mémoire IA: ${pgPool ? "PostgreSQL" : "JSON local"} ` +
         `(${learnedAnswers.size} réponse(s) apprise(s))`
+      );
+      console.log(
+        `Cache correction: ${pgPool ? "PostgreSQL + RAM" : "JSON + RAM"} ` +
+        `(${validationCache.size}/${VALIDATION_CACHE_MEMORY_MAX})`
       );
       console.log(
         `Diagnostic admin: ${

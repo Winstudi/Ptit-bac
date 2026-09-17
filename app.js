@@ -1,4 +1,4 @@
-const CLIENT_BUILD = "1.47.0";
+const CLIENT_BUILD = "1.48.0";
 const socket = io();
 const app = document.getElementById("app");
 const toastEl = document.getElementById("toast");

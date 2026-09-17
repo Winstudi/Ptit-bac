@@ -81,6 +81,13 @@ function checkPackage() {
   for (const script of ["test", "check", "check:production"]) {
     if (!pkg?.scripts?.[script]) fail(`script npm manquant: ${script}`);
   }
+
+  if (pkg?.scripts?.prestart || pkg?.scripts?.predev || pkg?.scripts?.pretest) {
+    fail("les patchers runtime ne doivent plus être exécutés en 1.48.0.");
+  }
+  if (pkg?.scripts?.start !== "node server.js") {
+    fail("npm start doit lancer directement server.js.");
+  }
 }
 
 function checkRenderChain() {
@@ -254,7 +261,9 @@ function checkDeploymentReliability() {
     "checkDatabaseHealth",
     "DATABASE_URL est obligatoire sur Render",
     "Démarrage P'tit Bac refusé",
-    "startApplication()"
+    "startApplication()",
+    'VALIDATION_ENGINE_VERSION = "v2.7.0"',
+    'SOURCE_RELEASE = "1.48.0-stable"'
   ]) {
     if (!server.includes(marker)) {
       fail(`fiabilité déploiement absente de server.js: ${marker}`);
@@ -321,7 +330,7 @@ function checkIntegratedFrontend() {
     "avatar-system-v1.js",
     "progression-client.js",
     "quick-lobby-v1.js",
-    "lobby-runtime-v1.js",
+    "lobby-screen-v4.js",
     "ui-runtime-v1.js"
   ];
 

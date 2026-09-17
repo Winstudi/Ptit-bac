@@ -75,15 +75,15 @@ test("une panne IA ne transforme plus les réponses non vérifiées en réponses
     /function completeValidationFallback\([\s\S]*?\n\}\n\nasync function runAutomaticValidation/
   )?.[0] || "";
 
-  assert.match(fallback, /item\.status = "unverified"/);
-  assert.match(fallback, /neutralCategories/);
+  assert.match(fallback, /validationEngine\.markPendingUnverified\(validation\.items/);
+  assert.match(fallback, /validation\.neutralCategories = \[\]/);
   assert.doesNotMatch(fallback, /item\.status = "invalid"/);
 
   const finalize = server.match(
     /function finalizeRound\(room\) \{([\s\S]*?)\n\}\n\nfunction endRound/
   )?.[1] || "";
-  assert.match(finalize, /neutralCategories/);
-  assert.match(finalize, /neutralCategories\.has\(category\)/);
+  assert.doesNotMatch(finalize, /neutralCategories\.has\(category\)/);
+  assert.match(finalize, /item\?\.status === "valid"/);
 
   const results = server.match(
     /function buildRoundResults\(room\) \{([\s\S]*?)\n\}\n\nfunction finalizeRound/
@@ -107,8 +107,9 @@ test("une réponse encore incertaine après seconde vérification reste neutre",
   const automatic = server.match(
     /async function runAutomaticValidation\([\s\S]*?\n\}\n\n\nasync function reviewReportedAnswer/
   )?.[0] || "";
-  assert.match(automatic, /item\.status = "unverified"/);
-  assert.match(automatic, /validation\.neutralCategories = \[\.\.\.neutralCategories\]/);
+  assert.match(automatic, /validationEngine\.markPendingUnverified\(validation\.items/);
+  assert.match(automatic, /code:"review_unresolved"/);
+  assert.match(automatic, /validation\.neutralCategories = \[\]/);
   assert.match(automatic, /if \(validation\.status === "complete"\) return;/);
 });
 
@@ -143,3 +144,17 @@ test("une nouvelle partie libère automatiquement l’ancien salon du même prof
   assert.match(join, /joinGameRoom\(socket, payload, cb\)/);
 });
 
+
+test("la source 1.48 démarre directement sans patcher runtime", () => {
+  const pkg = JSON.parse(source("package.json"));
+  const server = source("server.js");
+
+  assert.equal(pkg.version, "1.48.0");
+  assert.equal(pkg.scripts.start, "node server.js");
+  assert.equal(pkg.scripts.prestart, undefined);
+  assert.equal(pkg.scripts.pretest, undefined);
+  assert.equal(pkg.scripts.predev, undefined);
+  assert.match(server, /SOURCE_RELEASE = "1\.48\.0-stable"/);
+  assert.match(server, /VALIDATION_ENGINE_VERSION = "v2\.7\.0"/);
+  assert.match(server, /OPENAI_BOT_MODEL = configuredBotModel/);
+});

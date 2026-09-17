@@ -37,6 +37,9 @@ test("toutes les tables principales sont créées par le module central", async 
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.friendships/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_messages/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_inventory_items/);
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_item_catalog_settings/);
+  assert.match(sql, /rarity IN \('commun','rare','epique','ultra','exclusif'\)/);
+  assert.match(sql, /currency IN \('coins','gems'\)/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ptitbac_progression/);
   assert.match(sql, /profile_completed boolean NOT NULL DEFAULT false/);
   assert.match(sql, /ALTER COLUMN profile_completed SET DEFAULT false/);

@@ -239,6 +239,22 @@ async function runDatabaseMigrations(pool) {
     )
   `);
 
+  // Paramètres éditables du catalogue cosmétique. Les items officiels
+  // restent déclarés dans inventory-service.js.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.ptitbac_item_catalog_settings(
+      item_key text PRIMARY KEY,
+      rarity text NOT NULL DEFAULT 'commun'
+        CHECK (rarity IN ('commun','rare','epique','ultra','exclusif')),
+      price integer NOT NULL DEFAULT 0
+        CHECK (price >= 0 AND price <= 999999),
+      currency text NOT NULL DEFAULT 'coins'
+        CHECK (currency IN ('coins','gems')),
+      updated_by_wallet_token text,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.ptitbac_feedback_reports(
       id text PRIMARY KEY,
@@ -269,6 +285,21 @@ async function runDatabaseMigrations(pool) {
       support_count integer NOT NULL DEFAULT 1,
       updated_at bigint NOT NULL
     )
+  `);
+
+  // Cache durable du moteur de correction. Le payload reste versionné :
+  // une nouvelle politique de validation ne réutilise jamais une ancienne décision.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.ptitbac_validation_cache(
+      cache_key text PRIMARY KEY,
+      engine_version text NOT NULL,
+      payload jsonb NOT NULL,
+      updated_at bigint NOT NULL
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS ptitbac_validation_cache_engine_updated_idx
+      ON public.ptitbac_validation_cache(engine_version, updated_at DESC)
   `);
 
   await pool.query(`

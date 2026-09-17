@@ -31,6 +31,13 @@
     window.getProfile?.() ||
     { name:"Joueur" };
 
+  function mutationRequestId(scope = "mutation") {
+    const random =
+      globalThis.crypto?.randomUUID?.() ||
+      `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,12)}`;
+    return `${String(scope || "mutation").slice(0,24)}:${random}`.slice(0,80);
+  }
+
   function emit(name,payload={}) {
     return new Promise(resolve => {
       socket.emit(
@@ -811,7 +818,8 @@
             friendCode,
             mode,
             resource,
-            amount
+            amount,
+            requestId:mutationRequestId("resource")
           }
         );
 

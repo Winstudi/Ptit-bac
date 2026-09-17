@@ -1,15 +1,12 @@
 {
   "name": "petit-bac-soiree",
-  "version": "1.47.0",
+  "version": "1.48.0",
   "private": true,
   "description": "P'tit Bac multijoueur mobile — profils persistants, amis, chat, vies rechargeables et économie serveur.",
   "main": "server.js",
   "scripts": {
-    "prestart": "node apply-validation-v27.cjs",
-    "start": "node apply-admin-page-v2.cjs && node server.js",
-    "predev": "node apply-validation-v27.cjs",
+    "start": "node server.js",
     "dev": "node --watch server.js",
-    "pretest": "node apply-validation-v27.cjs",
     "test": "node --test *.test.cjs",
     "check": "node ci-check.cjs",
     "check:production": "node ci-check.cjs --production",

@@ -1986,7 +1986,7 @@
     if (!event.target.closest?.("#inventoryV2Back")) return;
 
     event.preventDefault();
-    event.stopImmediatePropagation();
+    event.stopPropagation();
     lobbyInventoryReturnToLobby = false;
 
     try {

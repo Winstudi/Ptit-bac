@@ -81,6 +81,27 @@ function rankingForPlayers(players = []) {
   return rankByPlayerId;
 }
 
+function rankingForAllParticipants(players = []) {
+  const ranked = [...players]
+    .filter(player => player?.isBot || player?.walletToken)
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+
+  const rankByPlayerId = {};
+  let rank = 1;
+
+  ranked.forEach((player, index) => {
+    if (
+      index > 0 &&
+      Number(player.score || 0) !== Number(ranked[index - 1].score || 0)
+    ) {
+      rank = index + 1;
+    }
+    rankByPlayerId[player.id] = rank;
+  });
+
+  return rankByPlayerId;
+}
+
 function calculateRoomXp(room) {
   const results = Object.fromEntries((room?.players || []).map(player => [player.id, {
     xp: 0,
@@ -95,19 +116,32 @@ function calculateRoomXp(room) {
   if (room.phase !== "finished") return results;
   if (!room.entryDebited || !room.gameSessionId) return results;
   if (Number(room.roundIndex) + 1 !== Number(room.rounds)) return results;
-  if (!Array.isArray(room.players) || room.players.some(player => player?.isBot)) return results;
+  if (!Array.isArray(room.players)) return results;
 
-  const humans = room.players.filter(player => !player?.isBot && player?.walletToken);
-  if (humans.length < 2) return results;
+  const humans = room.players.filter(
+    player => !player?.isBot && player?.walletToken
+  );
+  const hasMatchmakingBot = room.players.some(
+    player => player?.isBot && player?.botKind === "matchmaking"
+  );
+
+  if (humans.length < 1) return results;
+  if (humans.length < 2 && !hasMatchmakingBot) return results;
+
+  const competitiveHumanRewards = humans.length >= 2;
 
   const paid = new Set(room.paidPlayerIds || []);
-  const ranks = rankingForPlayers(humans);
+  const ranks = competitiveHumanRewards
+    ? rankingForAllParticipants(room.players)
+    : {};
   const completedRounds = Math.max(0, Math.floor(Number(room.rounds) || 0));
 
   for (const player of humans) {
     if (!paid.has(player.id)) continue;
 
-    const rank = ranks[player.id] || 0;
+    const rank = competitiveHumanRewards
+      ? (ranks[player.id] || 0)
+      : 0;
     // E3: l’XP récompense les réponses réellement validées,
     // indépendamment du score/classement de la partie.
     const validAnswers = Math.max(
@@ -117,11 +151,13 @@ function calculateRoomXp(room) {
     const xp =
       completedRounds * ROUND_XP +
       validAnswers * VALID_ANSWER_XP +
-      (RANK_BONUS[rank] || 0);
+      (competitiveHumanRewards ? (RANK_BONUS[rank] || 0) : 0);
 
     results[player.id] = {
       xp,
-      trophies: TROPHY_REWARDS[rank] ?? TROPHY_REWARDS.default,
+      trophies: competitiveHumanRewards
+        ? (TROPHY_REWARDS[rank] ?? TROPHY_REWARDS.default)
+        : 0,
       rank,
       validAnswers,
       rounds: completedRounds,

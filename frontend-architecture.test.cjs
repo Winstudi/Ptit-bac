@@ -177,7 +177,7 @@ test("le lobby possède directement le mode public et le compte à rebours", () 
   assert.match(source, /"lobby:startCountdown"/);
   assert.match(source, /id="plModeToggle"/);
   assert.doesNotMatch(source, /stopImmediatePropagation/);
-  assert.match(css, /Compte à rebours \+ bascule Privé\/Public/);
+  assert.match(css, /Salon privé\/public configurable/);
 });
 
 test("le runtime UI tolère une socket absente ou déconnectée", () => {
@@ -433,9 +433,9 @@ test("le patch CSS avatar-pages a été absorbé par ses propriétaires", () => 
 
   for (const selector of [
     "ptb-base-avatar",
-    "inventory-v1-dialog",
-    "inventory-v1-avatar-grid",
-    "inv-frame-purple-flame",
+    "inventory-v2-page",
+    "inventory-v2-avatar-grid",
+    "inventory-v2-frame-grid",
     "ptb-equipped-frame-overlay"
   ]) {
     assert.match(cosmetics, new RegExp(selector));
@@ -443,7 +443,7 @@ test("le patch CSS avatar-pages a été absorbé par ses propriétaires", () => 
 
   assert.match(quick, /\.quick-lobby-v1 \.lobby-v5-avatar\.ptb-has-equipped-frame/);
   assert.match(quick, /\.ptb-quick-reroll-restored/);
-  assert.match(quick, /width:48px!important;min-width:48px!important/);
+  assert.match(quick, /min-width:clamp\(82px,22vw,92px\)/);
 });
 
 test("aucun CSS de correctif tardif nommé fix ou patch n'est chargé en production", () => {
