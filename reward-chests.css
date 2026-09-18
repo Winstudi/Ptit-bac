@@ -229,3 +229,73 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 @media(prefers-reduced-motion:reduce){
   .ptb-star-simple,.ptb-star-fx{animation:none!important}
 }
+
+
+/* Coffre légendaire — même logique simple fermé/ouvert que le coffre normal */
+.ptb-legendary-simple{
+  position:absolute;inset:0;z-index:2;display:none;pointer-events:none;
+  transform-origin:50% 68%;will-change:transform
+}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-legendary-simple{display:block}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object-img,
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-aura{display:none}
+
+.ptb-legendary-simple-frame{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+  pointer-events:none;z-index:3;will-change:opacity,transform,filter;
+  filter:drop-shadow(0 16px 21px rgba(0,0,0,.27))
+         drop-shadow(0 0 18px rgba(255,204,65,.34))
+         drop-shadow(0 0 28px rgba(201,82,255,.28));
+  transition:opacity .14s ease,transform .22s ease,filter .22s ease
+}
+.ptb-legendary-simple-closed{opacity:1;transform:scale(.985)}
+.ptb-legendary-simple-open{opacity:0;transform:scale(.975)}
+
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="idle"] .ptb-legendary-simple{
+  animation:ptbStarSimpleIdle 2.8s ease-in-out infinite
+}
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="press"] .ptb-legendary-simple{
+  animation:ptbStarSimplePress .26s ease both
+}
+
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="opened"] .ptb-legendary-simple-closed,
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="reward"] .ptb-legendary-simple-closed,
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="settled"] .ptb-legendary-simple-closed{
+  opacity:0;transform:scale(.97)
+}
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="opened"] .ptb-legendary-simple-open,
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="reward"] .ptb-legendary-simple-open,
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="settled"] .ptb-legendary-simple-open{
+  opacity:1;transform:scale(1)
+}
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="reward"] .ptb-legendary-simple-open,
+.ptb-reward-open[data-reward-type="legendary"][data-star-phase="settled"] .ptb-legendary-simple-open{
+  filter:brightness(.94) saturate(.98)
+         drop-shadow(0 16px 21px rgba(0,0,0,.25))
+         drop-shadow(0 0 17px rgba(255,205,73,.3))
+}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{
+  top:31.5%;z-index:10;width:min(46vw,210px)
+}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result-card>img{
+  width:min(27vw,118px);height:min(27vw,118px)
+}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result-card strong{
+  font-size:clamp(1.5rem,6.2vw,2.25rem)
+}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-item-frame{
+  width:min(32vw,140px);height:min(32vw,140px);padding:12px;border-radius:22px
+}
+.ptb-reward-open[data-reward-type="legendary"].is-revealed .ptb-reward-result{
+  animation:ptbStarSimpleReward .62s cubic-bezier(.16,.9,.22,1.15) forwards
+}
+.ptb-reward-open.is-resetting .ptb-legendary-simple{
+  opacity:.74;transform:scale(.97)!important;transition:opacity .16s ease,transform .16s ease
+}
+
+@media(max-height:720px){
+  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{top:32.5%}
+}
+@media(prefers-reduced-motion:reduce){
+  .ptb-legendary-simple{animation:none!important}
+}

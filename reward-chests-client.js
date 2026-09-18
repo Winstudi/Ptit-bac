@@ -141,6 +141,14 @@
             <img class="ptb-star-fx ptb-star-fx-particles" src="/reward-star-particles.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-flash" src="/reward-star-flash.png" alt="">
           </span>
+          <span class="ptb-legendary-simple" aria-hidden="true">
+            <img class="ptb-star-fx ptb-star-fx-glow" src="/reward-star-glow.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-rays" src="/reward-star-rays.png" alt="">
+            <img class="ptb-legendary-simple-frame ptb-legendary-simple-closed" src="/reward-legendary-simple-closed.png" alt="">
+            <img class="ptb-legendary-simple-frame ptb-legendary-simple-open" src="/reward-legendary-simple-open.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-particles" src="/reward-star-particles.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-flash" src="/reward-star-flash.png" alt="">
+          </span>
         </button>
         <div class="ptb-reward-result" aria-live="polite"></div>
       </div>`;
@@ -170,7 +178,7 @@
 
   function assetFor(type) {
     if (type === "bag") return "/reward-bag.png";
-    if (type === "legendary") return "/reward-legendary.png";
+    if (type === "legendary") return "/reward-legendary-simple-closed.png";
     return "/reward-star-simple-closed.png";
   }
 
@@ -329,9 +337,15 @@
     root.classList.remove("is-upgrading");
     root.classList.add("is-tapping");
 
+    if (activeType === "legendary") {
+      const reward = rollPreviewReward("legendary", "blue");
+      playStarChestAnimation(reward);
+      return;
+    }
+
     if (activeType !== "star") {
       const reward = rollPreviewReward(activeType, "blue");
-      later(() => performOpen(reward), activeType === "legendary" ? 560 : 460);
+      later(() => performOpen(reward), 460);
       return;
     }
 
