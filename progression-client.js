@@ -194,7 +194,7 @@
       }
 
       .ptb-levels-hero{
-        position:relative;border:2px solid transparent;border-radius:26px;padding:13px 14px 12px;
+        position:relative;z-index:2;border:2px solid transparent;border-radius:26px;padding:13px 14px 12px;
         background:
           linear-gradient(180deg,rgba(8,31,112,.98),rgba(5,18,71,.99)) padding-box,
           linear-gradient(100deg,#40e8ff 0%,#328dff 38%,#7f69ff 67%,#f45bff 100%) border-box;
@@ -236,26 +236,26 @@
       .ptb-levels-hero-reward span{font-size:.73rem;line-height:1;font-weight:800;color:#eef0ff;white-space:nowrap}
       .ptb-levels-hero-reward b{color:#ffdd64;font-size:.82rem}
 
-      .ptb-levels-list{position:relative;margin-top:12px;padding-left:31px}
+      .ptb-levels-list{position:relative;z-index:1;margin-top:12px;padding-left:31px}
       .ptb-levels-line{
-        position:absolute;left:11px;top:5px;bottom:45px;width:2px;border-radius:999px;
+        position:absolute;left:11px;top:-18px;bottom:45px;width:2px;border-radius:999px;
         background:linear-gradient(180deg,#4be7ff 0%,#62d9ff 28%,#8a98ff 65%,#adb8ff 100%);
         box-shadow:0 0 7px rgba(88,213,255,.38)
       }
       .ptb-level-row{position:relative;margin:0 0 7px}
       .ptb-level-dot{
-        position:absolute;left:-27px;top:22px;width:13px;height:13px;border-radius:50%;box-sizing:border-box;
+        position:absolute;left:-25.5px;top:50%;transform:translateY(-50%);width:13px;height:13px;border-radius:50%;box-sizing:border-box;
         border:2px solid rgba(155,177,246,.82);background:#07184f;box-shadow:0 0 0 2px rgba(91,112,208,.18)
       }
       .ptb-level-row.is-completed .ptb-level-dot{
-        left:-33px;top:16px;width:25px;height:25px;border:2px solid #4ce9ff;background:#0f83ca;color:#fff;
+        left:-31.5px;width:25px;height:25px;border:2px solid #4ce9ff;background:#0f83ca;color:#fff;
         box-shadow:0 0 11px rgba(77,222,255,.52)
       }
       .ptb-level-row.is-completed .ptb-level-dot::after{
         content:"✓";position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:.76rem;font-weight:1000;color:#dfffff
       }
       .ptb-level-row.is-current .ptb-level-dot{
-        left:-34px;top:14px;width:28px;height:28px;border:4px solid #d278ff;background:#fff;
+        left:-33px;width:28px;height:28px;border:4px solid #d278ff;background:#fff;
         box-shadow:0 0 0 2px rgba(121,97,255,.30),0 0 14px rgba(220,103,255,.46)
       }
       .ptb-level-card{
