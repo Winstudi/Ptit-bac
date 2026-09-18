@@ -423,6 +423,212 @@
         .ptb-level-status{right:6px}
         .ptb-level-row.is-completed .ptb-level-reward{margin-right:32px}
         .ptb-level-status .ptb-check{width:27px;height:27px;font-size:.8rem}
+
+
+      /* =====================================================
+         Niveaux V2 — constellation centrale
+         ===================================================== */
+      .ptb-levels-panel{
+        background:
+          radial-gradient(circle at 50% 18%,rgba(51,95,255,.20),transparent 24%),
+          radial-gradient(circle at 12% 52%,rgba(108,67,255,.16),transparent 18%),
+          radial-gradient(circle at 90% 76%,rgba(48,176,255,.13),transparent 22%),
+          linear-gradient(180deg,#05103f 0%,#07154c 46%,#071441 100%)
+      }
+      .ptb-levels-panel::before{
+        opacity:.92;
+        background:
+          radial-gradient(circle at 8% 8%,rgba(255,255,255,.88) 0 1px,transparent 1.7px),
+          radial-gradient(circle at 21% 18%,rgba(107,222,255,.92) 0 1.2px,transparent 2px),
+          radial-gradient(circle at 38% 6%,rgba(255,255,255,.72) 0 1px,transparent 1.6px),
+          radial-gradient(circle at 61% 13%,rgba(184,125,255,.86) 0 1.2px,transparent 2px),
+          radial-gradient(circle at 84% 10%,rgba(255,255,255,.86) 0 1px,transparent 1.7px),
+          radial-gradient(circle at 93% 31%,rgba(85,224,255,.8) 0 1px,transparent 1.8px),
+          radial-gradient(circle at 16% 37%,rgba(206,156,255,.78) 0 1px,transparent 1.8px),
+          radial-gradient(circle at 73% 43%,rgba(255,255,255,.74) 0 1px,transparent 1.6px),
+          radial-gradient(circle at 31% 61%,rgba(72,207,255,.78) 0 1px,transparent 1.8px),
+          radial-gradient(circle at 88% 67%,rgba(255,255,255,.82) 0 1px,transparent 1.6px),
+          radial-gradient(circle at 12% 82%,rgba(144,98,255,.76) 0 1.2px,transparent 1.9px),
+          radial-gradient(circle at 58% 89%,rgba(80,213,255,.82) 0 1px,transparent 1.8px)
+      }
+      .ptb-levels-panel::after{
+        content:"";position:absolute;inset:120px 0 0;pointer-events:none;z-index:0;opacity:.22;
+        background:
+          linear-gradient(25deg,transparent 0 47%,rgba(104,176,255,.5) 48% 48.6%,transparent 49.5%) 14% 24%/90px 60px no-repeat,
+          linear-gradient(-28deg,transparent 0 47%,rgba(145,113,255,.45) 48% 48.6%,transparent 49.5%) 80% 38%/100px 74px no-repeat,
+          linear-gradient(32deg,transparent 0 47%,rgba(74,216,255,.42) 48% 48.6%,transparent 49.5%) 20% 65%/92px 66px no-repeat,
+          linear-gradient(-35deg,transparent 0 47%,rgba(159,118,255,.42) 48% 48.6%,transparent 49.5%) 78% 78%/105px 72px no-repeat
+      }
+      .ptb-levels-scroll{z-index:1;padding-inline:12px;padding-bottom:36px}
+      .ptb-levels-hero{margin-bottom:16px}
+
+      .ptb-levels-list{
+        position:relative;z-index:1;margin-top:0;padding:8px 0 12px;
+      }
+      .ptb-levels-list::before{
+        content:"✦";position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:0;
+        color:#71e9ff;font-size:.7rem;text-shadow:0 0 10px #5bdcff,0 0 18px #7c65ff
+      }
+      .ptb-levels-line{
+        left:50%;top:-22px;bottom:40px;width:3px;transform:translateX(-50%);z-index:0;
+        background:linear-gradient(180deg,#53e8ff 0%,#6bd9ff 19%,#7f9cff 48%,#946cff 73%,#67e2ff 100%);
+        box-shadow:0 0 7px rgba(74,220,255,.62),0 0 15px rgba(105,97,255,.34)
+      }
+      .ptb-levels-line::after{
+        content:"";position:absolute;inset:0 -8px;
+        background:radial-gradient(circle,#d9fbff 0 2px,rgba(96,221,255,.45) 2.5px 4px,transparent 4.5px) center top/17px 64px repeat-y;
+        opacity:.6
+      }
+      [data-level-rows]{position:relative;z-index:1}
+      .ptb-level-row{
+        position:relative;display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);
+        align-items:center;min-height:96px;margin:0;padding:6px 0;
+      }
+      .ptb-level-row::before{
+        content:"";position:absolute;left:50%;top:50%;width:48%;height:1px;z-index:0;
+        background:linear-gradient(90deg,rgba(93,221,255,.36),transparent 78%);
+        transform-origin:left center;opacity:.42
+      }
+      .ptb-level-row.side-left::before{transform:translateY(-50%) rotate(180deg)}
+      .ptb-level-row.side-right::before{transform:translateY(-50%)}
+      .ptb-level-dot{display:none!important}
+      .ptb-level-card{
+        display:contents!important;min-height:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important
+      }
+
+      .ptb-level-node{
+        grid-column:2;grid-row:1;justify-self:center;align-self:center;position:relative;z-index:4;
+        display:grid;place-items:center;width:72px;height:80px
+      }
+      .ptb-level-mini-badge{
+        position:relative;width:62px;height:62px;margin:0!important;display:grid;place-items:center;justify-self:center;
+        filter:drop-shadow(0 7px 10px rgba(0,0,0,.22));transition:transform .2s ease,filter .2s ease
+      }
+      .ptb-level-mini-badge::after{
+        content:"✦";position:absolute;right:-3px;top:1px;color:#dffcff;font-size:.62rem;opacity:.78;
+        text-shadow:0 0 8px #72e6ff,0 0 14px #9f72ff
+      }
+      .ptb-level-mini-badge img,
+      .ptb-level-row.is-completed .ptb-level-mini-badge img,
+      .ptb-level-row.is-current .ptb-level-mini-badge img{
+        width:62px;height:62px;display:block;object-fit:contain
+      }
+      .ptb-level-mini-badge b,
+      .ptb-level-row.is-completed .ptb-level-mini-badge b,
+      .ptb-level-row.is-current .ptb-level-mini-badge b{
+        position:absolute;left:50%;top:50%;width:100%;transform:translate(-50%,-54%);display:grid;place-items:center;
+        font-size:1.45rem;line-height:1;font-weight:1000;letter-spacing:-.04em;text-align:center;color:#fff;
+        text-shadow:0 2px 5px rgba(4,8,39,.96)
+      }
+      .ptb-level-row.is-current .ptb-level-mini-badge{
+        width:70px;height:70px;filter:drop-shadow(0 0 12px rgba(78,227,255,.6)) drop-shadow(0 0 16px rgba(203,78,255,.34))
+      }
+      .ptb-level-row.is-current .ptb-level-mini-badge img{width:70px;height:70px}
+      .ptb-level-row.is-current .ptb-level-mini-badge b{font-size:1.7rem}
+      .ptb-level-row.is-locked .ptb-level-mini-badge img{filter:saturate(.48) brightness(.72) contrast(.98)}
+      .ptb-level-row.reward-claimed .ptb-level-mini-badge{filter:drop-shadow(0 0 8px rgba(90,239,255,.38))}
+      .ptb-level-node-status{
+        position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);max-width:72px;padding:3px 8px;border-radius:999px;
+        font-size:.5rem;line-height:1;font-weight:900;white-space:nowrap;color:#b9c6ff;background:rgba(8,20,74,.92);
+        border:1px solid rgba(89,113,211,.42)
+      }
+      .ptb-level-row.is-current .ptb-level-node-status{color:#fff;background:linear-gradient(90deg,#38d9ff,#7d80ff 56%,#df58ff);border:0}
+      .ptb-level-row.reward-claimable .ptb-level-node-status{color:#dfffff;border-color:#4fe6ff;box-shadow:0 0 8px rgba(71,224,255,.28)}
+      .ptb-level-row.reward-claimed .ptb-level-node-status{color:#8ff9cc;border-color:rgba(81,238,183,.46)}
+
+      .ptb-level-reward-card{
+        position:relative;z-index:3;width:100%;max-width:154px;min-height:66px;box-sizing:border-box;padding:8px 9px;
+        border-radius:18px;display:flex;align-items:center;gap:8px;
+        background:linear-gradient(180deg,rgba(8,31,105,.94),rgba(5,20,76,.96));
+        border:1px solid rgba(79,117,226,.46);box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(1,8,41,.2)
+      }
+      .ptb-level-row.side-left .ptb-level-reward-card{grid-column:1;justify-self:end;margin-right:8px;flex-direction:row-reverse}
+      .ptb-level-row.side-right .ptb-level-reward-card{grid-column:3;justify-self:start;margin-left:8px}
+      .ptb-level-row.side-left .ptb-level-reward-copy{align-items:flex-end;text-align:right}
+      .ptb-level-node-status:empty{display:none}
+      .ptb-level-row.side-left .ptb-level-reward-card::after,
+      .ptb-level-row.side-right .ptb-level-reward-card::after{
+        content:"";position:absolute;top:50%;width:12px;height:12px;transform:translateY(-50%) rotate(45deg);
+        background:#071d67;border:1px solid rgba(84,128,238,.54);z-index:-1
+      }
+      .ptb-level-row.side-left .ptb-level-reward-card::after{right:-7px;border-left:0;border-bottom:0}
+      .ptb-level-row.side-right .ptb-level-reward-card::after{left:-7px;border-right:0;border-top:0}
+      .ptb-level-row.reward-claimable .ptb-level-reward-card{
+        border-color:rgba(82,226,255,.66);box-shadow:0 0 16px rgba(56,209,255,.16),inset 0 1px 0 rgba(255,255,255,.06)
+      }
+      .ptb-level-row.reward-claimed .ptb-level-reward-card{opacity:.68}
+      .ptb-level-row.is-locked .ptb-level-reward-card{opacity:.72}
+
+      .ptb-level-reward-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+      .ptb-level-reward-copy strong{
+        color:#ffe47a;font-size:.66rem;line-height:1.05;font-weight:1000;overflow-wrap:anywhere
+      }
+      .ptb-level-reward-copy small{color:#9dace9;font-size:.54rem;line-height:1.05;font-weight:750}
+      .ptb-level-row.reward-claimable .ptb-level-reward-copy small{color:#68efff;font-weight:900}
+      .ptb-level-row.reward-claimed .ptb-level-reward-copy small{color:#80efc0;font-weight:900}
+
+      .ptb-level-claim-icon{
+        position:relative;flex:0 0 46px;width:46px;height:46px;padding:0;border:1px solid rgba(114,139,255,.62);border-radius:14px;
+        display:grid;place-items:center;background:linear-gradient(145deg,rgba(38,62,170,.98),rgba(78,42,161,.98));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 11px rgba(77,123,255,.23);cursor:default
+      }
+      .ptb-level-claim-icon .ptb-level-reward-icon{width:38px;height:38px;flex-basis:38px;border-radius:10px;border:0;box-shadow:none}
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:42px;height:42px;flex-basis:42px;background:transparent}
+      .ptb-level-claim-icon.is-claimable{
+        cursor:pointer;border-color:#64ebff;
+        box-shadow:0 0 0 1px rgba(107,111,255,.24),0 0 13px rgba(79,225,255,.55),0 0 24px rgba(152,74,255,.23);
+        animation:ptbConstellationClaim 1.65s ease-in-out infinite
+      }
+      .ptb-level-claim-icon.is-claimable::before{
+        content:"";position:absolute;inset:-5px;border-radius:17px;border:1px solid rgba(89,228,255,.42);opacity:.75
+      }
+      .ptb-level-claim-icon.is-claimed{opacity:.62;filter:saturate(.68)}
+      .ptb-level-claim-icon.is-claimed::after{
+        content:"✓";position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
+        background:#25cda0;border:2px solid #cffff0;color:#fff;font-size:.62rem;font-weight:1000;box-shadow:0 0 8px rgba(50,230,181,.5)
+      }
+      .ptb-level-claim-icon:disabled{cursor:default}
+      @keyframes ptbConstellationClaim{
+        0%,100%{transform:scale(1);filter:brightness(1)}
+        50%{transform:scale(1.055);filter:brightness(1.12)}
+      }
+
+      .ptb-level-copy,.ptb-level-reward,.ptb-level-status{display:none!important}
+      .ptb-levels-footer{padding-top:14px}
+      .ptb-levels-footer::before{
+        content:"✦  ✧  ✦";display:block;margin-bottom:7px;color:#8bddff;font-size:.64rem;letter-spacing:.6em;
+        text-shadow:0 0 8px rgba(90,219,255,.66)
+      }
+
+      .ptb-levels-hero-reward [data-level-claim]{margin:0}
+      .ptb-levels-hero-reward .ptb-level-claim-icon{width:34px;height:34px;flex-basis:34px;border-radius:10px}
+      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon{width:28px;height:28px;flex-basis:28px}
+      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
+      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:31px;height:31px;flex-basis:31px}
+
+      @media(max-width:370px){
+        .ptb-level-row{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);min-height:88px}
+        .ptb-level-node{width:64px;height:74px}
+        .ptb-level-mini-badge,
+        .ptb-level-mini-badge img,
+        .ptb-level-row.is-completed .ptb-level-mini-badge img{width:56px;height:56px}
+        .ptb-level-row.is-current .ptb-level-mini-badge{width:64px;height:64px}
+        .ptb-level-row.is-current .ptb-level-mini-badge img{width:64px;height:64px}
+        .ptb-level-mini-badge b,
+        .ptb-level-row.is-completed .ptb-level-mini-badge b{font-size:1.28rem}
+        .ptb-level-row.is-current .ptb-level-mini-badge b{font-size:1.52rem}
+        .ptb-level-reward-card{max-width:130px;min-height:60px;padding:7px 7px;gap:6px}
+        .ptb-level-row.side-left .ptb-level-reward-card{margin-right:5px}
+        .ptb-level-row.side-right .ptb-level-reward-card{margin-left:5px}
+        .ptb-level-claim-icon{width:40px;height:40px;flex-basis:40px;border-radius:12px}
+        .ptb-level-claim-icon .ptb-level-reward-icon{width:33px;height:33px;flex-basis:33px}
+        .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
+        .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:36px;height:36px;flex-basis:36px}
+        .ptb-level-reward-copy strong{font-size:.58rem}
+        .ptb-level-reward-copy small{font-size:.49rem}
+        .ptb-level-node-status{font-size:.46rem;padding:3px 6px}
+      }
       }
     `;
     document.head.appendChild(style);
@@ -447,6 +653,27 @@
     }
     const symbol = reward?.type === "tag" ? "T" : "★";
     return `<i class="${className}" aria-hidden="true">${symbol}</i>`;
+  }
+
+  function rewardClaimIconButtonMarkup(level, reward, claimState, { hero = false, claiming = false } = {}) {
+    const safeLevel = Math.max(1, Math.min(50, Math.floor(Number(level) || 1)));
+    const disabled = claimState !== "claimable" || claiming;
+    const label = claiming
+      ? `Récupération de ${rewardLabel(reward)}`
+      : claimState === "claimable"
+        ? `Récupérer ${rewardLabel(reward)}`
+        : claimState === "claimed"
+          ? `${rewardLabel(reward)} récupéré`
+          : `${rewardLabel(reward)} à venir`;
+
+    return `<button class="ptb-level-claim-icon is-${escapeHtml(claimState)}${hero ? " is-hero-claim" : ""}"
+                    type="button"
+                    data-level-claim="${safeLevel}"
+                    aria-label="${escapeHtml(label)}"
+                    title="${escapeHtml(label)}"
+                    ${disabled ? "disabled" : ""}>
+              ${rewardIconMarkup(reward, hero ? "is-hero" : "")}
+            </button>`;
   }
 
   function levelStatus(level, currentLevel) {
@@ -666,7 +893,12 @@
       rewardNode.textContent = `${rewardLabel(currentReward)}${suffix}`;
     }
     if (rewardLevelNode) rewardLevelNode.textContent = String(current.level);
-    if (rewardIconNode) rewardIconNode.innerHTML = rewardIconMarkup(currentReward, "is-hero");
+    if (rewardIconNode) rewardIconNode.innerHTML = rewardClaimIconButtonMarkup(
+      current.level,
+      currentReward,
+      currentRewardState,
+      { hero:true, claiming:levelRewardClaiming === current.level }
+    );
     if (track) track.setAttribute("aria-valuenow", String(Math.round(current.progressPercent)));
     if (fill) fill.style.width = `${current.progressPercent}%`;
 
@@ -676,34 +908,28 @@
       const status = levelStatus(level, current.level);
       const claimState = rewardClaimState(level, current.level);
       const claiming = levelRewardClaiming === level;
-      const statusMarkup = claimState === "claimed"
-        ? '<i class="ptb-check">✓</i>'
-        : claimState === "claimable"
-          ? '<i class="ptb-claim-mark">!</i>'
-          : '<i class="ptb-empty"></i>';
       const reward = rewardForLevel(level);
-      const disabled = claimState !== "claimable" || claiming;
+      const side = level % 2 === 1 ? "left" : "right";
+      const statusText = claiming ? "Récupération..." : levelSubtitle(level, current.level);
 
       parts.push(`
-        <article class="ptb-level-row is-${status} reward-${claimState}" data-level-row="${level}">
-          <i class="ptb-level-dot" aria-hidden="true"></i>
+        <article class="ptb-level-row side-${side} is-${status} reward-${claimState}" data-level-row="${level}">
           <div class="ptb-level-card">
-            <div class="ptb-level-mini-badge">
-              <img src="/level-badge-v1.png" alt="">
-              <b>${level}</b>
+            <div class="ptb-level-reward-card">
+              ${rewardClaimIconButtonMarkup(level, reward, claimState, { claiming })}
+              <div class="ptb-level-reward-copy">
+                <strong>${escapeHtml(rewardLabel(reward, { short:true }))}</strong>
+                <small>${escapeHtml(statusText)}</small>
+              </div>
             </div>
-            <div class="ptb-level-copy">
-              <strong>Niveau ${level}</strong>
-              <small>${escapeHtml(claiming ? "Récupération..." : levelSubtitle(level, current.level))}</small>
+
+            <div class="ptb-level-node" aria-label="Niveau ${level}">
+              <div class="ptb-level-mini-badge">
+                <img src="/level-badge-v1.png" alt="">
+                <b>${level}</b>
+              </div>
+              <small class="ptb-level-node-status">${escapeHtml(status === "current" ? "Actuel" : claimState === "claimed" ? "Récupéré" : claimState === "claimable" ? "À récupérer" : "")}</small>
             </div>
-            <button class="ptb-level-reward is-${claimState}" type="button"
-                    data-level-claim="${level}"
-                    title="${escapeHtml(rewardLabel(reward))}"
-                    ${disabled ? "disabled" : ""}>
-              ${rewardIconMarkup(reward)}
-              <span>${escapeHtml(rewardLabel(reward, { short:true }))}</span>
-            </button>
-            <div class="ptb-level-status">${statusMarkup}</div>
           </div>
         </article>`);
     }
