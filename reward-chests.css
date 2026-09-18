@@ -109,6 +109,13 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   transform:translateZ(0);transform-origin:50% 62%;will-change:transform
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-star-chest{display:block}
+.ptb-star-chest::after{
+  content:"";position:absolute;z-index:7;left:50%;top:59%;width:22%;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%) scale(.08);opacity:0;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.98) 0 14%,rgba(255,242,154,.92) 25%,rgba(112,210,255,.56) 48%,rgba(189,96,255,.22) 66%,transparent 76%);
+  box-shadow:0 0 14px 8px rgba(255,245,183,.65),0 0 34px 15px rgba(94,194,255,.28);
+  will-change:transform,opacity
+}
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-object-img,
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-aura{display:none}
 .ptb-star-frame,.ptb-star-fx{
@@ -116,7 +123,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   opacity:0;pointer-events:none;will-change:opacity,transform,filter
 }
 .ptb-star-frame{
-  z-index:3;transition:opacity .11s linear,transform .22s cubic-bezier(.2,.8,.2,1);
+  z-index:3;transition:opacity .19s ease,transform .32s cubic-bezier(.2,.8,.2,1),filter .28s ease;
   filter:drop-shadow(0 14px 18px rgba(0,0,0,.26)) drop-shadow(0 0 12px rgba(82,176,255,.2))
 }
 .ptb-star-fx{z-index:1;mix-blend-mode:screen}
@@ -129,7 +136,8 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open[data-star-phase="preopen"] .ptb-star-frame-preopen,
 .ptb-reward-open[data-star-phase="halfopen"] .ptb-star-frame-halfopen,
 .ptb-reward-open[data-star-phase="open"] .ptb-star-frame-open,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open{opacity:1}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-frame-open{opacity:1}
 
 .ptb-reward-open[data-star-phase="idle"] .ptb-star-chest{
   animation:ptbStarIdle 2.8s ease-in-out infinite
@@ -142,19 +150,27 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open[data-star-phase="halfopen"] .ptb-star-fx-glow{opacity:.58;transform:translateY(17%) scale(1.08)}
 .ptb-reward-open[data-star-phase="halfopen"] .ptb-star-fx-rays{opacity:.34;transform:translateY(-2%) scale(.9)}
 .ptb-reward-open[data-star-phase="open"] .ptb-star-chest,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-chest{transform:translateY(-5px) scale(1.035)}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-chest,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-chest{transform:translateY(-4px) scale(1.025)}
 .ptb-reward-open[data-star-phase="open"] .ptb-star-fx-glow,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-glow{opacity:.68;transform:translateY(17%) scale(1.14)}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-glow{opacity:.7;transform:translateY(17%) scale(1.12)}
 .ptb-reward-open[data-star-phase="open"] .ptb-star-fx-rays,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.62;transform:translateY(-3%) scale(1.02)}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.64;transform:translateY(-2%) scale(1.01)}
 .ptb-reward-open[data-star-phase="open"] .ptb-star-fx-particles,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.7;transform:scale(1.04);animation:ptbStarParticles 1.25s ease-out both}
-.ptb-reward-open.is-star-flashing .ptb-star-fx-flash{opacity:.88;animation:ptbStarFlash .4s ease-out both}
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open{filter:brightness(.82) saturate(.92) drop-shadow(0 14px 18px rgba(0,0,0,.24))}
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.34}
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.5}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.76;transform:scale(1.04);animation:ptbStarParticles 1.55s ease-out both}
+.ptb-reward-open.is-star-flashing .ptb-star-fx-flash{opacity:.92;animation:ptbStarFlash .46s ease-out both}
+.ptb-reward-open.is-star-flashing .ptb-star-chest::after{animation:ptbStarCoreFlash .5s ease-out both}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-frame-open{filter:brightness(.84) saturate(.94) drop-shadow(0 14px 18px rgba(0,0,0,.24))}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.4}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.62}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-glow{opacity:.35;transform:translateY(17%) scale(1.02)}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-rays{opacity:.16;transform:translateY(-2%) scale(.96)}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-particles{opacity:.12;transform:scale(1.08);transition:opacity .45s ease,transform .45s ease}
 
-.ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:34%;z-index:8;width:min(66vw,305px)}
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:34%;z-index:8;width:min(58vw,270px)}
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card>img{width:min(36vw,160px);height:min(36vw,160px)}
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-item-frame{width:min(41vw,178px);height:min(41vw,178px)}
 .ptb-reward-open[data-reward-type="star"].is-revealed .ptb-reward-result{
   animation:ptbStarRewardReveal .64s cubic-bezier(.16,.9,.22,1.18) forwards
 }
@@ -181,13 +197,20 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   100%{opacity:.66;transform:scale(1.01) rotate(5deg)}
 }
 @keyframes ptbStarFlash{
-  0%{opacity:0;transform:scale(.3)}
-  36%{opacity:1;transform:scale(.82)}
-  100%{opacity:0;transform:scale(1.3)}
+  0%{opacity:0;transform:scale(.14)}
+  32%{opacity:.95;transform:scale(.62)}
+  100%{opacity:0;transform:scale(1.16)}
+}
+@keyframes ptbStarCoreFlash{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.08)}
+  26%{opacity:1;transform:translate(-50%,-50%) scale(.45)}
+  66%{opacity:.92;transform:translate(-50%,-50%) scale(1.35)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(2.15)}
 }
 @keyframes ptbStarRewardReveal{
-  0%{opacity:0;transform:translate(-50%,8%) scale(.42)}
-  68%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}
+  0%{opacity:0;transform:translate(-50%,62%) scale(.48)}
+  58%{opacity:1;transform:translate(-50%,-56%) scale(1.02)}
+  82%{opacity:1;transform:translate(-50%,-48%) scale(.98)}
   100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
 
@@ -199,3 +222,11 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   .ptb-star-fx-glow,.ptb-star-fx-particles,.ptb-star-fx-flash{animation:none!important}
 }
 .ptb-star-frame-open{transform:translateY(2.2%) scale(1.025)}
+
+/* V5 — micro-alignement entre les PNG pour masquer les écarts de perspective */
+.ptb-star-frame-closed{transform:translateY(.5%) scale(.982)}
+.ptb-star-frame-preopen{transform:translateY(.4%) scale(.988)}
+.ptb-star-frame-halfopen{transform:translateY(.1%) scale(.998)}
+.ptb-star-frame-open{transform:translateY(1.5%) scale(1.012)}
+.ptb-reward-open.is-resetting .ptb-reward-result{opacity:0!important;transform:translate(-50%,-38%) scale(.9)!important;transition:opacity .16s ease,transform .16s ease}
+.ptb-reward-open.is-resetting .ptb-star-chest{opacity:.72;transform:scale(.965)!important;transition:opacity .16s ease,transform .16s ease}

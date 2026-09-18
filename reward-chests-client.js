@@ -149,7 +149,7 @@
 
     overlay.querySelector(".ptb-reward-back")?.addEventListener("click", close);
     overlay.querySelector(".ptb-reward-object")?.addEventListener("click", handleTap);
-    overlay.querySelector(".ptb-reward-result")?.addEventListener("click", () => reset(activeType));
+    overlay.querySelector(".ptb-reward-result")?.addEventListener("click", () => restart(activeType));
     document.body.appendChild(overlay);
     return overlay;
   }
@@ -193,7 +193,8 @@
       "is-opening",
       "is-revealed",
       "is-star-animating",
-      "is-star-flashing"
+      "is-star-flashing",
+      "is-resetting"
     );
   }
 
@@ -210,6 +211,18 @@
     root.querySelector(".ptb-reward-result")?.replaceChildren();
     root.querySelector(".ptb-reward-object")?.removeAttribute("disabled");
     setSceneType(activeType);
+  }
+
+
+  function restart(type = activeType) {
+    if (!overlay || overlay.classList.contains("is-resetting")) return;
+    busy = true;
+    clearAnimationTimers();
+    overlay.classList.add("is-resetting");
+    later(() => {
+      reset(type);
+      overlay.classList.remove("is-resetting");
+    }, 180);
   }
 
   function open(type = "star") {
@@ -281,24 +294,36 @@
     clearAnimationClasses();
     root.classList.add("is-star-animating");
     setStarPhase("preopen");
-    if (navigator.vibrate) navigator.vibrate(18);
+    if (navigator.vibrate) navigator.vibrate(16);
 
+    // Le coffre réagit d'abord, puis reste un peu entrouvert pour donner
+    // l'impression que la lumière pousse réellement le couvercle.
     later(() => {
       setStarPhase("halfopen");
-      if (navigator.vibrate) navigator.vibrate([18, 35, 22]);
-    }, 280);
+      if (navigator.vibrate) navigator.vibrate([15, 28, 18]);
+    }, 320);
 
     later(() => {
       setStarPhase("open");
+      if (navigator.vibrate) navigator.vibrate(34);
+    }, 800);
+
+    // Flash légèrement décalé : il naît dans le coffre après l'ouverture.
+    later(() => {
       root.classList.add("is-star-flashing");
-      if (navigator.vibrate) navigator.vibrate(42);
-    }, 620);
+    }, 870);
 
     later(() => {
       root.classList.remove("is-star-flashing");
       setStarPhase("reward");
       revealReward(reward);
-    }, 1050);
+    }, 1270);
+
+    // Les particules continuent environ une demi-seconde après le reveal,
+    // puis retombent sur un afterglow discret.
+    later(() => {
+      setStarPhase("settled");
+    }, 1820);
   }
 
   function performOpen(reward) {
@@ -349,6 +374,7 @@
     close,
     reveal:revealReward,
     reset,
+    restart,
     config:() => JSON.parse(JSON.stringify(config)),
     catalog:() => JSON.parse(JSON.stringify(chestCatalog))
   };
