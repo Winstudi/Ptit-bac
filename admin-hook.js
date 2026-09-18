@@ -25,6 +25,13 @@ const infiniteLives =
 
 
 const ITEM_CATALOG = Object.freeze(catalogEntries());
+const DEFAULT_BASE_AVATARS = Object.freeze([
+  "/a1.webp",
+  "/a2.webp",
+  "/a3.webp",
+  "/a4.webp",
+  "/a5.webp"
+]);
 
 const ITEM_RARITY_RULES = Object.freeze({
   commun:Object.freeze({
@@ -1208,6 +1215,183 @@ function installAdmin(io) {
         cb({
           ok:false,
           error:"Envoi de l’objet impossible."
+        });
+      }
+    });
+
+    socket.on("admin:grantChest", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
+          return cb({
+            ok:false,
+            error:"Accès refusé."
+          });
+        }
+
+        const code = friendCode(payload.friendCode);
+        const chestType = String(payload.chestType || "").trim().toLowerCase();
+        const chestLabels = {
+          bag:"Sac",
+          star:"Étoile",
+          legendary:"Étoile légendaire"
+        };
+
+        if (!code || !chestLabels[chestType]) {
+          return cb({
+            ok:false,
+            error:"Joueur ou coffre invalide."
+          });
+        }
+
+        const user = await findUserByCode(code);
+        if (!user?.wallet_token) {
+          return cb({
+            ok:false,
+            error:"Joueur introuvable."
+          });
+        }
+
+        const rewardService = global.__ptbRewardChestService;
+        if (!rewardService?.grant) {
+          return cb({
+            ok:false,
+            error:"Service de coffres indisponible."
+          });
+        }
+
+        const claimKey =
+          `admin:${Date.now().toString(36)}:${crypto.randomBytes(10).toString("hex")}`;
+
+        const result = await rewardService.grant({
+          walletToken:user.wallet_token,
+          chestType,
+          starState:"blue",
+          claimKey
+        });
+
+        if (!result?.ok || !result.reward) {
+          return cb({
+            ok:false,
+            error:"Impossible d’attribuer ce coffre."
+          });
+        }
+
+        if (result.inventory) {
+          emitWalletEvent(
+            io,
+            user.wallet_token,
+            "inventory:update",
+            result.inventory
+          );
+        }
+
+        const targets = emitWalletEvent(
+          io,
+          user.wallet_token,
+          "rewards:admin-granted",
+          {
+            chestType,
+            reward:result.reward,
+            source:"admin"
+          }
+        );
+
+        await audit(
+          token,
+          "grant_chest",
+          code,
+          {
+            chestType,
+            rewardKind:result.reward.kind,
+            rewardAmount:Number(result.reward.amount || 0),
+            rewardItemKey:result.reward.item?.key || ""
+          }
+        );
+
+        cb({
+          ok:true,
+          name:user.username || "Joueur",
+          chestType,
+          chestLabel:chestLabels[chestType],
+          online:targets.length > 0,
+          reward:result.reward
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Envoi du coffre impossible."
+        });
+      }
+    });
+
+    socket.on("admin:inventoryReset", async (payload={}, cb=()=>{}) => {
+      try {
+        const token = walletToken(payload.walletToken);
+
+        if (!await isAdmin(token)) {
+          return cb({
+            ok:false,
+            error:"Accès refusé."
+          });
+        }
+
+        const code = friendCode(payload.friendCode);
+        const user = await findUserByCode(code);
+
+        if (!code || !user?.wallet_token) {
+          return cb({
+            ok:false,
+            error:"Joueur introuvable."
+          });
+        }
+
+        if (!inventoryService?.resetToBaseAvatars) {
+          return cb({
+            ok:false,
+            error:"Réinitialisation de l’inventaire indisponible."
+          });
+        }
+
+        const inventoryState = await inventoryService.resetToBaseAvatars(
+          user.wallet_token
+        );
+
+        emitWalletEvent(
+          io,
+          user.wallet_token,
+          "inventory:update",
+          inventoryState
+        );
+
+        emitWalletEvent(
+          io,
+          user.wallet_token,
+          "admin:inventory-reset",
+          {
+            avatar:inventoryState.equipped?.avatar || "/a1.webp"
+          }
+        );
+
+        await audit(
+          token,
+          "inventory_reset",
+          code,
+          {
+            keptAvatars:[...DEFAULT_BASE_AVATARS]
+          }
+        );
+
+        cb({
+          ok:true,
+          message:"Inventaire réinitialisé : les 5 avatars de base ont été conservés.",
+          player:await playerSnapshot(io, code)
+        });
+      } catch (error) {
+        cb({
+          ok:false,
+          error:error.message || "Réinitialisation de l’inventaire impossible."
         });
       }
     });

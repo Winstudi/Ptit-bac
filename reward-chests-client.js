@@ -47,6 +47,7 @@
   let activeType = "star";
   let starState = "blue";
   let busy = false;
+  let grantedChest = null;
   let resetTimer = null;
   let animationTimers = [];
 
@@ -247,6 +248,7 @@
     document.documentElement.classList.remove("ptb-reward-lock");
     document.body.classList.remove("ptb-reward-lock");
     busy = false;
+    grantedChest = null;
     if (location.hash.startsWith("#rewards-preview")) {
       history.replaceState(null, "", `${location.pathname}${location.search}`);
     }
@@ -349,12 +351,50 @@
     setTimeout(() => revealReward(reward), 620);
   }
 
+  function receiveGrantedChest(payload = {}) {
+    const type = String(payload.chestType || "").trim().toLowerCase();
+    const reward = payload.reward;
+
+    if (!["bag", "star", "legendary"].includes(type) || !reward?.kind) {
+      return;
+    }
+
+    open(type);
+    grantedChest = { type, reward };
+  }
+
+  function bindGrantedChestSocket(attempt = 0) {
+    try {
+      if (typeof socket === "undefined" || !socket?.on) {
+        if (attempt < 20) {
+          setTimeout(() => bindGrantedChestSocket(attempt + 1), 300);
+        }
+        return;
+      }
+
+      socket.off?.("rewards:admin-granted", receiveGrantedChest);
+      socket.on("rewards:admin-granted", receiveGrantedChest);
+    } catch {}
+  }
+
   function handleTap() {
     if (busy) return;
     busy = true;
     const root = ensureOverlay();
     root.classList.remove("is-upgrading");
     root.classList.add("is-tapping");
+
+    if (grantedChest && grantedChest.type === activeType) {
+      const reward = grantedChest.reward;
+      grantedChest = null;
+
+      if (activeType === "star" || activeType === "legendary") {
+        playStarChestAnimation(reward);
+      } else {
+        later(() => performOpen(reward), 460);
+      }
+      return;
+    }
 
     if (activeType === "legendary") {
       const reward = rollPreviewReward("legendary", "blue");
@@ -396,6 +436,7 @@
     reveal:revealReward,
     reset,
     restart,
+    receiveGranted:receiveGrantedChest,
     config:() => JSON.parse(JSON.stringify(config)),
     catalog:() => JSON.parse(JSON.stringify(chestCatalog))
   };
@@ -403,10 +444,12 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       requestConfig();
+      bindGrantedChestSocket();
       handleHash();
     }, { once:true });
   } else {
     requestConfig();
+    bindGrantedChestSocket();
     handleHash();
   }
   window.addEventListener("hashchange", handleHash);

@@ -1,0 +1,34 @@
+.admin-extra-disabled-field{
+  opacity:.52;
+}
+.admin-extra-inventory-reset{
+  margin-top:14px;
+  border:1px solid rgba(255,91,113,.28)!important;
+  background:linear-gradient(145deg,rgba(109,18,38,.18),rgba(71,14,31,.08))!important;
+}
+.admin-extra-inventory-reset-copy{
+  display:grid;
+  gap:5px;
+}
+.admin-extra-inventory-reset-copy b{
+  color:#fff;
+  font-weight:900;
+}
+.admin-extra-inventory-reset-copy small{
+  color:rgba(255,255,255,.67);
+  line-height:1.35;
+}
+.admin-extra-danger-btn{
+  width:100%;
+  margin-top:12px;
+  min-height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,107,126,.52);
+  background:linear-gradient(145deg,#8f2438,#641a2d);
+  color:#fff;
+  font:800 .88rem/1 "DM Sans",system-ui,sans-serif;
+  box-shadow:0 8px 20px rgba(71,9,25,.24),inset 0 1px 0 rgba(255,255,255,.12);
+}
+.admin-extra-danger-btn:disabled{
+  opacity:.58;
+}

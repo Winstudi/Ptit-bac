@@ -192,6 +192,13 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
       }
 
       await ensureSharedSchema();
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_reset_flags (
+          wallet_token text PRIMARY KEY,
+          avatars_only boolean NOT NULL DEFAULT false,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
       return db;
     })().catch(err => {
       schemaPromise = null;
@@ -207,10 +214,19 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
     await ensureSchema();
     const db = pool();
 
+    const resetFlag = await db.query(
+      `SELECT avatars_only
+         FROM public.ptitbac_inventory_reset_flags
+        WHERE wallet_token=$1
+        LIMIT 1`,
+      [token]
+    ).catch(() => ({ rows:[] }));
+
+    const avatarsOnly = !!resetFlag.rows?.[0]?.avatars_only;
     const defaults = [
       ...DEFAULT_OWNED.avatars.map(id => ["avatar", id]),
-      ...DEFAULT_OWNED.frames.map(id => ["frame", id]),
-      ...DEFAULT_OWNED.tags.map(id => ["tag", id])
+      ...(avatarsOnly ? [] : DEFAULT_OWNED.frames.map(id => ["frame", id])),
+      ...(avatarsOnly ? [] : DEFAULT_OWNED.tags.map(id => ["tag", id]))
     ];
 
     for (const [type, id] of defaults) {
@@ -227,7 +243,12 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
       `INSERT INTO public.ptitbac_inventory_equipped(wallet_token,avatar_id,frame_id,tag_id)
        VALUES($1,$2,$3,$4)
        ON CONFLICT(wallet_token) DO NOTHING`,
-      [token, legacy.avatar, legacy.frame, legacy.tag || DEFAULT_OWNED.tags[0]]
+      [
+        token,
+        legacy.avatar,
+        avatarsOnly ? "" : legacy.frame,
+        avatarsOnly ? "" : (legacy.tag || DEFAULT_OWNED.tags[0])
+      ]
     );
   }
 
@@ -339,11 +360,81 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
     return loadState(token);
   }
 
+  async function resetToBaseAvatars(walletToken) {
+    const token = validWalletToken(walletToken);
+    if (!token) throw new Error("Session joueur invalide");
+    await ensureSchema();
+
+    const db = pool();
+    const client = await db.connect();
+    let finished = false;
+
+    try {
+      await client.query("BEGIN");
+
+      await client.query(
+        `DELETE FROM public.ptitbac_inventory_items
+          WHERE wallet_token=$1`,
+        [token]
+      );
+
+      for (const avatarId of DEFAULT_OWNED.avatars) {
+        await client.query(
+          `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+           VALUES($1,'avatar',$2,'admin-reset')
+           ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+          [token, avatarId]
+        );
+      }
+
+      await client.query(
+        `INSERT INTO public.ptitbac_inventory_equipped(wallet_token,avatar_id,frame_id,tag_id,updated_at)
+         VALUES($1,$2,'','',now())
+         ON CONFLICT(wallet_token) DO UPDATE
+         SET avatar_id=EXCLUDED.avatar_id,
+             frame_id='',
+             tag_id='',
+             updated_at=now()`,
+        [token, DEFAULT_OWNED.avatars[0]]
+      );
+
+      await client.query(
+        `INSERT INTO public.ptitbac_inventory_reset_flags(wallet_token,avatars_only,updated_at)
+         VALUES($1,true,now())
+         ON CONFLICT(wallet_token) DO UPDATE
+         SET avatars_only=true,
+             updated_at=now()`,
+        [token]
+      );
+
+      await client.query(
+        `UPDATE public.users
+            SET avatar=$2, updated_at=now()
+          WHERE wallet_token=$1`,
+        [token, DEFAULT_OWNED.avatars[0]]
+      );
+
+      await client.query("COMMIT");
+      finished = true;
+    } catch (error) {
+      if (!finished) {
+        try { await client.query("ROLLBACK"); } catch {}
+      }
+      throw error;
+    } finally {
+      client.release?.();
+    }
+
+    cache.delete(token);
+    return loadState(token);
+  }
+
   return {
     ensureSchema,
     getState,
     equip,
     grant,
+    resetToBaseAvatars,
     peek,
     catalog: CATALOG,
     defaults: DEFAULT_OWNED
