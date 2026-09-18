@@ -537,13 +537,14 @@
       .ptb-level-row.reward-claimed .ptb-level-node-status{color:#8ff9cc;border-color:rgba(81,238,183,.46)}
 
       .ptb-level-reward-card{
-        position:relative;z-index:3;width:100%;max-width:160px;min-height:72px;box-sizing:border-box;padding:3px 2px;
-        border-radius:0;display:flex;align-items:center;gap:9px;
-        background:transparent;border:0;box-shadow:none
+        position:relative;z-index:3;width:100%;max-width:154px;min-height:150px;box-sizing:border-box;padding:0 2px;
+        border-radius:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+        background:transparent;border:0;box-shadow:none;text-align:center
       }
-      .ptb-level-row.side-left .ptb-level-reward-card{grid-column:1;justify-self:end;margin-right:8px;flex-direction:row-reverse}
-      .ptb-level-row.side-right .ptb-level-reward-card{grid-column:3;justify-self:start;margin-left:8px}
-      .ptb-level-row.side-left .ptb-level-reward-copy{align-items:flex-end;text-align:right}
+      .ptb-level-row.side-left .ptb-level-reward-card{grid-column:1;justify-self:end;margin-right:6px}
+      .ptb-level-row.side-right .ptb-level-reward-card{grid-column:3;justify-self:start;margin-left:6px}
+      .ptb-level-row.side-left .ptb-level-reward-copy,
+      .ptb-level-row.side-right .ptb-level-reward-copy{align-items:center;text-align:center}
       .ptb-level-node-status:empty{display:none}
       .ptb-level-row.side-left .ptb-level-reward-card::after,
       .ptb-level-row.side-right .ptb-level-reward-card::after{display:none}
@@ -551,29 +552,31 @@
       .ptb-level-row.reward-claimed .ptb-level-reward-card{opacity:.72}
       .ptb-level-row.is-locked .ptb-level-reward-card{opacity:.76}
 
-      .ptb-level-reward-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+      .ptb-level-reward-copy{min-width:0;max-width:142px;display:flex;flex-direction:column;align-items:center;gap:3px}
       .ptb-level-reward-copy strong{
-        color:#ffe47a;font-size:.66rem;line-height:1.05;font-weight:1000;overflow-wrap:anywhere
+        color:#ffe47a;font-size:.69rem;line-height:1.06;font-weight:1000;overflow-wrap:anywhere;text-align:center
       }
-      .ptb-level-reward-copy small{color:#9dace9;font-size:.54rem;line-height:1.05;font-weight:750}
+      .ptb-level-reward-copy small{color:#9dace9;font-size:.53rem;line-height:1.05;font-weight:750;text-align:center}
       .ptb-level-row.reward-claimable .ptb-level-reward-copy small{color:#68efff;font-weight:900}
       .ptb-level-row.reward-claimed .ptb-level-reward-copy small{color:#80efc0;font-weight:900}
 
       .ptb-level-claim-icon{
-        position:relative;flex:0 0 55px;width:55px;height:55px;padding:0;border:0;border-radius:0;
+        position:relative;flex:0 0 132px;width:132px;height:132px;padding:0;border:0;border-radius:0;
         display:grid;place-items:center;background:transparent;box-shadow:none;cursor:default
       }
-      .ptb-level-claim-icon .ptb-level-reward-icon{width:46px;height:46px;flex-basis:46px;border-radius:10px;border:0;box-shadow:none;background:transparent}
+      .ptb-level-claim-icon .ptb-level-reward-icon{width:110px;height:110px;flex-basis:110px;border-radius:0;border:0;box-shadow:none;background:transparent}
       .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
-      .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:50px;height:50px;flex-basis:50px;background:transparent}
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:120px;height:120px;flex-basis:120px;background:transparent}
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-frame,
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-avatar{width:116px;height:116px;flex-basis:116px}
       .ptb-level-claim-icon.is-claimable{
         cursor:pointer;box-shadow:none;animation:ptbConstellationClaim 1.65s ease-in-out infinite
       }
       .ptb-level-claim-icon.is-claimable::before{display:none}
       .ptb-level-claim-icon.is-claimed{opacity:.62;filter:saturate(.68)}
       .ptb-level-claim-icon.is-claimed::after{
-        content:"✓";position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
-        background:#25cda0;border:2px solid #cffff0;color:#fff;font-size:.62rem;font-weight:1000;box-shadow:0 0 8px rgba(50,230,181,.5)
+        content:"✓";position:absolute;right:4px;bottom:6px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+        background:#25cda0;border:2px solid #cffff0;color:#fff;font-size:.72rem;font-weight:1000;box-shadow:0 0 9px rgba(50,230,181,.5)
       }
       .ptb-level-claim-icon:disabled{cursor:default}
       @keyframes ptbConstellationClaim{
@@ -588,6 +591,12 @@
         text-shadow:0 0 8px rgba(90,219,255,.66)
       }
 
+
+      /* V5 — récompenses constellation : grande icône, texte dessous */
+      .ptb-levels-list .ptb-level-claim-icon{width:132px;height:132px;flex-basis:132px}
+      .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon{width:110px;height:110px;flex-basis:110px}
+      .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
+      .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:120px;height:120px;flex-basis:120px}
       .ptb-levels-hero-reward [data-level-claim]{margin:0}
       .ptb-levels-hero-reward .ptb-level-claim-icon{width:41px;height:41px;flex-basis:41px}
       .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon{width:34px;height:34px;flex-basis:34px}
@@ -595,7 +604,7 @@
       .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:37px;height:37px;flex-basis:37px}
 
       @media(max-width:370px){
-        .ptb-level-row{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);min-height:88px}
+        .ptb-level-row{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);min-height:150px}
         .ptb-level-node{width:64px;height:74px}
         .ptb-level-mini-badge,
         .ptb-level-mini-badge img,
@@ -605,13 +614,13 @@
         .ptb-level-mini-badge b,
         .ptb-level-row.is-completed .ptb-level-mini-badge b{font-size:1.28rem}
         .ptb-level-row.is-current .ptb-level-mini-badge b{font-size:1.52rem}
-        .ptb-level-reward-card{max-width:136px;min-height:66px;padding:2px;gap:7px}
+        .ptb-level-reward-card{max-width:132px;min-height:138px;padding:0;gap:5px}
         .ptb-level-row.side-left .ptb-level-reward-card{margin-right:5px}
         .ptb-level-row.side-right .ptb-level-reward-card{margin-left:5px}
-        .ptb-level-claim-icon{width:48px;height:48px;flex-basis:48px}
-        .ptb-level-claim-icon .ptb-level-reward-icon{width:40px;height:40px;flex-basis:40px}
-        .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
-        .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:43px;height:43px;flex-basis:43px}
+        .ptb-levels-list .ptb-level-claim-icon{width:116px;height:116px;flex-basis:116px}
+        .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon{width:98px;height:98px;flex-basis:98px}
+        .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
+        .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:106px;height:106px;flex-basis:106px}
         .ptb-level-reward-copy strong{font-size:.58rem}
         .ptb-level-reward-copy small{font-size:.49rem}
         .ptb-level-node-status{font-size:.46rem;padding:3px 6px}
