@@ -423,10 +423,10 @@
         .ptb-level-status{right:6px}
         .ptb-level-row.is-completed .ptb-level-reward{margin-right:32px}
         .ptb-level-status .ptb-check{width:27px;height:27px;font-size:.8rem}
-
+      }
 
       /* =====================================================
-         Niveaux V2 — constellation centrale
+         Niveaux V3 — constellation centrale corrigée
          ===================================================== */
       .ptb-levels-panel{
         background:
@@ -628,7 +628,6 @@
         .ptb-level-reward-copy strong{font-size:.58rem}
         .ptb-level-reward-copy small{font-size:.49rem}
         .ptb-level-node-status{font-size:.46rem;padding:3px 6px}
-      }
       }
     `;
     document.head.appendChild(style);
