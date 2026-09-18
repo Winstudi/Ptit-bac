@@ -96,7 +96,7 @@ async function loadAdminItemCatalog() {
 
   return ITEM_CATALOG.map(item => {
     const saved = byKey.get(item.key) || {};
-    const rarity = normalizeItemRarity(saved.rarity);
+    const rarity = normalizeItemRarity(saved.rarity || item.defaultRarity);
 
     return {
       ...item,

@@ -170,10 +170,10 @@ function buildChestCatalog(catalog, settingsRows = []) {
   ]));
 
   return (Array.isArray(catalog) ? catalog : [])
-    .filter(item => item && !item.defaultOwned)
+    .filter(item => item && !item.defaultOwned && !item.levelOnly)
     .map(item => ({
       ...item,
-      rarity:byKey.get(item.key) || "commun"
+      rarity:normalizeCatalogRarity(byKey.get(item.key) || item.defaultRarity || "commun")
     }))
     .filter(item => ITEM_RARITIES.includes(item.rarity));
 }
@@ -249,9 +249,11 @@ function createRewardChestService({
     ]);
 
     const candidates = catalog.filter(item => {
-      if (item.defaultOwned) return false;
+      if (item.defaultOwned || item.levelOnly) return false;
       if (owned.has(item.key)) return false;
-      const itemRarity = normalizeCatalogRarity(rarityMap.get(item.key) || "commun");
+      const itemRarity = normalizeCatalogRarity(
+        rarityMap.get(item.key) || item.defaultRarity || "commun"
+      );
       if (itemRarity === "exclusif") return false;
       return itemRarity === safeRarity;
     });

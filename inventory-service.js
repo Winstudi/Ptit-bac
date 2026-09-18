@@ -9,7 +9,14 @@ const CATALOG = Object.freeze({
     "/a2.webp": Object.freeze({ id: "/a2.webp", name: "Avatar 2", defaultOwned: true }),
     "/a3.webp": Object.freeze({ id: "/a3.webp", name: "Avatar 3", defaultOwned: true }),
     "/a4.webp": Object.freeze({ id: "/a4.webp", name: "Avatar 4", defaultOwned: true }),
-    "/a5.webp": Object.freeze({ id: "/a5.webp", name: "Avatar 5", defaultOwned: true })
+    "/a5.webp": Object.freeze({ id: "/a5.webp", name: "Avatar 5", defaultOwned: true }),
+    "/avatar-prestige.png": Object.freeze({
+      id: "/avatar-prestige.png",
+      name: "Avatar Prestige",
+      defaultOwned: false,
+      defaultRarity: "exclusif",
+      levelOnly: true
+    })
   }),
   frame: Object.freeze({
     frame_nature: Object.freeze({
@@ -41,6 +48,14 @@ const CATALOG = Object.freeze({
       name: "Étoiles dorées",
       asset: "/frame-gold-stars.png",
       defaultOwned: false
+    }),
+    "frame-prestige": Object.freeze({
+      id: "frame-prestige",
+      name: "Prestige",
+      asset: "/frame-prestige.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif",
+      levelOnly: true
     })
   }),
   tag: Object.freeze({
@@ -77,7 +92,9 @@ function catalogEntries() {
       label: item.name,
       icon: ITEM_TYPE_ICONS[type] || "🎁",
       asset: String(item.asset || ""),
-      defaultOwned: Boolean(item.defaultOwned)
+      defaultOwned: Boolean(item.defaultOwned),
+      defaultRarity: String(item.defaultRarity || "commun"),
+      levelOnly: Boolean(item.levelOnly)
     }))
   );
 }

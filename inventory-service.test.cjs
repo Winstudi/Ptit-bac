@@ -18,7 +18,8 @@ const FRAME_IDS = [
   "frame_gaming",
   "frame_purple_flame",
   "frame_ice",
-  "frame_gold_stars"
+  "frame_gold_stars",
+  "frame-prestige"
 ];
 
 test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre ne l'est", () => {
@@ -28,7 +29,7 @@ test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre 
   assert.deepEqual(Object.keys(CATALOG.frame), FRAME_IDS);
 });
 
-test("les cinq nouveaux cadres font partie du catalogue officiel", () => {
+test("les cadres publiés font partie du catalogue officiel", () => {
   for (const id of FRAME_IDS) {
     assert.equal(normalizeItemId("frame", id), id);
     assert.ok(CATALOG.frame[id]?.asset?.endsWith(".png"));
@@ -74,17 +75,29 @@ test("le service métier délègue toujours le schéma aux migrations centrales"
   assert.equal(migrationCalls, 1);
 });
 
-test("le catalogue admin expose les cinq cadres avec leurs assets", () => {
+test("le catalogue admin expose les cadres avec leurs assets", () => {
   const entries = catalogEntries();
   const frames = entries.filter(item => item.type === "frame");
 
-  assert.equal(frames.length, 5);
+  assert.equal(frames.length, 6);
   for (const id of FRAME_IDS) {
     const item = frames.find(entry => entry.id === id);
     assert.ok(item);
     assert.equal(item.key, `frame:${id}`);
     assert.match(item.asset, /^\/frame-.*\.png$/);
   }
+
+
+  const prestigeAvatar = entries.find(item => item.key === "avatar:/avatar-prestige.png");
+  assert.ok(prestigeAvatar);
+  assert.equal(prestigeAvatar.defaultOwned, false);
+  assert.equal(prestigeAvatar.defaultRarity, "exclusif");
+  assert.equal(prestigeAvatar.levelOnly, true);
+
+  const prestigeFrame = entries.find(item => item.key === "frame:frame-prestige");
+  assert.ok(prestigeFrame);
+  assert.equal(prestigeFrame.defaultRarity, "exclusif");
+  assert.equal(prestigeFrame.levelOnly, true);
 
   assert.deepEqual(
     parseCatalogKey("frame:frame_ice"),

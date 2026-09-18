@@ -9,6 +9,11 @@
     "/a5.webp"
   ]);
 
+  const KNOWN_AVATARS = Object.freeze([
+    ...BASE_AVATARS,
+    "/avatar-prestige.png"
+  ]);
+
   const LEGACY_AVATARS = Object.freeze({
     "/avatar-base-01.webp": "/a1.webp",
     "/avatar-base-02.webp": "/a2.webp",
@@ -61,7 +66,7 @@
   function normalize(value, seed = "") {
     const raw = String(value || "").trim();
 
-    if (BASE_AVATARS.includes(raw)) return raw;
+    if (KNOWN_AVATARS.includes(raw)) return raw;
     if (LEGACY_AVATARS[raw]) return LEGACY_AVATARS[raw];
 
     const key = seed || raw || "ptitbac-avatar";
@@ -70,7 +75,7 @@
 
   function isBaseAvatar(value) {
     const raw = String(value || "").trim();
-    return BASE_AVATARS.includes(raw) ||
+    return KNOWN_AVATARS.includes(raw) ||
       Object.prototype.hasOwnProperty.call(LEGACY_AVATARS, raw);
   }
 
@@ -487,6 +492,7 @@
 
   window.PtitBacAvatars = {
     list: BASE_AVATARS,
+    knownList: KNOWN_AVATARS,
     defaultAvatar: DEFAULT_AVATAR,
     normalize,
     normalizeAvatar: normalize,

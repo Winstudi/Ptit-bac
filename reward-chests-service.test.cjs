@@ -117,6 +117,7 @@ test("catalogue coffres: reprend la rareté admin et exclut toujours Exclusif", 
     { key:"frame:a", type:"frame", id:"a", label:"A", defaultOwned:false },
     { key:"frame:b", type:"frame", id:"b", label:"B", defaultOwned:false },
     { key:"frame:c", type:"frame", id:"c", label:"C", defaultOwned:false },
+    { key:"frame:level", type:"frame", id:"level", label:"Level", defaultOwned:false, defaultRarity:"exclusif", levelOnly:true },
     { key:"avatar:base", type:"avatar", id:"base", label:"Base", defaultOwned:true }
   ];
   const rows = [
@@ -130,4 +131,5 @@ test("catalogue coffres: reprend la rareté admin et exclut toujours Exclusif", 
     ["frame:c", "ultra"]
   ]);
   assert.equal(result.some(item => item.rarity === "exclusif"), false);
+  assert.equal(result.some(item => item.key === "frame:level"), false);
 });

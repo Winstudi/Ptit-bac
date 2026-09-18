@@ -16,6 +16,59 @@
   let lastFocusedTrigger = null;
   const LEVEL_REWARD_COINS = 50;
 
+  const LEVEL_REWARDS = Object.freeze({
+    1: Object.freeze({ type:"tag", label:"Tag débutant", short:"Tag débutant" }),
+    2: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    3: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    4: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    5: Object.freeze({ type:"lives", minutes:30, label:"Vie illimitée 30 min", short:"Vie ∞ 30 min", asset:"/heart.png" }),
+    6: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    7: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    8: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    9: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    10: Object.freeze({ type:"chest", label:"Coffre", asset:"/reward-star-simple-closed.png" }),
+    11: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    12: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    13: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    14: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    15: Object.freeze({ type:"lives", minutes:30, label:"Vie illimitée 30 min", short:"Vie ∞ 30 min", asset:"/heart.png" }),
+    16: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    17: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    18: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    19: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    20: Object.freeze({ type:"legendary", label:"Coffre légendaire", short:"Légendaire", asset:"/reward-legendary-simple-closed.png" }),
+    21: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    22: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    23: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    24: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    25: Object.freeze({ type:"frame", key:"frame_gold_stars", label:"Cadre étoile dorée", short:"Cadre doré", asset:"/frame-gold-stars.png" }),
+    26: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    27: Object.freeze({ type:"gems", amount:5, label:"5 gemmes", asset:"/gem.png" }),
+    28: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    29: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    30: Object.freeze({ type:"chest", label:"Coffre", asset:"/reward-star-simple-closed.png" }),
+    31: Object.freeze({ type:"gems", amount:10, label:"10 gemmes", asset:"/gem.png" }),
+    32: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    33: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    34: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    35: Object.freeze({ type:"lives", minutes:30, label:"Vie illimitée 30 min", short:"Vie ∞ 30 min", asset:"/heart.png" }),
+    36: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    37: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    38: Object.freeze({ type:"gems", amount:10, label:"10 gemmes", asset:"/gem.png" }),
+    39: Object.freeze({ type:"coins", amount:200, label:"200 pièces", asset:"/coin.png" }),
+    40: Object.freeze({ type:"legendary", label:"Coffre légendaire", short:"Légendaire", asset:"/reward-legendary-simple-closed.png" }),
+    41: Object.freeze({ type:"gems", amount:15, label:"15 gemmes", asset:"/gem.png" }),
+    42: Object.freeze({ type:"coins", amount:500, label:"500 pièces", asset:"/coin.png" }),
+    43: Object.freeze({ type:"bag", label:"Sac (coffre)", short:"Sac", asset:"/reward-bag.png" }),
+    44: Object.freeze({ type:"gems", amount:20, label:"20 gemmes", asset:"/gem.png" }),
+    45: Object.freeze({ type:"avatar", key:"/avatar-prestige.png", label:"Icon prestige", short:"Icon prestige", asset:"/avatar-prestige.png" }),
+    46: Object.freeze({ type:"coins", amount:500, label:"500 pièces", asset:"/coin.png" }),
+    47: Object.freeze({ type:"gems", amount:50, label:"50 gemmes", asset:"/gem.png" }),
+    48: Object.freeze({ type:"chest", label:"Coffre", asset:"/reward-star-simple-closed.png" }),
+    49: Object.freeze({ type:"legendary", label:"Coffre légendaire", short:"Légendaire", asset:"/reward-legendary-simple-closed.png" }),
+    50: Object.freeze({ type:"frame", key:"frame-prestige", label:"Cadre prestige", asset:"/frame-prestige.png" })
+  });
+
   function walletToken() {
     return String(localStorage.getItem("petitbac_walletToken") || "").trim();
   }
@@ -227,13 +280,17 @@
         margin-top:10px;min-height:38px;border-radius:18px;padding:5px 12px;display:flex;align-items:center;justify-content:center;gap:9px;
         background:rgba(6,24,87,.88);border:1px solid rgba(67,92,211,.40);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
       }
-      .ptb-level-coin{
-        width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;font-style:normal;
-        color:#fff4ad;font-size:.82rem;font-weight:1000;
-        background:radial-gradient(circle at 35% 28%,#fff08d 0 8%,#ffc229 24%,#e9960b 63%,#c97800 100%);
-        border:2px solid #ffcf4d;box-shadow:inset 0 0 0 2px rgba(255,240,143,.28),0 0 10px rgba(255,176,25,.42)
+      .ptb-level-reward-icon{
+        width:28px;height:28px;flex:0 0 28px;border-radius:9px;display:grid;place-items:center;font-style:normal;overflow:hidden;
+        color:#fff;font-size:.72rem;font-weight:1000;background:linear-gradient(145deg,#263eaa,#4e2aa1);
+        border:1px solid rgba(126,159,255,.75);box-shadow:0 0 10px rgba(78,130,255,.3)
       }
-      .ptb-levels-hero-reward span{font-size:.73rem;line-height:1;font-weight:800;color:#eef0ff;white-space:nowrap}
+      .ptb-level-reward-icon.is-hero{width:30px;height:30px;flex-basis:30px}
+      .ptb-level-reward-icon img{width:100%;height:100%;object-fit:contain;display:block}
+      .ptb-level-reward-icon.is-coins,.ptb-level-reward-icon.is-gems{background:transparent;border:0;box-shadow:none}
+      .ptb-level-reward-icon.is-frame img{object-fit:contain}
+      .ptb-level-reward-icon.is-avatar img{object-fit:cover;border-radius:7px}
+      .ptb-levels-hero-reward span{font-size:.7rem;line-height:1.1;font-weight:800;color:#eef0ff;text-align:center}
       .ptb-levels-hero-reward b{color:#ffdd64;font-size:.82rem}
 
       .ptb-levels-list{position:relative;z-index:1;margin-top:12px;padding-left:31px}
@@ -260,7 +317,7 @@
       }
       .ptb-level-card{
         position:relative;min-height:58px;border:1px solid rgba(73,111,229,.34);border-radius:17px;padding:6px 8px;display:grid;align-items:center;
-        grid-template-columns:52px minmax(0,1fr) 104px;gap:7px;
+        grid-template-columns:52px minmax(0,1fr) 126px;gap:7px;
         background:linear-gradient(180deg,rgba(8,29,102,.98),rgba(5,21,78,.98));
         box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 16px rgba(0,0,0,.12)
       }
@@ -290,12 +347,12 @@
         background:linear-gradient(90deg,#39d9ff,#718cff 56%,#e458ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)
       }
       .ptb-level-reward{
-        grid-column:3;justify-self:end;width:104px;height:34px;border-radius:12px;padding:0 9px;box-sizing:border-box;
+        grid-column:3;justify-self:end;width:126px;min-height:36px;border-radius:12px;padding:5px 8px;box-sizing:border-box;
         display:flex;align-items:center;justify-content:flex-start;gap:6px;
         background:rgba(4,15,59,.94);border:1px solid rgba(61,80,177,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)
       }
-      .ptb-level-reward .ptb-level-coin{width:23px;height:23px;flex-basis:23px;font-size:.66rem;border-width:1.5px}
-      .ptb-level-reward span{font-size:.63rem;font-weight:900;color:#ffe16b;white-space:nowrap}
+      .ptb-level-reward .ptb-level-reward-icon{width:24px;height:24px;flex-basis:24px;border-radius:7px;font-size:.6rem}
+      .ptb-level-reward span{font-size:.58rem;line-height:1.05;font-weight:900;color:#ffe16b;white-space:normal;text-align:left}
       .ptb-level-status{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:grid;place-items:center}
       .ptb-level-row.is-current .ptb-level-status,
       .ptb-level-row.is-locked .ptb-level-status{display:none}
@@ -327,16 +384,16 @@
         .ptb-levels-hero-reward{padding-inline:8px;gap:6px}
         .ptb-levels-hero-reward span{font-size:.64rem}
         .ptb-levels-hero-reward b{font-size:.73rem}
-        .ptb-level-card{grid-template-columns:46px minmax(0,1fr) 92px;gap:5px;padding:5px 6px}
+        .ptb-level-card{grid-template-columns:46px minmax(0,1fr) 108px;gap:5px;padding:5px 6px}
         .ptb-level-row.is-current .ptb-level-card{padding:4px 5px}
         .ptb-level-mini-badge,.ptb-level-mini-badge img{width:45px;height:45px}
         .ptb-level-row.is-current .ptb-level-mini-badge{width:54px;height:54px}
         .ptb-level-row.is-current .ptb-level-mini-badge img{width:54px;height:54px}
         .ptb-level-copy strong{font-size:.67rem}
         .ptb-level-copy small{font-size:.57rem}
-        .ptb-level-reward{width:92px;height:31px;padding:0 7px;gap:5px}
-        .ptb-level-reward .ptb-level-coin{width:20px;height:20px;flex-basis:20px}
-        .ptb-level-reward span{font-size:.56rem}
+        .ptb-level-reward{width:108px;min-height:32px;padding:4px 6px;gap:5px}
+        .ptb-level-reward .ptb-level-reward-icon{width:20px;height:20px;flex-basis:20px}
+        .ptb-level-reward span{font-size:.51rem}
         .ptb-level-status,.ptb-level-status .ptb-empty{width:28px;height:28px}
         .ptb-level-status{right:6px}
         .ptb-level-row.is-completed .ptb-level-reward{margin-right:32px}
@@ -346,9 +403,25 @@
     document.head.appendChild(style);
   }
 
-  function levelRewardCoins() {
+  function rewardForLevel(level) {
+    const safeLevel = Math.max(1, Math.min(50, Math.floor(Number(level) || 1)));
+    return LEVEL_REWARDS[safeLevel] || LEVEL_REWARDS[1];
+  }
 
-    return LEVEL_REWARD_COINS;
+  function rewardLabel(reward, { short = false } = {}) {
+    if (!reward) return "Récompense";
+    return String((short && reward.short) || reward.label || "Récompense");
+  }
+
+  function rewardIconMarkup(reward, extraClass = "") {
+    const type = String(reward?.type || "reward").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+    const className = `ptb-level-reward-icon is-${type} ${extraClass}`.trim();
+    const asset = String(reward?.asset || "").trim();
+    if (asset) {
+      return `<i class="${className}" aria-hidden="true"><img src="${escapeHtml(asset)}" alt=""></i>`;
+    }
+    const symbol = reward?.type === "tag" ? "T" : "★";
+    return `<i class="${className}" aria-hidden="true">${symbol}</i>`;
   }
 
   function levelStatus(level, currentLevel) {
@@ -405,8 +478,8 @@
               </div>
             </div>
             <div class="ptb-levels-hero-reward">
-              <i class="ptb-level-coin" aria-hidden="true">★</i>
-              <span>Récompense à chaque niveau : <b data-level-reward>50 pièces</b></span>
+              <span data-level-reward-icon></span>
+              <span>Récompense niveau <b data-level-reward-level>1</b> · <b data-level-reward>Tag débutant</b></span>
             </div>
           </section>
 
@@ -443,6 +516,8 @@
     const levelNode = overlay.querySelector("[data-level-current]");
     const xpNode = overlay.querySelector("[data-level-xp]");
     const rewardNode = overlay.querySelector("[data-level-reward]");
+    const rewardLevelNode = overlay.querySelector("[data-level-reward-level]");
+    const rewardIconNode = overlay.querySelector("[data-level-reward-icon]");
     const track = overlay.querySelector(".ptb-levels-hero-track");
     const fill = overlay.querySelector(".ptb-levels-hero-fill");
     const rowsHost = overlay.querySelector("[data-level-rows]");
@@ -453,7 +528,10 @@
         ? "Niveau maximum"
         : `${current.xpIntoLevel} / ${current.xpForNext} XP`;
     }
-    if (rewardNode) rewardNode.textContent = `${levelRewardCoins()} pièces`;
+    const currentReward = rewardForLevel(current.level);
+    if (rewardNode) rewardNode.textContent = rewardLabel(currentReward);
+    if (rewardLevelNode) rewardLevelNode.textContent = String(current.level);
+    if (rewardIconNode) rewardIconNode.innerHTML = rewardIconMarkup(currentReward, "is-hero");
     if (track) track.setAttribute("aria-valuenow", String(Math.round(current.progressPercent)));
     if (fill) fill.style.width = `${current.progressPercent}%`;
 
@@ -477,9 +555,9 @@
               <strong>Niveau ${level}</strong>
               <small>${escapeHtml(levelSubtitle(level, current.level))}</small>
             </div>
-            <div class="ptb-level-reward">
-              <i class="ptb-level-coin" aria-hidden="true">★</i>
-              <span>${levelRewardCoins()} pièces</span>
+            <div class="ptb-level-reward" title="${escapeHtml(rewardLabel(rewardForLevel(level)))}">
+              ${rewardIconMarkup(rewardForLevel(level))}
+              <span>${escapeHtml(rewardLabel(rewardForLevel(level), { short:true }))}</span>
             </div>
             <div class="ptb-level-status">${statusMarkup}</div>
           </div>
