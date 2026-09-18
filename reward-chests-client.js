@@ -7,22 +7,35 @@
     },
     dropTables:{
       bag:[
-        { kind:"coins", weight:52, min:30, max:100 },
-        { kind:"gems", weight:30, min:1, max:5 },
-        { kind:"item", rarity:"commun", weight:18 }
+        { kind:"item", rarity:"commun", weight:5 },
+        { kind:"gems", amount:10, weight:10 },
+        { kind:"coins", amount:200, weight:15 },
+        { kind:"gems", amount:5, weight:15 },
+        { kind:"coins", amount:100, weight:20 },
+        { kind:"coins", amount:50, weight:35 }
       ],
       star:[
-        { kind:"coins", weight:40, min:50, max:120 },
-        { kind:"gems", weight:25, min:2, max:5 },
-        { kind:"item", rarity:"commun", weight:20 },
-        { kind:"item", rarity:"rare", weight:15 }
+        { kind:"coins", amount:200, weight:10 },
+        { kind:"coins", amount:500, weight:5 },
+        { kind:"gems", amount:25, weight:5 },
+        { kind:"gems", amount:10, weight:10 },
+        { kind:"coins", amount:100, weight:15 },
+        { kind:"gems", amount:5, weight:15 },
+        { kind:"item", rarity:"commun", weight:18 },
+        { kind:"item", rarity:"rare", weight:10 },
+        { kind:"item", rarity:"epique", weight:5 },
+        { kind:"coins", amount:1000, weight:3 },
+        { kind:"gems", amount:50, weight:3 },
+        { kind:"item", rarity:"ultra", weight:1 }
       ],
       legendary:[
-        { kind:"coins", weight:15, min:250, max:500 },
-        { kind:"gems", weight:15, min:10, max:20 },
-        { kind:"item", rarity:"rare", weight:10 },
-        { kind:"item", rarity:"epique", weight:30 },
-        { kind:"item", rarity:"ultra", weight:30 }
+        { kind:"coins", amount:500, weight:20 },
+        { kind:"coins", amount:1000, weight:15 },
+        { kind:"gems", amount:50, weight:10 },
+        { kind:"gems", amount:25, weight:15 },
+        { kind:"item", rarity:"rare", weight:25 },
+        { kind:"item", rarity:"epique", weight:10 },
+        { kind:"item", rarity:"ultra", weight:5 }
       ]
     }
   });
@@ -70,7 +83,7 @@
       if (cursor < weight) return row;
       cursor -= weight;
     }
-    return list[list.length - 1] || { kind:"coins", min:50, max:50 };
+    return list[list.length - 1] || { kind:"coins", amount:50 };
   }
 
   function rollPreviewReward(type, state = "blue") {
@@ -95,6 +108,10 @@
         || FALLBACK_COMPENSATION[rarity]
         || 50;
       return { kind:"coins", amount, compensationFor:rarity };
+    }
+    const fixedAmount = Number(row.amount);
+    if (Number.isFinite(fixedAmount)) {
+      return { kind:row.kind, amount:Math.max(0, Math.floor(fixedAmount)) };
     }
     return { kind:row.kind, amount:randomInt(row.min, row.max) };
   }

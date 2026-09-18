@@ -20,23 +20,41 @@ const STAR_UPGRADE = Object.freeze({
 });
 
 const DROP_TABLES = Object.freeze({
+  // Sac — total 100 %
   bag:Object.freeze([
-    Object.freeze({ kind:"coins", weight:52, min:30, max:100 }),
-    Object.freeze({ kind:"gems", weight:30, min:1, max:5 }),
-    Object.freeze({ kind:"item", rarity:"commun", weight:18 })
+    Object.freeze({ kind:"item", rarity:"commun", weight:5 }),
+    Object.freeze({ kind:"gems", amount:10, weight:10 }),
+    Object.freeze({ kind:"coins", amount:200, weight:15 }),
+    Object.freeze({ kind:"gems", amount:5, weight:15 }),
+    Object.freeze({ kind:"coins", amount:100, weight:20 }),
+    Object.freeze({ kind:"coins", amount:50, weight:35 })
   ]),
+
+  // Coffre normal — total 100 %
   star:Object.freeze([
-    Object.freeze({ kind:"coins", weight:40, min:50, max:120 }),
-    Object.freeze({ kind:"gems", weight:25, min:2, max:5 }),
-    Object.freeze({ kind:"item", rarity:"commun", weight:20 }),
-    Object.freeze({ kind:"item", rarity:"rare", weight:15 })
-  ]),
-  legendary:Object.freeze([
-    Object.freeze({ kind:"coins", weight:15, min:250, max:500 }),
-    Object.freeze({ kind:"gems", weight:15, min:10, max:20 }),
+    Object.freeze({ kind:"coins", amount:200, weight:10 }),
+    Object.freeze({ kind:"coins", amount:500, weight:5 }),
+    Object.freeze({ kind:"gems", amount:25, weight:5 }),
+    Object.freeze({ kind:"gems", amount:10, weight:10 }),
+    Object.freeze({ kind:"coins", amount:100, weight:15 }),
+    Object.freeze({ kind:"gems", amount:5, weight:15 }),
+    Object.freeze({ kind:"item", rarity:"commun", weight:18 }),
     Object.freeze({ kind:"item", rarity:"rare", weight:10 }),
-    Object.freeze({ kind:"item", rarity:"epique", weight:30 }),
-    Object.freeze({ kind:"item", rarity:"ultra", weight:30 })
+    Object.freeze({ kind:"item", rarity:"epique", weight:5 }),
+    Object.freeze({ kind:"coins", amount:1000, weight:3 }),
+    Object.freeze({ kind:"gems", amount:50, weight:3 }),
+    Object.freeze({ kind:"item", rarity:"ultra", weight:1 })
+  ]),
+
+  // Coffre légendaire — total 100 %
+  legendary:Object.freeze([
+    Object.freeze({ kind:"coins", amount:500, weight:20 }),
+    Object.freeze({ kind:"coins", amount:1000, weight:15 }),
+    Object.freeze({ kind:"gems", amount:50, weight:10 }),
+    Object.freeze({ kind:"gems", amount:25, weight:15 }),
+    Object.freeze({ kind:"item", rarity:"rare", weight:25 }),
+    Object.freeze({ kind:"item", rarity:"epique", weight:10 }),
+    Object.freeze({ kind:"item", rarity:"ultra", weight:5 })
   ])
 });
 
@@ -98,6 +116,16 @@ function rollRewardSpec(chestType, starState = "blue", random = Math.random) {
   if (chosen.kind === "item") {
     return { kind:"item", rarity:String(chosen.rarity || "commun") };
   }
+
+  const fixedAmount = Number(chosen.amount);
+  if (Number.isFinite(fixedAmount)) {
+    return {
+      kind:chosen.kind,
+      amount:Math.max(0, Math.floor(fixedAmount))
+    };
+  }
+
+  // Compatibilité avec d'anciennes tables utilisant min/max.
   return {
     kind:chosen.kind,
     amount:randomIntInclusive(chosen.min, chosen.max, random)
