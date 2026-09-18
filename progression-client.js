@@ -282,8 +282,8 @@
       .ptb-levels-hero-meta{margin-top:4px;color:#f4f6ff;font-weight:1000;line-height:1}
       .ptb-levels-hero-meta strong{font-size:1rem;letter-spacing:-.02em}
       .ptb-levels-hero-reward{
-        margin-top:10px;min-height:38px;border-radius:18px;padding:5px 12px;display:flex;align-items:center;justify-content:center;gap:9px;
-        background:rgba(6,24,87,.88);border:1px solid rgba(67,92,211,.40);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+        margin-top:10px;min-height:42px;border-radius:0;padding:4px 8px;display:flex;align-items:center;justify-content:center;gap:10px;
+        background:transparent;border:0;box-shadow:none
       }
       .ptb-level-reward-icon{
         width:28px;height:28px;flex:0 0 28px;border-radius:9px;display:grid;place-items:center;font-style:normal;overflow:hidden;
@@ -537,27 +537,19 @@
       .ptb-level-row.reward-claimed .ptb-level-node-status{color:#8ff9cc;border-color:rgba(81,238,183,.46)}
 
       .ptb-level-reward-card{
-        position:relative;z-index:3;width:100%;max-width:154px;min-height:66px;box-sizing:border-box;padding:8px 9px;
-        border-radius:18px;display:flex;align-items:center;gap:8px;
-        background:linear-gradient(180deg,rgba(8,31,105,.94),rgba(5,20,76,.96));
-        border:1px solid rgba(79,117,226,.46);box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(1,8,41,.2)
+        position:relative;z-index:3;width:100%;max-width:160px;min-height:72px;box-sizing:border-box;padding:3px 2px;
+        border-radius:0;display:flex;align-items:center;gap:9px;
+        background:transparent;border:0;box-shadow:none
       }
       .ptb-level-row.side-left .ptb-level-reward-card{grid-column:1;justify-self:end;margin-right:8px;flex-direction:row-reverse}
       .ptb-level-row.side-right .ptb-level-reward-card{grid-column:3;justify-self:start;margin-left:8px}
       .ptb-level-row.side-left .ptb-level-reward-copy{align-items:flex-end;text-align:right}
       .ptb-level-node-status:empty{display:none}
       .ptb-level-row.side-left .ptb-level-reward-card::after,
-      .ptb-level-row.side-right .ptb-level-reward-card::after{
-        content:"";position:absolute;top:50%;width:12px;height:12px;transform:translateY(-50%) rotate(45deg);
-        background:#071d67;border:1px solid rgba(84,128,238,.54);z-index:-1
-      }
-      .ptb-level-row.side-left .ptb-level-reward-card::after{right:-7px;border-left:0;border-bottom:0}
-      .ptb-level-row.side-right .ptb-level-reward-card::after{left:-7px;border-right:0;border-top:0}
-      .ptb-level-row.reward-claimable .ptb-level-reward-card{
-        border-color:rgba(82,226,255,.66);box-shadow:0 0 16px rgba(56,209,255,.16),inset 0 1px 0 rgba(255,255,255,.06)
-      }
-      .ptb-level-row.reward-claimed .ptb-level-reward-card{opacity:.68}
-      .ptb-level-row.is-locked .ptb-level-reward-card{opacity:.72}
+      .ptb-level-row.side-right .ptb-level-reward-card::after{display:none}
+      .ptb-level-row.reward-claimable .ptb-level-reward-card{box-shadow:none}
+      .ptb-level-row.reward-claimed .ptb-level-reward-card{opacity:.72}
+      .ptb-level-row.is-locked .ptb-level-reward-card{opacity:.76}
 
       .ptb-level-reward-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
       .ptb-level-reward-copy strong{
@@ -568,21 +560,16 @@
       .ptb-level-row.reward-claimed .ptb-level-reward-copy small{color:#80efc0;font-weight:900}
 
       .ptb-level-claim-icon{
-        position:relative;flex:0 0 46px;width:46px;height:46px;padding:0;border:1px solid rgba(114,139,255,.62);border-radius:14px;
-        display:grid;place-items:center;background:linear-gradient(145deg,rgba(38,62,170,.98),rgba(78,42,161,.98));
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 11px rgba(77,123,255,.23);cursor:default
+        position:relative;flex:0 0 55px;width:55px;height:55px;padding:0;border:0;border-radius:0;
+        display:grid;place-items:center;background:transparent;box-shadow:none;cursor:default
       }
-      .ptb-level-claim-icon .ptb-level-reward-icon{width:38px;height:38px;flex-basis:38px;border-radius:10px;border:0;box-shadow:none}
+      .ptb-level-claim-icon .ptb-level-reward-icon{width:46px;height:46px;flex-basis:46px;border-radius:10px;border:0;box-shadow:none;background:transparent}
       .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
-      .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:42px;height:42px;flex-basis:42px;background:transparent}
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:50px;height:50px;flex-basis:50px;background:transparent}
       .ptb-level-claim-icon.is-claimable{
-        cursor:pointer;border-color:#64ebff;
-        box-shadow:0 0 0 1px rgba(107,111,255,.24),0 0 13px rgba(79,225,255,.55),0 0 24px rgba(152,74,255,.23);
-        animation:ptbConstellationClaim 1.65s ease-in-out infinite
+        cursor:pointer;box-shadow:none;animation:ptbConstellationClaim 1.65s ease-in-out infinite
       }
-      .ptb-level-claim-icon.is-claimable::before{
-        content:"";position:absolute;inset:-5px;border-radius:17px;border:1px solid rgba(89,228,255,.42);opacity:.75
-      }
+      .ptb-level-claim-icon.is-claimable::before{display:none}
       .ptb-level-claim-icon.is-claimed{opacity:.62;filter:saturate(.68)}
       .ptb-level-claim-icon.is-claimed::after{
         content:"✓";position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;
@@ -602,10 +589,10 @@
       }
 
       .ptb-levels-hero-reward [data-level-claim]{margin:0}
-      .ptb-levels-hero-reward .ptb-level-claim-icon{width:34px;height:34px;flex-basis:34px;border-radius:10px}
-      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon{width:28px;height:28px;flex-basis:28px}
+      .ptb-levels-hero-reward .ptb-level-claim-icon{width:41px;height:41px;flex-basis:41px}
+      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon{width:34px;height:34px;flex-basis:34px}
       .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
-      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:31px;height:31px;flex-basis:31px}
+      .ptb-levels-hero-reward .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:37px;height:37px;flex-basis:37px}
 
       @media(max-width:370px){
         .ptb-level-row{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);min-height:88px}
@@ -618,13 +605,13 @@
         .ptb-level-mini-badge b,
         .ptb-level-row.is-completed .ptb-level-mini-badge b{font-size:1.28rem}
         .ptb-level-row.is-current .ptb-level-mini-badge b{font-size:1.52rem}
-        .ptb-level-reward-card{max-width:130px;min-height:60px;padding:7px 7px;gap:6px}
+        .ptb-level-reward-card{max-width:136px;min-height:66px;padding:2px;gap:7px}
         .ptb-level-row.side-left .ptb-level-reward-card{margin-right:5px}
         .ptb-level-row.side-right .ptb-level-reward-card{margin-left:5px}
-        .ptb-level-claim-icon{width:40px;height:40px;flex-basis:40px;border-radius:12px}
-        .ptb-level-claim-icon .ptb-level-reward-icon{width:33px;height:33px;flex-basis:33px}
+        .ptb-level-claim-icon{width:48px;height:48px;flex-basis:48px}
+        .ptb-level-claim-icon .ptb-level-reward-icon{width:40px;height:40px;flex-basis:40px}
         .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
-        .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:36px;height:36px;flex-basis:36px}
+        .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:43px;height:43px;flex-basis:43px}
         .ptb-level-reward-copy strong{font-size:.58rem}
         .ptb-level-reward-copy small{font-size:.49rem}
         .ptb-level-node-status{font-size:.46rem;padding:3px 6px}
@@ -836,9 +823,8 @@
           <section class="ptb-levels-list" aria-label="Progression des niveaux">
             <span class="ptb-levels-line" aria-hidden="true"></span>
             <div data-level-rows></div>
-            <footer class="ptb-levels-footer">
-              <div class="ptb-levels-footer-dots" aria-hidden="true"><i></i><i></i><i></i></div>
-              <p>Jusqu’au niveau 50...</p>
+            <footer class="ptb-levels-footer" aria-hidden="true">
+              <div class="ptb-levels-footer-dots"><i></i><i></i><i></i></div>
             </footer>
           </section>
         </div>
