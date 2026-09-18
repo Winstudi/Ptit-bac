@@ -14,6 +14,11 @@
   let scheduled = false;
   let levelsOverlay = null;
   let lastFocusedTrigger = null;
+  let levelRewardClaims = new Set();
+  let levelRewardStatusPromise = null;
+  let levelRewardStatusLoaded = false;
+  let levelRewardClaiming = 0;
+  let unlimitedLivesUntil = 0;
   const LEVEL_REWARD_COINS = 50;
 
   const LEVEL_REWARDS = Object.freeze({
@@ -363,6 +368,26 @@
         box-shadow:0 0 10px rgba(76,233,255,.30)
       }
       .ptb-level-status .ptb-empty{display:block;width:30px;height:30px}
+      .ptb-level-reward{font-family:inherit;color:inherit;appearance:none;-webkit-appearance:none}
+      .ptb-level-reward:disabled{cursor:default}
+      .ptb-level-reward.is-claimable{
+        cursor:pointer;border-color:rgba(83,229,255,.92);
+        box-shadow:0 0 0 1px rgba(102,106,255,.18),0 0 12px rgba(63,216,255,.34),inset 0 1px 0 rgba(255,255,255,.07);
+        animation:ptbLevelClaimPulse 1.7s ease-in-out infinite
+      }
+      .ptb-level-reward.is-claimable span{color:#fff4a4}
+      .ptb-level-reward.is-claimed{opacity:.62;filter:saturate(.72)}
+      .ptb-level-row.reward-claimable .ptb-level-copy small{color:#65f2ff!important;font-weight:900}
+      .ptb-level-row.reward-claimed .ptb-level-copy small{color:#77f4c6!important;font-weight:850}
+      .ptb-level-row.reward-claimable .ptb-level-dot{
+        border-color:#69ecff;box-shadow:0 0 0 2px rgba(83,119,255,.2),0 0 9px rgba(67,221,255,.5)
+      }
+      .ptb-level-status .ptb-claim-mark{
+        width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+        border:2px solid #59e8ff;background:rgba(7,27,91,.9);color:#fff49a;font-size:.88rem;font-weight:1000;
+        box-shadow:0 0 10px rgba(77,226,255,.34)
+      }
+      @keyframes ptbLevelClaimPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
 
       .ptb-levels-footer{padding:5px 0 0;text-align:center}
       .ptb-levels-footer-dots{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:7px}
@@ -430,10 +455,109 @@
     return "locked";
   }
 
+  function rewardClaimState(level, currentLevel) {
+    if (levelRewardClaims.has(level)) return "claimed";
+    if (level <= currentLevel && !levelRewardStatusLoaded) return "loading";
+    if (level <= currentLevel) return "claimable";
+    return "locked";
+  }
+
   function levelSubtitle(level, currentLevel) {
-    if (level < currentLevel) return "Complété !";
-    if (level === currentLevel) return "Actuel";
+    const rewardState = rewardClaimState(level, currentLevel);
+    if (rewardState === "claimed") return level === currentLevel ? "Actuel · Récupéré" : "Récupéré";
+    if (rewardState === "claimable") return "À récupérer";
+    if (rewardState === "loading") return "Chargement...";
     return "À venir";
+  }
+
+  function applyLevelRewardStatus(value) {
+    const levels = Array.isArray(value?.claimedLevels) ? value.claimedLevels : [];
+    levelRewardClaims = new Set(
+      levels.map(Number).filter(level => Number.isInteger(level) && level >= 1 && level <= 50)
+    );
+    unlimitedLivesUntil = Math.max(0, Number(value?.unlimitedLivesUntil) || 0);
+    levelRewardStatusLoaded = true;
+    if (levelsOverlay?.classList.contains("is-open")) renderLevelsOverlay();
+  }
+
+  function requestLevelRewardStatus({ force = false } = {}) {
+    if (!force && levelRewardStatusLoaded) {
+      return Promise.resolve({ claimedLevels:[...levelRewardClaims], unlimitedLivesUntil });
+    }
+    if (levelRewardStatusPromise) return levelRewardStatusPromise;
+
+    const token = walletToken();
+    if (!token || typeof socket === "undefined" || !socket?.connected) {
+      return Promise.reject(new Error("Récompenses de niveaux indisponibles."));
+    }
+
+    levelRewardStatusPromise = new Promise((resolve, reject) => {
+      socket.timeout(8000).emit("level-rewards:get", { walletToken:token }, (err, res) => {
+        levelRewardStatusPromise = null;
+        if (err || !res?.ok) {
+          reject(new Error(res?.error || "Récompenses de niveaux indisponibles."));
+          return;
+        }
+        applyLevelRewardStatus(res);
+        resolve(res);
+      });
+    });
+
+    return levelRewardStatusPromise;
+  }
+
+  function rewardSuccessMessage(level, result = {}) {
+    if (result.kind === "coins") return `+${Math.max(0, Number(result.amount) || 0)} pièces`;
+    if (result.kind === "gems") return `+${Math.max(0, Number(result.amount) || 0)} gemmes`;
+    if (result.kind === "lives") return `Vies illimitées +${Math.max(0, Number(result.minutes) || 0)} min`;
+    if (result.kind === "item") return String(result.item?.label || rewardLabel(rewardForLevel(level)));
+    return rewardLabel(rewardForLevel(level));
+  }
+
+  function claimLevelReward(level) {
+    const currentLevel = readCache()?.level || 1;
+    const safeLevel = Math.max(1, Math.min(50, Math.floor(Number(level) || 0)));
+    if (!safeLevel || safeLevel > currentLevel || !levelRewardStatusLoaded || levelRewardClaims.has(safeLevel) || levelRewardClaiming) return;
+
+    const token = walletToken();
+    if (!token || typeof socket === "undefined" || !socket?.connected) {
+      try { toast("Connexion requise pour récupérer la récompense."); } catch {}
+      return;
+    }
+
+    levelRewardClaiming = safeLevel;
+    renderLevelsOverlay();
+
+    socket.timeout(12000).emit("level-rewards:claim", { walletToken:token, level:safeLevel }, (err, res) => {
+      levelRewardClaiming = 0;
+      if (err || !res?.ok) {
+        try { toast(res?.error || "Impossible de récupérer la récompense."); } catch {}
+        renderLevelsOverlay();
+        return;
+      }
+
+      applyLevelRewardStatus(res.status || {
+        claimedLevels:[...levelRewardClaims, safeLevel],
+        unlimitedLivesUntil:res.unlimitedLivesUntil || 0
+      });
+
+      try { window.PtitBacEconomy?.refresh?.(); } catch {}
+      try { window.PtitBacInventory?.refresh?.(); } catch {}
+
+      const result = res.result || {};
+      if (result.kind === "chest" && result.chestType && result.reward) {
+        try {
+          window.PtitBacRewards?.receiveGranted?.({
+            chestType:result.chestType,
+            reward:result.reward
+          });
+        } catch {}
+      } else {
+        try { toast(`Niveau ${safeLevel} · ${rewardSuccessMessage(safeLevel, result)}`); } catch {}
+      }
+
+      renderLevelsOverlay();
+    });
   }
 
   function lockIconMarkup() {
@@ -495,6 +619,13 @@
       </div>`;
 
     levelsOverlay.addEventListener("click", event => {
+      const rewardButton = event.target.closest?.("[data-level-claim]");
+      if (rewardButton && levelsOverlay.contains(rewardButton)) {
+        event.preventDefault();
+        event.stopPropagation();
+        claimLevelReward(rewardButton.dataset.levelClaim);
+        return;
+      }
       if (event.target === levelsOverlay) closeLevelsOverlay();
     });
     levelsOverlay.querySelector(".ptb-levels-back")?.addEventListener("click", closeLevelsOverlay);
@@ -529,7 +660,11 @@
         : `${current.xpIntoLevel} / ${current.xpForNext} XP`;
     }
     const currentReward = rewardForLevel(current.level);
-    if (rewardNode) rewardNode.textContent = rewardLabel(currentReward);
+    const currentRewardState = rewardClaimState(current.level, current.level);
+    if (rewardNode) {
+      const suffix = currentRewardState === "claimed" ? " · Récupéré" : currentRewardState === "claimable" ? " · À récupérer" : "";
+      rewardNode.textContent = `${rewardLabel(currentReward)}${suffix}`;
+    }
     if (rewardLevelNode) rewardLevelNode.textContent = String(current.level);
     if (rewardIconNode) rewardIconNode.innerHTML = rewardIconMarkup(currentReward, "is-hero");
     if (track) track.setAttribute("aria-valuenow", String(Math.round(current.progressPercent)));
@@ -539,12 +674,18 @@
     const parts = [];
     for (let level = start; level <= end; level += 1) {
       const status = levelStatus(level, current.level);
-      const statusMarkup = status === "completed"
+      const claimState = rewardClaimState(level, current.level);
+      const claiming = levelRewardClaiming === level;
+      const statusMarkup = claimState === "claimed"
         ? '<i class="ptb-check">✓</i>'
-        : '<i class="ptb-empty"></i>';
+        : claimState === "claimable"
+          ? '<i class="ptb-claim-mark">!</i>'
+          : '<i class="ptb-empty"></i>';
+      const reward = rewardForLevel(level);
+      const disabled = claimState !== "claimable" || claiming;
 
       parts.push(`
-        <article class="ptb-level-row is-${status}" data-level-row="${level}">
+        <article class="ptb-level-row is-${status} reward-${claimState}" data-level-row="${level}">
           <i class="ptb-level-dot" aria-hidden="true"></i>
           <div class="ptb-level-card">
             <div class="ptb-level-mini-badge">
@@ -553,12 +694,15 @@
             </div>
             <div class="ptb-level-copy">
               <strong>Niveau ${level}</strong>
-              <small>${escapeHtml(levelSubtitle(level, current.level))}</small>
+              <small>${escapeHtml(claiming ? "Récupération..." : levelSubtitle(level, current.level))}</small>
             </div>
-            <div class="ptb-level-reward" title="${escapeHtml(rewardLabel(rewardForLevel(level)))}">
-              ${rewardIconMarkup(rewardForLevel(level))}
-              <span>${escapeHtml(rewardLabel(rewardForLevel(level), { short:true }))}</span>
-            </div>
+            <button class="ptb-level-reward is-${claimState}" type="button"
+                    data-level-claim="${level}"
+                    title="${escapeHtml(rewardLabel(reward))}"
+                    ${disabled ? "disabled" : ""}>
+              ${rewardIconMarkup(reward)}
+              <span>${escapeHtml(rewardLabel(reward, { short:true }))}</span>
+            </button>
             <div class="ptb-level-status">${statusMarkup}</div>
           </div>
         </article>`);
@@ -569,6 +713,7 @@
   function openLevelsOverlay(trigger) {
     if (trigger?.focus) lastFocusedTrigger = trigger;
     renderLevelsOverlay();
+    requestLevelRewardStatus({ force:true }).catch(() => {});
 
     const overlay = ensureLevelsOverlay();
     overlay.classList.add("is-open");
@@ -594,6 +739,19 @@
       setTimeout(() => target.focus(), 20);
     }
   }
+
+  function bindLevelRewardUpdates(attempt = 0) {
+    try {
+      if (typeof socket === "undefined" || !socket?.on) {
+        if (attempt < 20) setTimeout(() => bindLevelRewardUpdates(attempt + 1), 300);
+        return;
+      }
+      socket.off?.("level-rewards:update", applyLevelRewardStatus);
+      socket.on("level-rewards:update", applyLevelRewardStatus);
+    } catch {}
+  }
+
+  bindLevelRewardUpdates();
 
   function bindLevelEntry(copy, target) {
     const profileButton = copy?.closest?.(".hm-profile");
