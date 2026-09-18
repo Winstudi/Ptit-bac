@@ -270,7 +270,7 @@
         filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))
       }
       .ptb-levels-hero-fill{
-        position:relative;display:block;height:35px;width:0;border-radius:999px;overflow:hidden;min-width:0;
+        position:relative;display:block;height:25px;width:0;border-radius:999px;overflow:hidden;min-width:0;
         background:linear-gradient(90deg,#5fe6ff 0%,#3ed3ff 24%,#4d8fff 49%,#8c5bff 74%,#ef57ff 100%);
         box-shadow:inset 0 1px 1px rgba(255,255,255,.78),0 0 5px rgba(54,218,255,.88),0 0 8px rgba(107,92,255,.52);
         transition:width .45s cubic-bezier(.22,.8,.28,1)
