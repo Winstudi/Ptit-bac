@@ -125,9 +125,6 @@
     overlay.setAttribute("aria-hidden", "true");
     overlay.innerHTML = `
       <div class="ptb-reward-scene">
-        <button class="ptb-reward-back" type="button" aria-label="Fermer">
-          <img src="/back-arrow.png" alt="">
-        </button>
         <div class="ptb-reward-flash" aria-hidden="true"></div>
         <div class="ptb-reward-rays" aria-hidden="true"></div>
         <button class="ptb-reward-object" type="button" aria-label="Ouvrir la récompense">
@@ -153,9 +150,11 @@
         <div class="ptb-reward-result" aria-live="polite"></div>
       </div>`;
 
-    overlay.querySelector(".ptb-reward-back")?.addEventListener("click", close);
     overlay.querySelector(".ptb-reward-object")?.addEventListener("click", handleTap);
-    overlay.querySelector(".ptb-reward-result")?.addEventListener("click", () => restart(activeType));
+    overlay.addEventListener("click", () => {
+      if (!overlay?.classList.contains("is-revealed")) return;
+      returnToPreviousPage();
+    });
     document.body.appendChild(overlay);
     return overlay;
   }
@@ -250,6 +249,26 @@
     busy = false;
     if (location.hash.startsWith("#rewards-preview")) {
       history.replaceState(null, "", `${location.pathname}${location.search}`);
+    }
+  }
+
+  function returnToPreviousPage() {
+    if (!overlay?.classList.contains("is-revealed")) return;
+
+    clearTimeout(resetTimer);
+    clearAnimationTimers();
+    overlay.classList.remove("is-open");
+    overlay.setAttribute("aria-hidden", "true");
+    document.documentElement.classList.remove("ptb-reward-lock");
+    document.body.classList.remove("ptb-reward-lock");
+    busy = false;
+
+    if (location.hash.startsWith("#rewards-preview")) {
+      if (history.length > 1) {
+        history.back();
+      } else {
+        history.replaceState(null, "", `${location.pathname}${location.search}`);
+      }
     }
   }
 

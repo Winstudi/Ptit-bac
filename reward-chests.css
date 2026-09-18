@@ -16,12 +16,6 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(circle at 50% 47%,rgba(81,179,255,.08),transparent 32%),linear-gradient(180deg,rgba(2,9,34,.02),rgba(0,4,25,.16));
 }
-.ptb-reward-back{
-  position:absolute;z-index:8;left:max(14px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top));
-  width:44px;height:44px;padding:0;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;
-  -webkit-tap-highlight-color:transparent
-}
-.ptb-reward-back img{width:27px;height:27px;object-fit:contain;display:block;filter:none}
 .ptb-reward-object{
   position:absolute;z-index:4;left:50%;top:calc(43% - 15px);transform:translate(-50%,-50%);
   width:min(51.2vw,240px);aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer;
@@ -62,7 +56,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open.is-opening .ptb-reward-flash{animation:ptbRewardOpenFlash .68s ease-out both}
 .ptb-reward-open.is-opening .ptb-reward-rays{animation:ptbRewardRays .86s ease-out both}
 .ptb-reward-result{
-  position:absolute;z-index:7;left:50%;top:43%;transform:translate(-50%,-50%) scale(.72);opacity:0;pointer-events:none;
+  position:absolute;z-index:7;left:50%;top:calc(43% - 30px);transform:translate(-50%,-50%) scale(.72);opacity:0;pointer-events:none;
   width:min(72vw,330px);display:grid;place-items:center
 }
 .ptb-reward-open.is-revealed .ptb-reward-result{animation:ptbRewardReveal .58s cubic-bezier(.17,.86,.24,1.2) forwards;pointer-events:auto}
@@ -94,7 +88,8 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 @keyframes ptbRewardReveal{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}70%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media(max-height:720px){
   .ptb-reward-object{top:calc(45% - 15px);width:min(45.6vw,216px)}
-  .ptb-reward-result,.ptb-reward-flash,.ptb-reward-rays{top:45%}
+  .ptb-reward-result{top:calc(45% - 30px)}
+  .ptb-reward-flash,.ptb-reward-rays{top:45%}
   .ptb-reward-open[data-reward-type="bag"] .ptb-reward-object{width:min(43vw,210px);top:calc(46% - 15px)}
   .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object{width:min(50.4vw,240px);top:calc(45% - 15px)}
 }
@@ -172,7 +167,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-particles{opacity:.08;transition:opacity .4s ease}
 
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{
-  top:31.5%;z-index:10;width:min(46vw,210px)
+  top:calc(31.5% - 30px);z-index:10;width:min(46vw,210px)
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card>img{
   width:min(27vw,118px);height:min(27vw,118px)
@@ -224,7 +219,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 }
 
 @media(max-height:720px){
-  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:32.5%}
+  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:calc(32.5% - 30px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ptb-star-simple,.ptb-star-fx{animation:none!important}
@@ -275,7 +270,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
          drop-shadow(0 0 17px rgba(255,205,73,.3))
 }
 .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{
-  top:31.5%;z-index:10;width:min(46vw,210px)
+  top:calc(31.5% - 30px);z-index:10;width:min(46vw,210px)
 }
 .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result-card>img{
   width:min(27vw,118px);height:min(27vw,118px)
@@ -294,8 +289,27 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 }
 
 @media(max-height:720px){
-  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{top:32.5%}
+  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{top:calc(32.5% - 30px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ptb-legendary-simple{animation:none!important}
+}
+
+
+/* V12 — récompenses sans cadre */
+.ptb-reward-item-frame,
+.ptb-reward-result-card.rarity-rare .ptb-reward-item-frame,
+.ptb-reward-result-card.rarity-epique .ptb-reward-item-frame,
+.ptb-reward-result-card.rarity-ultra .ptb-reward-item-frame{
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+.ptb-reward-item-frame img{
+  filter:drop-shadow(0 14px 18px rgba(0,0,0,.24));
+}
+.ptb-reward-open.is-revealed{
+  cursor:pointer;
 }
