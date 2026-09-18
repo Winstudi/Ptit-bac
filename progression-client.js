@@ -604,21 +604,20 @@
       }
 
 
-      /* V7 — fond spatial long de la page Niveaux */
+      /* V8 — fond spatial FIXE de la page Niveaux */
       .ptb-levels-panel{
-        background:#050d35!important;
+        background-color:#050d35!important;
+        background-image:url('/level-background-v1.png')!important;
+        background-position:center top!important;
+        background-size:100% auto!important;
+        background-repeat:no-repeat!important;
       }
       .ptb-levels-panel::before,
       .ptb-levels-panel::after{
         display:none!important;
       }
       .ptb-levels-scroll{
-        background-color:#050d35;
-        background-image:url('/level-background-v1.png');
-        background-position:center top;
-        background-size:100% auto;
-        background-repeat:no-repeat;
-        background-attachment:local;
+        background:transparent!important;
       }
 
       /* V5 — récompenses constellation : grande icône, texte dessous */
