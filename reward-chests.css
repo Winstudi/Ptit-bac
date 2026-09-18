@@ -102,3 +102,100 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   .ptb-reward-object-img,.ptb-reward-aura{animation:none!important}
   .ptb-reward-open.is-revealed .ptb-reward-result{animation:none;opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
+
+/* Coffre normal — animation pseudo-3D en 4 états */
+.ptb-star-chest{
+  position:absolute;inset:0;z-index:2;display:none;pointer-events:none;
+  transform:translateZ(0);transform-origin:50% 62%;will-change:transform
+}
+.ptb-reward-open[data-reward-type="star"] .ptb-star-chest{display:block}
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-object-img,
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-aura{display:none}
+.ptb-star-frame,.ptb-star-fx{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+  opacity:0;pointer-events:none;will-change:opacity,transform,filter
+}
+.ptb-star-frame{
+  z-index:3;transition:opacity .11s linear,transform .22s cubic-bezier(.2,.8,.2,1);
+  filter:drop-shadow(0 14px 18px rgba(0,0,0,.26)) drop-shadow(0 0 12px rgba(82,176,255,.2))
+}
+.ptb-star-fx{z-index:1;mix-blend-mode:screen}
+.ptb-star-fx-glow{z-index:1;transform:translateY(17%) scale(.92);opacity:.18;animation:ptbStarGroundBreath 2.25s ease-in-out infinite}
+.ptb-star-fx-rays{z-index:2;transform:translateY(-2%) scale(.74);filter:saturate(.88);transition:opacity .18s ease,transform .35s ease}
+.ptb-star-fx-particles{z-index:5;transform:scale(.74);transition:opacity .2s ease,transform .38s ease}
+.ptb-star-fx-flash{z-index:6;transform:scale(.38);filter:saturate(.72) brightness(1.08);transition:opacity .1s ease}
+
+.ptb-reward-open[data-star-phase="idle"] .ptb-star-frame-closed,
+.ptb-reward-open[data-star-phase="preopen"] .ptb-star-frame-preopen,
+.ptb-reward-open[data-star-phase="halfopen"] .ptb-star-frame-halfopen,
+.ptb-reward-open[data-star-phase="open"] .ptb-star-frame-open,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open{opacity:1}
+
+.ptb-reward-open[data-star-phase="idle"] .ptb-star-chest{
+  animation:ptbStarIdle 2.8s ease-in-out infinite
+}
+.ptb-reward-open[data-star-phase="preopen"] .ptb-star-chest{
+  animation:ptbStarTension .28s cubic-bezier(.2,.75,.35,1) both
+}
+.ptb-reward-open[data-star-phase="preopen"] .ptb-star-fx-glow{opacity:.42;transform:translateY(17%) scale(1.03)}
+.ptb-reward-open[data-star-phase="halfopen"] .ptb-star-chest{transform:translateY(-2px) scale(1.018)}
+.ptb-reward-open[data-star-phase="halfopen"] .ptb-star-fx-glow{opacity:.58;transform:translateY(17%) scale(1.08)}
+.ptb-reward-open[data-star-phase="halfopen"] .ptb-star-fx-rays{opacity:.34;transform:translateY(-2%) scale(.9)}
+.ptb-reward-open[data-star-phase="open"] .ptb-star-chest,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-chest{transform:translateY(-5px) scale(1.035)}
+.ptb-reward-open[data-star-phase="open"] .ptb-star-fx-glow,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-glow{opacity:.68;transform:translateY(17%) scale(1.14)}
+.ptb-reward-open[data-star-phase="open"] .ptb-star-fx-rays,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.62;transform:translateY(-3%) scale(1.02)}
+.ptb-reward-open[data-star-phase="open"] .ptb-star-fx-particles,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.7;transform:scale(1.04);animation:ptbStarParticles 1.25s ease-out both}
+.ptb-reward-open.is-star-flashing .ptb-star-fx-flash{opacity:.88;animation:ptbStarFlash .4s ease-out both}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-frame-open{filter:brightness(.82) saturate(.92) drop-shadow(0 14px 18px rgba(0,0,0,.24))}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{opacity:.34}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{opacity:.5}
+
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:34%;z-index:8;width:min(66vw,305px)}
+.ptb-reward-open[data-reward-type="star"].is-revealed .ptb-reward-result{
+  animation:ptbStarRewardReveal .64s cubic-bezier(.16,.9,.22,1.18) forwards
+}
+
+@keyframes ptbStarIdle{
+  0%,100%{transform:translateY(-3px) rotate(-.35deg)}
+  50%{transform:translateY(5px) rotate(.35deg)}
+}
+@keyframes ptbStarGroundBreath{
+  0%,100%{opacity:.15;transform:translateY(17%) scale(.9)}
+  50%{opacity:.28;transform:translateY(17%) scale(1)}
+}
+@keyframes ptbStarTension{
+  0%{transform:translate(0,0) scale(1)}
+  18%{transform:translate(-3px,1px) scale(.985,1.015) rotate(-1.2deg)}
+  38%{transform:translate(3px,-1px) scale(1.012,.988) rotate(1deg)}
+  58%{transform:translate(-2px,0) scale(.99,1.01) rotate(-.7deg)}
+  78%{transform:translate(2px,-1px) scale(1.007,.993) rotate(.5deg)}
+  100%{transform:translate(0,-1px) scale(1.01)}
+}
+@keyframes ptbStarParticles{
+  0%{opacity:0;transform:scale(.72) rotate(-7deg)}
+  38%{opacity:.86;transform:scale(1.08) rotate(2deg)}
+  100%{opacity:.66;transform:scale(1.01) rotate(5deg)}
+}
+@keyframes ptbStarFlash{
+  0%{opacity:0;transform:scale(.3)}
+  36%{opacity:1;transform:scale(.82)}
+  100%{opacity:0;transform:scale(1.3)}
+}
+@keyframes ptbStarRewardReveal{
+  0%{opacity:0;transform:translate(-50%,8%) scale(.42)}
+  68%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+
+@media(max-height:720px){
+  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:35%}
+}
+@media(prefers-reduced-motion:reduce){
+  .ptb-reward-open[data-reward-type="star"] .ptb-star-chest,
+  .ptb-star-fx-glow,.ptb-star-fx-particles,.ptb-star-fx-flash{animation:none!important}
+}
+.ptb-star-frame-open{transform:translateY(2.2%) scale(1.025)}

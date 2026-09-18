@@ -48,6 +48,7 @@
   let starState = "blue";
   let busy = false;
   let resetTimer = null;
+  let animationTimers = [];
 
   function clampRandom(value) {
     return Math.max(0, Math.min(.999999999999, Number(value) || 0));
@@ -132,6 +133,16 @@
         <button class="ptb-reward-object" type="button" aria-label="Ouvrir la récompense">
           <span class="ptb-reward-aura" aria-hidden="true"></span>
           <img class="ptb-reward-object-img" src="/reward-star.png" alt="">
+          <span class="ptb-star-chest" aria-hidden="true">
+            <img class="ptb-star-fx ptb-star-fx-glow" src="/reward-star-glow.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-rays" src="/reward-star-rays.png" alt="">
+            <img class="ptb-star-frame ptb-star-frame-closed" src="/reward-star-closed.png" alt="">
+            <img class="ptb-star-frame ptb-star-frame-preopen" src="/reward-star-preopen.png" alt="">
+            <img class="ptb-star-frame ptb-star-frame-halfopen" src="/reward-star-halfopen.png" alt="">
+            <img class="ptb-star-frame ptb-star-frame-open" src="/reward-star-open.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-particles" src="/reward-star-particles.png" alt="">
+            <img class="ptb-star-fx ptb-star-fx-flash" src="/reward-star-flash.png" alt="">
+          </span>
         </button>
         <div class="ptb-reward-result" aria-live="polite"></div>
       </div>`;
@@ -143,33 +154,59 @@
     return overlay;
   }
 
+  function clearAnimationTimers() {
+    animationTimers.forEach(id => clearTimeout(id));
+    animationTimers = [];
+  }
+
+  function later(fn, delay) {
+    const id = setTimeout(fn, delay);
+    animationTimers.push(id);
+    return id;
+  }
+
+  function setStarPhase(phase = "idle") {
+    const root = ensureOverlay();
+    root.dataset.starPhase = phase;
+  }
+
   function assetFor(type) {
     if (type === "bag") return "/reward-bag.png";
     if (type === "legendary") return "/reward-legendary.png";
-    return "/reward-star.png";
+    return "/reward-star-closed.png";
   }
 
   function setSceneType(type) {
     const root = ensureOverlay();
     root.dataset.rewardType = type;
     root.dataset.starState = starState;
+    if (type !== "star") setStarPhase("idle");
     const image = root.querySelector(".ptb-reward-object-img");
     if (image) image.src = assetFor(type);
   }
 
   function clearAnimationClasses() {
     if (!overlay) return;
-    overlay.classList.remove("is-tapping", "is-upgrading", "is-opening", "is-revealed");
+    overlay.classList.remove(
+      "is-tapping",
+      "is-upgrading",
+      "is-opening",
+      "is-revealed",
+      "is-star-animating",
+      "is-star-flashing"
+    );
   }
 
   function reset(type = activeType) {
     clearTimeout(resetTimer);
+    clearAnimationTimers();
     activeType = ["bag", "star", "legendary"].includes(type) ? type : "star";
     starState = "blue";
     busy = false;
     const root = ensureOverlay();
     clearAnimationClasses();
     root.dataset.starState = starState;
+    root.dataset.starPhase = "idle";
     root.querySelector(".ptb-reward-result")?.replaceChildren();
     root.querySelector(".ptb-reward-object")?.removeAttribute("disabled");
     setSceneType(activeType);
@@ -187,6 +224,7 @@
   function close() {
     if (!overlay) return;
     clearTimeout(resetTimer);
+    clearAnimationTimers();
     overlay.classList.remove("is-open");
     overlay.setAttribute("aria-hidden", "true");
     document.documentElement.classList.remove("ptb-reward-lock");
@@ -235,6 +273,34 @@
     busy = false;
   }
 
+  function playStarChestAnimation(reward) {
+    const root = ensureOverlay();
+    const button = root.querySelector(".ptb-reward-object");
+    button?.setAttribute("disabled", "disabled");
+    clearAnimationTimers();
+    clearAnimationClasses();
+    root.classList.add("is-star-animating");
+    setStarPhase("preopen");
+    if (navigator.vibrate) navigator.vibrate(18);
+
+    later(() => {
+      setStarPhase("halfopen");
+      if (navigator.vibrate) navigator.vibrate([18, 35, 22]);
+    }, 280);
+
+    later(() => {
+      setStarPhase("open");
+      root.classList.add("is-star-flashing");
+      if (navigator.vibrate) navigator.vibrate(42);
+    }, 620);
+
+    later(() => {
+      root.classList.remove("is-star-flashing");
+      setStarPhase("reward");
+      revealReward(reward);
+    }, 1050);
+  }
+
   function performOpen(reward) {
     const root = ensureOverlay();
     root.classList.remove("is-tapping", "is-upgrading");
@@ -252,7 +318,7 @@
 
     if (activeType !== "star") {
       const reward = rollPreviewReward(activeType, "blue");
-      setTimeout(() => performOpen(reward), activeType === "legendary" ? 560 : 460);
+      later(() => performOpen(reward), activeType === "legendary" ? 560 : 460);
       return;
     }
 
@@ -260,7 +326,7 @@
     starState = outcome.state;
     root.dataset.starState = starState;
     const reward = rollPreviewReward("star", starState);
-    setTimeout(() => performOpen(reward), 470);
+    playStarChestAnimation(reward);
   }
 
   function previewTypeFromHash() {
