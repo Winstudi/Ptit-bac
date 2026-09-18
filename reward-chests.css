@@ -399,3 +399,57 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
     transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)!important
   }
 }
+
+
+/* V9 — ouverture stable sans écrasement 3D du couvercle */
+.ptb-star-lid-hinge{
+  transform-origin:50% 72%;
+  transform:translate3d(0,0,0) rotate(0deg) scale(1);
+  backface-visibility:visible;
+  perspective:none;
+}
+.ptb-star-lid{
+  transform:translate(5.7%,-2.1%) scale(.88);
+  transform-origin:50% 72%;
+  backface-visibility:visible;
+}
+
+.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
+  transform:translate3d(0,.35%,0) rotate(.35deg) scale(.997)
+}
+
+.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge{
+  animation:ptbStarRearHingeOpenV9 .88s cubic-bezier(.16,.78,.18,1) both
+}
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
+  transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)
+}
+
+.ptb-reward-open[data-star-phase="opening"] .ptb-star-inner-light{
+  opacity:.28;transform:translateY(5%) scale(.46);filter:saturate(1.02) brightness(.98)
+}
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-inner-light,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-inner-light{
+  opacity:.72;transform:translateY(-2%) scale(.7);filter:saturate(1.06) brightness(1.04)
+}
+
+@keyframes ptbStarRearHingeOpenV9{
+  0%{transform:translate3d(0,.35%,0) rotate(.35deg) scale(.997)}
+  18%{transform:translate3d(0,-1.4%,0) rotate(-.6deg) scale(1.002)}
+  40%{transform:translate3d(0,-5.2%,0) rotate(-2.1deg) scale(1.008)}
+  62%{transform:translate3d(0,-9.2%,0) rotate(-3.8deg) scale(1.014)}
+  82%{transform:translate3d(0,-15.1%,0) rotate(-6.3deg) scale(1.022)}
+  100%{transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
+  .ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
+  .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
+  .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
+    animation:none!important;
+    transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)!important
+  }
+}
