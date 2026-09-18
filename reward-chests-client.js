@@ -133,12 +133,11 @@
         <button class="ptb-reward-object" type="button" aria-label="Ouvrir la récompense">
           <span class="ptb-reward-aura" aria-hidden="true"></span>
           <img class="ptb-reward-object-img" src="/reward-star.png" alt="">
-          <span class="ptb-star-rig" aria-hidden="true">
+          <span class="ptb-star-simple" aria-hidden="true">
             <img class="ptb-star-fx ptb-star-fx-glow" src="/reward-star-glow.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-rays" src="/reward-star-rays.png" alt="">
-            <span class="ptb-star-inner-light"><img src="/reward-star-inner.png" alt=""></span>
-            <img class="ptb-star-base" src="/reward-star-base.png" alt="">
-            <span class="ptb-star-lid-hinge"><img class="ptb-star-lid" src="/reward-star-lid.png" alt=""></span>
+            <img class="ptb-star-simple-frame ptb-star-simple-closed" src="/reward-star-simple-closed.png" alt="">
+            <img class="ptb-star-simple-frame ptb-star-simple-open" src="/reward-star-simple-open.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-particles" src="/reward-star-particles.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-flash" src="/reward-star-flash.png" alt="">
           </span>
@@ -172,7 +171,7 @@
   function assetFor(type) {
     if (type === "bag") return "/reward-bag.png";
     if (type === "legendary") return "/reward-legendary.png";
-    return "/reward-star-base.png";
+    return "/reward-star-simple-closed.png";
   }
 
   function setSceneType(type) {
@@ -293,32 +292,26 @@
     setStarPhase("press");
     if (navigator.vibrate) navigator.vibrate(12);
 
-    // Un seul couvercle est animé : aucune image n'est remplacée pendant l'ouverture.
-    later(() => {
-      setStarPhase("opening");
-      if (navigator.vibrate) navigator.vibrate([10, 22, 12]);
-    }, 170);
-
-    // La lumière apparaît progressivement pendant que le couvercle pivote.
+    // Version simple temporaire : deux vrais états seulement.
     later(() => {
       setStarPhase("opened");
-      if (navigator.vibrate) navigator.vibrate(28);
-    }, 1050);
+      if (navigator.vibrate) navigator.vibrate(24);
+    }, 260);
 
+    // Flash juste après le passage au coffre ouvert.
     later(() => {
       root.classList.add("is-star-flashing");
-    }, 1120);
+    }, 360);
 
     later(() => {
       root.classList.remove("is-star-flashing");
       setStarPhase("reward");
       revealReward(reward);
-    }, 1450);
+    }, 760);
 
-    // Les particules restent brièvement après l'apparition du gain.
     later(() => {
       setStarPhase("settled");
-    }, 2050);
+    }, 1380);
   }
 
   function performOpen(reward) {

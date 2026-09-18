@@ -103,258 +103,76 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   .ptb-reward-open.is-revealed .ptb-reward-result{animation:none;opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
 
-/* Coffre normal — rig 2,5D articulé */
-.ptb-star-rig{
+/* Coffre normal — version simple 2 images */
+.ptb-star-simple{
   position:absolute;inset:0;z-index:2;display:none;pointer-events:none;
-  perspective:900px;transform-style:preserve-3d;transform-origin:50% 64%;
-  will-change:transform
+  transform-origin:50% 68%;will-change:transform
 }
-.ptb-reward-open[data-reward-type="star"] .ptb-star-rig{display:block}
+.ptb-reward-open[data-reward-type="star"] .ptb-star-simple{display:block}
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-object-img,
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-aura{display:none}
 
-.ptb-star-base,
-.ptb-star-lid-hinge,
-.ptb-star-inner-light,
-.ptb-star-fx{
-  position:absolute;inset:0;width:100%;height:100%;pointer-events:none
+.ptb-star-simple-frame,.ptb-star-fx{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+  pointer-events:none;will-change:opacity,transform,filter
 }
-.ptb-star-base,.ptb-star-lid,.ptb-star-inner-light img,.ptb-star-fx{
-  width:100%;height:100%;object-fit:contain;display:block
+.ptb-star-simple-frame{
+  z-index:3;
+  filter:drop-shadow(0 15px 19px rgba(0,0,0,.25)) drop-shadow(0 0 12px rgba(80,178,255,.18));
+  transition:opacity .14s ease,transform .22s ease,filter .22s ease
 }
-.ptb-star-base{
-  z-index:4;
-  transform:translateY(6.2%) scale(.99);
-  filter:drop-shadow(0 15px 18px rgba(0,0,0,.26)) drop-shadow(0 0 12px rgba(76,172,255,.18));
-  transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .35s ease;
-  will-change:transform,filter
-}
-.ptb-star-lid-hinge{
-  z-index:6;transform-style:preserve-3d;transform-origin:50% 66%;
-  transform:translateY(0) rotateX(0deg);
-  transition:transform .82s cubic-bezier(.16,.82,.2,1);
-  will-change:transform
-}
-.ptb-star-lid{
-  transform:translate(5.7%,-2.1%) scale(.88);
-  filter:drop-shadow(0 11px 14px rgba(0,0,0,.25)) drop-shadow(0 0 12px rgba(94,183,255,.2));
-  backface-visibility:hidden;transform-style:preserve-3d
-}
-.ptb-star-inner-light{
-  z-index:3;opacity:0;transform:translateY(13%) scale(.42);
-  transition:opacity .34s ease,transform .72s cubic-bezier(.16,.84,.2,1),filter .38s ease;
-  filter:saturate(.95) brightness(.9);mix-blend-mode:screen;will-change:opacity,transform,filter
-}
-.ptb-star-fx{opacity:0;mix-blend-mode:screen;will-change:opacity,transform,filter}
-.ptb-star-fx-glow{
-  z-index:1;transform:translateY(18%) scale(.88);opacity:.16;
-  animation:ptbStar25dGlowIdle 2.35s ease-in-out infinite
-}
-.ptb-star-fx-rays{
-  z-index:2;transform:translateY(1%) scale(.65);filter:saturate(.9) brightness(.96);
-  transition:opacity .28s ease,transform .75s cubic-bezier(.16,.84,.2,1)
-}
-.ptb-star-fx-particles{
-  z-index:7;transform:scale(.7);transition:opacity .3s ease,transform .7s ease
-}
-.ptb-star-fx-flash{
-  z-index:8;transform:translateY(-1%) scale(.24);filter:saturate(.82) brightness(1.08)
-}
+.ptb-star-simple-closed{opacity:1;transform:scale(.985)}
+.ptb-star-simple-open{opacity:0;transform:scale(.975)}
+.ptb-star-fx{opacity:0;mix-blend-mode:screen}
+.ptb-star-fx-glow{z-index:1;transform:translateY(18%) scale(.9);animation:ptbStarSimpleGlow 2.2s ease-in-out infinite}
+.ptb-star-fx-rays{z-index:2;transform:translateY(-3%) scale(.78)}
+.ptb-star-fx-particles{z-index:5;transform:scale(.8)}
+.ptb-star-fx-flash{z-index:6;transform:scale(.3)}
 
-.ptb-reward-open[data-star-phase="idle"] .ptb-star-rig{
-  animation:ptbStar25dIdle 2.8s ease-in-out infinite
+.ptb-reward-open[data-star-phase="idle"] .ptb-star-simple{
+  animation:ptbStarSimpleIdle 2.8s ease-in-out infinite
 }
-.ptb-reward-open[data-star-phase="press"] .ptb-star-rig{
-  transform:translateY(2px) scale(.975)
+.ptb-reward-open[data-star-phase="idle"] .ptb-star-fx-glow{opacity:.16}
+.ptb-reward-open[data-star-phase="press"] .ptb-star-simple{
+  animation:ptbStarSimplePress .26s ease both
 }
-.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
-  transform:translateY(1%) rotateX(3deg)
-}
-.ptb-reward-open[data-star-phase="press"] .ptb-star-fx-glow{opacity:.27;transform:translateY(18%) scale(.96)}
+.ptb-reward-open[data-star-phase="press"] .ptb-star-fx-glow{opacity:.3}
 
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-rig{
-  transform:translateY(-2px) scale(1.01)
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-simple-closed,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-simple-closed,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-simple-closed{
+  opacity:0;transform:scale(.97)
 }
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-  transform:translateY(-13%) rotateX(-58deg)
-}
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-base{
-  transform:translateY(7%) scale(.995)
-}
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-inner-light{
-  opacity:.58;transform:translateY(-1%) scale(.63);filter:saturate(1.02) brightness(1.03)
-}
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-fx-rays{
-  opacity:.34;transform:translateY(-1%) scale(.83)
-}
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-fx-glow{
-  opacity:.52;transform:translateY(18%) scale(1.05)
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-inner-light,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-inner-light{
-  opacity:.92;transform:translateY(-8%) scale(.78);filter:saturate(1.08) brightness(1.09)
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-fx-rays,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{
-  opacity:.62;transform:translateY(-5%) scale(1.02)
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-simple-open,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-simple-open,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-simple-open{
+  opacity:1;transform:scale(1)
 }
 .ptb-reward-open[data-star-phase="opened"] .ptb-star-fx-glow,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-glow{
-  opacity:.7;transform:translateY(18%) scale(1.14)
+  opacity:.62;transform:translateY(18%) scale(1.12)
+}
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-fx-rays,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-rays{
+  opacity:.48;transform:translateY(-3%) scale(1)
 }
 .ptb-reward-open[data-star-phase="opened"] .ptb-star-fx-particles,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-fx-particles{
-  opacity:.78;transform:scale(1.04);animation:ptbStar25dParticles 1.5s ease-out both
+  opacity:.72;animation:ptbStarSimpleParticles 1.25s ease-out both
 }
 .ptb-reward-open.is-star-flashing .ptb-star-fx-flash{
-  opacity:.94;animation:ptbStar25dFlash .48s ease-out both
+  opacity:.92;animation:ptbStarSimpleFlash .46s ease-out both
 }
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-base{
-  filter:brightness(.88) saturate(.95) drop-shadow(0 15px 18px rgba(0,0,0,.24))
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-simple-open,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-simple-open{
+  filter:brightness(.92) saturate(.97) drop-shadow(0 15px 19px rgba(0,0,0,.24))
 }
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid{
-  filter:brightness(.9) saturate(.96) drop-shadow(0 11px 14px rgba(0,0,0,.22))
-}
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-inner-light{
-  opacity:.52;transform:translateY(-6%) scale(.72)
-}
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-rays{opacity:.18;transform:translateY(-5%) scale(.96)}
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-particles{opacity:.12;transform:scale(1.08)}
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-glow{opacity:.34;transform:translateY(18%) scale(1.03)}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-glow{opacity:.28;transform:translateY(18%) scale(1.02)}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-rays{opacity:.12}
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-fx-particles{opacity:.08;transition:opacity .4s ease}
 
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{
-  top:34%;z-index:10;width:min(58vw,270px)
-}
-.ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card>img{
-  width:min(36vw,160px);height:min(36vw,160px)
-}
-.ptb-reward-open[data-reward-type="star"] .ptb-reward-item-frame{
-  width:min(41vw,178px);height:min(41vw,178px)
-}
-.ptb-reward-open[data-reward-type="star"].is-revealed .ptb-reward-result{
-  animation:ptbStar25dReward .66s cubic-bezier(.15,.92,.2,1.16) forwards
-}
-.ptb-reward-open.is-resetting .ptb-reward-result{
-  opacity:0!important;transform:translate(-50%,-34%) scale(.88)!important;transition:opacity .16s ease,transform .16s ease
-}
-.ptb-reward-open.is-resetting .ptb-star-rig{
-  opacity:.72;transform:scale(.965)!important;transition:opacity .16s ease,transform .16s ease
-}
-
-@keyframes ptbStar25dIdle{
-  0%,100%{transform:translateY(-3px) rotate(-.3deg)}
-  50%{transform:translateY(5px) rotate(.3deg)}
-}
-@keyframes ptbStar25dGlowIdle{
-  0%,100%{opacity:.14;transform:translateY(18%) scale(.88)}
-  50%{opacity:.25;transform:translateY(18%) scale(.98)}
-}
-@keyframes ptbStar25dParticles{
-  0%{opacity:0;transform:scale(.68) rotate(-6deg)}
-  38%{opacity:.9;transform:scale(1.08) rotate(2deg)}
-  100%{opacity:.7;transform:scale(1.01) rotate(5deg)}
-}
-@keyframes ptbStar25dFlash{
-  0%{opacity:0;transform:translateY(-1%) scale(.12)}
-  34%{opacity:.98;transform:translateY(-1%) scale(.58)}
-  100%{opacity:0;transform:translateY(-1%) scale(1.18)}
-}
-@keyframes ptbStar25dReward{
-  0%{opacity:0;transform:translate(-50%,66%) scale(.46)}
-  58%{opacity:1;transform:translate(-50%,-57%) scale(1.025)}
-  82%{opacity:1;transform:translate(-50%,-48%) scale(.985)}
-  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-}
-
-@media(max-height:720px){
-  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:35%}
-  .ptb-star-lid-hinge{transform-origin:50% 66%}
-}
-@media(prefers-reduced-motion:reduce){
-  .ptb-star-lid-hinge,.ptb-star-inner-light,.ptb-star-base,.ptb-star-fx{transition:none!important;animation:none!important}
-  .ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{transform:translateY(-13%) rotateX(-58deg)}
-}
-
-/* V8 — alignement fermé + pivot réel sur la charnière arrière */
-.ptb-star-rig{
-  perspective:1350px;
-  transform-style:preserve-3d
-}
-.ptb-star-lid-hinge{
-  /* Axe horizontal placé sur le bord arrière du couvercle. */
-  transform-origin:50% 55.5%;
-  transform:translate3d(0,0,0) rotateX(0deg);
-  transform-style:preserve-3d;
-  transition:none;
-  backface-visibility:visible;
-  will-change:transform
-}
-.ptb-star-lid{
-  /* Le couvercle fermé repose maintenant exactement sur le haut du coffre. */
-  transform:translate(5.7%,-2.1%) scale(.88);
-  transform-origin:50% 55.5%;
-  backface-visibility:hidden
-}
-
-/* Le corps sert d'ancre et ne se déplace jamais pendant l'ouverture. */
-.ptb-reward-open[data-star-phase="press"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-rig,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-rig{
-  transform:none
-}
-.ptb-reward-open[data-star-phase="press"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-base{
-  transform:translateY(6.2%) scale(.99)
-}
-
-/* Petite mise en tension sans décoller la charnière. */
-.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
-  transform:translate3d(0,.45%,0) rotateX(2.5deg)
-}
-
-/* Pendant l'ouverture, seul le couvercle pivote autour de son bord arrière. */
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge{
-  animation:ptbStarRearHingeOpen .96s cubic-bezier(.18,.72,.18,1) both
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-  transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)
-}
-
-/* La lumière naît dans l'ouverture au fur et à mesure du pivot. */
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-inner-light{
-  opacity:.38;transform:translateY(3%) scale(.53);filter:saturate(1.02) brightness(.98)
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-inner-light,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-inner-light{
-  opacity:.7;transform:translateY(-3%) scale(.69);filter:saturate(1.05) brightness(1.03)
-}
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-base,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid{
-  filter:brightness(.98) saturate(.99) drop-shadow(0 13px 16px rgba(0,0,0,.22))
-}
-
-/* Récompense plus lisible sans masquer le coffre ouvert. */
-.ptb-reward-open[data-reward-type="star"] .ptb-reward-result{
-  top:31.5%;width:min(46vw,210px)
+  top:31.5%;z-index:10;width:min(46vw,210px)
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card>img{
   width:min(27vw,118px);height:min(27vw,118px)
@@ -365,91 +183,49 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-item-frame{
   width:min(32vw,140px);height:min(32vw,140px);padding:12px;border-radius:22px
 }
+.ptb-reward-open[data-reward-type="star"].is-revealed .ptb-reward-result{
+  animation:ptbStarSimpleReward .62s cubic-bezier(.16,.9,.22,1.15) forwards
+}
+.ptb-reward-open.is-resetting .ptb-reward-result{
+  opacity:0!important;transform:translate(-50%,-34%) scale(.9)!important;transition:opacity .16s ease,transform .16s ease
+}
+.ptb-reward-open.is-resetting .ptb-star-simple{
+  opacity:.74;transform:scale(.97)!important;transition:opacity .16s ease,transform .16s ease
+}
 
-@keyframes ptbStarRearHingeOpen{
-  0%{
-    transform:translate3d(0,.45%,0) rotateX(2.5deg) scaleY(1)
-  }
-  16%{
-    transform:translate3d(0,-.6%,4px) rotateX(-4deg) scaleY(1.008)
-  }
-  38%{
-    transform:translate3d(0,-3.2%,11px) rotateX(-12deg) scaleY(1.035)
-  }
-  62%{
-    transform:translate3d(0,-6.9%,22px) rotateX(-23deg) scaleY(1.085)
-  }
-  82%{
-    transform:translate3d(0,-11.4%,38px) rotateX(-36deg) scaleY(1.17)
-  }
-  100%{
-    transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)
-  }
+@keyframes ptbStarSimpleIdle{
+  0%,100%{transform:translateY(-3px) rotate(-.25deg)}
+  50%{transform:translateY(5px) rotate(.25deg)}
+}
+@keyframes ptbStarSimpleGlow{
+  0%,100%{transform:translateY(18%) scale(.9)}
+  50%{transform:translateY(18%) scale(1)}
+}
+@keyframes ptbStarSimplePress{
+  0%{transform:scale(1)}
+  40%{transform:scale(.95) translateY(2px)}
+  72%{transform:scale(1.025) translateY(-2px)}
+  100%{transform:scale(1)}
+}
+@keyframes ptbStarSimpleParticles{
+  0%{opacity:0;transform:scale(.72) rotate(-5deg)}
+  42%{opacity:.82;transform:scale(1.05) rotate(1deg)}
+  100%{opacity:.68;transform:scale(1.01) rotate(4deg)}
+}
+@keyframes ptbStarSimpleFlash{
+  0%{opacity:0;transform:scale(.14)}
+  36%{opacity:.95;transform:scale(.62)}
+  100%{opacity:0;transform:scale(1.18)}
+}
+@keyframes ptbStarSimpleReward{
+  0%{opacity:0;transform:translate(-50%,58%) scale(.48)}
+  62%{opacity:1;transform:translate(-50%,-56%) scale(1.025)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
 
 @media(max-height:720px){
   .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:32.5%}
 }
 @media(prefers-reduced-motion:reduce){
-  .ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-    animation:none!important;
-    transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)!important
-  }
-}
-
-
-/* V9 — ouverture stable sans écrasement 3D du couvercle */
-.ptb-star-lid-hinge{
-  transform-origin:50% 72%;
-  transform:translate3d(0,0,0) rotate(0deg) scale(1);
-  backface-visibility:visible;
-  perspective:none;
-}
-.ptb-star-lid{
-  transform:translate(5.7%,-2.1%) scale(.88);
-  transform-origin:50% 72%;
-  backface-visibility:visible;
-}
-
-.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
-  transform:translate3d(0,.35%,0) rotate(.35deg) scale(.997)
-}
-
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge{
-  animation:ptbStarRearHingeOpenV9 .88s cubic-bezier(.16,.78,.18,1) both
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-  transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)
-}
-
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-inner-light{
-  opacity:.28;transform:translateY(5%) scale(.46);filter:saturate(1.02) brightness(.98)
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-inner-light,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-inner-light{
-  opacity:.72;transform:translateY(-2%) scale(.7);filter:saturate(1.06) brightness(1.04)
-}
-
-@keyframes ptbStarRearHingeOpenV9{
-  0%{transform:translate3d(0,.35%,0) rotate(.35deg) scale(.997)}
-  18%{transform:translate3d(0,-1.4%,0) rotate(-.6deg) scale(1.002)}
-  40%{transform:translate3d(0,-5.2%,0) rotate(-2.1deg) scale(1.008)}
-  62%{transform:translate3d(0,-9.2%,0) rotate(-3.8deg) scale(1.014)}
-  82%{transform:translate3d(0,-15.1%,0) rotate(-6.3deg) scale(1.022)}
-  100%{transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)}
-}
-
-@media(prefers-reduced-motion:reduce){
-  .ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-  .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-    animation:none!important;
-    transform:translate3d(0,-14.2%,0) rotate(-5.8deg) scale(1.018)!important
-  }
+  .ptb-star-simple,.ptb-star-fx{animation:none!important}
 }
