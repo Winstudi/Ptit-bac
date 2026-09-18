@@ -265,12 +265,12 @@
       .ptb-levels-hero-copy{min-width:0;align-self:center}
       .ptb-levels-hero-copy h2{margin:0 0 7px;font-size:.92rem;line-height:1;font-weight:900;color:#e6c8ff}
       .ptb-levels-hero-track{
-        width:100%;height:42px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
+        width:100%;height:50px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
         background:url('/level-bar-shell-v1.png') center/100% 100% no-repeat;
         filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))
       }
       .ptb-levels-hero-fill{
-        position:relative;display:block;height:15px;width:0;border-radius:999px;overflow:hidden;min-width:0;
+        position:relative;display:block;height:23px;width:0;border-radius:999px;overflow:hidden;min-width:0;
         background:linear-gradient(90deg,#5fe6ff 0%,#3ed3ff 24%,#4d8fff 49%,#8c5bff 74%,#ef57ff 100%);
         box-shadow:inset 0 1px 1px rgba(255,255,255,.78),0 0 5px rgba(54,218,255,.88),0 0 8px rgba(107,92,255,.52);
         transition:width .45s cubic-bezier(.22,.8,.28,1)
@@ -404,7 +404,7 @@
         .ptb-levels-hero-badge,.ptb-levels-hero-badge img{width:82px;height:82px}
         .ptb-levels-hero-badge b{font-size:2.4rem}
         .ptb-levels-hero-copy h2{font-size:.82rem}
-        .ptb-levels-hero-track{height:38px}
+        .ptb-levels-hero-track{height:46px}
         .ptb-levels-hero-meta strong{font-size:.9rem}
         .ptb-levels-hero-reward{padding-inline:8px;gap:6px}
         .ptb-levels-hero-reward span{font-size:.64rem}
@@ -554,9 +554,10 @@
 
       .ptb-level-reward-copy{min-width:0;max-width:142px;display:flex;flex-direction:column;align-items:center;gap:3px}
       .ptb-level-reward-copy strong{
-        color:#ffe47a;font-size:.69rem;line-height:1.06;font-weight:1000;overflow-wrap:anywhere;text-align:center
+        color:#ffe47a;font-size:1.38rem;line-height:1.06;font-weight:1000;overflow-wrap:anywhere;text-align:center
       }
       .ptb-level-reward-copy small{color:#9dace9;font-size:.53rem;line-height:1.05;font-weight:750;text-align:center}
+      .ptb-level-row.is-locked .ptb-level-reward-copy small{display:none}
       .ptb-level-row.reward-claimable .ptb-level-reward-copy small{color:#68efff;font-weight:900}
       .ptb-level-row.reward-claimed .ptb-level-reward-copy small{color:#80efc0;font-weight:900}
 
@@ -569,6 +570,17 @@
       .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:120px;height:120px;flex-basis:120px;background:transparent}
       .ptb-level-claim-icon .ptb-level-reward-icon.is-frame,
       .ptb-level-claim-icon .ptb-level-reward-icon.is-avatar{width:116px;height:116px;flex-basis:116px}
+      .ptb-level-claim-icon .ptb-level-reward-icon.is-tag{
+        width:138px;height:58px;flex-basis:58px;overflow:visible;background:transparent;border:0;box-shadow:none
+      }
+      .ptb-level-claim-icon:has(.ptb-level-reward-icon.is-tag){height:78px;flex-basis:78px}
+      .ptb-level-tag-preview{
+        min-width:118px;min-height:42px;padding:8px 14px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+        border:2px solid #70839b;border-radius:13px;background:linear-gradient(180deg,#27314d,#1a2340);
+        color:#fff;font-size:.78rem;font-style:normal;font-weight:900;box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 0 12px rgba(120,72,230,.08)
+      }
+      .ptb-level-tag-preview em{font-style:normal;font-size:1rem;line-height:1}
+      .ptb-level-tag-preview b{font:inherit;white-space:nowrap}
       .ptb-level-claim-icon.is-claimable{
         cursor:pointer;box-shadow:none;animation:ptbConstellationClaim 1.65s ease-in-out infinite
       }
@@ -621,7 +633,10 @@
         .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon{width:98px;height:98px;flex-basis:98px}
         .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-coins,
         .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-gems{width:106px;height:106px;flex-basis:106px}
-        .ptb-level-reward-copy strong{font-size:.58rem}
+        .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon.is-tag{width:126px;height:54px;flex-basis:54px}
+        .ptb-levels-list .ptb-level-claim-icon:has(.ptb-level-reward-icon.is-tag){height:72px;flex-basis:72px}
+        .ptb-level-tag-preview{min-width:108px;min-height:40px;padding:7px 11px;font-size:.72rem}
+        .ptb-level-reward-copy strong{font-size:1.16rem}
         .ptb-level-reward-copy small{font-size:.49rem}
         .ptb-level-node-status{font-size:.46rem;padding:3px 6px}
       }
@@ -646,8 +661,10 @@
     if (asset) {
       return `<i class="${className}" aria-hidden="true"><img src="${escapeHtml(asset)}" alt=""></i>`;
     }
-    const symbol = reward?.type === "tag" ? "T" : "★";
-    return `<i class="${className}" aria-hidden="true">${symbol}</i>`;
+    if (reward?.type === "tag") {
+      return `<i class="${className}" aria-hidden="true"><span class="ptb-level-tag-preview"><em>🌱</em><b>Débutant</b></span></i>`;
+    }
+    return `<i class="${className}" aria-hidden="true">★</i>`;
   }
 
   function rewardClaimIconButtonMarkup(level, reward, claimState, { hero = false, claiming = false } = {}) {
@@ -659,7 +676,7 @@
         ? `Récupérer ${rewardLabel(reward)}`
         : claimState === "claimed"
           ? `${rewardLabel(reward)} récupéré`
-          : `${rewardLabel(reward)} à venir`;
+          : `${rewardLabel(reward)}`;
 
     return `<button class="ptb-level-claim-icon is-${escapeHtml(claimState)}${hero ? " is-hero-claim" : ""}"
                     type="button"
@@ -689,7 +706,7 @@
     if (rewardState === "claimed") return level === currentLevel ? "Actuel · Récupéré" : "Récupéré";
     if (rewardState === "claimable") return "À récupérer";
     if (rewardState === "loading") return "Chargement...";
-    return "À venir";
+    return "";
   }
 
   function applyLevelRewardStatus(value) {
@@ -823,10 +840,6 @@
                 </div>
               </div>
             </div>
-            <div class="ptb-levels-hero-reward">
-              <span data-level-reward-icon></span>
-              <span>Récompense niveau <b data-level-reward-level>1</b> · <b data-level-reward>Tag débutant</b></span>
-            </div>
           </section>
 
           <section class="ptb-levels-list" aria-label="Progression des niveaux">
@@ -867,9 +880,6 @@
 
     const levelNode = overlay.querySelector("[data-level-current]");
     const xpNode = overlay.querySelector("[data-level-xp]");
-    const rewardNode = overlay.querySelector("[data-level-reward]");
-    const rewardLevelNode = overlay.querySelector("[data-level-reward-level]");
-    const rewardIconNode = overlay.querySelector("[data-level-reward-icon]");
     const track = overlay.querySelector(".ptb-levels-hero-track");
     const fill = overlay.querySelector(".ptb-levels-hero-fill");
     const rowsHost = overlay.querySelector("[data-level-rows]");
@@ -880,19 +890,6 @@
         ? "Niveau maximum"
         : `${current.xpIntoLevel} / ${current.xpForNext} XP`;
     }
-    const currentReward = rewardForLevel(current.level);
-    const currentRewardState = rewardClaimState(current.level, current.level);
-    if (rewardNode) {
-      const suffix = currentRewardState === "claimed" ? " · Récupéré" : currentRewardState === "claimable" ? " · À récupérer" : "";
-      rewardNode.textContent = `${rewardLabel(currentReward)}${suffix}`;
-    }
-    if (rewardLevelNode) rewardLevelNode.textContent = String(current.level);
-    if (rewardIconNode) rewardIconNode.innerHTML = rewardClaimIconButtonMarkup(
-      current.level,
-      currentReward,
-      currentRewardState,
-      { hero:true, claiming:levelRewardClaiming === current.level }
-    );
     if (track) track.setAttribute("aria-valuenow", String(Math.round(current.progressPercent)));
     if (fill) fill.style.width = `${current.progressPercent}%`;
 
