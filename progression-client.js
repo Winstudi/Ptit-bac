@@ -604,6 +604,23 @@
       }
 
 
+      /* V7 — fond spatial long de la page Niveaux */
+      .ptb-levels-panel{
+        background:#050d35!important;
+      }
+      .ptb-levels-panel::before,
+      .ptb-levels-panel::after{
+        display:none!important;
+      }
+      .ptb-levels-scroll{
+        background-color:#050d35;
+        background-image:url('/level-background-v1.png');
+        background-position:center top;
+        background-size:100% auto;
+        background-repeat:no-repeat;
+        background-attachment:local;
+      }
+
       /* V5 — récompenses constellation : grande icône, texte dessous */
       .ptb-levels-list .ptb-level-claim-icon{width:132px;height:132px;flex-basis:132px}
       .ptb-levels-list .ptb-level-claim-icon .ptb-level-reward-icon{width:110px;height:110px;flex-basis:110px}
