@@ -265,12 +265,12 @@
       .ptb-levels-hero-copy{min-width:0;align-self:center}
       .ptb-levels-hero-copy h2{margin:0 0 7px;font-size:.92rem;line-height:1;font-weight:900;color:#e6c8ff}
       .ptb-levels-hero-track{
-        width:100%;height:50px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
+        width:100%;height:62px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
         background:url('/level-bar-shell-v1.png') center/100% 100% no-repeat;
         filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))
       }
       .ptb-levels-hero-fill{
-        position:relative;display:block;height:23px;width:0;border-radius:999px;overflow:hidden;min-width:0;
+        position:relative;display:block;height:35px;width:0;border-radius:999px;overflow:hidden;min-width:0;
         background:linear-gradient(90deg,#5fe6ff 0%,#3ed3ff 24%,#4d8fff 49%,#8c5bff 74%,#ef57ff 100%);
         box-shadow:inset 0 1px 1px rgba(255,255,255,.78),0 0 5px rgba(54,218,255,.88),0 0 8px rgba(107,92,255,.52);
         transition:width .45s cubic-bezier(.22,.8,.28,1)
@@ -404,7 +404,7 @@
         .ptb-levels-hero-badge,.ptb-levels-hero-badge img{width:82px;height:82px}
         .ptb-levels-hero-badge b{font-size:2.4rem}
         .ptb-levels-hero-copy h2{font-size:.82rem}
-        .ptb-levels-hero-track{height:46px}
+        .ptb-levels-hero-track{height:58px}
         .ptb-levels-hero-meta strong{font-size:.9rem}
         .ptb-levels-hero-reward{padding-inline:8px;gap:6px}
         .ptb-levels-hero-reward span{font-size:.64rem}
@@ -562,7 +562,7 @@
 
       .ptb-level-reward-copy{min-width:0;max-width:142px;display:flex;flex-direction:column;align-items:center;gap:3px}
       .ptb-level-reward-copy strong{
-        color:#ffe47a;font-size:1.38rem;line-height:1.06;font-weight:1000;overflow-wrap:anywhere;text-align:center
+        color:#fff;font-size:1.38rem;line-height:1.06;font-weight:1000;overflow-wrap:anywhere;text-align:center
       }
       .ptb-level-reward-copy small{color:#9dace9;font-size:.53rem;line-height:1.05;font-weight:750;text-align:center}
       .ptb-level-row.is-locked .ptb-level-reward-copy small{display:none}
@@ -593,10 +593,13 @@
         cursor:pointer;box-shadow:none;animation:ptbConstellationClaim 1.65s ease-in-out infinite
       }
       .ptb-level-claim-icon.is-claimable::before{display:none}
-      .ptb-level-claim-icon.is-claimed{opacity:.62;filter:saturate(.68)}
+      .ptb-level-claim-icon.is-claimed{opacity:1;filter:none}
+      .ptb-level-claim-icon.is-claimed .ptb-level-reward-icon{opacity:.62;filter:saturate(.68)}
       .ptb-level-claim-icon.is-claimed::after{
-        content:"✓";position:absolute;right:4px;bottom:6px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
-        background:#25cda0;border:2px solid #cffff0;color:#fff;font-size:.72rem;font-weight:1000;box-shadow:0 0 9px rgba(50,230,181,.5)
+        content:"✓";position:absolute;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);
+        z-index:6;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+        background:#25cda0;border:3px solid #effff9;color:#fff;font-size:1.05rem;font-weight:1000;
+        box-shadow:0 0 0 3px rgba(10,38,72,.28),0 0 15px rgba(50,230,181,.72)
       }
       .ptb-level-claim-icon:disabled{cursor:default}
       @keyframes ptbConstellationClaim{
