@@ -302,23 +302,23 @@
     // La lumière apparaît progressivement pendant que le couvercle pivote.
     later(() => {
       root.classList.add("is-star-flashing");
-    }, 610);
+    }, 720);
 
     later(() => {
       setStarPhase("opened");
       if (navigator.vibrate) navigator.vibrate(28);
-    }, 910);
+    }, 1030);
 
     later(() => {
       root.classList.remove("is-star-flashing");
       setStarPhase("reward");
       revealReward(reward);
-    }, 1080);
+    }, 1240);
 
     // Les particules restent brièvement après l'apparition du gain.
     later(() => {
       setStarPhase("settled");
-    }, 1680);
+    }, 1840);
   }
 
   function performOpen(reward) {
