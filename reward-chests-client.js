@@ -3,10 +3,7 @@
 
   const FALLBACK_CONFIG = Object.freeze({
     starUpgrade:{
-      blue:{ upgradeChance:35, next:"violet" },
-      violet:{ upgradeChance:30, next:"pink" },
-      pink:{ upgradeChance:20, next:"gold" },
-      gold:{ upgradeChance:0, next:"" }
+      blue:{ upgradeChance:0, next:"" }
     },
     dropTables:{
       bag:[
@@ -14,36 +11,12 @@
         { kind:"gems", weight:30, min:1, max:5 },
         { kind:"item", rarity:"commun", weight:18 }
       ],
-      star:{
-        blue:[
-          { kind:"coins", weight:40, min:50, max:120 },
-          { kind:"gems", weight:25, min:2, max:5 },
-          { kind:"item", rarity:"commun", weight:20 },
-          { kind:"item", rarity:"rare", weight:15 }
-        ],
-        violet:[
-          { kind:"coins", weight:30, min:80, max:160 },
-          { kind:"gems", weight:20, min:3, max:7 },
-          { kind:"item", rarity:"commun", weight:10 },
-          { kind:"item", rarity:"rare", weight:30 },
-          { kind:"item", rarity:"epique", weight:10 }
-        ],
-        pink:[
-          { kind:"coins", weight:20, min:120, max:230 },
-          { kind:"gems", weight:15, min:5, max:10 },
-          { kind:"item", rarity:"commun", weight:5 },
-          { kind:"item", rarity:"rare", weight:25 },
-          { kind:"item", rarity:"epique", weight:25 },
-          { kind:"item", rarity:"ultra", weight:10 }
-        ],
-        gold:[
-          { kind:"coins", weight:10, min:180, max:350 },
-          { kind:"gems", weight:10, min:8, max:15 },
-          { kind:"item", rarity:"rare", weight:15 },
-          { kind:"item", rarity:"epique", weight:40 },
-          { kind:"item", rarity:"ultra", weight:25 }
-        ]
-      },
+      star:[
+        { kind:"coins", weight:40, min:50, max:120 },
+        { kind:"gems", weight:25, min:2, max:5 },
+        { kind:"item", rarity:"commun", weight:20 },
+        { kind:"item", rarity:"rare", weight:15 }
+      ],
       legendary:[
         { kind:"coins", weight:15, min:250, max:500 },
         { kind:"gems", weight:15, min:10, max:20 },
@@ -95,23 +68,14 @@
       ? config.dropTables?.bag
       : type === "legendary"
         ? config.dropTables?.legendary
-        : config.dropTables?.star?.[state];
+        : config.dropTables?.star;
     const row = weightedPick(rows);
     if (row.kind === "item") return { kind:"item", rarity:row.rarity || "commun" };
     return { kind:row.kind, amount:randomInt(row.min, row.max) };
   }
 
   function starTapPreview() {
-    const rule = config.starUpgrade?.[starState] || FALLBACK_CONFIG.starUpgrade[starState];
-    if (!rule || starState === "gold") {
-      return { opened:true, upgraded:false, state:"gold" };
-    }
-    const upgraded = Math.random() < Number(rule.upgradeChance || 0) / 100;
-    return {
-      opened:!upgraded,
-      upgraded,
-      state:upgraded ? String(rule.next || starState) : starState
-    };
+    return { opened:true, upgraded:false, state:"blue" };
   }
 
   function requestConfig(attempt = 0) {
@@ -250,7 +214,7 @@
     root.classList.remove("is-tapping", "is-upgrading");
     root.classList.add("is-opening");
     root.querySelector(".ptb-reward-object")?.setAttribute("disabled", "disabled");
-    setTimeout(() => revealReward(reward), 720);
+    setTimeout(() => revealReward(reward), 620);
   }
 
   function handleTap() {
@@ -262,28 +226,15 @@
 
     if (activeType !== "star") {
       const reward = rollPreviewReward(activeType, "blue");
-      setTimeout(() => performOpen(reward), activeType === "legendary" ? 620 : 500);
+      setTimeout(() => performOpen(reward), activeType === "legendary" ? 560 : 460);
       return;
     }
 
     const outcome = starTapPreview();
-    if (outcome.upgraded) {
-      setTimeout(() => {
-        starState = outcome.state;
-        root.dataset.starState = starState;
-        root.classList.remove("is-tapping");
-        root.classList.add("is-upgrading");
-        if (navigator.vibrate) navigator.vibrate(35);
-        setTimeout(() => {
-          root.classList.remove("is-upgrading");
-          busy = false;
-        }, 650);
-      }, 300);
-      return;
-    }
-
+    starState = outcome.state;
+    root.dataset.starState = starState;
     const reward = rollPreviewReward("star", starState);
-    setTimeout(() => performOpen(reward), 520);
+    setTimeout(() => performOpen(reward), 470);
   }
 
   function previewTypeFromHash() {

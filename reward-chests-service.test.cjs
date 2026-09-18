@@ -37,24 +37,23 @@ test("sac: 52% pièces, 30% gemmes, 18% objet commun", () => {
   );
 });
 
-test("étoile: les chances d'amélioration validées sont respectées", () => {
-  assert.deepEqual(rollStarTap("blue", () => 0.349), {
-    opened:false, upgraded:true, state:"violet", previous:"blue"
+test("étoile: ouverture directe sans amélioration de rareté", () => {
+  assert.deepEqual(rollStarTap("blue", () => 0.0), {
+    opened:true, upgraded:false, state:"blue", previous:"blue"
   });
-  assert.equal(rollStarTap("blue", () => 0.35).opened, true);
-  assert.equal(rollStarTap("violet", () => 0.299).state, "pink");
-  assert.equal(rollStarTap("pink", () => 0.199).state, "gold");
-  assert.deepEqual(rollStarTap("gold", () => 0.01), {
-    opened:true, upgraded:false, state:"gold", previous:"gold"
+  assert.deepEqual(rollStarTap("violet", () => 0.999), {
+    opened:true, upgraded:false, state:"blue", previous:"blue"
   });
 });
 
-test("étoile dorée: aucune récompense commune ou exclusive", () => {
-  const config = publicConfig();
-  const rows = config.dropTables.star.gold;
-  assert.equal(rows.some(row => row.rarity === "commun"), false);
+test("étoile: table simple validée", () => {
+  const rows = publicConfig().dropTables.star;
   assert.equal(rows.some(row => row.rarity === "exclusif"), false);
   assert.equal(rows.reduce((sum,row) => sum + row.weight, 0), 100);
+  assert.deepEqual(
+    rollRewardSpec("star", "blue", sequence(0.65, 0.0)),
+    { kind:"item", rarity:"commun" }
+  );
 });
 
 test("étoile légendaire: 60% épique ou ultra", () => {

@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const { catalogEntries, validWalletToken } = require("./inventory-service.js");
 
 const CHEST_TYPES = Object.freeze(["bag", "star", "legendary"]);
-const STAR_STATES = Object.freeze(["blue", "violet", "pink", "gold"]);
+const STAR_STATES = Object.freeze(["blue"]);
 const ITEM_RARITIES = Object.freeze(["commun", "rare", "epique", "ultra"]);
 
 const DUPLICATE_COMPENSATION = Object.freeze({
@@ -15,10 +15,7 @@ const DUPLICATE_COMPENSATION = Object.freeze({
 });
 
 const STAR_UPGRADE = Object.freeze({
-  blue:Object.freeze({ upgradeChance:35, next:"violet" }),
-  violet:Object.freeze({ upgradeChance:30, next:"pink" }),
-  pink:Object.freeze({ upgradeChance:20, next:"gold" }),
-  gold:Object.freeze({ upgradeChance:0, next:"" })
+  blue:Object.freeze({ upgradeChance:0, next:"" })
 });
 
 const DROP_TABLES = Object.freeze({
@@ -27,36 +24,12 @@ const DROP_TABLES = Object.freeze({
     Object.freeze({ kind:"gems", weight:30, min:1, max:5 }),
     Object.freeze({ kind:"item", rarity:"commun", weight:18 })
   ]),
-  star:Object.freeze({
-    blue:Object.freeze([
-      Object.freeze({ kind:"coins", weight:40, min:50, max:120 }),
-      Object.freeze({ kind:"gems", weight:25, min:2, max:5 }),
-      Object.freeze({ kind:"item", rarity:"commun", weight:20 }),
-      Object.freeze({ kind:"item", rarity:"rare", weight:15 })
-    ]),
-    violet:Object.freeze([
-      Object.freeze({ kind:"coins", weight:30, min:80, max:160 }),
-      Object.freeze({ kind:"gems", weight:20, min:3, max:7 }),
-      Object.freeze({ kind:"item", rarity:"commun", weight:10 }),
-      Object.freeze({ kind:"item", rarity:"rare", weight:30 }),
-      Object.freeze({ kind:"item", rarity:"epique", weight:10 })
-    ]),
-    pink:Object.freeze([
-      Object.freeze({ kind:"coins", weight:20, min:120, max:230 }),
-      Object.freeze({ kind:"gems", weight:15, min:5, max:10 }),
-      Object.freeze({ kind:"item", rarity:"commun", weight:5 }),
-      Object.freeze({ kind:"item", rarity:"rare", weight:25 }),
-      Object.freeze({ kind:"item", rarity:"epique", weight:25 }),
-      Object.freeze({ kind:"item", rarity:"ultra", weight:10 })
-    ]),
-    gold:Object.freeze([
-      Object.freeze({ kind:"coins", weight:10, min:180, max:350 }),
-      Object.freeze({ kind:"gems", weight:10, min:8, max:15 }),
-      Object.freeze({ kind:"item", rarity:"rare", weight:15 }),
-      Object.freeze({ kind:"item", rarity:"epique", weight:40 }),
-      Object.freeze({ kind:"item", rarity:"ultra", weight:25 })
-    ])
-  }),
+  star:Object.freeze([
+    Object.freeze({ kind:"coins", weight:40, min:50, max:120 }),
+    Object.freeze({ kind:"gems", weight:25, min:2, max:5 }),
+    Object.freeze({ kind:"item", rarity:"commun", weight:20 }),
+    Object.freeze({ kind:"item", rarity:"rare", weight:15 })
+  ]),
   legendary:Object.freeze([
     Object.freeze({ kind:"coins", weight:15, min:250, max:500 }),
     Object.freeze({ kind:"gems", weight:15, min:10, max:20 }),
@@ -97,23 +70,16 @@ function normalizeChestType(value) {
   return CHEST_TYPES.includes(type) ? type : "";
 }
 
-function normalizeStarState(value) {
-  const state = String(value || "").trim().toLowerCase();
-  return STAR_STATES.includes(state) ? state : "blue";
+function normalizeStarState(_value) {
+  return "blue";
 }
 
-function rollStarTap(state = "blue", random = Math.random) {
+function rollStarTap(state = "blue", _random = Math.random) {
   const current = normalizeStarState(state);
-  const rule = STAR_UPGRADE[current];
-  if (!rule || current === "gold") {
-    return { opened:true, upgraded:false, state:"gold", previous:"gold" };
-  }
-
-  const upgraded = clampRandom(random()) < rule.upgradeChance / 100;
   return {
-    opened:!upgraded,
-    upgraded,
-    state:upgraded ? rule.next : current,
+    opened:true,
+    upgraded:false,
+    state:current,
     previous:current
   };
 }
@@ -122,7 +88,7 @@ function tableFor(chestType, starState = "blue") {
   const type = normalizeChestType(chestType);
   if (type === "bag") return DROP_TABLES.bag;
   if (type === "legendary") return DROP_TABLES.legendary;
-  if (type === "star") return DROP_TABLES.star[normalizeStarState(starState)];
+  if (type === "star") return DROP_TABLES.star;
   throw new Error("Type de coffre invalide.");
 }
 
@@ -148,7 +114,8 @@ function publicConfig() {
       oneRewardPerOpening:true,
       ownedItemsRemoved:true,
       equalChanceWithinRarity:true,
-      exclusiveInChests:false
+      exclusiveInChests:false,
+      starUpgradeEnabled:false
     }
   }));
 }
