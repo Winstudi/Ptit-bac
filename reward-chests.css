@@ -136,7 +136,7 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   will-change:transform
 }
 .ptb-star-lid{
-  transform:translate(5.7%,-6.6%) scale(.88);
+  transform:translate(5.7%,-2.1%) scale(.88);
   filter:drop-shadow(0 11px 14px rgba(0,0,0,.25)) drop-shadow(0 0 12px rgba(94,183,255,.2));
   backface-visibility:hidden;transform-style:preserve-3d
 }
@@ -287,81 +287,115 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{transform:translateY(-13%) rotateX(-58deg)}
 }
 
-
-/* V7 — ouverture 2,5D corrigée : le couvercle garde sa forme et suit un arc */
-.ptb-star-rig{perspective:1600px}
+/* V8 — alignement fermé + pivot réel sur la charnière arrière */
+.ptb-star-rig{
+  perspective:1350px;
+  transform-style:preserve-3d
+}
 .ptb-star-lid-hinge{
-  transform-origin:50% 67%;
-  transform:translate3d(0,0,0);
+  /* Axe horizontal placé sur le bord arrière du couvercle. */
+  transform-origin:50% 55.5%;
+  transform:translate3d(0,0,0) rotateX(0deg);
+  transform-style:preserve-3d;
   transition:none;
   backface-visibility:visible;
+  will-change:transform
 }
-.ptb-reward-open[data-star-phase="press"] .ptb-star-rig{
-  transform:translateY(1px) scale(.985)
+.ptb-star-lid{
+  /* Le couvercle fermé repose maintenant exactement sur le haut du coffre. */
+  transform:translate(5.7%,-2.1%) scale(.88);
+  transform-origin:50% 55.5%;
+  backface-visibility:hidden
 }
-.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
-  transform:translate3d(0,1.1%,0) scale(.995)
-}
+
+/* Le corps sert d'ancre et ne se déplace jamais pendant l'ouverture. */
+.ptb-reward-open[data-star-phase="press"] .ptb-star-rig,
 .ptb-reward-open[data-star-phase="opening"] .ptb-star-rig,
 .ptb-reward-open[data-star-phase="opened"] .ptb-star-rig,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-rig,
 .ptb-reward-open[data-star-phase="settled"] .ptb-star-rig{
   transform:none
 }
-.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge{
-  animation:ptbStarLidArcOpen .88s cubic-bezier(.16,.82,.18,1) both
-}
-.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
-.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-  transform:translate3d(0,-22%,35px) scale(.96) rotateZ(-.8deg)
-}
+.ptb-reward-open[data-star-phase="press"] .ptb-star-base,
 .ptb-reward-open[data-star-phase="opening"] .ptb-star-base,
 .ptb-reward-open[data-star-phase="opened"] .ptb-star-base,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-base,
 .ptb-reward-open[data-star-phase="settled"] .ptb-star-base{
   transform:translateY(6.2%) scale(.99)
 }
+
+/* Petite mise en tension sans décoller la charnière. */
+.ptb-reward-open[data-star-phase="press"] .ptb-star-lid-hinge{
+  transform:translate3d(0,.45%,0) rotateX(2.5deg)
+}
+
+/* Pendant l'ouverture, seul le couvercle pivote autour de son bord arrière. */
+.ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge{
+  animation:ptbStarRearHingeOpen .96s cubic-bezier(.18,.72,.18,1) both
+}
+.ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
+.ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
+  transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)
+}
+
+/* La lumière naît dans l'ouverture au fur et à mesure du pivot. */
 .ptb-reward-open[data-star-phase="opening"] .ptb-star-inner-light{
-  opacity:.34;transform:translateY(2%) scale(.54);filter:saturate(1.02) brightness(.98)
+  opacity:.38;transform:translateY(3%) scale(.53);filter:saturate(1.02) brightness(.98)
 }
 .ptb-reward-open[data-star-phase="opened"] .ptb-star-inner-light,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-inner-light{
-  opacity:.66;transform:translateY(-4%) scale(.69);filter:saturate(1.05) brightness(1.02)
+  opacity:.7;transform:translateY(-3%) scale(.69);filter:saturate(1.05) brightness(1.03)
 }
-.ptb-reward-open[data-star-phase="reward"] .ptb-star-base{
-  filter:brightness(.97) saturate(.98) drop-shadow(0 15px 18px rgba(0,0,0,.24))
-}
+.ptb-reward-open[data-star-phase="reward"] .ptb-star-base,
 .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid{
-  filter:brightness(.97) saturate(.98) drop-shadow(0 11px 14px rgba(0,0,0,.22))
+  filter:brightness(.98) saturate(.99) drop-shadow(0 13px 16px rgba(0,0,0,.22))
 }
+
+/* Récompense plus lisible sans masquer le coffre ouvert. */
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{
-  top:32%;width:min(48vw,220px)
+  top:31.5%;width:min(46vw,210px)
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card>img{
-  width:min(28vw,122px);height:min(28vw,122px)
+  width:min(27vw,118px);height:min(27vw,118px)
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card strong{
-  font-size:clamp(1.55rem,6.5vw,2.35rem)
+  font-size:clamp(1.5rem,6.2vw,2.25rem)
 }
 .ptb-reward-open[data-reward-type="star"] .ptb-reward-item-frame{
-  width:min(33vw,145px);height:min(33vw,145px);padding:13px;border-radius:23px
+  width:min(32vw,140px);height:min(32vw,140px);padding:12px;border-radius:22px
 }
-@keyframes ptbStarLidArcOpen{
-  0%{transform:translate3d(0,1.1%,0) scale(.995) rotateZ(0deg)}
-  20%{transform:translate3d(0,-2%,7px) scale(.992) rotateZ(-.15deg)}
-  48%{transform:translate3d(.4%,-10%,18px) scale(.982) rotateZ(-.35deg)}
-  76%{transform:translate3d(.7%,-24%,40px) scale(.955) rotateZ(-1deg)}
-  100%{transform:translate3d(0,-22%,35px) scale(.96) rotateZ(-.8deg)}
+
+@keyframes ptbStarRearHingeOpen{
+  0%{
+    transform:translate3d(0,.45%,0) rotateX(2.5deg) scaleY(1)
+  }
+  16%{
+    transform:translate3d(0,-.6%,4px) rotateX(-4deg) scaleY(1.008)
+  }
+  38%{
+    transform:translate3d(0,-3.2%,11px) rotateX(-12deg) scaleY(1.035)
+  }
+  62%{
+    transform:translate3d(0,-6.9%,22px) rotateX(-23deg) scaleY(1.085)
+  }
+  82%{
+    transform:translate3d(0,-11.4%,38px) rotateX(-36deg) scaleY(1.17)
+  }
+  100%{
+    transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)
+  }
 }
+
 @media(max-height:720px){
-  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:33%}
+  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result{top:32.5%}
 }
 @media(prefers-reduced-motion:reduce){
   .ptb-reward-open[data-star-phase="opening"] .ptb-star-lid-hinge,
   .ptb-reward-open[data-star-phase="opened"] .ptb-star-lid-hinge,
   .ptb-reward-open[data-star-phase="reward"] .ptb-star-lid-hinge,
   .ptb-reward-open[data-star-phase="settled"] .ptb-star-lid-hinge{
-    animation:none!important;transform:translate3d(0,-22%,35px) scale(.96) rotateZ(-.8deg)!important
+    animation:none!important;
+    transform:translate3d(0,-10.6%,34px) rotateX(-34deg) scaleY(1.16)!important
   }
 }

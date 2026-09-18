@@ -296,29 +296,29 @@
     // Un seul couvercle est animé : aucune image n'est remplacée pendant l'ouverture.
     later(() => {
       setStarPhase("opening");
-      if (navigator.vibrate) navigator.vibrate([12, 24, 14]);
-    }, 150);
+      if (navigator.vibrate) navigator.vibrate([10, 22, 12]);
+    }, 170);
 
     // La lumière apparaît progressivement pendant que le couvercle pivote.
     later(() => {
       root.classList.add("is-star-flashing");
-    }, 720);
+    }, 850);
 
     later(() => {
       setStarPhase("opened");
       if (navigator.vibrate) navigator.vibrate(28);
-    }, 1030);
+    }, 1140);
 
     later(() => {
       root.classList.remove("is-star-flashing");
       setStarPhase("reward");
       revealReward(reward);
-    }, 1240);
+    }, 1370);
 
     // Les particules restent brièvement après l'apparition du gain.
     later(() => {
       setStarPhase("settled");
-    }, 1840);
+    }, 1950);
   }
 
   function performOpen(reward) {
