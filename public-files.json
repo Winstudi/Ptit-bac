@@ -99,5 +99,11 @@
   "/ui-runtime-v1.css",
   "/ui-runtime-v1.js",
   "/level-badge-v1.png",
-  "/level-bar-shell-v1.png"
+  "/level-bar-shell-v1.png",
+  "/reward-chests.css",
+  "/reward-chests-client.js",
+  "/reward-bag.png",
+  "/reward-star.png",
+  "/reward-legendary.png",
+  "/reward-opening-bg.webp"
 ]

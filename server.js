@@ -70,6 +70,7 @@ require("./friends-hook.js")(io, {
 require("./chat-hook.js")(io);
 require("./player-report-hook.js")(io);
 require("./admin-hook.js")(io);
+require("./reward-chests-hook.js")(io);
 
 const PORT = process.env.PORT || 3000;
 const BUILD_VERSION = require("./package.json").version;
