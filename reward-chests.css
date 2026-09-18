@@ -313,3 +313,53 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 .ptb-reward-open.is-revealed{
   cursor:pointer;
 }
+
+
+/* V13 — affichage final uniforme des récompenses */
+.ptb-reward-open.is-revealed .ptb-reward-object{
+  opacity:0!important;
+  transform:translate(-50%,-50%) scale(.84)!important;
+  pointer-events:none!important;
+  transition:opacity .18s ease,transform .18s ease!important;
+}
+
+/* Même position finale pour Sac / coffre normal / coffre légendaire */
+.ptb-reward-open .ptb-reward-result,
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-result,
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{
+  top:calc(43% - 30px)!important;
+  width:min(72vw,330px)!important;
+}
+
+/* Même taille visuelle pour pièces / gemmes / objets */
+.ptb-reward-result-card{
+  width:min(38vw,160px);
+  display:grid;
+  justify-items:center;
+}
+.ptb-reward-result-card>img,
+.ptb-reward-item-frame{
+  width:min(33vw,140px)!important;
+  height:min(33vw,140px)!important;
+  box-sizing:border-box;
+}
+.ptb-reward-item-frame img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+}
+
+/* Le texte reste sous le visuel et ne change pas la taille de l'icône */
+.ptb-reward-result-card strong,
+.ptb-reward-open[data-reward-type="star"] .ptb-reward-result-card strong,
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result-card strong{
+  font-size:clamp(1.5rem,6.2vw,2.25rem)!important;
+}
+
+@media(max-height:720px){
+  .ptb-reward-open .ptb-reward-result,
+  .ptb-reward-open[data-reward-type="star"] .ptb-reward-result,
+  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-result{
+    top:calc(45% - 30px)!important;
+  }
+}
