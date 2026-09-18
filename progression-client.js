@@ -470,14 +470,22 @@
         color:#71e9ff;font-size:.7rem;text-shadow:0 0 10px #5bdcff,0 0 18px #7c65ff
       }
       .ptb-levels-line{
+        --ptb-level-line-progress:0px;
         left:50%;top:-22px;bottom:40px;width:3px;transform:translateX(-50%);z-index:0;
-        background:linear-gradient(180deg,#53e8ff 0%,#6bd9ff 19%,#7f9cff 48%,#946cff 73%,#67e2ff 100%);
-        box-shadow:0 0 7px rgba(74,220,255,.62),0 0 15px rgba(105,97,255,.34)
+        background:rgba(85,99,154,.30);
+        box-shadow:none
+      }
+      .ptb-levels-line::before{
+        content:"";position:absolute;left:0;top:0;width:100%;height:var(--ptb-level-line-progress);
+        border-radius:999px;
+        background:linear-gradient(180deg,#53e8ff 0%,#65dfff 28%,#6caeff 58%,#7489ff 82%,#62dcff 100%);
+        box-shadow:0 0 7px rgba(74,220,255,.72),0 0 15px rgba(84,137,255,.38);
+        transition:height .45s cubic-bezier(.22,.8,.28,1)
       }
       .ptb-levels-line::after{
         content:"";position:absolute;inset:0 -8px;
-        background:radial-gradient(circle,#d9fbff 0 2px,rgba(96,221,255,.45) 2.5px 4px,transparent 4.5px) center top/17px 64px repeat-y;
-        opacity:.6
+        background:radial-gradient(circle,rgba(180,193,235,.68) 0 1.7px,rgba(104,119,176,.28) 2.2px 3.5px,transparent 4px) center top/17px 64px repeat-y;
+        opacity:.34
       }
       [data-level-rows]{position:relative;z-index:1}
       .ptb-level-row{
@@ -941,6 +949,20 @@
         </article>`);
     }
     if (rowsHost) rowsHost.innerHTML = parts.join("");
+
+    const levelLine = overlay.querySelector(".ptb-levels-line");
+    const currentRow = overlay.querySelector(`[data-level-row="${current.level}"]`);
+    if (levelLine && currentRow) {
+      requestAnimationFrame(() => {
+        const lineRect = levelLine.getBoundingClientRect();
+        const rowRect = currentRow.getBoundingClientRect();
+        const target = Math.max(0, Math.min(
+          lineRect.height,
+          rowRect.top + (rowRect.height / 2) - lineRect.top
+        ));
+        levelLine.style.setProperty("--ptb-level-line-progress", `${target}px`);
+      });
+    }
   }
 
   function openLevelsOverlay(trigger) {
