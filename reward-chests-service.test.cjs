@@ -6,7 +6,8 @@ const {
   rollStarTap,
   rollRewardSpec,
   DUPLICATE_COMPENSATION,
-  publicConfig
+  publicConfig,
+  buildChestCatalog
 } = require("./reward-chests-service.js");
 
 function sequence(...values) {
@@ -72,4 +73,25 @@ test("compensations finales", () => {
     epique:250,
     ultra:500
   });
+});
+
+
+test("catalogue coffres: reprend la rareté admin et exclut toujours Exclusif", () => {
+  const catalog = [
+    { key:"frame:a", type:"frame", id:"a", label:"A", defaultOwned:false },
+    { key:"frame:b", type:"frame", id:"b", label:"B", defaultOwned:false },
+    { key:"frame:c", type:"frame", id:"c", label:"C", defaultOwned:false },
+    { key:"avatar:base", type:"avatar", id:"base", label:"Base", defaultOwned:true }
+  ];
+  const rows = [
+    { item_key:"frame:a", rarity:"rare" },
+    { item_key:"frame:b", rarity:"exclusif" },
+    { item_key:"frame:c", rarity:"ultra" }
+  ];
+  const result = buildChestCatalog(catalog, rows);
+  assert.deepEqual(result.map(item => [item.key, item.rarity]), [
+    ["frame:a", "rare"],
+    ["frame:c", "ultra"]
+  ]);
+  assert.equal(result.some(item => item.rarity === "exclusif"), false);
 });

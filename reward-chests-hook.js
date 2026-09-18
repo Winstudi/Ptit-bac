@@ -29,8 +29,14 @@ module.exports = function installRewardChests(io) {
   global.__ptbRewardChestService = service;
 
   io.on("connection", socket => {
-    socket.on("rewards:config", (_payload = {}, cb = () => {}) => {
-      cb({ ok:true, config:service.config() });
+    socket.on("rewards:config", async (_payload = {}, cb = () => {}) => {
+      try {
+        const catalog = await service.catalog();
+        cb({ ok:true, config:service.config(), catalog });
+      } catch (err) {
+        console.error("rewards:config:", err.message);
+        cb({ ok:false, error:"Configuration des récompenses indisponible." });
+      }
     });
   });
 

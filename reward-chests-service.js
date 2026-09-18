@@ -6,6 +6,7 @@ const { catalogEntries, validWalletToken } = require("./inventory-service.js");
 const CHEST_TYPES = Object.freeze(["bag", "star", "legendary"]);
 const STAR_STATES = Object.freeze(["blue"]);
 const ITEM_RARITIES = Object.freeze(["commun", "rare", "epique", "ultra"]);
+const ALL_ITEM_RARITIES = Object.freeze([...ITEM_RARITIES, "exclusif"]);
 
 const DUPLICATE_COMPENSATION = Object.freeze({
   commun:50,
@@ -129,6 +130,26 @@ function itemBucket(type) {
   return type === "avatar" ? "avatars" : type === "frame" ? "frames" : type === "tag" ? "tags" : "";
 }
 
+function normalizeCatalogRarity(value) {
+  const rarity = String(value || "").trim().toLowerCase();
+  return ALL_ITEM_RARITIES.includes(rarity) ? rarity : "commun";
+}
+
+function buildChestCatalog(catalog, settingsRows = []) {
+  const byKey = new Map((settingsRows || []).map(row => [
+    String(row?.item_key || ""),
+    normalizeCatalogRarity(row?.rarity)
+  ]));
+
+  return (Array.isArray(catalog) ? catalog : [])
+    .filter(item => item && !item.defaultOwned)
+    .map(item => ({
+      ...item,
+      rarity:byKey.get(item.key) || "commun"
+    }))
+    .filter(item => ITEM_RARITIES.includes(item.rarity));
+}
+
 function createRewardChestService({
   getPool,
   ensureSchema,
@@ -175,10 +196,10 @@ function createRewardChestService({
   async function loadRarityMap(client) {
     const q = await client.query(
       `SELECT item_key,rarity FROM public.ptitbac_item_catalog_settings`
-    ).catch(() => ({ rows:[] }));
+    );
     return new Map((q.rows || []).map(row => [
       String(row.item_key || ""),
-      String(row.rarity || "commun").toLowerCase()
+      normalizeCatalogRarity(row.rarity)
     ]));
   }
 
@@ -202,13 +223,22 @@ function createRewardChestService({
     const candidates = catalog.filter(item => {
       if (item.defaultOwned) return false;
       if (owned.has(item.key)) return false;
-      const itemRarity = rarityMap.get(item.key) || "commun";
-      return itemRarity === safeRarity && itemRarity !== "exclusif";
+      const itemRarity = normalizeCatalogRarity(rarityMap.get(item.key) || "commun");
+      if (itemRarity === "exclusif") return false;
+      return itemRarity === safeRarity;
     });
 
     if (!candidates.length) return null;
     const index = Math.floor(clampRandom(random()) * candidates.length);
     return candidates[Math.min(index, candidates.length - 1)];
+  }
+
+  async function getChestCatalog() {
+    const pool = await ensureRewardSchema();
+    const q = await pool.query(
+      `SELECT item_key,rarity FROM public.ptitbac_item_catalog_settings`
+    );
+    return buildChestCatalog(catalog, q.rows || []);
   }
 
   async function grant({
@@ -372,6 +402,7 @@ function createRewardChestService({
   return {
     ensureSchema:ensureRewardSchema,
     config:publicConfig,
+    catalog:getChestCatalog,
     rollStarTap,
     rollRewardSpec,
     grant
@@ -382,6 +413,7 @@ module.exports = {
   CHEST_TYPES,
   STAR_STATES,
   ITEM_RARITIES,
+  ALL_ITEM_RARITIES,
   STAR_UPGRADE,
   DROP_TABLES,
   DUPLICATE_COMPENSATION,
@@ -392,5 +424,7 @@ module.exports = {
   rollStarTap,
   rollRewardSpec,
   publicConfig,
+  normalizeCatalogRarity,
+  buildChestCatalog,
   createRewardChestService
 };

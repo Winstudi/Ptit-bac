@@ -34,7 +34,15 @@
     ultra:{ asset:"/frame-gold-stars.png", label:"Ultra" }
   });
 
+  const FALLBACK_COMPENSATION = Object.freeze({
+    commun:50,
+    rare:100,
+    epique:250,
+    ultra:500
+  });
+
   let config = FALLBACK_CONFIG;
+  let chestCatalog = [];
   let overlay = null;
   let activeType = "star";
   let starState = "blue";
@@ -70,7 +78,22 @@
         ? config.dropTables?.legendary
         : config.dropTables?.star;
     const row = weightedPick(rows);
-    if (row.kind === "item") return { kind:"item", rarity:row.rarity || "commun" };
+    if (row.kind === "item") {
+      const rarity = String(row.rarity || "commun").toLowerCase();
+      const candidates = chestCatalog.filter(item =>
+        item && item.rarity === rarity && item.rarity !== "exclusif"
+      );
+
+      if (candidates.length) {
+        const item = candidates[Math.floor(Math.random() * candidates.length)];
+        return { kind:"item", rarity, item };
+      }
+
+      const amount = Number(config.duplicateCompensation?.[rarity])
+        || FALLBACK_COMPENSATION[rarity]
+        || 50;
+      return { kind:"coins", amount, compensationFor:rarity };
+    }
     return { kind:row.kind, amount:randomInt(row.min, row.max) };
   }
 
@@ -85,7 +108,10 @@
         return;
       }
       socket.timeout(5000).emit("rewards:config", {}, (err, res) => {
-        if (!err && res?.ok && res.config?.dropTables) config = res.config;
+        if (err || !res?.ok || !res.config?.dropTables) return;
+        config = res.config;
+        chestCatalog = (Array.isArray(res.catalog) ? res.catalog : [])
+          .filter(item => item && item.rarity !== "exclusif");
       });
     } catch {}
   }
@@ -257,7 +283,8 @@
     close,
     reveal:revealReward,
     reset,
-    config:() => JSON.parse(JSON.stringify(config))
+    config:() => JSON.parse(JSON.stringify(config)),
+    catalog:() => JSON.parse(JSON.stringify(chestCatalog))
   };
 
   if (document.readyState === "loading") {

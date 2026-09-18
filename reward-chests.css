@@ -23,8 +23,8 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 }
 .ptb-reward-back img{width:27px;height:27px;object-fit:contain;display:block;filter:none}
 .ptb-reward-object{
-  position:absolute;z-index:4;left:50%;top:43%;transform:translate(-50%,-50%);
-  width:min(64vw,300px);aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer;
+  position:absolute;z-index:4;left:50%;top:calc(43% - 15px);transform:translate(-50%,-50%);
+  width:min(51.2vw,240px);aspect-ratio:1;border:0;padding:0;background:transparent;cursor:pointer;
   display:grid;place-items:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation
 }
 .ptb-reward-object:disabled{cursor:default}
@@ -33,11 +33,11 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
   filter:drop-shadow(0 0 16px rgba(69,186,255,.62)) drop-shadow(0 20px 28px rgba(0,0,0,.25));
   animation:ptbRewardFloat 2.8s ease-in-out infinite;transform-origin:50% 58%;will-change:transform,filter,opacity
 }
-.ptb-reward-open[data-reward-type="bag"] .ptb-reward-object{width:min(61vw,282px);top:44.5%}
+.ptb-reward-open[data-reward-type="bag"] .ptb-reward-object{width:min(48.8vw,226px);top:calc(44.5% - 15px)}
 .ptb-reward-open[data-reward-type="bag"] .ptb-reward-object-img{
   filter:drop-shadow(0 0 15px rgba(255,199,69,.34)) drop-shadow(0 20px 28px rgba(0,0,0,.25))
 }
-.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object{width:min(68vw,320px);top:43%}
+.ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object{width:min(54.4vw,256px);top:calc(43% - 15px)}
 .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object-img{
   filter:drop-shadow(0 0 18px rgba(255,202,54,.65)) drop-shadow(0 0 32px rgba(202,68,255,.52)) drop-shadow(0 24px 30px rgba(0,0,0,.28))
 }
@@ -93,9 +93,10 @@ html.ptb-reward-lock,body.ptb-reward-lock{overflow:hidden!important;overscroll-b
 @keyframes ptbRewardRays{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}40%{opacity:.78}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35) rotate(38deg)}}
 @keyframes ptbRewardReveal{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}70%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media(max-height:720px){
-  .ptb-reward-object,.ptb-reward-result,.ptb-reward-flash,.ptb-reward-rays{top:45%}
-  .ptb-reward-object{width:min(57vw,270px)}
-  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object{width:min(63vw,300px)}
+  .ptb-reward-object{top:calc(45% - 15px);width:min(45.6vw,216px)}
+  .ptb-reward-result,.ptb-reward-flash,.ptb-reward-rays{top:45%}
+  .ptb-reward-open[data-reward-type="bag"] .ptb-reward-object{width:min(43vw,210px);top:calc(46% - 15px)}
+  .ptb-reward-open[data-reward-type="legendary"] .ptb-reward-object{width:min(50.4vw,240px);top:calc(45% - 15px)}
 }
 @media(prefers-reduced-motion:reduce){
   .ptb-reward-object-img,.ptb-reward-aura{animation:none!important}
