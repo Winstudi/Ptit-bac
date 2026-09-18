@@ -133,13 +133,12 @@
         <button class="ptb-reward-object" type="button" aria-label="Ouvrir la récompense">
           <span class="ptb-reward-aura" aria-hidden="true"></span>
           <img class="ptb-reward-object-img" src="/reward-star.png" alt="">
-          <span class="ptb-star-chest" aria-hidden="true">
+          <span class="ptb-star-rig" aria-hidden="true">
             <img class="ptb-star-fx ptb-star-fx-glow" src="/reward-star-glow.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-rays" src="/reward-star-rays.png" alt="">
-            <img class="ptb-star-frame ptb-star-frame-closed" src="/reward-star-closed.png" alt="">
-            <img class="ptb-star-frame ptb-star-frame-preopen" src="/reward-star-preopen.png" alt="">
-            <img class="ptb-star-frame ptb-star-frame-halfopen" src="/reward-star-halfopen.png" alt="">
-            <img class="ptb-star-frame ptb-star-frame-open" src="/reward-star-open.png" alt="">
+            <span class="ptb-star-inner-light"><img src="/reward-star-inner.png" alt=""></span>
+            <img class="ptb-star-base" src="/reward-star-base.png" alt="">
+            <span class="ptb-star-lid-hinge"><img class="ptb-star-lid" src="/reward-star-lid.png" alt=""></span>
             <img class="ptb-star-fx ptb-star-fx-particles" src="/reward-star-particles.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-flash" src="/reward-star-flash.png" alt="">
           </span>
@@ -173,7 +172,7 @@
   function assetFor(type) {
     if (type === "bag") return "/reward-bag.png";
     if (type === "legendary") return "/reward-legendary.png";
-    return "/reward-star-closed.png";
+    return "/reward-star-base.png";
   }
 
   function setSceneType(type) {
@@ -192,7 +191,6 @@
       "is-upgrading",
       "is-opening",
       "is-revealed",
-      "is-star-animating",
       "is-star-flashing",
       "is-resetting"
     );
@@ -292,38 +290,35 @@
     button?.setAttribute("disabled", "disabled");
     clearAnimationTimers();
     clearAnimationClasses();
-    root.classList.add("is-star-animating");
-    setStarPhase("preopen");
-    if (navigator.vibrate) navigator.vibrate(16);
+    setStarPhase("press");
+    if (navigator.vibrate) navigator.vibrate(12);
 
-    // Le coffre réagit d'abord, puis reste un peu entrouvert pour donner
-    // l'impression que la lumière pousse réellement le couvercle.
+    // Un seul couvercle est animé : aucune image n'est remplacée pendant l'ouverture.
     later(() => {
-      setStarPhase("halfopen");
-      if (navigator.vibrate) navigator.vibrate([15, 28, 18]);
-    }, 320);
+      setStarPhase("opening");
+      if (navigator.vibrate) navigator.vibrate([12, 24, 14]);
+    }, 150);
 
-    later(() => {
-      setStarPhase("open");
-      if (navigator.vibrate) navigator.vibrate(34);
-    }, 800);
-
-    // Flash légèrement décalé : il naît dans le coffre après l'ouverture.
+    // La lumière apparaît progressivement pendant que le couvercle pivote.
     later(() => {
       root.classList.add("is-star-flashing");
-    }, 870);
+    }, 610);
+
+    later(() => {
+      setStarPhase("opened");
+      if (navigator.vibrate) navigator.vibrate(28);
+    }, 910);
 
     later(() => {
       root.classList.remove("is-star-flashing");
       setStarPhase("reward");
       revealReward(reward);
-    }, 1270);
+    }, 1080);
 
-    // Les particules continuent environ une demi-seconde après le reveal,
-    // puis retombent sur un afterglow discret.
+    // Les particules restent brièvement après l'apparition du gain.
     later(() => {
       setStarPhase("settled");
-    }, 1820);
+    }, 1680);
   }
 
   function performOpen(reward) {
