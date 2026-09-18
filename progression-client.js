@@ -148,195 +148,195 @@
       @keyframes ptbStarSpin{0%{opacity:0;transform:scale(.4) rotate(0)}30%,75%{opacity:1}100%{opacity:0;transform:scale(1.4) rotate(180deg)}}
 
       .ptb-level-entry-trigger{cursor:pointer;pointer-events:auto!important;touch-action:manipulation}
-      .ptb-level-entry-trigger:focus-visible{
-        outline:2px solid rgba(118,224,255,.95);
-        outline-offset:2px;
-        border-radius:999px;
-      }
 
       .ptb-levels-overlay{
         position:fixed;inset:0;z-index:100030;display:flex;align-items:stretch;justify-content:center;
-        background:rgba(0,0,0,.32);
-        opacity:0;pointer-events:none;transition:opacity .24s ease;
+        background:#03092d;opacity:0;pointer-events:none;transition:opacity .2s ease;
       }
       .ptb-levels-overlay.is-open{opacity:1;pointer-events:auto}
       .ptb-levels-panel{
-        width:min(100vw,430px);height:100%;overflow:hidden;position:relative;
-        background:
-          radial-gradient(circle at 85% 3%,rgba(172,80,255,.20),transparent 15%),
-          radial-gradient(circle at 14% 95%,rgba(76,107,255,.34),transparent 18%),
-          radial-gradient(circle at 8% 100%,rgba(93,54,255,.26),transparent 24%),
-          linear-gradient(180deg,#07134b 0%,#061446 100%);
-        color:#fff;
+        width:min(100vw,430px);height:100%;overflow:hidden;position:relative;color:#fff;
         font-family:"DM Sans",system-ui,sans-serif;
+        background:
+          radial-gradient(circle at -6% 104%,rgba(52,92,255,.70) 0 11%,transparent 25%),
+          radial-gradient(circle at 108% 103%,rgba(76,74,255,.48) 0 9%,transparent 23%),
+          radial-gradient(circle at 82% 2%,rgba(123,48,255,.22),transparent 18%),
+          linear-gradient(180deg,#06134c 0%,#061343 55%,#07123d 100%);
       }
       .ptb-levels-panel::before{
-        content:"";position:absolute;inset:0;pointer-events:none;opacity:.9;
+        content:"";position:absolute;inset:0;pointer-events:none;opacity:.78;
         background:
-          radial-gradient(circle at 15% 8%,rgba(255,255,255,.18) 0 1.2px,transparent 1.4px),
-          radial-gradient(circle at 72% 10%,rgba(255,255,255,.15) 0 1.2px,transparent 1.4px),
-          radial-gradient(circle at 40% 36%,rgba(255,255,255,.12) 0 1px,transparent 1.2px),
-          radial-gradient(circle at 90% 42%,rgba(255,255,255,.10) 0 1.1px,transparent 1.3px),
-          radial-gradient(circle at 62% 68%,rgba(255,255,255,.08) 0 .9px,transparent 1.1px);
+          radial-gradient(circle at 16% 9%,rgba(255,255,255,.22) 0 1px,transparent 1.5px),
+          radial-gradient(circle at 71% 8%,rgba(255,255,255,.16) 0 1px,transparent 1.4px),
+          radial-gradient(circle at 93% 23%,rgba(158,116,255,.27) 0 1.4px,transparent 2px),
+          radial-gradient(circle at 31% 49%,rgba(255,255,255,.12) 0 .9px,transparent 1.4px),
+          radial-gradient(circle at 79% 62%,rgba(255,255,255,.10) 0 .9px,transparent 1.3px);
       }
-      .ptb-levels-scroll{position:relative;height:100%;overflow:auto;padding:16px 14px 22px;scroll-behavior:smooth}
-      .ptb-levels-scroll::-webkit-scrollbar{width:0;height:0}
-      .ptb-levels-header{display:flex;align-items:center;justify-content:center;position:relative;padding:0 0 10px}
+      .ptb-levels-scroll{
+        position:relative;height:100%;overflow:auto;padding:14px 13px 22px;scroll-behavior:smooth;
+        scrollbar-width:none;
+      }
+      .ptb-levels-scroll::-webkit-scrollbar{display:none}
+      .ptb-levels-header{display:flex;align-items:center;justify-content:center;position:relative;height:56px;margin-bottom:8px}
+      .ptb-levels-header::after{
+        content:"";position:absolute;right:3px;top:2px;width:42px;height:42px;opacity:.22;pointer-events:none;
+        background:#8249ff;clip-path:polygon(50% 0,61% 34%,98% 35%,68% 57%,79% 94%,50% 72%,21% 94%,32% 57%,2% 35%,39% 34%);
+        filter:blur(.2px) drop-shadow(0 0 10px rgba(133,74,255,.58));transform:rotate(14deg)
+      }
       .ptb-levels-back{
-        position:absolute;left:2px;top:4px;width:46px;height:46px;border:1px solid rgba(82,158,255,.68);border-radius:14px;
-        background:linear-gradient(180deg,#164ac9,#0b2f8b);box-shadow:inset 0 1px 2px rgba(255,255,255,.16),0 0 0 2px rgba(25,108,255,.12),0 10px 22px rgba(0,0,0,.22),0 0 24px rgba(63,154,255,.32);
-        display:grid;place-items:center;cursor:pointer;
+        position:absolute;left:1px;top:5px;width:40px;height:40px;padding:0;border:1px solid rgba(65,162,255,.78);border-radius:12px;
+        background:linear-gradient(180deg,#1255d2,#0c348f);display:grid;place-items:center;cursor:pointer;
+        box-shadow:inset 0 1px 2px rgba(255,255,255,.20),0 0 15px rgba(54,154,255,.28),0 8px 18px rgba(0,0,0,.24)
       }
-      .ptb-levels-back img{width:20px;height:20px;object-fit:contain;display:block;filter:brightness(1.18)}
+      .ptb-levels-back img{width:20px;height:20px;object-fit:contain;display:block;filter:brightness(0) invert(1)}
       .ptb-levels-title{
-        margin:0;font-size:2.55rem;font-weight:1000;letter-spacing:-.03em;color:#fff;
-        text-shadow:0 0 12px rgba(125,229,255,.35),0 0 18px rgba(185,96,255,.40),0 4px 10px rgba(0,0,0,.28)
+        margin:0;font-size:2.05rem;line-height:1;font-weight:1000;letter-spacing:-.035em;color:#fff;
+        text-shadow:0 0 10px rgba(90,221,255,.30),0 0 14px rgba(196,87,255,.42),0 4px 8px rgba(0,0,0,.26)
       }
 
       .ptb-levels-hero{
-        position:relative;overflow:hidden;border-radius:30px;padding:16px 16px 14px;
-        background:linear-gradient(180deg,rgba(11,33,119,.97),rgba(6,19,78,.98));
-        border:1px solid rgba(78,194,255,.62);
-        box-shadow:inset 0 0 0 1px rgba(115,105,255,.22),0 0 0 2px rgba(65,75,255,.10),0 0 18px rgba(53,173,255,.28),0 0 28px rgba(200,75,255,.20);
+        position:relative;border:2px solid transparent;border-radius:26px;padding:13px 14px 12px;
+        background:
+          linear-gradient(180deg,rgba(8,31,112,.98),rgba(5,18,71,.99)) padding-box,
+          linear-gradient(100deg,#40e8ff 0%,#328dff 38%,#7f69ff 67%,#f45bff 100%) border-box;
+        box-shadow:0 0 16px rgba(43,182,255,.27),0 0 20px rgba(215,69,255,.15),inset 0 0 28px rgba(31,83,206,.10)
       }
-      .ptb-levels-hero::after{
-        content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-        box-shadow:inset -4px -3px 18px rgba(217,77,255,.18),inset 4px 3px 18px rgba(80,221,255,.12);
-      }
-      .ptb-levels-hero-top{display:grid;grid-template-columns:98px minmax(0,1fr);gap:14px;align-items:center}
-      .ptb-levels-hero-badge{position:relative;width:98px;height:98px;display:grid;place-items:center}
-      .ptb-levels-hero-badge img{width:98px;height:98px;display:block;object-fit:contain;filter:drop-shadow(0 8px 12px rgba(0,0,0,.28))}
-      .ptb-levels-hero-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:3.25rem;font-weight:1000;letter-spacing:-.06em;text-shadow:0 4px 8px rgba(8,10,43,.96)}
-      .ptb-levels-hero-copy h2{margin:0 0 10px;font-size:1.02rem;font-weight:900;color:#f5dbff}
+      .ptb-levels-hero-top{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:center}
+      .ptb-levels-hero-badge{position:relative;width:92px;height:92px;display:grid;place-items:center}
+      .ptb-levels-hero-badge img{width:92px;height:92px;display:block;object-fit:contain;filter:drop-shadow(0 7px 10px rgba(0,0,0,.24))}
+      .ptb-levels-hero-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:3rem;font-weight:1000;letter-spacing:-.06em;text-shadow:0 3px 7px rgba(5,9,45,.98)}
+      .ptb-levels-hero-copy{min-width:0;align-self:center}
+      .ptb-levels-hero-copy h2{margin:0 0 7px;font-size:.92rem;line-height:1;font-weight:900;color:#e6c8ff}
       .ptb-levels-hero-track{
-        width:100%;height:42px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
+        width:100%;height:37px;padding:0 12%;box-sizing:border-box;display:flex;align-items:center;
         background:url('/level-bar-shell-v1.png') center/100% 100% no-repeat;
-        filter:drop-shadow(0 8px 14px rgba(0,0,0,.22));
+        filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))
       }
       .ptb-levels-hero-fill{
-        position:relative;display:block;height:12px;width:0;border-radius:999px;overflow:hidden;min-width:0;
-        background:linear-gradient(90deg,#69e6ff 0%,#45d6ff 20%,#4d8fff 48%,#8c5bff 74%,#f257ff 100%);
-        box-shadow:inset 0 1px 1px rgba(255,255,255,.72),0 0 6px rgba(47,214,255,.95),0 0 10px rgba(88,96,255,.64),0 0 12px rgba(211,75,255,.35);
-        transition:width .48s cubic-bezier(.22,.8,.28,1);
+        position:relative;display:block;height:10px;width:0;border-radius:999px;overflow:hidden;min-width:0;
+        background:linear-gradient(90deg,#5fe6ff 0%,#3ed3ff 24%,#4d8fff 49%,#8c5bff 74%,#ef57ff 100%);
+        box-shadow:inset 0 1px 1px rgba(255,255,255,.78),0 0 5px rgba(54,218,255,.88),0 0 8px rgba(107,92,255,.52);
+        transition:width .45s cubic-bezier(.22,.8,.28,1)
       }
       .ptb-levels-hero-fill::after{
-        content:"";position:absolute;left:8px;right:8px;top:2px;height:3px;border-radius:999px;
-        background:linear-gradient(90deg,transparent,rgba(255,255,255,.82),transparent);opacity:.72;
+        content:"";position:absolute;left:6px;right:6px;top:2px;height:2px;border-radius:999px;
+        background:linear-gradient(90deg,transparent,rgba(255,255,255,.76),transparent)
       }
-      .ptb-levels-hero-meta{margin-top:6px;display:block;font-size:.96rem;font-weight:1000;color:#eef5ff}
-      .ptb-levels-hero-meta strong{font-size:1.06rem;letter-spacing:-.02em}
+      .ptb-levels-hero-meta{margin-top:4px;color:#f4f6ff;font-weight:1000;line-height:1}
+      .ptb-levels-hero-meta strong{font-size:1rem;letter-spacing:-.02em}
       .ptb-levels-hero-reward{
-        margin-top:14px;border-radius:20px;padding:12px 14px;display:flex;align-items:center;gap:12px;
-        background:linear-gradient(180deg,rgba(7,25,95,.95),rgba(8,20,78,.95));
-        border:1px solid rgba(84,113,255,.28);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+        margin-top:10px;min-height:38px;border-radius:18px;padding:5px 12px;display:flex;align-items:center;justify-content:center;gap:9px;
+        background:rgba(6,24,87,.88);border:1px solid rgba(67,92,211,.40);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
       }
-      .ptb-levels-hero-reward img{width:34px;height:34px;object-fit:contain;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))}
-      .ptb-levels-hero-reward span{font-size:.86rem;font-weight:800;color:#edf0ff;white-space:nowrap;flex:1}
-      .ptb-levels-hero-reward b{color:#ffd85f;font-size:1rem}
+      .ptb-level-coin{
+        width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+        color:#fff4ad;font-size:.82rem;font-weight:1000;
+        background:radial-gradient(circle at 35% 28%,#fff08d 0 8%,#ffc229 24%,#e9960b 63%,#c97800 100%);
+        border:2px solid #ffcf4d;box-shadow:inset 0 0 0 2px rgba(255,240,143,.28),0 0 10px rgba(255,176,25,.42)
+      }
+      .ptb-levels-hero-reward span{font-size:.73rem;line-height:1;font-weight:800;color:#eef0ff;white-space:nowrap}
+      .ptb-levels-hero-reward b{color:#ffdd64;font-size:.82rem}
 
-      .ptb-levels-list{position:relative;margin-top:14px;padding-left:26px}
+      .ptb-levels-list{position:relative;margin-top:12px;padding-left:31px}
       .ptb-levels-line{
-        position:absolute;left:9px;top:8px;bottom:64px;width:3px;border-radius:999px;
-        background:linear-gradient(180deg,#49e1ff 0%,#66dbff 30%,#8a93ff 64%,#afb8ff 100%);
-        box-shadow:0 0 10px rgba(87,209,255,.45);
+        position:absolute;left:11px;top:5px;bottom:45px;width:2px;border-radius:999px;
+        background:linear-gradient(180deg,#4be7ff 0%,#62d9ff 28%,#8a98ff 65%,#adb8ff 100%);
+        box-shadow:0 0 7px rgba(88,213,255,.38)
       }
-      .ptb-level-row{position:relative;margin:0 0 10px}
+      .ptb-level-row{position:relative;margin:0 0 7px}
       .ptb-level-dot{
-        position:absolute;left:-26px;top:30px;width:16px;height:16px;border-radius:50%;
-        border:3px solid rgba(169,192,255,.88);background:transparent;box-shadow:0 0 0 2px rgba(0,0,0,.06);
+        position:absolute;left:-27px;top:22px;width:13px;height:13px;border-radius:50%;box-sizing:border-box;
+        border:2px solid rgba(155,177,246,.82);background:#07184f;box-shadow:0 0 0 2px rgba(91,112,208,.18)
       }
       .ptb-level-row.is-completed .ptb-level-dot{
-        width:28px;height:28px;left:-32px;top:24px;border:none;
-        background:radial-gradient(circle at 35% 35%,#abf4ff 0 32%,#62d7ff 33%,#53bfff 62%,#1c85d6 100%);
-        box-shadow:0 0 18px rgba(84,214,255,.55);
+        left:-33px;top:16px;width:25px;height:25px;border:2px solid #4ce9ff;background:#0f83ca;color:#fff;
+        box-shadow:0 0 11px rgba(77,222,255,.52)
+      }
+      .ptb-level-row.is-completed .ptb-level-dot::after{
+        content:"✓";position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:.76rem;font-weight:1000;color:#dfffff
       }
       .ptb-level-row.is-current .ptb-level-dot{
-        width:30px;height:30px;left:-33px;top:23px;border:4px solid rgba(228,145,255,.55);background:#ffffff;
-        box-shadow:0 0 0 2px rgba(112,112,255,.12),0 0 22px rgba(221,108,255,.45);
+        left:-34px;top:14px;width:28px;height:28px;border:4px solid #d278ff;background:#fff;
+        box-shadow:0 0 0 2px rgba(121,97,255,.30),0 0 14px rgba(220,103,255,.46)
       }
       .ptb-level-card{
-        overflow:hidden;
-        min-height:86px;border-radius:22px;padding:10px 12px;display:grid;align-items:center;
-        grid-template-columns:74px minmax(0,1fr) 132px 44px;gap:10px;
-        background:linear-gradient(180deg,rgba(10,32,111,.98),rgba(6,24,91,.98));
-        border:1px solid rgba(77,121,255,.28);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 12px 24px rgba(0,0,0,.16);
+        min-height:58px;border:1px solid rgba(73,111,229,.34);border-radius:17px;padding:6px 8px;display:grid;align-items:center;
+        grid-template-columns:52px minmax(0,1fr) 104px 32px;gap:7px;
+        background:linear-gradient(180deg,rgba(8,29,102,.98),rgba(5,21,78,.98));
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 16px rgba(0,0,0,.12)
       }
       .ptb-level-row.is-current .ptb-level-card{
-        overflow:hidden;
-        background:linear-gradient(90deg,rgba(10,43,141,.98) 0%,rgba(28,49,166,.98) 52%,rgba(89,31,154,.98) 100%);
-        border-color:rgba(105,216,255,.58);
-        box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 0 16px rgba(61,194,255,.32),0 0 18px rgba(213,86,255,.26);
+        min-height:68px;border:2px solid transparent;border-radius:18px;padding:5px 7px;
+        background:
+          linear-gradient(90deg,rgba(10,52,158,.99),rgba(27,53,171,.99) 55%,rgba(102,34,157,.99)) padding-box,
+          linear-gradient(100deg,#52e7ff 0%,#557cff 55%,#f05cff 100%) border-box;
+        box-shadow:0 0 13px rgba(64,201,255,.28),0 0 15px rgba(219,74,255,.22),inset 0 1px 0 rgba(255,255,255,.08)
       }
-      .ptb-level-row.is-locked .ptb-level-card{
-        overflow:hidden;opacity:.98}
-      .ptb-level-mini-badge{position:relative;width:74px;height:74px;display:grid;place-items:center;justify-self:start}
-      .ptb-level-mini-badge img{width:74px;height:74px;object-fit:contain;display:block;filter:drop-shadow(0 7px 10px rgba(0,0,0,.22))}
-      .ptb-level-row.is-completed .ptb-level-mini-badge img{width:68px;height:68px}
-      .ptb-level-row.is-locked .ptb-level-mini-badge img{filter:grayscale(.35) saturate(.58) brightness(.88) drop-shadow(0 7px 10px rgba(0,0,0,.20))}
-      .ptb-level-mini-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:2.35rem;font-weight:1000;letter-spacing:-.05em;text-shadow:0 3px 6px rgba(7,10,41,.98)}
-      .ptb-level-row.is-completed .ptb-level-mini-badge b,
-      .ptb-level-row.is-locked .ptb-level-mini-badge b{font-size:1.9rem}
-      .ptb-level-copy{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-      .ptb-level-copy strong{display:block;font-size:1rem;line-height:1.06;color:#fff;white-space:nowrap}
-      .ptb-level-copy small{display:block;font-size:.84rem;line-height:1.06;color:#9fb0ef;font-weight:700;white-space:nowrap}
-      .ptb-level-row.is-completed .ptb-level-copy small{color:#50f4ff}
+      .ptb-level-row.is-locked .ptb-level-card{opacity:.87}
+      .ptb-level-mini-badge{position:relative;width:50px;height:50px;display:grid;place-items:center;justify-self:start}
+      .ptb-level-mini-badge img{width:50px;height:50px;display:block;object-fit:contain;filter:drop-shadow(0 5px 7px rgba(0,0,0,.20))}
+      .ptb-level-mini-badge b{position:absolute;inset:0;display:grid;place-items:center;font-size:1.55rem;font-weight:1000;letter-spacing:-.05em;text-shadow:0 2px 5px rgba(5,8,38,.96)}
+      .ptb-level-row.is-completed .ptb-level-mini-badge img{width:46px;height:46px}
+      .ptb-level-row.is-completed .ptb-level-mini-badge b{font-size:1.34rem}
+      .ptb-level-row.is-current .ptb-level-mini-badge{width:60px;height:60px;margin-left:-4px}
+      .ptb-level-row.is-current .ptb-level-mini-badge img{width:60px;height:60px}
+      .ptb-level-row.is-current .ptb-level-mini-badge b{font-size:1.95rem}
+      .ptb-level-row.is-locked .ptb-level-mini-badge img{filter:saturate(.58) brightness(.76) contrast(.94) drop-shadow(0 5px 7px rgba(0,0,0,.18))}
+      .ptb-level-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+      .ptb-level-copy strong{display:block;font-size:.73rem;line-height:1;font-weight:900;color:#fff;white-space:nowrap}
+      .ptb-level-copy small{display:block;font-size:.63rem;line-height:1;font-weight:700;color:#9faeea;white-space:nowrap}
+      .ptb-level-row.is-completed .ptb-level-copy small{color:#4ff2ff;font-weight:800}
       .ptb-level-row.is-current .ptb-level-copy small{
-        color:#fff;border-radius:999px;padding:5px 12px;font-weight:900;font-size:.82rem;
-        background:linear-gradient(90deg,#36d7ff,#7a8aff 56%,#e55bff);
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 12px rgba(94,207,255,.30)
+        margin-top:1px;padding:4px 11px;border-radius:999px;font-size:.62rem;font-weight:900;color:#fff;
+        background:linear-gradient(90deg,#39d9ff,#718cff 56%,#e458ff);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)
       }
       .ptb-level-reward{
-        justify-self:end;width:132px;height:46px;border-radius:16px;padding:0 12px;box-sizing:border-box;
-        display:flex;align-items:center;justify-content:flex-start;gap:8px;
-        background:linear-gradient(180deg,rgba(8,22,76,.95),rgba(7,18,62,.95));
-        border:1px solid rgba(71,90,194,.36);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+        justify-self:end;width:104px;height:34px;border-radius:12px;padding:0 9px;box-sizing:border-box;
+        display:flex;align-items:center;justify-content:flex-start;gap:6px;
+        background:rgba(4,15,59,.94);border:1px solid rgba(61,80,177,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)
       }
-      .ptb-level-reward img{width:26px;height:26px;object-fit:contain;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.18))}
-      .ptb-level-reward span{font-size:.8rem;font-weight:900;color:#ffe26f;white-space:nowrap}
-      .ptb-level-status{display:grid;place-items:center;justify-self:end;width:42px;height:42px}
-      .ptb-level-status i,.ptb-level-status img{display:block}
+      .ptb-level-reward .ptb-level-coin{width:23px;height:23px;flex-basis:23px;font-size:.66rem;border-width:1.5px}
+      .ptb-level-reward span{font-size:.63rem;font-weight:900;color:#ffe16b;white-space:nowrap}
+      .ptb-level-status{width:32px;height:32px;display:grid;place-items:center;justify-self:end}
       .ptb-level-status .ptb-check{
-        width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
-        border:3px solid rgba(72,225,255,.95);background:rgba(10,31,104,.84);color:#7af0ff;font-weight:1000;font-style:normal;font-size:1.25rem;
-        box-shadow:0 0 18px rgba(72,225,255,.30);
+        width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+        border:3px solid #4ce9ff;background:rgba(6,26,92,.88);color:#6ff3ff;font-size:.92rem;font-weight:1000;
+        box-shadow:0 0 10px rgba(76,233,255,.30)
       }
-      .ptb-level-status .ptb-empty{width:38px;height:38px}
+      .ptb-level-status .ptb-empty{display:block;width:30px;height:30px}
 
-      .ptb-levels-footer{padding:8px 0 0;text-align:center}
-      .ptb-levels-footer-dots{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin-bottom:10px}
-      .ptb-levels-footer-dots i{width:6px;height:6px;border-radius:50%;background:#9baeff;box-shadow:0 0 10px rgba(155,174,255,.35)}
-      .ptb-levels-footer p{margin:0;color:#b9bffc;font-size:.96rem;font-weight:600}
+      .ptb-levels-footer{padding:5px 0 0;text-align:center}
+      .ptb-levels-footer-dots{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:7px}
+      .ptb-levels-footer-dots i{width:4px;height:4px;border-radius:50%;background:#9eaaff;box-shadow:0 0 6px rgba(155,174,255,.34)}
+      .ptb-levels-footer p{margin:0;color:#aaaee8;font-size:.7rem;font-weight:600}
 
-      @media (max-width:420px){
-        .ptb-levels-scroll{padding:14px 12px 20px}
-        .ptb-levels-title{font-size:2.4rem}
-        .ptb-levels-hero{padding:14px 14px 12px}
-        .ptb-levels-hero-top{grid-template-columns:92px minmax(0,1fr);gap:12px}
-        .ptb-levels-hero-badge,.ptb-levels-hero-badge img{width:92px;height:92px}
-        .ptb-levels-hero-badge b{font-size:3rem}
-        .ptb-levels-hero-track{height:40px}
-        .ptb-levels-hero-fill{height:11px}
-        .ptb-levels-hero-meta strong{font-size:1rem}
-        .ptb-levels-hero-reward{padding:10px 12px;gap:10px}
-        .ptb-levels-hero-reward img{width:30px;height:30px}
-        .ptb-levels-line{left:8px}
-        .ptb-level-card{
-        overflow:hidden;min-height:78px;grid-template-columns:64px minmax(0,1fr) 116px 36px;gap:8px;padding:9px 10px}
-        .ptb-level-mini-badge{width:64px;height:64px}
-        .ptb-level-mini-badge img{width:64px;height:64px}
-        .ptb-level-row.is-completed .ptb-level-mini-badge img{width:58px;height:58px}
-        .ptb-level-mini-badge b{font-size:2rem}
-        .ptb-level-row.is-completed .ptb-level-mini-badge b,.ptb-level-row.is-locked .ptb-level-mini-badge b{font-size:1.6rem}
-        .ptb-level-copy strong{font-size:.92rem}
-        .ptb-level-copy small{font-size:.76rem}
-        .ptb-level-row.is-current .ptb-level-copy small{padding:4px 10px}
-        .ptb-level-reward{width:116px;height:40px;padding:0 10px;gap:7px;border-radius:14px}
-        .ptb-level-reward img{width:22px;height:22px}
-        .ptb-level-reward span{font-size:.72rem}
-        .ptb-level-status,.ptb-level-status .ptb-empty{width:34px;height:34px}
-        .ptb-level-status .ptb-check{width:34px;height:34px;font-size:1.1rem;border-width:3px}
+      @media(max-width:370px){
+        .ptb-levels-scroll{padding-inline:10px}
+        .ptb-levels-title{font-size:1.9rem}
+        .ptb-levels-header{height:52px}
+        .ptb-levels-back{width:36px;height:36px;top:5px}
+        .ptb-levels-hero{padding:11px 11px 10px}
+        .ptb-levels-hero-top{grid-template-columns:82px minmax(0,1fr);gap:9px}
+        .ptb-levels-hero-badge,.ptb-levels-hero-badge img{width:82px;height:82px}
+        .ptb-levels-hero-badge b{font-size:2.65rem}
+        .ptb-levels-hero-copy h2{font-size:.82rem}
+        .ptb-levels-hero-track{height:33px}
+        .ptb-levels-hero-meta strong{font-size:.9rem}
+        .ptb-levels-hero-reward{padding-inline:8px;gap:6px}
+        .ptb-levels-hero-reward span{font-size:.64rem}
+        .ptb-levels-hero-reward b{font-size:.73rem}
+        .ptb-level-card{grid-template-columns:46px minmax(0,1fr) 92px 28px;gap:5px;padding:5px 6px}
+        .ptb-level-row.is-current .ptb-level-card{padding:4px 5px}
+        .ptb-level-mini-badge,.ptb-level-mini-badge img{width:45px;height:45px}
+        .ptb-level-row.is-current .ptb-level-mini-badge{width:54px;height:54px}
+        .ptb-level-row.is-current .ptb-level-mini-badge img{width:54px;height:54px}
+        .ptb-level-copy strong{font-size:.67rem}
+        .ptb-level-copy small{font-size:.57rem}
+        .ptb-level-reward{width:92px;height:31px;padding:0 7px;gap:5px}
+        .ptb-level-reward .ptb-level-coin{width:20px;height:20px;flex-basis:20px}
+        .ptb-level-reward span{font-size:.56rem}
+        .ptb-level-status,.ptb-level-status .ptb-empty{width:28px;height:28px}
+        .ptb-level-status .ptb-check{width:27px;height:27px;font-size:.8rem}
       }
     `;
     document.head.appendChild(style);
@@ -404,7 +404,7 @@
               </div>
             </div>
             <div class="ptb-levels-hero-reward">
-              <img src="/coin.png" alt="">
+              <i class="ptb-level-coin" aria-hidden="true">★</i>
               <span>Récompense à chaque niveau : <b data-level-reward>50 pièces</b></span>
             </div>
           </section>
@@ -477,7 +477,7 @@
               <small>${escapeHtml(levelSubtitle(level, current.level))}</small>
             </div>
             <div class="ptb-level-reward">
-              <img src="/coin.png" alt="">
+              <i class="ptb-level-coin" aria-hidden="true">★</i>
               <span>${levelRewardCoins()} pièces</span>
             </div>
             <div class="ptb-level-status">${statusMarkup}</div>
