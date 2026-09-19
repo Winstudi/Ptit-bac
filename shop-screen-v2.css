@@ -381,5 +381,21 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3),
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1),
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2){
-  margin-top:20px;
+  margin-top:25px;
+}
+
+/* V26 — ajustements B1-P2 / B1-P3 / B2-P1 / B2-P2 */
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img{
+  top:-5px;
+}
+
+/* Monter le nom de 5px sur ces 4 cartes */
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) h3,
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) h3,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) h3,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) h3{
+  transform:translateY(-5px);
 }
