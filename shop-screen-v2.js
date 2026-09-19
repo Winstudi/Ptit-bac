@@ -2,6 +2,12 @@
   "use strict";
 
   let activeShopTab = "featured";
+  let featuredOffers = [];
+  let featuredLoaded = false;
+  let featuredLoading = false;
+  let shopSocketBound = false;
+  let timerHandle = null;
+  let expiryRefreshPending = false;
 
   function shopEconomyState() {
     try {
@@ -20,8 +26,41 @@
     };
   }
 
+  function walletToken() {
+    return String(
+      window.session?.walletToken ||
+      localStorage.getItem("petitbac_walletToken") ||
+      ""
+    ).trim();
+  }
+
+  function esc(value = "") {
+    return String(value).replace(/[&<>"']/g, char => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
+    }[char]));
+  }
+
   function fmtNumber(value) {
     return new Intl.NumberFormat("fr-FR").format(Math.max(0, Math.floor(Number(value) || 0)));
+  }
+
+  function requestId() {
+    return globalThis.crypto?.randomUUID?.() ||
+      `shop-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,12)}`;
+  }
+
+  function emitShop(name, payload = {}) {
+    return new Promise(resolve => {
+      try {
+        socket.emit(name, { ...payload, walletToken:walletToken() }, response => resolve(response || {}));
+      } catch {
+        resolve({ ok:false, error:"Connexion à la boutique indisponible." });
+      }
+    });
   }
 
   function moneyButton(label, product) {
@@ -32,82 +71,91 @@
     return `<li><span class="shop2-check">✓</span><span>${text}</span></li>`;
   }
 
-  function featuredMarkup() {
+  function offerAt(block, position) {
+    return featuredOffers.find(offer => Number(offer.block) === block && Number(offer.position) === position) || null;
+  }
+
+  function offerAssetMarkup(offer) {
+    if (offer?.itemType === "tag") {
+      return `<div class="shop2-dyn-tag"><span>🏷️</span><b>${esc(offer.name)}</b></div>`;
+    }
+    const asset = String(offer?.asset || "").trim();
+    if (!asset) return `<div class="shop2-dyn-fallback">✦</div>`;
+    return `<img src="${esc(asset)}" alt="">`;
+  }
+
+  function durationLabel(endsAt) {
+    const remaining = Math.max(0, Number(endsAt) - Date.now());
+    if (!remaining) return "Terminé";
+    const mins = Math.ceil(remaining / 60000);
+    if (mins < 60) return `${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} h ${mins % 60 ? `${mins % 60} min` : ""}`.trim();
+    const days = Math.floor(hours / 24);
+    return `${days} j ${hours % 24 ? `${hours % 24} h` : ""}`.trim();
+  }
+
+  function offerCardMarkup(offer, size = "small") {
+    if (!offer) {
+      return `
+        <article class="shop2-dyn-offer is-empty size-${size}" aria-hidden="true">
+          <div class="shop2-empty-star">✦</div>
+        </article>`;
+    }
+
+    const currencyAsset = offer.currency === "gems" ? "/gem.png" : "/coin.png";
+    const rarity = String(offer.rarity || "commun").replace(/[^a-z0-9_-]/gi, "");
+    const badge = String(offer.badge || "").trim();
+    const promo = Math.max(0, Number(offer.discountPercent) || 0);
+    const owned = offer.owned === true;
+
     return `
-      <section class="shop2-view shop2-featured" data-shop-view="featured">
-        <article class="shop2-hero-offer">
-          <div class="shop2-hero-art">
-            <div class="shop2-avatar-wrap">
-              <img src="/avatar-prestige.png" alt="Avatar exclusif">
-            </div>
-            <div class="shop2-gift-cube" aria-hidden="true">
-              <span>✦</span>
-            </div>
-          </div>
-
-          <div class="shop2-hero-copy">
-            <span class="shop2-badge is-gold">OFFRE EXCLUSIVE</span>
-            <h2>Pack Royal</h2>
-            <p>Un look de champion pour briller en partie !</p>
-            <ul>
-              ${iconCheck("Avatar exclusif")}
-              ${iconCheck("Cadre prestige")}
-              ${iconCheck("Tag spécial")}
-            </ul>
-            <button class="shop2-discover" type="button" data-shop-product="royal">Découvrir</button>
-          </div>
-        </article>
-
-        <div class="shop2-feature-grid">
-          <article class="shop2-card shop2-cosmetic-card">
-            <span class="shop2-badge is-pink">PACK COSMÉTIQUE</span>
-            <h3>Style P’tit Bac</h3>
-            <p>Un look unique pour te démarquer !</p>
-            <div class="shop2-cosmetic-art">
-              <span class="shop2-mini-avatar"><img src="/avatar-prestige.png" alt=""></span>
-              <span class="shop2-mini-frame"><img src="/frame-prestige.png" alt=""></span>
-            </div>
-            <ul>
-              ${iconCheck("1 avatar exclusif")}
-              ${iconCheck("1 cadre Prestige")}
-              ${iconCheck("1 tag exclusif")}
-            </ul>
-            ${moneyButton("4,99 €", "style-pack")}
-          </article>
-
-          <article class="shop2-card shop2-chest-card">
-            <span class="shop2-badge is-orange">COFFRE LÉGENDAIRE</span>
-            <h3>Coffre Étoilé</h3>
-            <p>Des cosmétiques rares et plein de surprises !</p>
-            <div class="shop2-chest-art">
-              <img src="/reward-legendary-simple-closed.png" alt="Coffre légendaire">
-            </div>
-            ${moneyButton("2,99 €", "star-chest")}
-          </article>
+      <article class="shop2-dyn-offer size-${size} rarity-${rarity}${owned ? " is-owned" : ""}" data-shop-offer-card="${esc(offer.id)}">
+        <div class="shop2-dyn-topline">
+          <span class="shop2-dyn-rarity">${esc(offer.rarityLabel || "Commun")}</span>
+          <small data-offer-ends="${Number(offer.endsAt) || 0}">${esc(durationLabel(offer.endsAt))}</small>
         </div>
+        ${badge ? `<span class="shop2-dyn-badge">${esc(badge)}</span>` : ""}
+        ${promo ? `<span class="shop2-dyn-promo">-${promo}%</span>` : ""}
+        <div class="shop2-dyn-art">${offerAssetMarkup(offer)}</div>
+        <h3>${esc(offer.name)}</h3>
+        <div class="shop2-dyn-price-row">
+          ${promo ? `<del>${fmtNumber(offer.basePrice)}</del>` : ""}
+          <button class="shop2-dyn-buy" type="button" data-shop-offer="${esc(offer.id)}" ${owned ? "disabled" : ""}>
+            ${owned
+              ? `<span>Possédé</span>`
+              : `<img src="${currencyAsset}" alt=""><b>${fmtNumber(offer.finalPrice)}</b>`}
+          </button>
+        </div>
+      </article>`;
+  }
 
-        <article class="shop2-champion">
-          <div class="shop2-champion-copy">
-            <span class="shop2-badge is-pink">OFFRE LIMITÉE</span>
-            <h3>Pack Champion</h3>
-            <p>Un max de style et de récompenses !</p>
-            <div class="shop2-champion-items">
-              <span><img src="/avatar-prestige.png" alt=""><small>Avatar</small></span>
-              <span><img src="/frame-gold-stars.png" alt=""><small>Cadre</small></span>
-              <span><img src="/gem.png" alt=""><b>250</b><small>gemmes</small></span>
-              <span><img src="/coin.png" alt=""><b>5 000</b><small>pièces</small></span>
-              <span><img src="/reward-legendary-simple-closed.png" alt=""><small>1 coffre</small></span>
-            </div>
-          </div>
-          <div class="shop2-champion-gift">
-            <div class="shop2-discount">-50%</div>
-            <div class="shop2-present">✦</div>
-          </div>
-          <div class="shop2-champion-buy">
-            ${moneyButton("9,99 €", "champion-pack")}
-            <del>19,99 €</del>
-          </div>
-        </article>
+  function featuredMarkup() {
+    if (!featuredLoaded && featuredLoading) {
+      return `
+        <section class="shop2-view shop2-featured shop2-featured-dynamic" data-shop-view="featured">
+          <div class="shop2-featured-loading"><span></span><b>Chargement des offres…</b></div>
+        </section>`;
+    }
+
+    return `
+      <section class="shop2-view shop2-featured shop2-featured-dynamic" data-shop-view="featured">
+        <div class="shop2-offer-block shop2-block-1">
+          ${offerCardMarkup(offerAt(1,1), "large")}
+          ${offerCardMarkup(offerAt(1,2), "small")}
+          ${offerCardMarkup(offerAt(1,3), "small")}
+        </div>
+        <div class="shop2-offer-block shop2-block-2">
+          ${offerCardMarkup(offerAt(2,1), "small")}
+          ${offerCardMarkup(offerAt(2,2), "small")}
+          ${offerCardMarkup(offerAt(2,3), "large")}
+        </div>
+        <div class="shop2-offer-block shop2-block-3">
+          ${offerCardMarkup(offerAt(3,1), "tiny")}
+          ${offerCardMarkup(offerAt(3,2), "tiny")}
+          ${offerCardMarkup(offerAt(3,3), "tiny")}
+          ${offerCardMarkup(offerAt(3,4), "tiny")}
+        </div>
       </section>`;
   }
 
@@ -268,7 +316,103 @@
     if (typeof toast === "function") toast(message);
   }
 
+  function updateFeaturedTimers() {
+    let expired = false;
+    document.querySelectorAll("[data-offer-ends]").forEach(node => {
+      const endsAt = Number(node.dataset.offerEnds) || 0;
+      node.textContent = durationLabel(endsAt);
+      if (endsAt > 0 && endsAt <= Date.now()) expired = true;
+    });
+
+    if (expired && !expiryRefreshPending && activeShopTab === "featured") {
+      expiryRefreshPending = true;
+      featuredLoaded = false;
+      refreshFeaturedOffers({ force:true }).finally(() => {
+        expiryRefreshPending = false;
+      });
+    }
+  }
+
+  function bindFeaturedButtons() {
+    document.querySelectorAll("[data-shop-offer]").forEach(button => {
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        const offerId = String(button.dataset.shopOffer || "");
+        const offer = featuredOffers.find(item => item.id === offerId);
+        if (!offer) return;
+
+        const unit = offer.currency === "gems" ? "gemmes" : "pièces";
+        if (!window.confirm(`Acheter ${offer.name} pour ${fmtNumber(offer.finalPrice)} ${unit} ?`)) return;
+
+        button.disabled = true;
+        const old = button.innerHTML;
+        button.textContent = "…";
+
+        const response = await emitShop("shop:purchase", {
+          offerId,
+          requestId:requestId()
+        });
+
+        if (!response.ok) {
+          button.disabled = false;
+          button.innerHTML = old;
+          notify(response.error || "Achat impossible.");
+          return;
+        }
+
+        notify(`${offer.name} ajouté à ton inventaire !`);
+        featuredLoaded = false;
+        await refreshFeaturedOffers({ force:true });
+      });
+    });
+  }
+
+  async function refreshFeaturedOffers({ force = false } = {}) {
+    if (featuredLoading && !force) return;
+    featuredLoading = true;
+    if (!featuredLoaded && activeShopTab === "featured") {
+      const content = document.querySelector(".shop2-content");
+      if (content) content.innerHTML = featuredMarkup();
+    }
+
+    const response = await emitShop("shop:get");
+    featuredLoading = false;
+
+    if (response.ok) {
+      featuredOffers = Array.isArray(response.offers) ? response.offers : [];
+      featuredLoaded = true;
+    } else if (!featuredLoaded) {
+      featuredOffers = [];
+      featuredLoaded = true;
+      notify(response.error || "Offres indisponibles.");
+    }
+
+    if (activeShopTab === "featured") {
+      const content = document.querySelector(".shop2-content");
+      if (content) {
+        content.innerHTML = featuredMarkup();
+        bindFeaturedButtons();
+        updateFeaturedTimers();
+      }
+    }
+  }
+
+  function bindShopSocket() {
+    if (shopSocketBound) return;
+    shopSocketBound = true;
+    try {
+      socket.on("shop:update", () => {
+        featuredLoaded = false;
+        if (activeShopTab === "featured" && document.querySelector(".shop-v2")) {
+          refreshFeaturedOffers({ force:true });
+        }
+      });
+    } catch {}
+  }
+
   function bindShopV2() {
+    bindShopSocket();
+
     document.getElementById("shopV2Back")?.addEventListener("click", () => {
       if (typeof renderHome === "function") renderHome();
     });
@@ -284,11 +428,6 @@
 
     document.querySelectorAll("[data-shop-product]").forEach(button => {
       button.addEventListener("click", () => {
-        const product = String(button.dataset.shopProduct || "");
-        if (product === "royal") {
-          notify("Le détail de cette offre sera disponible prochainement.");
-          return;
-        }
         notify("Les achats seront activés avec les achats intégrés de l’application.");
       });
     });
@@ -305,6 +444,14 @@
         notify(`Échange ${fmtNumber(cost)} gemmes → ${fmtNumber(coins)} pièces : connexion serveur à venir.`);
       });
     });
+
+    bindFeaturedButtons();
+    clearInterval(timerHandle);
+    timerHandle = setInterval(updateFeaturedTimers, 30000);
+
+    if (activeShopTab === "featured" && !featuredLoaded) {
+      refreshFeaturedOffers();
+    }
   }
 
   function renderShopV2(tab = null) {
@@ -362,7 +509,8 @@
   window.renderShop = renderShopV2;
   window.PtitBacShop = {
     open: renderShopV2,
-    tab: () => activeShopTab
+    tab: () => activeShopTab,
+    refreshFeatured:() => refreshFeaturedOffers({ force:true })
   };
   try { renderShop = renderShopV2; } catch {}
 })();

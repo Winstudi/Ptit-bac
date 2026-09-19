@@ -6,6 +6,7 @@ const { createWalletAtomicService } = require("./wallet-atomic-service.js");
 const { createRewardChestService } = require("./reward-chests-service.js");
 const { createProgressionService } = require("./progression-service.js");
 const { createLevelRewardsService } = require("./level-rewards-service.js");
+const installShop = require("./shop-hook.js");
 
 module.exports = function installRewardChests(io) {
   const inventoryService = createInventoryService({
@@ -41,8 +42,11 @@ module.exports = function installRewardChests(io) {
     syncGems:(token, value) => global.__ptbAdminSyncGems?.(token, value)
   });
 
+  const shopService = installShop(io);
+
   global.__ptbRewardChestService = service;
   global.__ptbLevelRewardService = levelRewards;
+  global.__ptbShopService = shopService;
 
   async function socketWalletToken(socket, payload = {}) {
     const token = String(payload.walletToken || "").trim();
