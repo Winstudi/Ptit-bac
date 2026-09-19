@@ -303,3 +303,68 @@ body:has(.shop-v2) .economy-hud{display:none!important}
     font-size:.34rem;
   }
 }
+
+/* V24 — bandeau prix 30px, déplacements des items et prix promo détaillé */
+.shop-v2.is-compact-shop-header .shop2-dyn-offer{
+  padding-bottom:30px;
+}
+
+/* Bandeau prix et croix : exactement 30px */
+.shop-v2.is-compact-shop-header .shop2-dyn-price-row{
+  height:30px;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-actions{
+  height:30px;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-buy,
+.shop-v2.is-compact-shop-header .shop2-dyn-buy:disabled{
+  height:30px!important;
+  min-height:30px!important;
+  max-height:30px!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-cancel,
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.is-confirming .shop2-dyn-cancel{
+  height:30px!important;
+  min-height:30px!important;
+  max-height:30px!important;
+}
+
+/* Le badge -xx% reste juste au-dessus du bandeau prix */
+.shop-v2.is-compact-shop-header .shop2-dyn-promo-price{
+  bottom:32px;
+}
+
+/* Placement vertical des images d'items */
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img{
+  position:relative;
+  top:-15px;
+}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-art>img{
+  position:relative;
+  top:-25px;
+}
+
+/* Prix promotionnel */
+.shop-v2.is-compact-shop-header .shop2-dyn-buy .shop2-price-old{
+  display:inline!important;
+  margin:0;
+  color:#fff;
+  opacity:.20;
+  font-size:1.02em;
+  line-height:1;
+  text-decoration:line-through;
+  text-decoration-thickness:1.5px;
+  text-decoration-color:rgba(255,255,255,.55);
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-buy .shop2-price-promo{
+  color:#f42f91;
+  font-size:1.2em;
+  line-height:1;
+  text-shadow:0 0 6px rgba(244,47,145,.25);
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-buy{
+  gap:4px;
+}

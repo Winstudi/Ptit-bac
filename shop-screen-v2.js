@@ -130,7 +130,9 @@
             <button class="shop2-dyn-buy" type="button" data-shop-offer="${esc(offer.id)}" ${owned ? "disabled" : ""}>
               ${owned
                 ? `<span>Possédé</span>`
-                : `<img src="${currencyAsset}" alt=""><b>${fmtNumber(offer.finalPrice)}</b>`}
+                : promo
+                  ? `<img src="${currencyAsset}" alt=""><del class="shop2-price-old">${fmtNumber(offer.basePrice)}</del><b class="shop2-price-promo">${fmtNumber(offer.finalPrice)}</b>`
+                  : `<img src="${currencyAsset}" alt=""><b>${fmtNumber(offer.finalPrice)}</b>`}
             </button>
             ${owned ? "" : `<button class="shop2-dyn-cancel" type="button" data-shop-offer-cancel="${esc(offer.id)}" aria-label="Annuler l’achat">✕</button>`}
           </div>
