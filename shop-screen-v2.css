@@ -368,3 +368,18 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-dyn-buy{
   gap:4px;
 }
+
+/* V25 — prix barré blanc plein */
+.shop-v2.is-compact-shop-header .shop2-dyn-buy .shop2-price-old{
+  color:#fff!important;
+  opacity:1!important;
+  text-decoration-color:#fff!important;
+}
+
+/* V25 — petites cartes : bord supérieur abaissé de 20px */
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2),
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3),
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1),
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2){
+  margin-top:20px;
+}
