@@ -40,41 +40,41 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 @media(max-width:340px){.shop2-tab span:last-child{font-size:.52rem}.shop2-resource-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shop2-resource-card{min-height:173px}.shop2-useful-card{grid-template-columns:1fr}.shop2-useful-art{position:absolute;right:7px;top:8px;opacity:.32}.shop2-useful-card.is-noads,.shop2-useful-card.is-unlimited{grid-template-columns:1fr}.shop2-noads-icon,.shop2-noads-sign,.shop2-heart-infinity{position:absolute;right:10px;top:10px;opacity:.45}.shop2-useful-card>.shop2-buy{width:100%}.shop2-block-1{grid-template-columns:1.85fr 1fr 1fr}.shop2-block-2{grid-template-columns:1fr 1fr 1.85fr}.shop2-dyn-offer.size-tiny .shop2-dyn-rarity{display:none}}
 
 
-/* Offre à l’affiche — bandeau compact avec navigation + ressources */
-.shop-v2.is-featured-tab{padding-top:max(3px,env(safe-area-inset-top))!important}
-.shop-v2.is-featured-tab .shop2-brand{height:44px;box-sizing:border-box;padding:0;text-align:left;display:flex;align-items:flex-start;justify-content:flex-start;overflow:visible}
-.shop-v2.is-featured-tab .shop2-brand-notice{height:40px;width:calc(100% + 62px);max-width:none;margin-left:-10px;padding:0 20px 0 8px;border:1px solid rgba(178,74,255,.82);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(90deg,rgba(49,19,111,.98) 0%,rgba(32,24,119,.97) 42%,rgba(10,35,104,.96) 100%);display:flex;align-items:center;justify-content:space-between;gap:5px;box-sizing:border-box;box-shadow:0 0 16px rgba(215,70,255,.34),0 8px 20px rgba(0,0,0,.18),inset 0 0 18px rgba(93,108,255,.16)}
-.shop-v2.is-featured-tab .shop2-brand-notice-main{min-width:0;display:flex;align-items:center;gap:4px;flex:0 1 auto}
-.shop-v2.is-featured-tab .shop2-notice-back{flex:0 0 28px;width:28px;height:28px;padding:0}
-.shop-v2.is-featured-tab .shop2-notice-back img{width:27px;height:27px}
-.shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex:0 0 27.6px;width:27.6px;height:27.6px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
-.shop-v2.is-featured-tab .shop2-brand-notice h1{margin:0;color:#fff;font-size:1.144rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;position:relative;top:1px;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
-.shop-v2.is-featured-tab .shop2-notice-wallet{min-width:0;justify-self:auto;margin-left:auto;gap:5px;flex:0 1 auto}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:3px;box-sizing:border-box}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:21px;height:21px;flex:0 0 21px}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
-.shop-v2.is-featured-tab .shop2-block-1{height:190px}
-.shop-v2.is-featured-tab .shop2-block-2{height:180px}
-.shop-v2.is-featured-tab .shop2-block-3{height:150px}
-.shop-v2.is-featured-tab .shop2-dyn-art{min-height:0;overflow:hidden}
+/* Boutique — bandeau compact partagé par Offre à l’affiche, Ressource et Utile */
+.shop-v2.is-compact-shop-header{padding-top:max(3px,env(safe-area-inset-top))!important}
+.shop-v2.is-compact-shop-header .shop2-brand{height:44px;box-sizing:border-box;padding:0;text-align:left;display:flex;align-items:flex-start;justify-content:flex-start;overflow:visible}
+.shop-v2.is-compact-shop-header .shop2-brand-notice{height:40px;width:calc(100% + 62px);max-width:none;margin-left:-10px;padding:0 20px 0 8px;border:1px solid rgba(178,74,255,.82);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(90deg,rgba(49,19,111,.98) 0%,rgba(32,24,119,.97) 42%,rgba(10,35,104,.96) 100%);display:flex;align-items:center;justify-content:space-between;gap:5px;box-sizing:border-box;box-shadow:0 0 16px rgba(215,70,255,.34),0 8px 20px rgba(0,0,0,.18),inset 0 0 18px rgba(93,108,255,.16)}
+.shop-v2.is-compact-shop-header .shop2-brand-notice-main{min-width:0;display:flex;align-items:center;gap:4px;flex:0 1 auto}
+.shop-v2.is-compact-shop-header .shop2-notice-back{flex:0 0 28px;width:28px;height:28px;padding:0}
+.shop-v2.is-compact-shop-header .shop2-notice-back img{width:27px;height:27px}
+.shop-v2.is-compact-shop-header .shop2-brand-notice .shop2-notice-logo{flex:0 0 27.6px;width:27.6px;height:27.6px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
+.shop-v2.is-compact-shop-header .shop2-brand-notice h1{margin:0;color:#fff;font-size:1.144rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;position:relative;top:1px;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
+.shop-v2.is-compact-shop-header .shop2-notice-wallet{min-width:0;justify-self:auto;margin-left:auto;gap:5px;flex:0 1 auto}
+.shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:3px;box-sizing:border-box}
+.shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill img{width:21px;height:21px;flex:0 0 21px}
+.shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
+.shop-v2.is-compact-shop-header .shop2-block-1{height:200px}
+.shop-v2.is-compact-shop-header .shop2-block-2{height:190px}
+.shop-v2.is-compact-shop-header .shop2-block-3{height:150px}
+.shop-v2.is-compact-shop-header .shop2-dyn-art{min-height:0;overflow:hidden}
 @media(max-width:380px){
-  .shop-v2.is-featured-tab .shop2-brand{height:44px}
-  .shop-v2.is-featured-tab .shop2-brand-notice{width:calc(100% + 54px);margin-left:-6px;padding:0 14px 0 4px;gap:3px}
-  .shop-v2.is-featured-tab .shop2-brand-notice-main{gap:2px}
-  .shop-v2.is-featured-tab .shop2-notice-back{flex-basis:25px;width:25px;height:25px;padding:0}
-  .shop-v2.is-featured-tab .shop2-notice-back img{width:25.5px;height:25.5px}
-  .shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex-basis:24px;width:24px;height:24px}
-  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.975rem}
-  .shop-v2.is-featured-tab .shop2-notice-wallet{gap:5px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:2px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
-  .shop-v2.is-featured-tab .shop2-block-1,.shop-v2.is-featured-tab .shop2-block-2{height:170px}
-  .shop-v2.is-featured-tab .shop2-block-3{height:135px}
+  .shop-v2.is-compact-shop-header .shop2-brand{height:44px}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice{width:calc(100% + 54px);margin-left:-6px;padding:0 14px 0 4px;gap:3px}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice-main{gap:2px}
+  .shop-v2.is-compact-shop-header .shop2-notice-back{flex-basis:25px;width:25px;height:25px;padding:0}
+  .shop-v2.is-compact-shop-header .shop2-notice-back img{width:25.5px;height:25.5px}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice .shop2-notice-logo{flex-basis:24px;width:24px;height:24px}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice h1{font-size:.975rem}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet{gap:5px}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:2px}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
+  .shop-v2.is-compact-shop-header .shop2-block-1,.shop-v2.is-compact-shop-header .shop2-block-2{height:180px}
+  .shop-v2.is-compact-shop-header .shop2-block-3{height:135px}
 }
 @media(max-width:340px){
-  .shop-v2.is-featured-tab .shop2-brand-notice{padding-right:10px}
-  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.897rem}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{padding-inline:0}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.645rem}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice{padding-right:10px}
+  .shop-v2.is-compact-shop-header .shop2-brand-notice h1{font-size:.897rem}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill{padding-inline:0}
+  .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.645rem}
 }

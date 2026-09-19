@@ -465,43 +465,27 @@
     const maxLives = Math.max(1, Number(eco.maxLives) || 5);
 
     setScreen(`
-      <main class="screen shop-v2${activeShopTab === "featured" ? " is-featured-tab" : ""}">
+      <main class="screen shop-v2 is-compact-shop-header">
         <div class="shop2-sky" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
 
-        ${activeShopTab === "featured" ? `
-          <section class="shop2-brand shop2-brand-featured">
-            <div class="shop2-brand-notice">
-              <div class="shop2-brand-notice-main">
-                <button class="shop2-back shop2-notice-back" id="shopV2Back" type="button" aria-label="Retour">
-                  <img src="/back-arrow.png" alt="">
-                </button>
-                <img class="shop2-notice-logo" src="/shop.png" alt="">
-                <h1>Boutique</h1>
-              </div>
-              <div class="shop2-wallet shop2-notice-wallet">
-                <div class="shop2-wallet-pill"><img src="/coin.png" alt=""><b>${fmtNumber(coins)}</b></div>
-                <div class="shop2-wallet-pill"><img src="/gem.png" alt=""><b>${fmtNumber(gems)}</b></div>
-                <div class="shop2-wallet-pill"><img src="/heart.png" alt=""><b>${unlimited ? "∞" : `${lives}/${maxLives}`}</b></div>
-              </div>
+        <section class="shop2-brand shop2-brand-featured">
+          <div class="shop2-brand-notice">
+            <div class="shop2-brand-notice-main">
+              <button class="shop2-back shop2-notice-back" id="shopV2Back" type="button" aria-label="Retour">
+                <img src="/back-arrow.png" alt="">
+              </button>
+              <img class="shop2-notice-logo" src="/shop.png" alt="">
+              <h1>Boutique</h1>
             </div>
-          </section>` : `
-          <header class="shop2-header">
-            <button class="shop2-back" id="shopV2Back" type="button" aria-label="Retour">
-              <img src="/back-arrow.png" alt="">
-            </button>
-
-            <div class="shop2-wallet">
+            <div class="shop2-wallet shop2-notice-wallet">
               <div class="shop2-wallet-pill"><img src="/coin.png" alt=""><b>${fmtNumber(coins)}</b></div>
               <div class="shop2-wallet-pill"><img src="/gem.png" alt=""><b>${fmtNumber(gems)}</b></div>
               <div class="shop2-wallet-pill"><img src="/heart.png" alt=""><b>${unlimited ? "∞" : `${lives}/${maxLives}`}</b></div>
             </div>
-          </header>
-          <section class="shop2-brand">
-            <h1>Boutique</h1>
-            <p>Petites envies, grandes récompenses</p>
-          </section>`}
+          </div>
+        </section>
 
         <nav class="shop2-tabs" aria-label="Catégories de la boutique">
           ${tabMarkup("featured", "★", "Offre à l’affiche")}
