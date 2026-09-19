@@ -36,6 +36,8 @@ test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre 
   assert.deepEqual(DEFAULT_OWNED.avatars, ["/a1.webp", "/a2.webp", "/a3.webp", "/a4.webp", "/a5.webp"]);
   assert.deepEqual(DEFAULT_OWNED.frames, []);
   assert.deepEqual(DEFAULT_OWNED.tags, ["tag_debutant"]);
+  assert.equal(CATALOG.tag.tag_quantique?.name, "Tag Quantique");
+  assert.equal(CATALOG.tag.tag_quantique?.asset, "/tag-quantique.png");
   assert.deepEqual(Object.keys(CATALOG.frame), FRAME_IDS);
 });
 
@@ -92,11 +94,19 @@ test("le service métier délègue toujours le schéma aux migrations centrales"
   assert.equal(migrationCalls, 1);
 });
 
-test("le catalogue admin expose les cadres avec leurs assets", () => {
+test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", () => {
   const entries = catalogEntries();
   const frames = entries.filter(item => item.type === "frame");
+  const tags = entries.filter(item => item.type === "tag");
 
   assert.equal(frames.length, 7);
+  const quantumTag = tags.find(item => item.key === "tag:tag_quantique");
+  assert.ok(quantumTag);
+  assert.equal(quantumTag.label, "Tag Quantique");
+  assert.equal(quantumTag.asset, "/tag-quantique.png");
+  assert.equal(quantumTag.defaultOwned, false);
+  assert.equal(quantumTag.defaultRarity, "exclusif");
+  assert.equal(parseCatalogKey("tag:tag_quantique")?.id, "tag_quantique");
   for (const id of FRAME_IDS) {
     const item = frames.find(entry => entry.id === id);
     assert.ok(item);

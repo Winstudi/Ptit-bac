@@ -58,7 +58,13 @@
   });
 
   const TAGS = Object.freeze({
-    tag_debutant: { id:"tag_debutant", name:"Débutant", icon:"🌱", className:"inv-tag-starter" }
+    tag_debutant: { id:"tag_debutant", name:"Débutant", icon:"🌱", className:"inv-tag-starter" },
+    tag_quantique: {
+      id:"tag_quantique",
+      name:"Tag Quantique",
+      asset:"/tag-quantique.png",
+      className:"inv-tag-quantique"
+    }
   });
 
   let serverState = null;
@@ -121,14 +127,18 @@
       raw.owned.frames = Array.isArray(raw.owned.frames)
         ? raw.owned.frames.filter(id => FRAMES[id])
         : [];
-      raw.owned.tags = ["tag_debutant"];
+      raw.owned.tags = Array.isArray(raw.owned.tags)
+        ? raw.owned.tags.filter(id => TAGS[id])
+        : ["tag_debutant"];
       raw.equipped.avatar = KNOWN_AVATARS.includes(raw.equipped.avatar)
         ? raw.equipped.avatar
         : BASE_AVATARS[0];
       raw.equipped.frame = FRAMES[raw.equipped.frame]
         ? raw.equipped.frame
         : "";
-      raw.equipped.tag = raw.equipped.tag === "" ? "" : "tag_debutant";
+      raw.equipped.tag = raw.equipped.tag === ""
+        ? ""
+        : (TAGS[raw.equipped.tag] ? raw.equipped.tag : "tag_debutant");
       localStorage.setItem(STORAGE_KEY, JSON.stringify(raw));
     } catch {}
   }
@@ -260,7 +270,27 @@
   function tagMarkup(tagId, extraClass = "") {
     const tag = TAGS[tagId];
     if (!tag) return "";
+
+    if (tag.asset) {
+      return `
+        <span class="inv-tag ${tag.className} ${esc(extraClass)} inv-tag-image">
+          <img src="${esc(tag.asset)}" alt="${esc(tag.name)}" draggable="false" style="display:block; max-width: 100%; height: auto; max-height: 44px; filter: drop-shadow(0 0 10px rgba(0, 220, 255, 0.35));">
+        </span>`;
+    }
+
     return `<span class="inv-tag ${tag.className} ${esc(extraClass)}"><span aria-hidden="true">${tag.icon}</span><strong>${esc(tag.name)}</strong></span>`;
+  }
+
+  function tagChoiceInner(tag) {
+    if (!tag) return "";
+    if (tag.asset) {
+      return `
+        <img src="${esc(tag.asset)}" alt="${esc(tag.name)}" draggable="false" style="display:block; width: 100%; max-width: 220px; height: auto; margin: 0 auto 6px;">
+        <strong>${esc(tag.name)}</strong>`;
+    }
+    return `
+      <span aria-hidden="true">${tag.icon}</span>
+      <strong>${esc(tag.name)}</strong>`;
   }
 
   function ownedLabel(count) {
@@ -437,8 +467,7 @@
                     data-inventory-id="${esc(tagId)}"
                     aria-pressed="${selected}"
                   >
-                    <span aria-hidden="true">${tag.icon}</span>
-                    <strong>${esc(tag.name)}</strong>
+                    ${tagChoiceInner(tag)}
                     <i class="inventory-v2-check" aria-hidden="true">✓</i>
                   </button>`;
               }).join("")}

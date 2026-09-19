@@ -102,7 +102,14 @@ const CATALOG = Object.freeze({
     })
   }),
   tag: Object.freeze({
-    tag_debutant: Object.freeze({ id: "tag_debutant", name: "Débutant", defaultOwned: true })
+    tag_debutant: Object.freeze({ id: "tag_debutant", name: "Débutant", defaultOwned: true }),
+    tag_quantique: Object.freeze({
+      id: "tag_quantique",
+      name: "Tag Quantique",
+      asset: "/tag-quantique.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    })
   })
 });
 
