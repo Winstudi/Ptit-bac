@@ -8,6 +8,7 @@
   let shopSocketBound = false;
   let timerHandle = null;
   let expiryRefreshPending = false;
+  let confirmingOfferId = "";
 
   function shopEconomyState() {
     try {
@@ -121,11 +122,14 @@
         <h3>${esc(offer.name)}</h3>
         <div class="shop2-dyn-price-row">
           ${promo ? `<del>${fmtNumber(offer.basePrice)}</del>` : ""}
-          <button class="shop2-dyn-buy" type="button" data-shop-offer="${esc(offer.id)}" ${owned ? "disabled" : ""}>
-            ${owned
-              ? `<span>Possédé</span>`
-              : `<img src="${currencyAsset}" alt=""><b>${fmtNumber(offer.finalPrice)}</b>`}
-          </button>
+          <div class="shop2-dyn-actions">
+            <button class="shop2-dyn-buy" type="button" data-shop-offer="${esc(offer.id)}" ${owned ? "disabled" : ""}>
+              ${owned
+                ? `<span>Possédé</span>`
+                : `<img src="${currencyAsset}" alt=""><b>${fmtNumber(offer.finalPrice)}</b>`}
+            </button>
+            ${owned ? "" : `<button class="shop2-dyn-cancel" type="button" data-shop-offer-cancel="${esc(offer.id)}" aria-label="Annuler l’achat">✕</button>`}
+          </div>
         </div>
       </article>`;
   }
@@ -318,7 +322,21 @@
     }
   }
 
+  function syncConfirmingOfferUI() {
+    document.querySelectorAll("[data-shop-offer-card]").forEach(card => {
+      const offerId = String(card.dataset.shopOfferCard || "");
+      card.classList.toggle("is-confirming", !!offerId && offerId === confirmingOfferId);
+    });
+  }
+
+  function setConfirmingOffer(offerId = "") {
+    confirmingOfferId = String(offerId || "");
+    syncConfirmingOfferUI();
+  }
+
   function bindFeaturedButtons() {
+    syncConfirmingOfferUI();
+
     document.querySelectorAll("[data-shop-offer]").forEach(button => {
       button.addEventListener("click", async () => {
         if (button.disabled) return;
@@ -326,10 +344,15 @@
         const offer = featuredOffers.find(item => item.id === offerId);
         if (!offer) return;
 
-        const unit = offer.currency === "gems" ? "gemmes" : "pièces";
-        if (!window.confirm(`Acheter ${offer.name} pour ${fmtNumber(offer.finalPrice)} ${unit} ?`)) return;
+        if (confirmingOfferId !== offerId) {
+          setConfirmingOffer(offerId);
+          return;
+        }
 
-        button.disabled = true;
+        document.querySelectorAll("[data-shop-offer], [data-shop-offer-cancel]").forEach(node => {
+          node.disabled = true;
+        });
+
         const old = button.innerHTML;
         button.textContent = "…";
 
@@ -339,21 +362,33 @@
         });
 
         if (!response.ok) {
-          button.disabled = false;
+          document.querySelectorAll("[data-shop-offer], [data-shop-offer-cancel]").forEach(node => {
+            node.disabled = false;
+          });
           button.innerHTML = old;
+          setConfirmingOffer(offerId);
           notify(response.error || "Achat impossible.");
           return;
         }
 
+        setConfirmingOffer("");
         notify(`${offer.name} ajouté à ton inventaire !`);
         featuredLoaded = false;
         await refreshFeaturedOffers({ force:true });
+      });
+    });
+
+    document.querySelectorAll("[data-shop-offer-cancel]").forEach(button => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        setConfirmingOffer("");
       });
     });
   }
 
   async function refreshFeaturedOffers({ force = false } = {}) {
     if (featuredLoading && !force) return;
+    if (force) setConfirmingOffer("");
     featuredLoading = true;
     if (!featuredLoaded && activeShopTab === "featured") {
       const content = document.querySelector(".shop2-content");
@@ -407,6 +442,7 @@
         const next = String(button.dataset.shopTab || "featured");
         if (!["featured", "resources", "useful"].includes(next) || next === activeShopTab) return;
         activeShopTab = next;
+        setConfirmingOffer("");
         renderShopV2();
       });
     });
