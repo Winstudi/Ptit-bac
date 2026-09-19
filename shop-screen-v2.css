@@ -48,8 +48,8 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-featured-tab .shop2-notice-back{flex:0 0 28px;width:28px;height:28px;padding:0}
 .shop-v2.is-featured-tab .shop2-notice-back img{width:27px;height:27px}
 .shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex:0 0 27.6px;width:27.6px;height:27.6px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
-.shop-v2.is-featured-tab .shop2-brand-notice h1{margin:0;color:#fff;font-size:1.144rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;position:relative;top:15px;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
-.shop-v2.is-featured-tab .shop2-notice-wallet{min-width:0;justify-self:auto;margin-left:auto;gap:3px;flex:0 1 auto}
+.shop-v2.is-featured-tab .shop2-brand-notice h1{margin:0;color:#fff;font-size:1.144rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;position:relative;top:1px;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
+.shop-v2.is-featured-tab .shop2-notice-wallet{min-width:0;justify-self:auto;margin-left:auto;gap:5px;flex:0 1 auto}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:3px;box-sizing:border-box}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:21px;height:21px;flex:0 0 21px}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
@@ -65,7 +65,7 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   .shop-v2.is-featured-tab .shop2-notice-back img{width:25.5px;height:25.5px}
   .shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex-basis:24px;width:24px;height:24px}
   .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.975rem}
-  .shop-v2.is-featured-tab .shop2-notice-wallet{gap:2px}
+  .shop-v2.is-featured-tab .shop2-notice-wallet{gap:5px}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:2px}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
