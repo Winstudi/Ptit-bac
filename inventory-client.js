@@ -8,6 +8,16 @@
 
   const STORAGE_KEY = "petitbac_inventory_v1";
   const BASE_AVATARS = ["/a1.webp", "/a2.webp", "/a3.webp", "/a4.webp", "/a5.webp"];
+  const KNOWN_AVATARS = Object.freeze([
+    ...BASE_AVATARS,
+    "/avatar-prestige.png",
+    "/avatar-main-quantique.webp",
+    "/avatar-chevalier.webp",
+    "/avatar-renard.webp",
+    "/avatar-spectre.webp",
+    "/avatar-minto.webp",
+    "/avatar-bot.webp"
+  ]);
 
   const FRAMES = Object.freeze({
     frame_nature: {
@@ -34,6 +44,16 @@
       id:"frame_gold_stars",
       name:"Étoiles dorées",
       asset:"/frame-gold-stars.png"
+    },
+    "frame-prestige": {
+      id:"frame-prestige",
+      name:"Prestige",
+      asset:"/frame-prestige.png"
+    },
+    frame_quantique: {
+      id:"frame_quantique",
+      name:"Cadre Quantique",
+      asset:"/frame-quantique.png"
     }
   });
 
@@ -95,10 +115,16 @@
       if (!raw || typeof raw !== "object") return;
       raw.owned = raw.owned && typeof raw.owned === "object" ? raw.owned : {};
       raw.equipped = raw.equipped && typeof raw.equipped === "object" ? raw.equipped : {};
+      raw.owned.avatars = Array.isArray(raw.owned.avatars)
+        ? raw.owned.avatars.filter(id => KNOWN_AVATARS.includes(id))
+        : [...BASE_AVATARS];
       raw.owned.frames = Array.isArray(raw.owned.frames)
         ? raw.owned.frames.filter(id => FRAMES[id])
         : [];
       raw.owned.tags = ["tag_debutant"];
+      raw.equipped.avatar = KNOWN_AVATARS.includes(raw.equipped.avatar)
+        ? raw.equipped.avatar
+        : BASE_AVATARS[0];
       raw.equipped.frame = FRAMES[raw.equipped.frame]
         ? raw.equipped.frame
         : "";
@@ -113,7 +139,7 @@
     const owned = value?.owned || {};
     const equipped = value?.equipped || {};
     const avatars = Array.isArray(owned.avatars)
-      ? owned.avatars.filter(id => BASE_AVATARS.includes(id))
+      ? owned.avatars.filter(id => KNOWN_AVATARS.includes(id))
       : [...BASE_AVATARS];
     const frames = Array.isArray(owned.frames)
       ? owned.frames.filter(id => FRAMES[id])
@@ -610,6 +636,7 @@
         console.warn("Inventaire V2: utilise l’équipement serveur.");
         return false;
       },
+      avatars: KNOWN_AVATARS,
       frames: FRAMES,
       tags: TAGS,
       serverManaged: true,

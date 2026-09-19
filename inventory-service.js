@@ -16,6 +16,42 @@ const CATALOG = Object.freeze({
       defaultOwned: false,
       defaultRarity: "exclusif",
       levelOnly: true
+    }),
+    "/avatar-main-quantique.webp": Object.freeze({
+      id: "/avatar-main-quantique.webp",
+      name: "Main Quantique",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-chevalier.webp": Object.freeze({
+      id: "/avatar-chevalier.webp",
+      name: "Chevalier",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-renard.webp": Object.freeze({
+      id: "/avatar-renard.webp",
+      name: "Renard",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-spectre.webp": Object.freeze({
+      id: "/avatar-spectre.webp",
+      name: "Spectre",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-minto.webp": Object.freeze({
+      id: "/avatar-minto.webp",
+      name: "Minto",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-bot.webp": Object.freeze({
+      id: "/avatar-bot.webp",
+      name: "Bot",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
     })
   }),
   frame: Object.freeze({
@@ -56,6 +92,13 @@ const CATALOG = Object.freeze({
       defaultOwned: false,
       defaultRarity: "exclusif",
       levelOnly: true
+    }),
+    frame_quantique: Object.freeze({
+      id: "frame_quantique",
+      name: "Cadre Quantique",
+      asset: "/frame-quantique.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
     })
   }),
   tag: Object.freeze({

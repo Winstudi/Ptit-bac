@@ -11,7 +11,13 @@
 
   const KNOWN_AVATARS = Object.freeze([
     ...BASE_AVATARS,
-    "/avatar-prestige.png"
+    "/avatar-prestige.png",
+    "/avatar-main-quantique.webp",
+    "/avatar-chevalier.webp",
+    "/avatar-renard.webp",
+    "/avatar-spectre.webp",
+    "/avatar-minto.webp",
+    "/avatar-bot.webp"
   ]);
 
   const LEGACY_AVATARS = Object.freeze({

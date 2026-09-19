@@ -19,7 +19,17 @@ const FRAME_IDS = [
   "frame_purple_flame",
   "frame_ice",
   "frame_gold_stars",
-  "frame-prestige"
+  "frame-prestige",
+  "frame_quantique"
+];
+
+const NEW_AVATAR_IDS = [
+  "/avatar-main-quantique.webp",
+  "/avatar-chevalier.webp",
+  "/avatar-renard.webp",
+  "/avatar-spectre.webp",
+  "/avatar-minto.webp",
+  "/avatar-bot.webp"
 ];
 
 test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre ne l'est", () => {
@@ -37,6 +47,13 @@ test("les cadres publiés font partie du catalogue officiel", () => {
   }
   assert.equal(normalizeItemId("frame", "frame_inconnu"), "");
   assert.equal(normalizeAvatarId("/avatar-secret.webp"), "/a1.webp");
+});
+
+test("les nouveaux avatars sont reconnus sans être possédés par défaut", () => {
+  for (const id of NEW_AVATAR_IDS) {
+    assert.equal(normalizeAvatarId(id), id);
+    assert.equal(CATALOG.avatar[id]?.defaultOwned, false);
+  }
 });
 
 test("un ancien profil ne reçoit pas automatiquement un cadre premium", () => {
@@ -79,7 +96,7 @@ test("le catalogue admin expose les cadres avec leurs assets", () => {
   const entries = catalogEntries();
   const frames = entries.filter(item => item.type === "frame");
 
-  assert.equal(frames.length, 6);
+  assert.equal(frames.length, 7);
   for (const id of FRAME_IDS) {
     const item = frames.find(entry => entry.id === id);
     assert.ok(item);
@@ -87,6 +104,17 @@ test("le catalogue admin expose les cadres avec leurs assets", () => {
     assert.match(item.asset, /^\/frame-.*\.png$/);
   }
 
+  for (const id of NEW_AVATAR_IDS) {
+    const item = entries.find(entry => entry.key === `avatar:${id}`);
+    assert.ok(item);
+    assert.equal(item.type, "avatar");
+    assert.equal(item.id, id);
+  }
+
+  const quantumFrame = entries.find(item => item.key === "frame:frame_quantique");
+  assert.ok(quantumFrame);
+  assert.equal(quantumFrame.label, "Cadre Quantique");
+  assert.equal(quantumFrame.asset, "/frame-quantique.png");
 
   const prestigeAvatar = entries.find(item => item.key === "avatar:/avatar-prestige.png");
   assert.ok(prestigeAvatar);
