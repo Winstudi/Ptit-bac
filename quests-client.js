@@ -117,7 +117,7 @@
           </div>
         </div>
 
-        <div class="qv1-quest-reward">
+        <div class="qv1-quest-reward" aria-label="Récompense ${fmt(quest.xp)} XP">
           <strong>+${fmt(quest.xp)}</strong>
           <small>XP</small>
         </div>
@@ -172,13 +172,19 @@
         </header>
 
         <section class="qv1-intro">
-          <div>
-            <h2>Quêtes</h2>
-            <p>3 défis par jour · renouvellement à 11h</p>
-          </div>
+          <p class="qv1-daily-copy">3 défis par jour · renouvellement à 11h</p>
+
           <span class="qv1-reset">
-            Nouvelles quêtes dans
-            <b data-qv1-reset>${status ? timeRemaining(status.refreshAt) : "—"}</b>
+            <span class="qv1-reset-clock" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="7.5"></circle>
+                <path d="M12 7.6v4.8h4"></path>
+              </svg>
+            </span>
+            <span class="qv1-reset-copy">
+              Nouvelles quêtes dans
+              <b data-qv1-reset>${status ? timeRemaining(status.refreshAt) : "—"}</b>
+            </span>
           </span>
         </section>
 
@@ -187,13 +193,22 @@
             <span class="qv1-chest-kicker">RÉCOMPENSE</span>
             <h2>Coffre de quêtes</h2>
             <p>Valide 4 quêtes pour ouvrir un coffre normal.</p>
-            <div class="qv1-chest-progress">
-              <span><i style="width:${chestPercent}%"></i></span>
+
+            <div class="qv1-chest-milestones">
+              <div class="qv1-milestone-track" aria-hidden="true">
+                ${[1,2,3,4].map(step => `<i class="${Number(chest.progress) >= step ? "is-hit" : ""}"></i>`).join("")}
+              </div>
               <b>${Math.min(4, Number(chest.progress) || 0)}/4</b>
+            </div>
+
+            <div class="qv1-chest-progress" aria-hidden="true">
+              <span><i style="width:${chestPercent}%"></i></span>
             </div>
           </div>
 
           <div class="qv1-chest-art">
+            <span class="qv1-chest-sparkle qv1-sparkle-a" aria-hidden="true">✦</span>
+            <span class="qv1-chest-sparkle qv1-sparkle-b" aria-hidden="true">✦</span>
             <img src="/reward-star-simple-closed.png" alt="Coffre">
             ${chest.claimable
               ? `<button id="qv1ChestClaim" type="button">Ouvrir</button>`
@@ -206,6 +221,16 @@
             ? loadingMarkup()
             : (status?.quests || []).map(questCardMarkup).join("")}
         </section>
+
+        <div class="qv1-bottom-art" aria-hidden="true">
+          <svg class="qv1-bottom-crown" viewBox="0 0 64 48">
+            <path d="M7 38 3 12l17 12L32 5l12 19 17-12-5 26z"></path>
+          </svg>
+          <svg class="qv1-bottom-star" viewBox="0 0 48 48">
+            <path d="m24 3 6 13 14 2-10 10 3 14-13-7-13 7 3-14L4 18l14-2z"></path>
+          </svg>
+          <span class="qv1-bottom-card"></span>
+        </div>
       </main>
     `);
 
