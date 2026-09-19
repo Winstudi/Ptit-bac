@@ -389,7 +389,7 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img{
-  top:-5px;
+  top:-11px;
 }
 
 /* Monter le nom de 5px sur ces 4 cartes */
@@ -398,4 +398,26 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) h3,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) h3{
   transform:translateY(-5px);
+}
+
+/* V27 — items remontés et visuels au premier plan */
+.shop-v2.is-compact-shop-header .shop2-dyn-art{
+  position:relative;
+  z-index:20;
+  isolation:isolate;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-dyn-tag,
+.shop-v2.is-compact-shop-header .shop2-dyn-fallback{
+  position:relative;
+  z-index:21;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer h3{
+  position:relative;
+  z-index:22;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-topline,
+.shop-v2.is-compact-shop-header .shop2-dyn-promo-price,
+.shop-v2.is-compact-shop-header .shop2-dyn-price-row{
+  z-index:30;
 }
