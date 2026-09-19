@@ -321,21 +321,27 @@
       </div>`;
   }
 
-  function itemPickerMarkup(selectedKeys = []) {
-    const selected = new Set(selectedKeys);
+  function groupItemOptions(selectedKey = "", unavailableKeys = []) {
+    const unavailable = new Set(unavailableKeys);
     const groups = { avatar:[], frame:[], tag:[] };
     shopCatalog.forEach(item => groups[item.type]?.push(item));
     const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags" };
-    return `<div class="admin-shop-item-picker" id="admShopItems">
-      ${Object.entries(groups).map(([type, items]) => items.length ? `
-        <section><h4>${labels[type]}</h4><div>
-          ${items.map(item => `
-            <label class="admin-shop-pick-item${selected.has(item.key) ? " is-selected" : ""}>
-              <input type="checkbox" value="${esc(item.key)}" ${selected.has(item.key) ? "checked" : ""}>
-              <span class="admin-shop-pick-visual">${itemVisual(item)}</span>
-              <span class="admin-shop-pick-copy"><b>${esc(item.label)}</b><small>${esc(item.rarityLabel)}</small></span>
-            </label>`).join("")}
-        </div></section>` : "").join("")}
+    return Object.entries(groups).map(([type, items]) => items.length ? `
+      <optgroup label="${labels[type]}">
+        ${items.map(item => {
+          const disabled = unavailable.has(item.key) && item.key !== selectedKey;
+          return `<option value="${esc(item.key)}" ${item.key === selectedKey ? "selected" : ""} ${disabled ? "disabled" : ""}>${esc(item.label)} — ${esc(item.rarityLabel || "Commun")}</option>`;
+        }).join("")}
+      </optgroup>` : "").join("");
+  }
+
+  function groupItemRowMarkup(key = "", index = 0, allKeys = []) {
+    const unavailable = allKeys.filter((_, itemIndex) => itemIndex !== index);
+    return `
+      <div class="admin-shop-group-row" data-admin-shop-group-row>
+        <span class="admin-shop-group-index">${index + 1}</span>
+        <select data-admin-shop-group-item>${groupItemOptions(key, unavailable)}</select>
+        <button type="button" class="admin-shop-group-remove" data-admin-shop-group-remove aria-label="Retirer cet item">×</button>
       </div>`;
   }
 
@@ -384,9 +390,13 @@
           <label class="admin-shop-wide" id="admShopSingleItemWrap" ${mode === "single" ? "" : "hidden"}>Item de l’offre
             <select id="admShopSingleItem">${singleItemSelectMarkup(selectedKeys[0] || shopCatalog[0]?.key || "")}</select>
           </label>
-          <div class="admin-shop-wide" id="admShopMultiItemsWrap" ${mode === "single" ? "hidden" : ""}>
-            <div class="admin-shop-items-head"><b>Items de l’offre</b><small id="admShopItemCount">${selectedItems.length}/8</small></div>
-            ${itemPickerMarkup(selectedKeys)}
+          <div class="admin-shop-wide admin-shop-group-editor" id="admShopMultiItemsWrap" ${mode === "single" ? "hidden" : ""} data-initial-keys='${esc(JSON.stringify(selectedKeys))}'>
+            <div class="admin-shop-items-head">
+              <b>Items de l’offre</b>
+              <small id="admShopItemCount">${selectedItems.length}/8</small>
+            </div>
+            <div class="admin-shop-group-list" id="admShopGroupItems"></div>
+            <button class="admin-shop-add-item" id="admShopAddItem" type="button">+ Ajouter un item</button>
           </div>
           <div class="admin-shop-item-preview" id="admShopItemPreview">${itemsVisual(selectedItems)}</div>
           <label>Rareté dominante<input id="admShopRarity" value="${esc(highestSelectedRarity(selectedItems))}" disabled></label>
@@ -424,18 +434,27 @@
     const modeSelect = editor.querySelector("#admShopMode");
     const blockSelect = editor.querySelector("#admShopBlock");
     const positionSelect = editor.querySelector("#admShopPosition");
-    const picker = editor.querySelector("#admShopItems");
     const singleSelect = editor.querySelector("#admShopSingleItem");
     const singleWrap = editor.querySelector("#admShopSingleItemWrap");
     const multiWrap = editor.querySelector("#admShopMultiItemsWrap");
+    const groupList = editor.querySelector("#admShopGroupItems");
+    const addItemButton = editor.querySelector("#admShopAddItem");
 
-    const checkedInputs = () => picker ? [...picker.querySelectorAll('input[type="checkbox"]:checked')] : [];
+    let groupKeys = [];
+    try {
+      const parsed = JSON.parse(String(multiWrap?.dataset.initialKeys || "[]"));
+      if (Array.isArray(parsed)) groupKeys = parsed.map(String).filter(Boolean).slice(0,8);
+    } catch {}
 
-    const setCheckedKeys = keys => {
-      const wanted = new Set((keys || []).map(String));
-      picker?.querySelectorAll('input[type="checkbox"]').forEach(input => {
-        input.checked = wanted.has(input.value);
-      });
+    if (!groupKeys.length && singleSelect?.value) groupKeys = [singleSelect.value];
+
+    const uniqueKeys = keys => {
+      const seen = new Set();
+      return (keys || []).map(String).filter(key => {
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0,8);
     };
 
     const selectedKeys = () => {
@@ -443,18 +462,23 @@
         const key = String(singleSelect?.value || "").trim();
         return key ? [key] : [];
       }
-      return checkedInputs().map(input => input.value);
+      return uniqueKeys(groupKeys);
     };
 
     const selectedItems = () => itemsForKeys(selectedKeys());
+
+    const firstUnusedCatalogKey = () => {
+      const used = new Set(groupKeys);
+      return shopCatalog.find(item => !used.has(item.key))?.key || "";
+    };
 
     const syncModeHelp = () => {
       const help = editor.querySelector("#admShopModeHelp");
       if (!help || !modeSelect) return;
       help.textContent = modeSelect.value === "pack"
-        ? "Le prix achète tous les items sélectionnés en une seule fois."
+        ? "Ajoute plusieurs items : ils seront tous achetés ensemble avec un seul prix."
         : modeSelect.value === "choice"
-          ? "La case affiche plusieurs items et le joueur choisit lequel acheter au même prix."
+          ? "Ajoute plusieurs items : le joueur choisira lequel acheter dans cette case."
           : "Choisis l’item à afficher dans cette offre.";
     };
 
@@ -464,31 +488,53 @@
       if (multiWrap) multiWrap.hidden = single;
     };
 
-    const syncItems = ({ overwriteName = false, changed = null } = {}) => {
-      if (!modeSelect) return;
+    const renderGroupRows = () => {
+      groupKeys = uniqueKeys(groupKeys);
 
-      if (modeSelect.value === "single") {
-        const key = String(singleSelect?.value || "").trim();
-        if (key) setCheckedKeys([key]);
-      } else {
-        let inputs = checkedInputs();
-        if (inputs.length > 8) {
-          if (changed) changed.checked = false;
-          notify("Maximum 8 items dans une même offre.");
-          inputs = checkedInputs();
-        }
+      if (groupList) {
+        groupList.innerHTML = groupKeys.map((key, index) =>
+          groupItemRowMarkup(key, index, groupKeys)
+        ).join("");
+
+        groupList.querySelectorAll("[data-admin-shop-group-item]").forEach((select, index) => {
+          select.addEventListener("change", () => {
+            const nextKey = String(select.value || "");
+            const duplicateIndex = groupKeys.findIndex((key, keyIndex) => key === nextKey && keyIndex !== index);
+            if (duplicateIndex >= 0) {
+              notify("Cet item est déjà dans l’offre.");
+              renderGroupRows();
+              return;
+            }
+            groupKeys[index] = nextKey;
+            renderGroupRows();
+            syncItems({ overwriteName:false });
+          });
+        });
+
+        groupList.querySelectorAll("[data-admin-shop-group-remove]").forEach((button, index) => {
+          button.addEventListener("click", () => {
+            groupKeys.splice(index, 1);
+            renderGroupRows();
+            syncItems({ overwriteName:false });
+          });
+        });
       }
 
-      picker?.querySelectorAll(".admin-shop-pick-item").forEach(label => {
-        label.classList.toggle("is-selected", label.querySelector("input")?.checked === true);
-      });
+      const count = editor.querySelector("#admShopItemCount");
+      if (count) count.textContent = `${groupKeys.length}/8`;
 
+      if (addItemButton) {
+        addItemButton.disabled = groupKeys.length >= 8 || !firstUnusedCatalogKey();
+      }
+    };
+
+    const syncItems = ({ overwriteName = false } = {}) => {
       const items = selectedItems();
       const preview = editor.querySelector("#admShopItemPreview");
       if (preview) preview.innerHTML = itemsVisual(items);
 
       const count = editor.querySelector("#admShopItemCount");
-      if (count) count.textContent = `${items.length}/8`;
+      if (count) count.textContent = `${selectedKeys().length}/8`;
 
       const rarity = editor.querySelector("#admShopRarity");
       if (rarity) rarity.value = highestSelectedRarity(items);
@@ -514,23 +560,29 @@
     };
 
     singleSelect?.addEventListener("change", () => {
-      setCheckedKeys(singleSelect.value ? [singleSelect.value] : []);
+      const key = String(singleSelect.value || "");
+      if (key) groupKeys = [key];
       syncItems({ overwriteName:true });
     });
 
-    picker?.querySelectorAll('input[type="checkbox"]').forEach(input => {
-      input.addEventListener("change", () => syncItems({ overwriteName:false, changed:input }));
+    addItemButton?.addEventListener("click", () => {
+      if (groupKeys.length >= 8) return notify("Maximum 8 items dans une même offre.");
+      const nextKey = firstUnusedCatalogKey();
+      if (!nextKey) return notify("Tous les items disponibles sont déjà dans l’offre.");
+      groupKeys.push(nextKey);
+      renderGroupRows();
+      syncItems({ overwriteName:false });
     });
 
     modeSelect?.addEventListener("change", () => {
       if (modeSelect.value === "single") {
-        const firstChecked = checkedInputs()[0]?.value;
-        if (firstChecked && singleSelect) singleSelect.value = firstChecked;
-        if (!singleSelect?.value && shopCatalog[0]?.key) singleSelect.value = shopCatalog[0].key;
-        setCheckedKeys(singleSelect?.value ? [singleSelect.value] : []);
+        const key = String(groupKeys[0] || singleSelect?.value || shopCatalog[0]?.key || "");
+        if (singleSelect && key) singleSelect.value = key;
+        if (key) groupKeys = [key];
       } else {
-        const key = String(singleSelect?.value || "").trim();
-        if (key && !checkedInputs().length) setCheckedKeys([key]);
+        const key = String(singleSelect?.value || groupKeys[0] || shopCatalog[0]?.key || "");
+        if (!groupKeys.length && key) groupKeys = [key];
+        renderGroupRows();
       }
       syncItems({ overwriteName:true });
     });
@@ -548,12 +600,13 @@
       const keys = selectedKeys();
       if (!keys.length) return notify("Choisis au moins un item.");
       if (modeSelect.value !== "single" && keys.length < 2) {
-        return notify("Un pack ou un choix doit contenir au moins 2 items.");
+        return notify("Ajoute au moins 2 items pour une offre groupée.");
       }
 
       const button = event.currentTarget;
       button.disabled = true;
       button.textContent = "Enregistrement…";
+
       const response = await emit("admin:shopSave", {
         offerId:selectedShopOfferId,
         offerMode:modeSelect.value,
@@ -569,13 +622,20 @@
         badge:editor.querySelector("#admShopBadge")?.value,
         active:editor.querySelector("#admShopActive")?.checked !== false
       });
+
       if (!response.ok) {
         button.disabled = false;
         button.textContent = selectedShopOfferId ? "Enregistrer" : "Publier l’offre";
         notify(response.error || "Enregistrement impossible.");
         return;
       }
-      notify("Offre boutique enregistrée.");
+
+      notify(modeSelect.value === "pack"
+        ? `Pack de ${keys.length} items enregistré.`
+        : modeSelect.value === "choice"
+          ? `Offre avec ${keys.length} choix enregistrée.`
+          : "Offre boutique enregistrée.");
+
       selectedShopOfferId = "";
       await renderAdminShop();
     });
@@ -590,9 +650,7 @@
       await renderAdminShop();
     });
 
-    if (modeSelect?.value === "single" && singleSelect?.value) {
-      setCheckedKeys([singleSelect.value]);
-    }
+    renderGroupRows();
     syncItems();
   }
 
