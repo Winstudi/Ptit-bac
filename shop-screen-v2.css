@@ -637,3 +637,21 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-dyn-offer.is-daily-claimed .shop2-dyn-buy{
   color:#c9d1e9;
 }
+
+
+/* V34 — B3-P3 / B3-P4 */
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer.special-ad-bag .shop2-dyn-art,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer.special-daily .shop2-dyn-art{
+  transform:none!important;
+}
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer.special-ad-bag .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer.special-daily .shop2-dyn-art>img{
+  position:relative!important;
+  top:-3px!important;
+  transform:scale(1.14065625)!important;
+  z-index:24!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.special-ad-bag h3{
+  font-size:.552rem!important;
+  line-height:1.05;
+}

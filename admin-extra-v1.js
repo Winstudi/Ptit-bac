@@ -297,7 +297,7 @@
           <small>B3 · P3</small>
           <span class="admin-shop-mode-chip">SYSTÈME</span>
           <div class="admin-shop-slot-art"><img src="/reward-bag.png" alt=""></div>
-          <b>Coffre Sac</b>
+          <b>Sac de Ressource</b>
           <span>▶ Pub récompensée</span>
           <em>Fixe</em>
         </button>`;

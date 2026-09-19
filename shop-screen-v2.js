@@ -149,7 +149,7 @@
 
     if (offer.specialKind === "ad_bag") {
       return `
-        <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special" data-shop-offer-card="${esc(offer.id)}">
+        <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special special-ad-bag" data-shop-offer-card="${esc(offer.id)}">
           <div class="shop2-dyn-topline">
             <div class="shop2-dyn-meta"><span class="shop2-dyn-badge">PUB</span></div>
             ${timer}
@@ -167,7 +167,7 @@
     }
 
     return `
-      <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special${offer.dailyClaimed ? " is-daily-claimed" : ""}" data-shop-offer-card="${esc(offer.id)}">
+      <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special special-daily${offer.dailyClaimed ? " is-daily-claimed" : ""}" data-shop-offer-card="${esc(offer.id)}">
         <div class="shop2-dyn-topline">
           <div class="shop2-dyn-meta"><span class="shop2-dyn-badge">QUOTIDIEN</span></div>
           ${timer}

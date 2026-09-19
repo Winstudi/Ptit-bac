@@ -28,7 +28,7 @@ const SHOP_CHEST_ITEMS = Object.freeze([
     key:"chest:bag",
     type:"chest",
     id:"bag",
-    label:"Coffre Sac",
+    label:"Sac de Ressource",
     asset:"/reward-bag.png",
     defaultOwned:false,
     defaultRarity:"commun"
@@ -487,7 +487,21 @@ function createShopService({
     return { ...rotation, claimed };
   }
 
-  function dailyRewardDisplay(reward = {}) {
+  function dailyRareItem(rotationKey, itemsMap) {
+    const candidates = [...itemsMap.values()].filter(item =>
+      item.type === "avatar" &&
+      item.rarity === "rare" &&
+      !item.defaultOwned &&
+      !item.levelOnly
+    );
+    if (!candidates.length) return null;
+
+    const hash = crypto.createHash("sha256").update(String(rotationKey || "daily")).digest();
+    const index = hash.readUInt32BE(0) % candidates.length;
+    return candidates[index] || candidates[0];
+  }
+
+  async function dailyRewardDisplay(reward = {}, rotationKey = "") {
     if (reward.kind === "coins") {
       return {
         name:`${Math.max(0, Number(reward.amount) || 0)} pièces`,
@@ -506,12 +520,31 @@ function createShopService({
     }
     if (reward.kind === "chest") {
       return {
-        name:"Coffre Sac",
+        name:"Sac de Ressource",
         asset:"/reward-bag.png",
         rarity:"commun",
-        item:{ key:"chest:bag", type:"chest", id:"bag", label:"Coffre Sac", asset:"/reward-bag.png", rarity:"commun", rarityLabel:"Commun" }
+        item:{ key:"chest:bag", type:"chest", id:"bag", label:"Sac de Ressource", asset:"/reward-bag.png", rarity:"commun", rarityLabel:"Commun" }
       };
     }
+    const items = await catalogMap();
+    const rareItem = dailyRareItem(rotationKey, items);
+    if (rareItem) {
+      return {
+        name:String(rareItem.label || "Icône rare"),
+        asset:String(rareItem.asset || rareItem.id || "/reward-star.png"),
+        rarity:"rare",
+        item:{
+          key:rareItem.key,
+          type:rareItem.type,
+          id:rareItem.id,
+          label:String(rareItem.label || "Icône rare"),
+          asset:String(rareItem.asset || rareItem.id || "/reward-star.png"),
+          rarity:"rare",
+          rarityLabel:"Rare"
+        }
+      };
+    }
+
     return {
       name:"Icône rare",
       asset:"/reward-star.png",
@@ -522,7 +555,7 @@ function createShopService({
 
   async function specialOffers(walletToken = "") {
     const daily = await dailyStatus(walletToken);
-    const display = dailyRewardDisplay(daily.reward);
+    const display = await dailyRewardDisplay(daily.reward, daily.rotationKey);
     const farFuture = Date.now() + 365 * 24 * 60 * 60 * 1000;
 
     return [
@@ -532,13 +565,13 @@ function createShopService({
         offerMode:"single",
         itemKeys:["chest:bag"],
         items:[{
-          key:"chest:bag", type:"chest", id:"bag", label:"Coffre Sac",
+          key:"chest:bag", type:"chest", id:"bag", label:"Sac de Ressource",
           asset:"/reward-bag.png", rarity:"commun", rarityLabel:"Commun", owned:false
         }],
         itemKey:"chest:bag",
         itemType:"chest",
         itemId:"bag",
-        name:"Coffre Sac",
+        name:"Sac de Ressource",
         asset:"/reward-bag.png",
         rarity:"commun",
         rarityLabel:"Commun",
@@ -645,22 +678,15 @@ function createShopService({
         } else if (reward.kind === "chest") {
           result = { kind:"chest", chestType:"bag" };
         } else {
-          const rareCandidates = [...items.values()].filter(item =>
-            item.type === "avatar" &&
-            item.rarity === "rare" &&
-            !item.defaultOwned &&
-            !item.levelOnly
-          );
+          const item = dailyRareItem(rotation.rotationKey, items);
 
           const ownedRows = await client.query(
             `SELECT item_type,item_id FROM public.ptitbac_inventory_items WHERE wallet_token=$1`,
             [token]
           );
           const ownedKeys = new Set((ownedRows.rows || []).map(row => `${row.item_type}:${row.item_id}`));
-          const available = rareCandidates.filter(item => !ownedKeys.has(item.key));
 
-          if (available.length) {
-            const item = available[crypto.randomInt(0, available.length)];
+          if (item && !ownedKeys.has(item.key)) {
             await client.query(
               `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
                VALUES($1,$2,$3,'daily_shop')
@@ -675,7 +701,7 @@ function createShopService({
                 type:item.type,
                 id:item.id,
                 label:item.label,
-                asset:item.asset || ""
+                asset:item.asset || item.id || ""
               }
             };
           } else {
