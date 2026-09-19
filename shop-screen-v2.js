@@ -210,14 +210,6 @@
           </div>
         </article>
 
-        <div class="shop2-slogan">
-          <div class="shop2-slogan-gems">
-            <img src="/gem.png" alt=""><img src="/gem.png" alt=""><img src="/gem.png" alt="">
-          </div>
-          <strong>Plus de gemmes,<br>plus de possibilités !</strong>
-          <span>Fais briller<br>tes parties ! ♥</span>
-        </div>
-
         <article class="shop2-resource-panel shop2-coin-panel">
           <header class="shop2-panel-title">
             <img src="/coin.png" alt="">
@@ -235,13 +227,6 @@
           </div>
         </article>
 
-        <div class="shop2-slogan shop2-slogan-coins">
-          <div class="shop2-slogan-gems">
-            <img src="/coin.png" alt=""><img src="/coin.png" alt=""><img src="/coin.png" alt="">
-          </div>
-          <strong>Plus de pièces,<br>plus de parties !</strong>
-          <span>Les mots n’attendent<br>que toi ! ♥</span>
-        </div>
       </section>`;
   }
 
@@ -497,11 +482,6 @@
           ${viewMarkup()}
         </div>
 
-        ${activeShopTab === "featured" ? "" : `
-          <footer class="shop2-footer">
-            <span>💡</span>
-            <p>Plus qu’un jeu de mots,<br>une belle aventure ensemble ! ♥</p>
-          </footer>`}
       </main>`);
 
     bindShopV2();
