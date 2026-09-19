@@ -16,7 +16,8 @@
     "/avatar-renard.webp",
     "/avatar-spectre.webp",
     "/avatar-minto.webp",
-    "/avatar-bot.webp"
+    "/avatar-bot.webp",
+    "/avatar-game.webp"
   ]);
 
   const FRAMES = Object.freeze({
@@ -64,6 +65,12 @@
       name:"Tag Quantique",
       asset:"/tag-quantique.png",
       className:"inv-tag-quantique"
+    },
+    tag_game_over: {
+      id:"tag_game_over",
+      name:"Game Over",
+      asset:"/tag-game-over.png",
+      className:"inv-tag-game-over"
     }
   });
 

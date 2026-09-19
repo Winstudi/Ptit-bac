@@ -29,7 +29,8 @@ const NEW_AVATAR_IDS = [
   "/avatar-renard.webp",
   "/avatar-spectre.webp",
   "/avatar-minto.webp",
-  "/avatar-bot.webp"
+  "/avatar-bot.webp",
+  "/avatar-game.webp"
 ];
 
 test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre ne l'est", () => {
@@ -38,6 +39,8 @@ test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre 
   assert.deepEqual(DEFAULT_OWNED.tags, ["tag_debutant"]);
   assert.equal(CATALOG.tag.tag_quantique?.name, "Tag Quantique");
   assert.equal(CATALOG.tag.tag_quantique?.asset, "/tag-quantique.png");
+  assert.equal(CATALOG.tag.tag_game_over?.name, "Game Over");
+  assert.equal(CATALOG.tag.tag_game_over?.asset, "/tag-game-over.png");
   assert.deepEqual(Object.keys(CATALOG.frame), FRAME_IDS);
 });
 
@@ -107,6 +110,14 @@ test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", ()
   assert.equal(quantumTag.defaultOwned, false);
   assert.equal(quantumTag.defaultRarity, "exclusif");
   assert.equal(parseCatalogKey("tag:tag_quantique")?.id, "tag_quantique");
+
+  const gameOverTag = tags.find(item => item.key === "tag:tag_game_over");
+  assert.ok(gameOverTag);
+  assert.equal(gameOverTag.label, "Game Over");
+  assert.equal(gameOverTag.asset, "/tag-game-over.png");
+  assert.equal(gameOverTag.defaultOwned, false);
+  assert.equal(gameOverTag.defaultRarity, "exclusif");
+  assert.equal(parseCatalogKey("tag:tag_game_over")?.id, "tag_game_over");
   for (const id of FRAME_IDS) {
     const item = frames.find(entry => entry.id === id);
     assert.ok(item);

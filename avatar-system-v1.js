@@ -17,7 +17,8 @@
     "/avatar-renard.webp",
     "/avatar-spectre.webp",
     "/avatar-minto.webp",
-    "/avatar-bot.webp"
+    "/avatar-bot.webp",
+    "/avatar-game.webp"
   ]);
 
   const LEGACY_AVATARS = Object.freeze({

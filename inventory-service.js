@@ -52,6 +52,12 @@ const CATALOG = Object.freeze({
       name: "Bot",
       defaultOwned: false,
       defaultRarity: "exclusif"
+    }),
+    "/avatar-game.webp": Object.freeze({
+      id: "/avatar-game.webp",
+      name: "Game",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
     })
   }),
   frame: Object.freeze({
@@ -107,6 +113,13 @@ const CATALOG = Object.freeze({
       id: "tag_quantique",
       name: "Tag Quantique",
       asset: "/tag-quantique.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    tag_game_over: Object.freeze({
+      id: "tag_game_over",
+      name: "Game Over",
+      asset: "/tag-game-over.png",
       defaultOwned: false,
       defaultRarity: "exclusif"
     })
