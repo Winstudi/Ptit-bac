@@ -114,8 +114,11 @@
       <article class="shop2-dyn-offer size-${size} rarity-${rarity}${owned ? " is-owned" : ""}" data-shop-offer-card="${esc(offer.id)}">
         <div class="shop2-dyn-topline">
           <div class="shop2-dyn-meta">
-            <span class="shop2-dyn-rarity">${esc(offer.rarityLabel || "Commun")}</span>
-            ${badge ? `<span class="shop2-dyn-badge">${esc(badge)}</span>` : ""}
+            ${badge
+              ? `<span class="shop2-dyn-badge">${esc(badge)}</span>`
+              : promo
+                ? `<span class="shop2-dyn-badge">PROMO</span>`
+                : ""}
             ${promo ? `<span class="shop2-dyn-promo">-${promo}%</span>` : ""}
           </div>
           <small data-offer-ends="${Number(offer.endsAt) || 0}">${esc(durationLabel(offer.endsAt))}</small>
@@ -123,7 +126,6 @@
         <div class="shop2-dyn-art">${offerAssetMarkup(offer)}</div>
         <h3>${esc(offer.name)}</h3>
         <div class="shop2-dyn-price-row">
-          ${promo ? `<del>${fmtNumber(offer.basePrice)}</del>` : ""}
           <div class="shop2-dyn-actions">
             <button class="shop2-dyn-buy" type="button" data-shop-offer="${esc(offer.id)}" ${owned ? "disabled" : ""}>
               ${owned
