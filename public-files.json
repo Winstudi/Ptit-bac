@@ -135,5 +135,7 @@
   "/reward-legendary-simple-closed.png",
   "/reward-legendary-simple-open.png",
   "/avatar-prestige.png",
-  "/frame-prestige.png"
+  "/frame-prestige.png",
+  "/quests-client.js",
+  "/quests-screen-v1.css"
 ]

@@ -4,6 +4,7 @@ const { getPool, ensureDatabaseSchema } = require("./db.js");
 const { createInventoryService } = require("./inventory-service.js");
 const { createWalletAtomicService } = require("./wallet-atomic-service.js");
 const { createShopService } = require("./shop-service.js");
+const installQuests = require("./quests-hook.js");
 
 module.exports = function installShop(io) {
   const inventoryService = createInventoryService({
@@ -20,6 +21,8 @@ module.exports = function installShop(io) {
     inventoryService,
     walletAtomicService
   });
+
+  installQuests(io);
 
   async function socketWalletToken(socket, payload = {}) {
     const token = String(payload.walletToken || "").trim();
