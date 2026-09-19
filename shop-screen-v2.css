@@ -45,14 +45,14 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-featured-tab .shop2-brand{height:44px;box-sizing:border-box;padding:0;text-align:left;display:flex;align-items:flex-start;justify-content:flex-start;overflow:visible}
 .shop-v2.is-featured-tab .shop2-brand-notice{height:40px;width:calc(100% + 62px);max-width:none;margin-left:-10px;padding:0 20px 0 8px;border:1px solid rgba(178,74,255,.82);border-left:0;border-radius:0 16px 16px 0;background:linear-gradient(90deg,rgba(49,19,111,.98) 0%,rgba(32,24,119,.97) 42%,rgba(10,35,104,.96) 100%);display:flex;align-items:center;justify-content:space-between;gap:5px;box-sizing:border-box;box-shadow:0 0 16px rgba(215,70,255,.34),0 8px 20px rgba(0,0,0,.18),inset 0 0 18px rgba(93,108,255,.16)}
 .shop-v2.is-featured-tab .shop2-brand-notice-main{min-width:0;display:flex;align-items:center;gap:4px;flex:0 1 auto}
-.shop-v2.is-featured-tab .shop2-notice-back{flex:0 0 28px;width:28px;height:28px;padding:5px}
-.shop-v2.is-featured-tab .shop2-notice-back img{width:18px;height:18px}
-.shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex:0 0 23px;width:23px;height:23px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
-.shop-v2.is-featured-tab .shop2-brand-notice h1{margin:0;color:#fff;font-size:.88rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
+.shop-v2.is-featured-tab .shop2-notice-back{flex:0 0 28px;width:28px;height:28px;padding:0}
+.shop-v2.is-featured-tab .shop2-notice-back img{width:27px;height:27px}
+.shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex:0 0 27.6px;width:27.6px;height:27.6px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
+.shop-v2.is-featured-tab .shop2-brand-notice h1{margin:0;color:#fff;font-size:1.144rem;line-height:1;font-weight:1000;letter-spacing:-.035em;text-align:left;white-space:nowrap;position:relative;top:15px;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)}
 .shop-v2.is-featured-tab .shop2-notice-wallet{min-width:0;justify-self:auto;margin-left:auto;gap:3px;flex:0 1 auto}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0 5px;border-radius:11px;gap:3px;box-sizing:border-box}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:14px;height:14px;flex:0 0 14px}
-.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.52rem;line-height:1;white-space:nowrap}
+.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:3px;box-sizing:border-box}
+.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:21px;height:21px;flex:0 0 21px}
+.shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
 .shop-v2.is-featured-tab .shop2-block-1{height:165px}
 .shop-v2.is-featured-tab .shop2-block-2{height:155px}
 .shop-v2.is-featured-tab .shop2-block-3{height:140px}
@@ -61,20 +61,20 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   .shop-v2.is-featured-tab .shop2-brand{height:44px}
   .shop-v2.is-featured-tab .shop2-brand-notice{width:calc(100% + 54px);margin-left:-6px;padding:0 14px 0 4px;gap:3px}
   .shop-v2.is-featured-tab .shop2-brand-notice-main{gap:2px}
-  .shop-v2.is-featured-tab .shop2-notice-back{flex-basis:25px;width:25px;height:25px;padding:4px}
-  .shop-v2.is-featured-tab .shop2-notice-back img{width:17px;height:17px}
-  .shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex-basis:20px;width:20px;height:20px}
-  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.75rem}
+  .shop-v2.is-featured-tab .shop2-notice-back{flex-basis:25px;width:25px;height:25px;padding:0}
+  .shop-v2.is-featured-tab .shop2-notice-back img{width:25.5px;height:25.5px}
+  .shop-v2.is-featured-tab .shop2-brand-notice .shop2-notice-logo{flex-basis:24px;width:24px;height:24px}
+  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.975rem}
   .shop-v2.is-featured-tab .shop2-notice-wallet{gap:2px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0 4px;gap:2px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:13px;height:13px;flex-basis:13px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.47rem}
+  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:2px}
+  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
+  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
   .shop-v2.is-featured-tab .shop2-block-1,.shop-v2.is-featured-tab .shop2-block-2{height:145px}
   .shop-v2.is-featured-tab .shop2-block-3{height:125px}
 }
 @media(max-width:340px){
   .shop-v2.is-featured-tab .shop2-brand-notice{padding-right:10px}
-  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.69rem}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{padding-inline:3px}
-  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.43rem}
+  .shop-v2.is-featured-tab .shop2-brand-notice h1{font-size:.897rem}
+  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{padding-inline:0}
+  .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.645rem}
 }
