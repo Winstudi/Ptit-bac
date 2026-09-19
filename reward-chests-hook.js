@@ -7,6 +7,7 @@ const { createRewardChestService } = require("./reward-chests-service.js");
 const { createProgressionService } = require("./progression-service.js");
 const { createLevelRewardsService } = require("./level-rewards-service.js");
 const installShop = require("./shop-hook.js");
+const installQuests = require("./quests-hook.js");
 
 module.exports = function installRewardChests(io) {
   const inventoryService = createInventoryService({
@@ -47,6 +48,11 @@ module.exports = function installRewardChests(io) {
   global.__ptbRewardChestService = service;
   global.__ptbLevelRewardService = levelRewards;
   global.__ptbShopService = shopService;
+
+  // Le serveur charge déjà reward-chests-hook.js au démarrage.
+  // On y branche les quêtes afin que quests:get / quests:sync / quests:claim
+  // soient réellement enregistrés sans modifier le gros server.js.
+  installQuests(io);
 
   async function socketWalletToken(socket, payload = {}) {
     const token = String(payload.walletToken || "").trim();

@@ -4,6 +4,8 @@
   let questStatus = null;
   let loading = false;
   let pageTimer = null;
+  let syncTimer = null;
+  let syncInFlight = false;
 
   function walletToken() {
     return String(
@@ -172,8 +174,6 @@
         </header>
 
         <section class="qv1-intro">
-          <p class="qv1-daily-copy">3 défis par jour · renouvellement à 11h</p>
-
           <span class="qv1-reset">
             <span class="qv1-reset-clock" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -287,8 +287,51 @@
 
     questStatus = response.status;
     loading = false;
+
+    const gainedXp = Math.max(0, Number(response.gainedXp) || 0);
+    if (gainedXp > 0) {
+      try { await window.PtitBacProgression?.refresh?.(); } catch {}
+      if (typeof toast === "function") toast(`+${fmt(gainedXp)} XP de quête`);
+    }
+
     if (rerender || document.querySelector(".quests-v1")) render();
     return true;
+  }
+
+  async function syncCompletedQuests({ rerender = false, showToast = true } = {}) {
+    if (syncInFlight) return false;
+    syncInFlight = true;
+
+    try {
+      const response = await emitQuest("quests:sync");
+      if (!response.ok) return false;
+
+      if (response.status) questStatus = response.status;
+
+      const gainedXp = Math.max(0, Number(response.gainedXp) || 0);
+      if (gainedXp > 0) {
+        try { await window.PtitBacProgression?.refresh?.(); } catch {}
+        if (showToast && typeof toast === "function") {
+          toast(`+${fmt(gainedXp)} XP de quête`);
+        }
+      }
+
+      if ((rerender || document.querySelector(".quests-v1")) && questStatus) render();
+      return true;
+    } finally {
+      syncInFlight = false;
+    }
+  }
+
+  function scheduleQuestSync(delay = 300) {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      syncTimer = null;
+      void syncCompletedQuests({
+        rerender:Boolean(document.querySelector(".quests-v1")),
+        showToast:true
+      });
+    }, delay);
   }
 
   async function claimQuest(button) {
@@ -338,6 +381,8 @@
     document.getElementById("qv1Back")?.addEventListener("click", () => {
       clearInterval(pageTimer);
       pageTimer = null;
+      clearTimeout(syncTimer);
+      syncTimer = null;
       if (typeof renderHome === "function") renderHome();
     });
 
@@ -384,10 +429,19 @@
       if (document.querySelector(".quests-v1")) render();
     });
 
-    socket?.on?.("progression:update", () => {
-      if (document.querySelector(".quests-v1")) {
-        setTimeout(() => fetchStatus({ rerender:true }), 250);
-      }
+    socket?.on?.("progression:update", payload => {
+      // Une mise à jour provenant elle-même d'une quête ne doit pas relancer
+      // une synchronisation en boucle. Les gains de partie, eux, peuvent
+      // terminer une quête de victoires ou de réponses.
+      if (payload?.result?.source === "quest") return;
+      scheduleQuestSync(260);
+    });
+
+    // Les relances payantes déclenchent un wallet:update côté serveur.
+    // On resynchronise alors les quêtes pour créditer immédiatement l'XP
+    // si l'objectif de relances vient d'être atteint.
+    socket?.on?.("wallet:update", () => {
+      scheduleQuestSync(320);
     });
   } catch {}
 

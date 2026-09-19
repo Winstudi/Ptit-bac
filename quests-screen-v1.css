@@ -231,19 +231,8 @@ body:has(.quests-v1) .economy-hud{
   padding:0 2px 0 4px;
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:9px;
-}
-
-.qv1-daily-copy{
-  margin:0;
-  min-width:0;
-  color:#d9dcff;
-  font-size:.78rem;
-  line-height:1.18;
-  font-weight:800;
-  letter-spacing:-.016em;
-  white-space:nowrap;
 }
 
 .qv1-reset{
@@ -308,6 +297,8 @@ body:has(.quests-v1) .economy-hud{
 .qv1-chest{
   position:relative;
   min-height:0;
+  width:calc(100% - 9px);
+  margin-left:9px;
   padding:14px 14px 13px 21px;
   border:1.6px solid #a33fff;
   border-radius:16px;
@@ -645,15 +636,13 @@ body:has(.quests-v1) .economy-hud{
 .qv1-quest-reward{
   width:56px;
   height:57px;
-  border:1.25px solid #a844ff;
-  border-radius:12px;
+  border:0;
+  border-radius:0;
   display:grid;
   place-content:center;
   text-align:center;
-  background:linear-gradient(180deg,rgba(43,39,127,.56),rgba(30,40,108,.36));
-  box-shadow:
-    inset 0 0 12px rgba(156,59,255,.12),
-    0 0 9px rgba(166,64,255,.11);
+  background:none;
+  box-shadow:none;
 }
 
 .qv1-quest-reward strong{

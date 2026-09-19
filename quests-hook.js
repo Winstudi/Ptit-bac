@@ -50,14 +50,51 @@ module.exports = function installQuests(io) {
     if (result.inventory) socket.emit("inventory:update", result.inventory);
   }
 
+  function emitProgressionUpdate(socket, result = {}, eventKey = "quest:sync") {
+    const gainedXp = Math.max(0, Number(result.gainedXp) || 0);
+    if (!result.progression || gainedXp <= 0) return;
+
+    socket.emit("progression:update", {
+      state:result.progression,
+      result:{
+        eventKey,
+        gainedXp,
+        gainedTrophies:0,
+        rank:0,
+        validAnswers:0,
+        rounds:0,
+        before:null,
+        after:result.progression,
+        levelUp:false,
+        source:"quest"
+      }
+    });
+  }
+
   io.on("connection", socket => {
     socket.on("quests:get", async (payload = {}, cb = () => {}) => {
       const token = await socketWalletToken(socket, payload);
       if (!token) return cb({ ok:false, error:"Session quêtes non autorisée." });
 
       try {
-        const status = await service.status(token);
-        cb({ ok:true, status });
+        let synced = null;
+        try {
+          synced = await service.claimCompletedQuests(token);
+        } catch (syncErr) {
+          console.error("quests:get auto XP:", syncErr.message);
+        }
+
+        const status = synced?.status || await service.status(token);
+        if (synced?.gainedXp > 0) {
+          emitProgressionUpdate(socket, synced, `quest:auto:${status.rotationKey}`);
+        }
+
+        cb({
+          ok:true,
+          status,
+          gainedXp:Math.max(0, Number(synced?.gainedXp) || 0),
+          autoClaimed:synced?.claimedQuestIds || []
+        });
       } catch (err) {
         console.error("quests:get:", err.message);
         cb({ ok:false, error:"Quêtes indisponibles pour le moment." });
@@ -71,29 +108,31 @@ module.exports = function installQuests(io) {
       try {
         const result = await service.claimQuest(token, payload.questId);
 
-        if (result.progression) {
-          socket.emit("progression:update", {
-            state:result.progression,
-            result:{
-              eventKey:`quest:${result.questId}`,
-              gainedXp:Number(result.gainedXp) || 0,
-              gainedTrophies:0,
-              rank:0,
-              validAnswers:0,
-              rounds:0,
-              before:null,
-              after:result.progression,
-              levelUp:false,
-              source:"quest"
-            }
-          });
-        }
-
+        emitProgressionUpdate(socket, result, `quest:${result.questId}`);
         socket.emit("quests:update", result.status);
         cb({ ok:true, ...result });
       } catch (err) {
         console.error("quests:claim:", err.message);
         cb({ ok:false, error:err?.message || "Impossible de récupérer cette quête." });
+      }
+    });
+
+    socket.on("quests:sync", async (payload = {}, cb = () => {}) => {
+      const token = await socketWalletToken(socket, payload);
+      if (!token) return cb({ ok:false, error:"Session quêtes non autorisée." });
+
+      try {
+        const result = await service.claimCompletedQuests(token);
+        emitProgressionUpdate(
+          socket,
+          result,
+          `quest:sync:${result.status?.rotationKey || "daily"}`
+        );
+        socket.emit("quests:update", result.status);
+        cb({ ok:true, ...result });
+      } catch (err) {
+        console.error("quests:sync:", err.message);
+        cb({ ok:false, error:err?.message || "Impossible de synchroniser les quêtes." });
       }
     });
 

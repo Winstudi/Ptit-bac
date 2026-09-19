@@ -499,9 +499,47 @@ function createQuestsService({
     return {
       duplicate:existing.rowCount > 0 || award.duplicate,
       questId:quest.id,
-      gainedXp:quest.xp,
+      gainedXp:award.duplicate ? 0 : quest.xp,
       progression:award.state,
       status:nextStatus
+    };
+  }
+
+  async function claimCompletedQuests(walletToken) {
+    const token = validWalletToken(walletToken);
+    if (!token) throw new Error("Session joueur invalide.");
+
+    const initial = await status(token);
+    const pending = initial.quests.filter(quest => quest.completed && !quest.claimed);
+
+    if (!pending.length) {
+      return {
+        claimedQuestIds:[],
+        gainedXp:0,
+        progression:null,
+        status:initial
+      };
+    }
+
+    const claimedQuestIds = [];
+    let gainedXp = 0;
+    let progression = null;
+
+    for (const quest of pending) {
+      const result = await claimQuest(token, quest.id);
+      progression = result.progression || progression;
+
+      if (!result.duplicate) {
+        claimedQuestIds.push(quest.id);
+        gainedXp += Math.max(0, Number(result.gainedXp) || 0);
+      }
+    }
+
+    return {
+      claimedQuestIds,
+      gainedXp,
+      progression,
+      status:await status(token)
     };
   }
 
@@ -532,6 +570,7 @@ function createQuestsService({
     ensureSchema:ensureQuestSchema,
     status,
     claimQuest,
+    claimCompletedQuests,
     chestEligibility,
     confirmChestClaim
   };
