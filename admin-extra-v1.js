@@ -294,7 +294,7 @@
     const offer = activeShopOffer(block, position);
     const items = offer ? itemsForKeys(offerItemKeys(offer)) : [];
     return `
-      <button class="admin-shop-slot size-${size}${offer ? " is-filled" : ""} type="button" data-admin-shop-slot="${block}:${position}" ${offer ? `data-admin-shop-edit="${esc(offer.id)}"` : ""}>
+      <button class="admin-shop-slot size-${size}${offer ? " is-filled" : ""}" type="button" data-admin-shop-slot="${block}:${position}" ${offer ? `data-admin-shop-edit="${esc(offer.id)}"` : ""}>
         <small>B${block} · P${position}</small>
         ${offer ? `
           <span class="admin-shop-mode-chip mode-${esc(offer.offerMode || "single")}">${offerModeLabel(offer.offerMode)}${items.length > 1 ? ` ×${items.length}` : ""}</span>
@@ -339,6 +339,16 @@
       </div>`;
   }
 
+  function singleItemSelectMarkup(selectedKey = "") {
+    const groups = { avatar:[], frame:[], tag:[] };
+    shopCatalog.forEach(item => groups[item.type]?.push(item));
+    const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags" };
+    return Object.entries(groups).map(([type, items]) => items.length ? `
+      <optgroup label="${labels[type]}">
+        ${items.map(item => `<option value="${esc(item.key)}" ${item.key === selectedKey ? "selected" : ""}>${esc(item.label)} — ${esc(item.rarityLabel || "Commun")}</option>`).join("")}
+      </optgroup>` : "").join("");
+  }
+
   function positionOptions(block, selected = 1) {
     const count = SHOP_SLOTS[Number(block)] || 3;
     return Array.from({ length:count }, (_, index) => index + 1)
@@ -371,7 +381,10 @@
             </select>
           </label>
           <p class="admin-shop-mode-help admin-shop-wide" id="admShopModeHelp"></p>
-          <div class="admin-shop-wide">
+          <label class="admin-shop-wide" id="admShopSingleItemWrap" ${mode === "single" ? "" : "hidden"}>Item de l’offre
+            <select id="admShopSingleItem">${singleItemSelectMarkup(selectedKeys[0] || shopCatalog[0]?.key || "")}</select>
+          </label>
+          <div class="admin-shop-wide" id="admShopMultiItemsWrap" ${mode === "single" ? "hidden" : ""}>
             <div class="admin-shop-items-head"><b>Items de l’offre</b><small id="admShopItemCount">${selectedItems.length}/8</small></div>
             ${itemPickerMarkup(selectedKeys)}
           </div>
@@ -412,45 +425,74 @@
     const blockSelect = editor.querySelector("#admShopBlock");
     const positionSelect = editor.querySelector("#admShopPosition");
     const picker = editor.querySelector("#admShopItems");
+    const singleSelect = editor.querySelector("#admShopSingleItem");
+    const singleWrap = editor.querySelector("#admShopSingleItemWrap");
+    const multiWrap = editor.querySelector("#admShopMultiItemsWrap");
 
-    const checkedInputs = () => [...picker.querySelectorAll('input[type="checkbox"]:checked')];
-    const selectedKeys = () => checkedInputs().map(input => input.value);
+    const checkedInputs = () => picker ? [...picker.querySelectorAll('input[type="checkbox"]:checked')] : [];
+
+    const setCheckedKeys = keys => {
+      const wanted = new Set((keys || []).map(String));
+      picker?.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.checked = wanted.has(input.value);
+      });
+    };
+
+    const selectedKeys = () => {
+      if (modeSelect?.value === "single") {
+        const key = String(singleSelect?.value || "").trim();
+        return key ? [key] : [];
+      }
+      return checkedInputs().map(input => input.value);
+    };
+
     const selectedItems = () => itemsForKeys(selectedKeys());
 
     const syncModeHelp = () => {
       const help = editor.querySelector("#admShopModeHelp");
-      if (!help) return;
+      if (!help || !modeSelect) return;
       help.textContent = modeSelect.value === "pack"
         ? "Le prix achète tous les items sélectionnés en une seule fois."
         : modeSelect.value === "choice"
           ? "La case affiche plusieurs items et le joueur choisit lequel acheter au même prix."
-          : "Une offre classique contenant un seul item.";
+          : "Choisis l’item à afficher dans cette offre.";
+    };
+
+    const syncModeVisibility = () => {
+      const single = modeSelect?.value === "single";
+      if (singleWrap) singleWrap.hidden = !single;
+      if (multiWrap) multiWrap.hidden = single;
     };
 
     const syncItems = ({ overwriteName = false, changed = null } = {}) => {
-      let inputs = checkedInputs();
-      if (modeSelect.value === "single" && inputs.length > 1) {
-        const keep = changed?.checked ? changed : inputs[0];
-        inputs.forEach(input => { if (input !== keep) input.checked = false; });
-      }
-      inputs = checkedInputs();
-      if (inputs.length > 8) {
-        if (changed) changed.checked = false;
-        notify("Maximum 8 items dans une même offre.");
-        inputs = checkedInputs();
+      if (!modeSelect) return;
+
+      if (modeSelect.value === "single") {
+        const key = String(singleSelect?.value || "").trim();
+        if (key) setCheckedKeys([key]);
+      } else {
+        let inputs = checkedInputs();
+        if (inputs.length > 8) {
+          if (changed) changed.checked = false;
+          notify("Maximum 8 items dans une même offre.");
+          inputs = checkedInputs();
+        }
       }
 
-      picker.querySelectorAll(".admin-shop-pick-item").forEach(label => {
+      picker?.querySelectorAll(".admin-shop-pick-item").forEach(label => {
         label.classList.toggle("is-selected", label.querySelector("input")?.checked === true);
       });
 
       const items = selectedItems();
       const preview = editor.querySelector("#admShopItemPreview");
       if (preview) preview.innerHTML = itemsVisual(items);
+
       const count = editor.querySelector("#admShopItemCount");
       if (count) count.textContent = `${items.length}/8`;
+
       const rarity = editor.querySelector("#admShopRarity");
       if (rarity) rarity.value = highestSelectedRarity(items);
+
       const name = editor.querySelector("#admShopName");
       if (name && items.length && (overwriteName || !name.value.trim())) {
         name.value = modeSelect.value === "pack"
@@ -459,23 +501,36 @@
             ? `Choix ${items.length} objets`
             : items[0].label || "";
       }
+
       if (overwriteName && items[0]) {
         const price = editor.querySelector("#admShopPrice");
         const currency = editor.querySelector("#admShopCurrency");
         if (price && Number(items[0].configuredPrice) > 0) price.value = String(items[0].configuredPrice);
         if (currency) currency.value = items[0].configuredCurrency || "coins";
       }
+
+      syncModeVisibility();
       syncModeHelp();
     };
 
-    picker.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    singleSelect?.addEventListener("change", () => {
+      setCheckedKeys(singleSelect.value ? [singleSelect.value] : []);
+      syncItems({ overwriteName:true });
+    });
+
+    picker?.querySelectorAll('input[type="checkbox"]').forEach(input => {
       input.addEventListener("change", () => syncItems({ overwriteName:false, changed:input }));
     });
 
     modeSelect?.addEventListener("change", () => {
       if (modeSelect.value === "single") {
-        const inputs = checkedInputs();
-        inputs.slice(1).forEach(input => { input.checked = false; });
+        const firstChecked = checkedInputs()[0]?.value;
+        if (firstChecked && singleSelect) singleSelect.value = firstChecked;
+        if (!singleSelect?.value && shopCatalog[0]?.key) singleSelect.value = shopCatalog[0].key;
+        setCheckedKeys(singleSelect?.value ? [singleSelect.value] : []);
+      } else {
+        const key = String(singleSelect?.value || "").trim();
+        if (key && !checkedInputs().length) setCheckedKeys([key]);
       }
       syncItems({ overwriteName:true });
     });
@@ -535,6 +590,9 @@
       await renderAdminShop();
     });
 
+    if (modeSelect?.value === "single" && singleSelect?.value) {
+      setCheckedKeys([singleSelect.value]);
+    }
     syncItems();
   }
 
