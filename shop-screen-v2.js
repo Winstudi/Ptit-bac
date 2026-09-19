@@ -105,8 +105,22 @@
   function offerAssetMarkup(offer) {
     const items = offerItems(offer);
     if (items.length <= 1) return itemAssetMarkup(items[0], offer?.name);
-    const shown = items.slice(0,4);
-    return `<div class="shop2-dyn-multi-art mode-${esc(offer.offerMode || "pack")} count-${Math.min(items.length,4)}">
+
+    const mode = String(offer?.offerMode || "pack");
+    let shown = items.slice(0,4);
+
+    // Pour un pack de 3 : avatar + cadre en haut quand ils existent,
+    // puis le troisième item centré juste en dessous.
+    if (mode === "pack" && shown.length === 3) {
+      const avatar = shown.find(item => item.type === "avatar");
+      const frame = shown.find(item => item.type === "frame");
+      if (avatar && frame) {
+        const rest = shown.find(item => item !== avatar && item !== frame);
+        shown = [avatar, frame, rest].filter(Boolean);
+      }
+    }
+
+    return `<div class="shop2-dyn-multi-art mode-${esc(mode)} count-${Math.min(items.length,4)}">
       ${shown.map(item => `<span class="item-${esc(item.type || "item")}${item.owned ? " is-owned" : ""}">${itemAssetMarkup(item, item.label)}</span>`).join("")}
       ${items.length > shown.length ? `<b class="shop2-dyn-multi-more">+${items.length - shown.length}</b>` : ""}
     </div>`;

@@ -559,3 +559,61 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   width:100%;
   max-width:100%;
 }
+
+/* V32 — disposition des packs de 2 et 3 items */
+
+/* 2 items : côte à côte et centrés dans la fenêtre */
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-2{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  align-items:center!important;
+  justify-items:center!important;
+  justify-content:center!important;
+  align-content:center!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-2>span{
+  align-self:center;
+  justify-self:center;
+}
+
+/* 3 items : 2 au-dessus, le 3e centré juste en dessous */
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-3{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+  gap:2px!important;
+  align-items:center!important;
+  justify-items:center!important;
+  align-content:center!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-3>span:nth-child(1){
+  grid-column:1;
+  grid-row:1;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-3>span:nth-child(2){
+  grid-column:2;
+  grid-row:1;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-multi-art.mode-pack.count-3>span:nth-child(3){
+  grid-column:1 / -1!important;
+  grid-row:2;
+  width:50%!important;
+  justify-self:center!important;
+}
+
+/* Tailles adaptées pour que les 3 restent bien lisibles */
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.size-large .shop2-dyn-multi-art.mode-pack.count-3>span>img{
+  max-width:92%!important;
+  max-height:66px!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.size-large .shop2-dyn-multi-art.mode-pack.count-3>span:nth-child(3)>img{
+  max-width:88%!important;
+  max-height:58px!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.size-small .shop2-dyn-multi-art.mode-pack.count-3>span>img{
+  max-width:92%!important;
+  max-height:46px!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.size-tiny .shop2-dyn-multi-art.mode-pack.count-3>span>img{
+  max-width:90%!important;
+  max-height:32px!important;
+}
