@@ -30,8 +30,7 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop2-dyn-offer{--offer-line:#4864dd;position:relative;min-width:0;overflow:hidden;padding:8px 7px 7px;border:1.5px solid var(--offer-line);border-radius:0;background:radial-gradient(circle at 50% 24%,rgba(99,69,255,.19),transparent 35%),linear-gradient(180deg,#0d286f,#08184f);display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:inset 0 0 18px rgba(84,90,224,.08),0 4px 12px rgba(0,0,0,.13)}
 .shop2-dyn-offer.rarity-rare{--offer-line:#28b9ed;background:radial-gradient(circle at 50% 23%,rgba(42,198,255,.18),transparent 37%),linear-gradient(180deg,#0b3877,#071951)}.shop2-dyn-offer.rarity-epique{--offer-line:#a84df2;background:radial-gradient(circle at 50% 23%,rgba(193,63,255,.25),transparent 38%),linear-gradient(180deg,#38116f,#101650)}.shop2-dyn-offer.rarity-ultra{--offer-line:#f249d9;background:radial-gradient(circle at 50% 23%,rgba(255,65,209,.26),transparent 38%),linear-gradient(180deg,#5b1369,#17134f)}.shop2-dyn-offer.rarity-exclusif{--offer-line:#ffd45a;background:radial-gradient(circle at 50% 23%,rgba(255,194,49,.21),transparent 38%),linear-gradient(180deg,#44315f,#15174f);box-shadow:0 0 12px rgba(255,209,82,.13),inset 0 0 18px rgba(255,203,65,.07)}
 .shop2-dyn-offer.is-empty{border-style:dashed;opacity:.27;background:rgba(5,18,67,.22);box-shadow:none}.shop2-empty-star{margin:auto;color:#9fafff;font-size:1.4rem}
-.shop2-dyn-topline{width:100%;min-height:17px;display:flex;align-items:center;justify-content:space-between;gap:4px}.shop2-dyn-rarity{max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8ff;font-size:.39rem;font-weight:1000;text-transform:uppercase}.shop2-dyn-topline small{color:#aab9ef;font-size:.34rem;font-weight:800;white-space:nowrap}
-.shop2-dyn-badge{position:absolute;left:6px;top:27px;z-index:3;max-width:75%;padding:3px 6px;border-radius:999px;background:linear-gradient(180deg,#f44bc8,#ae1597);font-size:.36rem;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shop2-dyn-promo{position:absolute;right:5px;top:26px;z-index:3;padding:4px 5px;border-radius:8px;background:#f42f91;color:#fff;font-size:.45rem;font-weight:1000;transform:rotate(4deg)}
+.shop2-dyn-topline{position:absolute;left:7px;right:7px;top:-2px;z-index:5;height:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:4px;pointer-events:none}.shop2-dyn-meta{min-width:0;max-width:calc(100% - 48px);display:flex;align-items:center;gap:4px;transform:translateY(0)}.shop2-dyn-rarity{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8ff;font-size:.39rem;font-weight:1000;text-transform:uppercase}.shop2-dyn-badge,.shop2-dyn-promo{position:static;flex:0 0 auto;max-width:54px;padding:2px 4px;border-radius:0;background:linear-gradient(180deg,#f44bc8,#ae1597);color:#fff;font-size:.32rem;line-height:1.05;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:none}.shop2-dyn-promo{background:#f42f91}.shop2-dyn-topline small{position:absolute;right:3px;top:2px;min-width:34px;height:18px;padding:0 4px;border-radius:0;background:rgba(0,0,0,.78);color:#e6e9f7;font-size:.31rem;line-height:18px;font-weight:900;white-space:nowrap;text-align:center;box-sizing:border-box}
 .shop2-dyn-art{width:100%;flex:1;min-height:74px;display:grid;place-items:center;padding:4px 0}.shop2-dyn-art>img{max-width:82%;max-height:104px;object-fit:contain;filter:drop-shadow(0 0 9px rgba(142,92,255,.32))}.shop2-dyn-offer.size-large .shop2-dyn-art>img{max-width:68%;max-height:125px}.shop2-dyn-offer.size-tiny .shop2-dyn-art>img{max-width:88%;max-height:70px}.shop2-dyn-tag{max-width:100%;padding:6px 7px;border:1px solid #70839b;border-radius:10px;background:linear-gradient(180deg,#27314d,#1a2340);display:flex;align-items:center;justify-content:center;gap:4px;font-size:.44rem}.shop2-dyn-tag b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop2-dyn-fallback{font-size:2rem;color:#e6d1ff;text-shadow:0 0 13px #9957ff}
 .shop2-dyn-offer h3{width:100%;margin:3px 0 6px;color:#fff;font-size:.58rem;line-height:1.12;font-weight:1000;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.shop2-dyn-offer.size-large h3{font-size:.82rem}.shop2-dyn-offer.size-tiny h3{font-size:.49rem}
 .shop2-dyn-price-row{width:100%;margin-top:auto;display:grid;gap:3px}.shop2-dyn-price-row del{color:#aab1d3;font-size:.38rem;line-height:1}.shop2-dyn-actions{width:100%;display:grid;grid-template-columns:minmax(0,1fr) 0;gap:0;align-items:stretch;transition:grid-template-columns .16s ease,gap .16s ease}.shop2-dyn-buy{width:100%;min-width:0;min-height:29px;padding:3px 5px;border:0;border-radius:10px;background:linear-gradient(180deg,#25e57c,#0fbd61);color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;font-size:.57rem;font-weight:1000;box-shadow:0 0 8px rgba(29,223,115,.25);transition:transform .16s ease,opacity .16s ease}.shop2-dyn-buy img{width:16px;height:16px;object-fit:contain}.shop2-dyn-buy:disabled{background:linear-gradient(180deg,#374a7b,#26345d);color:#bec8e9;box-shadow:none;cursor:default}.shop2-dyn-cancel{width:0;min-width:0;min-height:29px;padding:0;border:0;border-radius:10px;background:rgba(220,38,60,.40);color:#fff;display:grid;place-items:center;font-size:.8rem;font-weight:1000;opacity:0;pointer-events:none;overflow:hidden;box-shadow:0 0 8px rgba(62,83,143,.18);transition:width .16s ease,opacity .16s ease}.shop2-dyn-offer.is-confirming .shop2-dyn-actions{grid-template-columns:minmax(0,1fr) 30px;gap:5px}.shop2-dyn-offer.is-confirming .shop2-dyn-buy{box-shadow:0 0 12px rgba(29,223,115,.35)}.shop2-dyn-offer.is-confirming .shop2-dyn-cancel{width:30px;opacity:1;pointer-events:auto}.shop2-dyn-offer.size-large .shop2-dyn-buy,.shop2-dyn-offer.size-large .shop2-dyn-cancel{min-height:33px;font-size:.68rem}.shop2-dyn-offer.size-tiny .shop2-dyn-buy,.shop2-dyn-offer.size-tiny .shop2-dyn-cancel{min-height:27px}.shop2-dyn-offer.size-tiny .shop2-dyn-buy{font-size:.49rem}.shop2-dyn-offer.size-tiny .shop2-dyn-cancel{font-size:.68rem}.shop2-dyn-offer.size-tiny .shop2-dyn-buy img{width:14px;height:14px}.shop2-dyn-offer.is-owned .shop2-dyn-art{opacity:.62}
@@ -55,17 +54,34 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
 .shop-v2.is-compact-shop-header .shop2-block-1{height:200px}
 .shop-v2.is-compact-shop-header .shop2-block-2{height:190px}
-.shop-v2.is-compact-shop-header .shop2-block-3{height:157px}
+.shop-v2.is-compact-shop-header .shop2-block-3{height:164px}
 .shop-v2.is-compact-shop-header .shop2-dyn-art{min-height:0;overflow:hidden}
 .shop-v2.is-compact-shop-header .shop2-dyn-art>img{transform-origin:center center;transition:transform .16s ease}
-/* Taille des items par emplacement : B1-P1 / B2-P3 -30%, petits slots +20%, B3 -40% */
-.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img,
-.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img{transform:scale(.70)}
+/* Ajustements par emplacement */
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img{transform:scale(.875)}
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img{position:relative;top:-15px;transform:scale(.70)}
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img,
-.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img{transform:scale(1.20)}
-.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-art>img{transform:scale(.60)}
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img{transform:scale(1.32)}
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-art>img{transform:scale(.69)}
+
+/* Boutons prix : moins hauts et moins larges selon la position */
+.shop-v2.is-compact-shop-header .shop2-dyn-price-row{justify-items:center}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-actions,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-actions{width:calc(100% - 40px)}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-actions,
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-actions,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-actions,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-actions,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-actions{width:calc(100% - 12px)}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-buy,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-buy{min-height:28px}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-buy,
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-buy,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-buy,
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-buy{min-height:24px}
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-buy{min-height:22px}
 @media(max-width:380px){
   .shop-v2.is-compact-shop-header .shop2-brand{height:44px}
   .shop-v2.is-compact-shop-header .shop2-brand-notice{width:calc(100% + 54px);margin-left:-6px;padding:0 14px 0 4px;gap:3px}
@@ -79,11 +95,19 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
   .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
   .shop-v2.is-compact-shop-header .shop2-block-1,.shop-v2.is-compact-shop-header .shop2-block-2{height:180px}
-  .shop-v2.is-compact-shop-header .shop2-block-3{height:142px}
+  .shop-v2.is-compact-shop-header .shop2-block-3{height:149px}
 }
 @media(max-width:340px){
   .shop-v2.is-compact-shop-header .shop2-brand-notice{padding-right:10px}
   .shop-v2.is-compact-shop-header .shop2-brand-notice h1{font-size:.897rem}
   .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill{padding-inline:0}
   .shop-v2.is-compact-shop-header .shop2-notice-wallet .shop2-wallet-pill b{font-size:.645rem}
+}
+
+/* Méta offre mobile : rareté remontée, badge adjacent, durée au bord supérieur droit */
+@media(max-width:380px){
+  .shop2-dyn-topline{left:5px;right:5px;top:-2px}
+  .shop2-dyn-meta{max-width:calc(100% - 43px);gap:2px}
+  .shop2-dyn-badge,.shop2-dyn-promo{max-width:43px;padding:2px 3px;font-size:.28rem}
+  .shop2-dyn-topline small{right:5px;top:2px;min-width:31px;height:17px;padding:0 3px;line-height:17px;font-size:.27rem}
 }
