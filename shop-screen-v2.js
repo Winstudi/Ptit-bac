@@ -80,6 +80,8 @@
   function itemAssetMarkup(item, label = "") {
     if (!item) return `<div class="shop2-dyn-fallback">✦</div>`;
     if (item.type === "tag") {
+      const tagAsset = String(item.asset || "").trim();
+      if (tagAsset) return `<img src="${esc(tagAsset)}" alt="">`;
       return `<div class="shop2-dyn-tag"><span>🏷️</span><b>${esc(label || item.label || "Tag")}</b></div>`;
     }
     const asset = String(item.asset || "").trim();
@@ -104,8 +106,8 @@
     const items = offerItems(offer);
     if (items.length <= 1) return itemAssetMarkup(items[0], offer?.name);
     const shown = items.slice(0,4);
-    return `<div class="shop2-dyn-multi-art mode-${esc(offer.offerMode || "pack")}">
-      ${shown.map(item => `<span class="${item.owned ? "is-owned" : ""}">${itemAssetMarkup(item, item.label)}</span>`).join("")}
+    return `<div class="shop2-dyn-multi-art mode-${esc(offer.offerMode || "pack")} count-${Math.min(items.length,4)}">
+      ${shown.map(item => `<span class="item-${esc(item.type || "item")}${item.owned ? " is-owned" : ""}">${itemAssetMarkup(item, item.label)}</span>`).join("")}
       ${items.length > shown.length ? `<b class="shop2-dyn-multi-more">+${items.length - shown.length}</b>` : ""}
     </div>`;
   }
