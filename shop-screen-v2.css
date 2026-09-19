@@ -53,9 +53,9 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{min-width:0;width:auto;height:25px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:3px;box-sizing:border-box}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:21px;height:21px;flex:0 0 21px}
 .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.78rem;line-height:1;white-space:nowrap}
-.shop-v2.is-featured-tab .shop2-block-1{height:165px}
-.shop-v2.is-featured-tab .shop2-block-2{height:155px}
-.shop-v2.is-featured-tab .shop2-block-3{height:140px}
+.shop-v2.is-featured-tab .shop2-block-1{height:175px}
+.shop-v2.is-featured-tab .shop2-block-2{height:165px}
+.shop-v2.is-featured-tab .shop2-block-3{height:145px}
 .shop-v2.is-featured-tab .shop2-dyn-art{min-height:0;overflow:hidden}
 @media(max-width:380px){
   .shop-v2.is-featured-tab .shop2-brand{height:44px}
@@ -69,8 +69,8 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill{height:24px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;gap:2px}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill img{width:19.5px;height:19.5px;flex-basis:19.5px}
   .shop-v2.is-featured-tab .shop2-notice-wallet .shop2-wallet-pill b{font-size:.705rem}
-  .shop-v2.is-featured-tab .shop2-block-1,.shop-v2.is-featured-tab .shop2-block-2{height:145px}
-  .shop-v2.is-featured-tab .shop2-block-3{height:125px}
+  .shop-v2.is-featured-tab .shop2-block-1,.shop-v2.is-featured-tab .shop2-block-2{height:155px}
+  .shop-v2.is-featured-tab .shop2-block-3{height:130px}
 }
 @media(max-width:340px){
   .shop-v2.is-featured-tab .shop2-brand-notice{padding-right:10px}
