@@ -655,3 +655,24 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   font-size:.552rem!important;
   line-height:1.05;
 }
+
+
+/* V35 — badges principaux collés au coin supérieur gauche */
+.shop-v2.is-compact-shop-header .shop2-dyn-topline{
+  left:0!important;
+  right:0!important;
+  top:0!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-meta{
+  position:absolute;
+  left:0;
+  top:0;
+  max-width:calc(100% - 42px);
+  transform:none!important;
+  gap:2px;
+  align-items:flex-start;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-badge{
+  margin:0!important;
+  border-radius:0!important;
+}
