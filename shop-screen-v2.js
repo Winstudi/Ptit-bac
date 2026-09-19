@@ -9,6 +9,7 @@
   let timerHandle = null;
   let expiryRefreshPending = false;
   let confirmingOfferId = "";
+  const selectedChoiceItems = new Map();
 
   function shopEconomyState() {
     try {
@@ -76,13 +77,37 @@
     return featuredOffers.find(offer => Number(offer.block) === block && Number(offer.position) === position) || null;
   }
 
-  function offerAssetMarkup(offer) {
-    if (offer?.itemType === "tag") {
-      return `<div class="shop2-dyn-tag"><span>🏷️</span><b>${esc(offer.name)}</b></div>`;
+  function itemAssetMarkup(item, label = "") {
+    if (!item) return `<div class="shop2-dyn-fallback">✦</div>`;
+    if (item.type === "tag") {
+      return `<div class="shop2-dyn-tag"><span>🏷️</span><b>${esc(label || item.label || "Tag")}</b></div>`;
     }
-    const asset = String(offer?.asset || "").trim();
+    const asset = String(item.asset || "").trim();
     if (!asset) return `<div class="shop2-dyn-fallback">✦</div>`;
     return `<img src="${esc(asset)}" alt="">`;
+  }
+
+  function offerItems(offer) {
+    const items = Array.isArray(offer?.items) ? offer.items.filter(Boolean) : [];
+    if (items.length) return items;
+    return [{
+      key:String(offer?.itemKey || ""),
+      type:String(offer?.itemType || ""),
+      id:String(offer?.itemId || ""),
+      label:String(offer?.name || "Objet"),
+      asset:String(offer?.asset || ""),
+      owned:offer?.owned === true
+    }];
+  }
+
+  function offerAssetMarkup(offer) {
+    const items = offerItems(offer);
+    if (items.length <= 1) return itemAssetMarkup(items[0], offer?.name);
+    const shown = items.slice(0,4);
+    return `<div class="shop2-dyn-multi-art mode-${esc(offer.offerMode || "pack")}">
+      ${shown.map(item => `<span class="${item.owned ? "is-owned" : ""}">${itemAssetMarkup(item, item.label)}</span>`).join("")}
+      ${items.length > shown.length ? `<b class="shop2-dyn-multi-more">+${items.length - shown.length}</b>` : ""}
+    </div>`;
   }
 
   function durationLabel(endsAt) {
@@ -111,7 +136,7 @@
     const owned = offer.owned === true;
 
     return `
-      <article class="shop2-dyn-offer size-${size} rarity-${rarity}${owned ? " is-owned" : ""}" data-shop-offer-card="${esc(offer.id)}">
+      <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-${esc(offer.offerMode || "single")}${owned ? " is-owned" : ""}" data-shop-offer-card="${esc(offer.id)}">
         <div class="shop2-dyn-topline">
           <div class="shop2-dyn-meta">
             ${badge
@@ -123,6 +148,7 @@
           <small data-offer-ends="${Number(offer.endsAt) || 0}">${esc(durationLabel(offer.endsAt))}</small>
         </div>
         ${promo ? `<span class="shop2-dyn-promo shop2-dyn-promo-price">-${promo}%</span>` : ""}
+        ${offerItems(offer).length > 1 ? `<span class="shop2-dyn-mode-label">${offer.offerMode === "choice" ? "CHOIX" : "PACK"} ×${offerItems(offer).length}</span>` : ""}
         <div class="shop2-dyn-art">${offerAssetMarkup(offer)}</div>
         <h3>${esc(offer.name)}</h3>
         <div class="shop2-dyn-price-row">
@@ -328,6 +354,44 @@
     }
   }
 
+  function closeChoiceModal() {
+    document.querySelector(".shop2-choice-layer")?.remove();
+  }
+
+  function openChoiceModal(offer) {
+    closeChoiceModal();
+    const items = offerItems(offer);
+    const layer = document.createElement("div");
+    layer.className = "shop2-choice-layer";
+    layer.innerHTML = `
+      <div class="shop2-choice-panel" role="dialog" aria-modal="true" aria-label="Choisir un objet">
+        <button class="shop2-choice-close" type="button" aria-label="Fermer">✕</button>
+        <small>OFFRE AU CHOIX</small>
+        <h2>${esc(offer.name)}</h2>
+        <p>Choisis l’objet que tu veux acheter.</p>
+        <div class="shop2-choice-grid">
+          ${items.map(item => `
+            <button type="button" data-shop-choice-item="${esc(item.key)}" ${item.owned ? "disabled" : ""}>
+              <span>${itemAssetMarkup(item, item.label)}</span>
+              <b>${esc(item.label)}</b>
+              ${item.owned ? `<em>Possédé</em>` : ""}
+            </button>`).join("")}
+        </div>
+      </div>`;
+    document.querySelector(".shop-v2")?.appendChild(layer);
+    layer.addEventListener("click", event => {
+      if (event.target === layer || event.target.closest?.(".shop2-choice-close")) closeChoiceModal();
+    });
+    layer.querySelectorAll("[data-shop-choice-item]").forEach(button => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        selectedChoiceItems.set(offer.id, String(button.dataset.shopChoiceItem || ""));
+        closeChoiceModal();
+        setConfirmingOffer(offer.id);
+      });
+    });
+  }
+
   function syncConfirmingOfferUI() {
     document.querySelectorAll("[data-shop-offer-card]").forEach(card => {
       const offerId = String(card.dataset.shopOfferCard || "");
@@ -343,12 +407,25 @@
   function bindFeaturedButtons() {
     syncConfirmingOfferUI();
 
+    document.querySelectorAll("[data-shop-offer-card]").forEach(card => {
+      card.addEventListener("click", event => {
+        if (event.target.closest?.("button")) return;
+        const offer = featuredOffers.find(item => item.id === String(card.dataset.shopOfferCard || ""));
+        if (offer?.offerMode === "choice" && !offer.owned) openChoiceModal(offer);
+      });
+    });
+
     document.querySelectorAll("[data-shop-offer]").forEach(button => {
       button.addEventListener("click", async () => {
         if (button.disabled) return;
         const offerId = String(button.dataset.shopOffer || "");
         const offer = featuredOffers.find(item => item.id === offerId);
         if (!offer) return;
+
+        if (offer.offerMode === "choice" && !selectedChoiceItems.get(offerId)) {
+          openChoiceModal(offer);
+          return;
+        }
 
         if (confirmingOfferId !== offerId) {
           setConfirmingOffer(offerId);
@@ -364,6 +441,7 @@
 
         const response = await emitShop("shop:purchase", {
           offerId,
+          itemKey:offer.offerMode === "choice" ? selectedChoiceItems.get(offerId) || "" : "",
           requestId:requestId()
         });
 
@@ -378,6 +456,7 @@
         }
 
         setConfirmingOffer("");
+        selectedChoiceItems.delete(offerId);
         notify(`${offer.name} ajouté à ton inventaire !`);
         featuredLoaded = false;
         await refreshFeaturedOffers({ force:true });
@@ -387,6 +466,8 @@
     document.querySelectorAll("[data-shop-offer-cancel]").forEach(button => {
       button.addEventListener("click", () => {
         if (button.disabled) return;
+        const offerId = String(button.dataset.shopOfferCancel || "");
+        if (offerId) selectedChoiceItems.delete(offerId);
         setConfirmingOffer("");
       });
     });
@@ -394,7 +475,7 @@
 
   async function refreshFeaturedOffers({ force = false } = {}) {
     if (featuredLoading && !force) return;
-    if (force) setConfirmingOffer("");
+    if (force) { setConfirmingOffer(""); selectedChoiceItems.clear(); closeChoiceModal(); }
     featuredLoading = true;
     if (!featuredLoaded && activeShopTab === "featured") {
       const content = document.querySelector(".shop2-content");
@@ -449,6 +530,8 @@
         if (!["featured", "resources", "useful"].includes(next) || next === activeShopTab) return;
         activeShopTab = next;
         setConfirmingOffer("");
+        selectedChoiceItems.clear();
+        closeChoiceModal();
         renderShopV2();
       });
     });

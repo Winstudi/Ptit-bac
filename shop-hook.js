@@ -90,7 +90,7 @@ module.exports = function installShop(io) {
       const token = await socketWalletToken(socket, payload);
       if (!token) return cb({ ok:false, error:"Session boutique non autorisée." });
       try {
-        const result = await service.purchase(token, payload.offerId, payload.requestId);
+        const result = await service.purchase(token, payload.offerId, payload.requestId, payload.itemKey);
         emitPurchaseSideEffects(socket, result);
         cb({ ok:true, ...result });
       } catch (err) {
@@ -112,7 +112,9 @@ module.exports = function installShop(io) {
           ok:true,
           items,
           slots:service.slots,
-          discounts:service.discounts
+          discounts:service.discounts,
+          offerModes:service.offerModes,
+          maxOfferItems:service.maxOfferItems
         });
       } catch (err) {
         console.error("admin:shopCatalog:", err.message);

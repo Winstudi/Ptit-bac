@@ -245,6 +245,42 @@
       : `<span class="admin-shop-item-fallback">✦</span>`;
   }
 
+  function offerModeLabel(mode) {
+    if (mode === "pack") return "PACK";
+    if (mode === "choice") return "CHOIX";
+    return "ITEM";
+  }
+
+  function offerItemKeys(offer = null) {
+    const keys = Array.isArray(offer?.itemKeys) && offer.itemKeys.length
+      ? offer.itemKeys
+      : offer?.itemKey ? [offer.itemKey] : [];
+    return [...new Set(keys.map(value => String(value || "").trim()).filter(Boolean))];
+  }
+
+  function itemsForKeys(keys = []) {
+    return keys.map(key => shopCatalog.find(item => item.key === key)).filter(Boolean);
+  }
+
+  function itemsVisual(items = [], compact = false) {
+    if (!items.length) return `<span class="admin-shop-item-fallback">✦</span>`;
+    if (items.length === 1) return itemVisual(items[0]);
+    const shown = items.slice(0,4);
+    return `<div class="admin-shop-multi-art${compact ? " is-compact" : ""}">
+      ${shown.map(item => `<span>${itemVisual(item)}</span>`).join("")}
+      ${items.length > shown.length ? `<b>+${items.length - shown.length}</b>` : ""}
+    </div>`;
+  }
+
+  function highestSelectedRarity(items = []) {
+    const order = { commun:0, rare:1, epique:2, ultra:3, exclusif:4 };
+    let best = null;
+    items.forEach(item => {
+      if (!best || (order[item.rarity] || 0) > (order[best.rarity] || 0)) best = item;
+    });
+    return best?.rarityLabel || "Commun";
+  }
+
   function activeShopOffer(block, position) {
     return shopOffers.find(offer =>
       offer.active &&
@@ -256,11 +292,13 @@
 
   function adminSlotMarkup(block, position, size) {
     const offer = activeShopOffer(block, position);
+    const items = offer ? itemsForKeys(offerItemKeys(offer)) : [];
     return `
-      <button class="admin-shop-slot size-${size}${offer ? " is-filled" : ""}" type="button" data-admin-shop-slot="${block}:${position}" ${offer ? `data-admin-shop-edit="${esc(offer.id)}"` : ""}>
+      <button class="admin-shop-slot size-${size}${offer ? " is-filled" : ""} type="button" data-admin-shop-slot="${block}:${position}" ${offer ? `data-admin-shop-edit="${esc(offer.id)}"` : ""}>
         <small>B${block} · P${position}</small>
         ${offer ? `
-          <div class="admin-shop-slot-art">${itemVisual(shopCatalog.find(item => item.key === offer.itemKey))}</div>
+          <span class="admin-shop-mode-chip mode-${esc(offer.offerMode || "single")}">${offerModeLabel(offer.offerMode)}${items.length > 1 ? ` ×${items.length}` : ""}</span>
+          <div class="admin-shop-slot-art">${itemsVisual(items,true)}</div>
           <b>${esc(offer.name)}</b>
           <span>${offer.currency === "gems" ? "💎" : "🪙"} ${Number(offer.finalPrice || 0).toLocaleString("fr-FR")}</span>
           <em>${formatRemaining(offer.endsAt)}</em>
@@ -283,14 +321,22 @@
       </div>`;
   }
 
-  function itemOptions(selected = "") {
+  function itemPickerMarkup(selectedKeys = []) {
+    const selected = new Set(selectedKeys);
     const groups = { avatar:[], frame:[], tag:[] };
     shopCatalog.forEach(item => groups[item.type]?.push(item));
     const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags" };
-    return Object.entries(groups).map(([type, items]) => `
-      <optgroup label="${labels[type]}">
-        ${items.map(item => `<option value="${esc(item.key)}" ${item.key === selected ? "selected" : ""}>${esc(item.label)} · ${esc(item.rarityLabel)}</option>`).join("")}
-      </optgroup>`).join("");
+    return `<div class="admin-shop-item-picker" id="admShopItems">
+      ${Object.entries(groups).map(([type, items]) => items.length ? `
+        <section><h4>${labels[type]}</h4><div>
+          ${items.map(item => `
+            <label class="admin-shop-pick-item${selected.has(item.key) ? " is-selected" : ""}>
+              <input type="checkbox" value="${esc(item.key)}" ${selected.has(item.key) ? "checked" : ""}>
+              <span class="admin-shop-pick-visual">${itemVisual(item)}</span>
+              <span class="admin-shop-pick-copy"><b>${esc(item.label)}</b><small>${esc(item.rarityLabel)}</small></span>
+            </label>`).join("")}
+        </div></section>` : "").join("")}
+      </div>`;
   }
 
   function positionOptions(block, selected = 1) {
@@ -301,7 +347,11 @@
   }
 
   function offerEditorMarkup(offer = null, presetBlock = 1, presetPosition = 1) {
-    const item = shopCatalog.find(entry => entry.key === offer?.itemKey) || shopCatalog[0] || null;
+    const selectedKeys = offerItemKeys(offer);
+    if (!selectedKeys.length && shopCatalog[0]?.key) selectedKeys.push(shopCatalog[0].key);
+    const selectedItems = itemsForKeys(selectedKeys);
+    const item = selectedItems[0] || shopCatalog[0] || null;
+    const mode = String(offer?.offerMode || "single");
     const block = Number(offer?.block || presetBlock || 1);
     const position = Number(offer?.position || presetPosition || 1);
     const price = Number(offer?.basePrice || item?.configuredPrice || 100);
@@ -313,14 +363,23 @@
           ${offer ? `<button id="admShopNew" type="button">Nouvelle</button>` : ""}
         </div>
         <div class="admin-shop-form">
-          <label class="admin-shop-wide">Item
-            <select id="admShopItem">${itemOptions(item?.key || "")}</select>
+          <label class="admin-shop-wide">Type d’offre
+            <select id="admShopMode">
+              <option value="single" ${mode === "single" ? "selected" : ""}>Item unique</option>
+              <option value="pack" ${mode === "pack" ? "selected" : ""}>Pack — tous les items sont achetés ensemble</option>
+              <option value="choice" ${mode === "choice" ? "selected" : ""}>Choix — le joueur choisit 1 item</option>
+            </select>
           </label>
-          <div class="admin-shop-item-preview" id="admShopItemPreview">${itemVisual(item)}</div>
-          <label>Rareté<input id="admShopRarity" value="${esc(item?.rarityLabel || "Commun")}" disabled></label>
+          <p class="admin-shop-mode-help admin-shop-wide" id="admShopModeHelp"></p>
+          <div class="admin-shop-wide">
+            <div class="admin-shop-items-head"><b>Items de l’offre</b><small id="admShopItemCount">${selectedItems.length}/8</small></div>
+            ${itemPickerMarkup(selectedKeys)}
+          </div>
+          <div class="admin-shop-item-preview" id="admShopItemPreview">${itemsVisual(selectedItems)}</div>
+          <label>Rareté dominante<input id="admShopRarity" value="${esc(highestSelectedRarity(selectedItems))}" disabled></label>
           <label class="admin-shop-wide">Nom affiché<input id="admShopName" maxlength="40" value="${esc(offer?.name || item?.label || "")}"></label>
           <label>Monnaie<select id="admShopCurrency"><option value="coins" ${currency === "coins" ? "selected" : ""}>Pièces</option><option value="gems" ${currency === "gems" ? "selected" : ""}>Gemmes</option></select></label>
-          <label>Prix<input id="admShopPrice" type="number" min="1" max="999999" value="${Math.max(1, price)}"></label>
+          <label>Prix de l’offre<input id="admShopPrice" type="number" min="1" max="999999" value="${Math.max(1, price)}"></label>
           <label>Promotion<select id="admShopDiscount">${[0,10,20,30,40,50,60,70,80,90].map(v => `<option value="${v}" ${Number(offer?.discountPercent || 0) === v ? "selected" : ""}>${v ? `-${v}%` : "Aucune"}</option>`).join("")}</select></label>
           <label>Bloc<select id="admShopBlock">${[1,2,3].map(v => `<option value="${v}" ${block === v ? "selected" : ""}>Bloc ${v}</option>`).join("")}</select></label>
           <label>Position<select id="admShopPosition">${positionOptions(block, position)}</select></label>
@@ -340,7 +399,7 @@
     if (!recent.length) return `<div class="admin-v1-empty">Aucune offre enregistrée.</div>`;
     return `<div class="admin-shop-recent">${recent.map(offer => `
       <button type="button" data-admin-shop-edit="${esc(offer.id)}" class="${offer.active && Number(offer.endsAt) > Date.now() ? "is-live" : ""}">
-        <span><b>${esc(offer.name)}</b><small>Bloc ${offer.block} · Position ${offer.position}</small></span>
+        <span><b>${esc(offer.name)}</b><small>${offerModeLabel(offer.offerMode)} · ${Math.max(1, offerItemKeys(offer).length)} item${offerItemKeys(offer).length > 1 ? "s" : ""} · Bloc ${offer.block} · Position ${offer.position}</small></span>
         <em>${offer.active ? formatRemaining(offer.endsAt) : "Retirée"}</em>
       </button>`).join("")}</div>`;
   }
@@ -349,28 +408,78 @@
     const editor = body.querySelector("#adminShopEditor");
     if (!editor) return;
 
-    const itemSelect = editor.querySelector("#admShopItem");
+    const modeSelect = editor.querySelector("#admShopMode");
     const blockSelect = editor.querySelector("#admShopBlock");
     const positionSelect = editor.querySelector("#admShopPosition");
+    const picker = editor.querySelector("#admShopItems");
 
-    const syncItem = ({ overwriteName = false } = {}) => {
-      const item = shopCatalog.find(entry => entry.key === itemSelect?.value);
-      if (!item) return;
-      const preview = editor.querySelector("#admShopItemPreview");
-      if (preview) preview.innerHTML = itemVisual(item);
-      const rarity = editor.querySelector("#admShopRarity");
-      if (rarity) rarity.value = item.rarityLabel || "Commun";
-      const name = editor.querySelector("#admShopName");
-      if (name && (overwriteName || !name.value.trim())) name.value = item.label || "";
-      if (overwriteName) {
-        const price = editor.querySelector("#admShopPrice");
-        const currency = editor.querySelector("#admShopCurrency");
-        if (price && Number(item.configuredPrice) > 0) price.value = String(item.configuredPrice);
-        if (currency) currency.value = item.configuredCurrency || "coins";
-      }
+    const checkedInputs = () => [...picker.querySelectorAll('input[type="checkbox"]:checked')];
+    const selectedKeys = () => checkedInputs().map(input => input.value);
+    const selectedItems = () => itemsForKeys(selectedKeys());
+
+    const syncModeHelp = () => {
+      const help = editor.querySelector("#admShopModeHelp");
+      if (!help) return;
+      help.textContent = modeSelect.value === "pack"
+        ? "Le prix achète tous les items sélectionnés en une seule fois."
+        : modeSelect.value === "choice"
+          ? "La case affiche plusieurs items et le joueur choisit lequel acheter au même prix."
+          : "Une offre classique contenant un seul item.";
     };
 
-    itemSelect?.addEventListener("change", () => syncItem({ overwriteName:true }));
+    const syncItems = ({ overwriteName = false, changed = null } = {}) => {
+      let inputs = checkedInputs();
+      if (modeSelect.value === "single" && inputs.length > 1) {
+        const keep = changed?.checked ? changed : inputs[0];
+        inputs.forEach(input => { if (input !== keep) input.checked = false; });
+      }
+      inputs = checkedInputs();
+      if (inputs.length > 8) {
+        if (changed) changed.checked = false;
+        notify("Maximum 8 items dans une même offre.");
+        inputs = checkedInputs();
+      }
+
+      picker.querySelectorAll(".admin-shop-pick-item").forEach(label => {
+        label.classList.toggle("is-selected", label.querySelector("input")?.checked === true);
+      });
+
+      const items = selectedItems();
+      const preview = editor.querySelector("#admShopItemPreview");
+      if (preview) preview.innerHTML = itemsVisual(items);
+      const count = editor.querySelector("#admShopItemCount");
+      if (count) count.textContent = `${items.length}/8`;
+      const rarity = editor.querySelector("#admShopRarity");
+      if (rarity) rarity.value = highestSelectedRarity(items);
+      const name = editor.querySelector("#admShopName");
+      if (name && items.length && (overwriteName || !name.value.trim())) {
+        name.value = modeSelect.value === "pack"
+          ? `Pack ${items.length} objets`
+          : modeSelect.value === "choice"
+            ? `Choix ${items.length} objets`
+            : items[0].label || "";
+      }
+      if (overwriteName && items[0]) {
+        const price = editor.querySelector("#admShopPrice");
+        const currency = editor.querySelector("#admShopCurrency");
+        if (price && Number(items[0].configuredPrice) > 0) price.value = String(items[0].configuredPrice);
+        if (currency) currency.value = items[0].configuredCurrency || "coins";
+      }
+      syncModeHelp();
+    };
+
+    picker.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      input.addEventListener("change", () => syncItems({ overwriteName:false, changed:input }));
+    });
+
+    modeSelect?.addEventListener("change", () => {
+      if (modeSelect.value === "single") {
+        const inputs = checkedInputs();
+        inputs.slice(1).forEach(input => { input.checked = false; });
+      }
+      syncItems({ overwriteName:true });
+    });
+
     blockSelect?.addEventListener("change", () => {
       if (positionSelect) positionSelect.innerHTML = positionOptions(blockSelect.value, 1);
     });
@@ -381,12 +490,20 @@
     });
 
     editor.querySelector("#admShopSave")?.addEventListener("click", async event => {
+      const keys = selectedKeys();
+      if (!keys.length) return notify("Choisis au moins un item.");
+      if (modeSelect.value !== "single" && keys.length < 2) {
+        return notify("Un pack ou un choix doit contenir au moins 2 items.");
+      }
+
       const button = event.currentTarget;
       button.disabled = true;
       button.textContent = "Enregistrement…";
       const response = await emit("admin:shopSave", {
         offerId:selectedShopOfferId,
-        itemKey:itemSelect?.value,
+        offerMode:modeSelect.value,
+        itemKeys:keys,
+        itemKey:keys[0],
         name:editor.querySelector("#admShopName")?.value,
         currency:editor.querySelector("#admShopCurrency")?.value,
         price:editor.querySelector("#admShopPrice")?.value,
@@ -418,7 +535,7 @@
       await renderAdminShop();
     });
 
-    syncItem();
+    syncItems();
   }
 
   function renderAdminShopEditor(body, offer = null, block = 1, position = 1) {
@@ -476,7 +593,7 @@
       <section class="admin-v4-card admin-shop-intro">
         <small>BOUTIQUE DYNAMIQUE</small>
         <h3>Offre à l’affiche</h3>
-        <p>10 emplacements fixes. Clique une case pour publier ou modifier l’offre affichée à cet endroit.</p>
+        <p>10 emplacements fixes. Chaque case peut contenir un item, un pack acheté ensemble ou plusieurs items au choix.</p>
       </section>
       ${shopBoardMarkup()}
       <div id="adminShopEditorHolder">${offerEditorMarkup(null,1,1)}</div>

@@ -11,6 +11,9 @@ const { createWalletAtomicService } = require("./wallet-atomic-service.js");
 
 const BLOCK_SLOTS = Object.freeze({ 1:3, 2:3, 3:4 });
 const DISCOUNTS = Object.freeze([0,10,20,30,40,50,60,70,80,90]);
+const OFFER_MODES = Object.freeze(["single","pack","choice"]);
+const MAX_OFFER_ITEMS = 8;
+const RARITY_ORDER = Object.freeze({ commun:0, rare:1, epique:2, ultra:3, exclusif:4 });
 const RARITY_LABELS = Object.freeze({
   commun:"Commun",
   rare:"Rare",
@@ -26,6 +29,49 @@ function validWalletToken(value) {
 
 function normalizeCurrency(value) {
   return value === "gems" ? "gems" : "coins";
+}
+
+function normalizeOfferMode(value) {
+  const mode = String(value || "single").trim().toLowerCase();
+  return OFFER_MODES.includes(mode) ? mode : "single";
+}
+
+function normalizeItemKeys(value, fallback = "") {
+  const source = Array.isArray(value)
+    ? value
+    : typeof value === "string" && value.trim()
+      ? value.split(",")
+      : [];
+  const keys = [];
+  for (const entry of [...source, fallback]) {
+    const key = String(entry || "").trim().slice(0,180);
+    if (!key || keys.includes(key)) continue;
+    keys.push(key);
+    if (keys.length >= MAX_OFFER_ITEMS) break;
+  }
+  return keys;
+}
+
+function rowItemKeys(row = {}) {
+  let raw = row.item_keys;
+  if (typeof raw === "string") {
+    try { raw = JSON.parse(raw); } catch { raw = []; }
+  }
+  return normalizeItemKeys(Array.isArray(raw) ? raw : [], row.item_key);
+}
+
+function highestRarity(items = []) {
+  let rarity = "commun";
+  let rank = -1;
+  for (const item of items) {
+    const candidate = String(item?.rarity || "commun");
+    const candidateRank = Number(RARITY_ORDER[candidate] ?? 0);
+    if (candidateRank > rank) {
+      rarity = candidate;
+      rank = candidateRank;
+    }
+  }
+  return rarity;
 }
 
 function normalizeDiscount(value) {
@@ -103,6 +149,8 @@ function createShopService({
         CREATE TABLE IF NOT EXISTS public.ptitbac_shop_offers(
           id text PRIMARY KEY,
           item_key text NOT NULL,
+          offer_mode text NOT NULL DEFAULT 'single',
+          item_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
           display_name text NOT NULL,
           currency text NOT NULL CHECK(currency IN ('coins','gems')),
           base_price integer NOT NULL CHECK(base_price >= 1),
@@ -119,6 +167,19 @@ function createShopService({
         )
       `);
 
+      await database.query(`ALTER TABLE public.ptitbac_shop_offers ADD COLUMN IF NOT EXISTS offer_mode text NOT NULL DEFAULT 'single'`);
+      await database.query(`ALTER TABLE public.ptitbac_shop_offers ADD COLUMN IF NOT EXISTS item_keys jsonb NOT NULL DEFAULT '[]'::jsonb`);
+      await database.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET item_keys=jsonb_build_array(item_key)
+         WHERE item_keys IS NULL OR jsonb_array_length(item_keys)=0
+      `);
+      await database.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET offer_mode='single'
+         WHERE offer_mode NOT IN ('single','pack','choice')
+      `);
+
       await database.query(`
         CREATE INDEX IF NOT EXISTS ptitbac_shop_offers_active_slot_idx
           ON public.ptitbac_shop_offers(active,block_no,position_no,ends_at)
@@ -130,6 +191,8 @@ function createShopService({
           wallet_token text NOT NULL,
           offer_id text NOT NULL,
           item_key text NOT NULL,
+          selected_item_key text,
+          purchased_item_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
           currency text NOT NULL,
           price_paid integer NOT NULL,
           request_id text NOT NULL,
@@ -137,6 +200,9 @@ function createShopService({
           UNIQUE(wallet_token,request_id)
         )
       `);
+
+      await database.query(`ALTER TABLE public.ptitbac_shop_purchases ADD COLUMN IF NOT EXISTS selected_item_key text`);
+      await database.query(`ALTER TABLE public.ptitbac_shop_purchases ADD COLUMN IF NOT EXISTS purchased_item_keys jsonb NOT NULL DEFAULT '[]'::jsonb`);
 
       await database.query(`
         CREATE INDEX IF NOT EXISTS ptitbac_shop_purchases_wallet_idx
@@ -181,21 +247,39 @@ function createShopService({
     return new Map(items.map(item => [item.key, item]));
   }
 
-  function mapOffer(row, item) {
+  function mapOffer(row, itemsMap) {
     const discount = normalizeDiscount(row.discount_percent);
     const price = normalizePrice(row.base_price);
     const now = Date.now();
     const startsAt = row.starts_at ? new Date(row.starts_at).getTime() : now;
     const endsAt = row.ends_at ? new Date(row.ends_at).getTime() : now;
+    const offerMode = normalizeOfferMode(row.offer_mode);
+    let itemKeys = rowItemKeys(row);
+    if (offerMode === "single") itemKeys = itemKeys.slice(0,1);
+    const resolvedItems = itemKeys.map(key => itemsMap.get(key)).filter(Boolean);
+    const primary = resolvedItems[0] || itemsMap.get(String(row.item_key || "")) || null;
+    const rarity = highestRarity(resolvedItems.length ? resolvedItems : [primary].filter(Boolean));
+    const itemSnapshots = resolvedItems.map(item => ({
+      key:String(item.key || ""),
+      type:String(item.type || ""),
+      id:String(item.id || ""),
+      label:String(item.label || "Objet"),
+      asset:String(item.asset || ""),
+      rarity:String(item.rarity || "commun"),
+      rarityLabel:String(item.rarityLabel || RARITY_LABELS[item.rarity] || "Commun")
+    }));
     return {
       id:String(row.id || ""),
-      itemKey:String(row.item_key || ""),
-      itemType:String(item?.type || ""),
-      itemId:String(item?.id || ""),
-      name:String(row.display_name || item?.label || "Objet"),
-      asset:String(item?.asset || ""),
-      rarity:String(item?.rarity || "commun"),
-      rarityLabel:String(item?.rarityLabel || "Commun"),
+      offerMode,
+      itemKeys:itemSnapshots.map(item => item.key),
+      items:itemSnapshots,
+      itemKey:String(primary?.key || row.item_key || ""),
+      itemType:String(primary?.type || ""),
+      itemId:String(primary?.id || ""),
+      name:String(row.display_name || primary?.label || "Objet"),
+      asset:String(primary?.asset || ""),
+      rarity,
+      rarityLabel:String(RARITY_LABELS[rarity] || "Commun"),
       currency:normalizeCurrency(row.currency),
       basePrice:price,
       discountPercent:discount,
@@ -221,7 +305,7 @@ function createShopService({
         ORDER BY active DESC, block_no ASC, position_no ASC, updated_at DESC
         LIMIT 150`
     );
-    return (q.rows || []).map(row => mapOffer(row, items.get(String(row.item_key || ""))));
+    return (q.rows || []).map(row => mapOffer(row, items));
   }
 
   async function activeOffers(walletToken = "") {
@@ -238,19 +322,24 @@ function createShopService({
 
     let owned = null;
     const token = validWalletToken(walletToken);
-    if (token) {
-      owned = await inventory.getState(token).catch(() => null);
-    }
+    if (token) owned = await inventory.getState(token).catch(() => null);
+
+    const ownsItem = item => {
+      if (!owned || !item) return false;
+      const bucket = item.type === "avatar" ? "avatars" : item.type === "frame" ? "frames" : "tags";
+      return Array.isArray(owned.owned?.[bucket]) && owned.owned[bucket].includes(item.id);
+    };
 
     return (q.rows || []).map(row => {
-      const item = items.get(String(row.item_key || ""));
-      const offer = mapOffer(row, item);
-      let isOwned = false;
-      if (owned && item) {
-        const bucket = item.type === "avatar" ? "avatars" : item.type === "frame" ? "frames" : "tags";
-        isOwned = Array.isArray(owned.owned?.[bucket]) && owned.owned[bucket].includes(item.id);
-      }
-      return { ...offer, owned:isOwned };
+      const offer = mapOffer(row, items);
+      const itemStates = offer.items.map(item => ({ ...item, owned:ownsItem(item) }));
+      const ownedCount = itemStates.filter(item => item.owned).length;
+      return {
+        ...offer,
+        items:itemStates,
+        owned:itemStates.length > 0 && ownedCount === itemStates.length,
+        partiallyOwned:ownedCount > 0 && ownedCount < itemStates.length
+      };
     });
   }
 
@@ -259,9 +348,19 @@ function createShopService({
     if (!token) throw new Error("Session admin invalide.");
 
     const items = await catalogMap();
-    const itemKey = safeText(payload.itemKey, 180);
-    const item = items.get(itemKey);
-    if (!item || item.defaultOwned) throw new Error("Choisis un item boutique valide.");
+    const offerMode = normalizeOfferMode(payload.offerMode);
+    let itemKeys = normalizeItemKeys(payload.itemKeys, payload.itemKey);
+    if (offerMode === "single") itemKeys = itemKeys.slice(0,1);
+    if (!itemKeys.length) throw new Error("Choisis au moins un item boutique.");
+    if (offerMode !== "single" && itemKeys.length < 2) {
+      throw new Error("Un pack ou un choix doit contenir au moins 2 items.");
+    }
+
+    const selectedItems = itemKeys.map(key => items.get(key));
+    if (selectedItems.some(item => !item || item.defaultOwned)) {
+      throw new Error("Un des items sélectionnés n’est pas disponible dans la boutique.");
+    }
+    const primary = selectedItems[0];
 
     const block = normalizeBlock(payload.block);
     const position = normalizePosition(block, payload.position);
@@ -271,7 +370,12 @@ function createShopService({
     const discount = normalizeDiscount(payload.discountPercent);
     const currency = normalizeCurrency(payload.currency);
     const durationMinutes = normalizeDurationMinutes(payload.durationMinutes);
-    const displayName = safeText(payload.name, 40) || String(item.label || "Objet");
+    const fallbackName = offerMode === "pack"
+      ? `Pack ${selectedItems.length} objets`
+      : offerMode === "choice"
+        ? `Choix ${selectedItems.length} objets`
+        : String(primary.label || "Objet");
+    const displayName = safeText(payload.name, 40) || fallbackName;
     const badge = safeText(payload.badge, 24).toUpperCase();
     const active = payload.active !== false;
     const requestedId = safeText(payload.offerId, 80);
@@ -299,15 +403,17 @@ function createShopService({
 
       const q = await client.query(
         `INSERT INTO public.ptitbac_shop_offers(
-           id,item_key,display_name,currency,base_price,discount_percent,
+           id,item_key,offer_mode,item_keys,display_name,currency,base_price,discount_percent,
            block_no,position_no,badge,active,starts_at,ends_at,
            created_by_wallet_token,created_at,updated_at
          ) VALUES(
-           $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now(),
-           now() + ($11::integer * interval '1 minute'),$12,now(),now()
+           $1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12,now(),
+           now() + ($13::integer * interval '1 minute'),$14,now(),now()
          )
          ON CONFLICT(id) DO UPDATE SET
            item_key=EXCLUDED.item_key,
+           offer_mode=EXCLUDED.offer_mode,
+           item_keys=EXCLUDED.item_keys,
            display_name=EXCLUDED.display_name,
            currency=EXCLUDED.currency,
            base_price=EXCLUDED.base_price,
@@ -317,18 +423,18 @@ function createShopService({
            badge=EXCLUDED.badge,
            active=EXCLUDED.active,
            starts_at=now(),
-           ends_at=now() + ($11::integer * interval '1 minute'),
+           ends_at=now() + ($13::integer * interval '1 minute'),
            updated_at=now()
          RETURNING *`,
         [
-          offerId,itemKey,displayName,currency,basePrice,discount,
+          offerId,primary.key,offerMode,JSON.stringify(itemKeys),displayName,currency,basePrice,discount,
           block,position,badge,active,durationMinutes,token
         ]
       );
 
       await client.query("COMMIT");
       finished = true;
-      return mapOffer(q.rows[0], item);
+      return mapOffer(q.rows[0], items);
     } catch (error) {
       if (!finished) {
         try { await client.query("ROLLBACK"); } catch {}
@@ -356,7 +462,7 @@ function createShopService({
     return { id };
   }
 
-  async function purchase(walletToken, offerId, requestId) {
+  async function purchase(walletToken, offerId, requestId, selectedItemKey = "") {
     const token = validWalletToken(walletToken);
     const id = safeText(offerId, 80);
     const reqId = normalizeRequestId(requestId);
@@ -369,6 +475,8 @@ function createShopService({
     let finished = false;
     let walletResult = null;
     let resultOffer = null;
+    let purchasedItems = [];
+    let selectedKey = "";
 
     try {
       await client.query("BEGIN");
@@ -409,26 +517,47 @@ function createShopService({
       if (!q.rowCount) throw new Error("Cette offre n’est plus disponible.");
 
       const row = q.rows[0];
-      const item = items.get(String(row.item_key || ""));
-      if (!item || item.defaultOwned) throw new Error("Objet boutique invalide.");
-      resultOffer = mapOffer(row, item);
+      resultOffer = mapOffer(row, items);
+      if (!resultOffer.items.length) throw new Error("Objet boutique invalide.");
 
-      await client.query(
-        `SELECT pg_advisory_xact_lock(hashtext($1))`,
-        [`${token}:item:${item.key}`]
-      );
+      if (resultOffer.offerMode === "choice") {
+        selectedKey = safeText(selectedItemKey, 180);
+        const chosen = resultOffer.items.find(item => item.key === selectedKey);
+        if (!chosen) {
+          const err = new Error("Choisis l’objet que tu veux acheter.");
+          err.code = "CHOICE_REQUIRED";
+          throw err;
+        }
+        purchasedItems = [chosen];
+      } else if (resultOffer.offerMode === "pack") {
+        purchasedItems = resultOffer.items.slice();
+      } else {
+        purchasedItems = [resultOffer.items[0]];
+        selectedKey = purchasedItems[0]?.key || "";
+      }
 
-      const owned = await client.query(
-        `SELECT 1
-           FROM public.ptitbac_inventory_items
-          WHERE wallet_token=$1 AND item_type=$2 AND item_id=$3
-          LIMIT 1`,
-        [token, item.type, item.id]
-      );
-      if (owned.rowCount) {
-        const err = new Error("Tu possèdes déjà cet objet.");
-        err.code = "OWNED";
-        throw err;
+      for (const item of [...purchasedItems].sort((a,b) => a.key.localeCompare(b.key))) {
+        await client.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1))`,
+          [`${token}:item:${item.key}`]
+        );
+      }
+
+      for (const item of purchasedItems) {
+        const owned = await client.query(
+          `SELECT 1
+             FROM public.ptitbac_inventory_items
+            WHERE wallet_token=$1 AND item_type=$2 AND item_id=$3
+            LIMIT 1`,
+          [token, item.type, item.id]
+        );
+        if (owned.rowCount) {
+          const err = new Error(resultOffer.offerMode === "pack"
+            ? "Tu possèdes déjà un objet de ce pack."
+            : "Tu possèdes déjà cet objet.");
+          err.code = "OWNED";
+          throw err;
+        }
       }
 
       const price = resultOffer.finalPrice;
@@ -450,20 +579,25 @@ function createShopService({
         throw err;
       }
 
-      await client.query(
-        `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
-         VALUES($1,$2,$3,'shop')
-         ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
-        [token, item.type, item.id]
-      );
+      for (const item of purchasedItems) {
+        await client.query(
+          `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+           VALUES($1,$2,$3,'shop')
+           ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+          [token, item.type, item.id]
+        );
+      }
 
       await client.query(
         `INSERT INTO public.ptitbac_shop_purchases(
-           id,wallet_token,offer_id,item_key,currency,price_paid,request_id
-         ) VALUES($1,$2,$3,$4,$5,$6,$7)`,
+           id,wallet_token,offer_id,item_key,selected_item_key,purchased_item_keys,currency,price_paid,request_id
+         ) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)`,
         [
           `buy_${crypto.randomBytes(10).toString("hex")}`,
-          token,id,item.key,resultOffer.currency,price,reqId
+          token,id,purchasedItems[0]?.key || resultOffer.itemKey,
+          resultOffer.offerMode === "choice" ? selectedKey : null,
+          JSON.stringify(purchasedItems.map(item => item.key)),
+          resultOffer.currency,price,reqId
         ]
       );
 
@@ -482,6 +616,8 @@ function createShopService({
     return {
       duplicate:false,
       offer:resultOffer,
+      selectedItemKey:resultOffer?.offerMode === "choice" ? selectedKey : null,
+      purchasedItemKeys:purchasedItems.map(item => item.key),
       balance:Number.isFinite(Number(walletResult?.balance)) ? Number(walletResult.balance) : null,
       gems:Number.isFinite(Number(walletResult?.gems)) ? Number(walletResult.gems) : null,
       inventory:inventoryState
@@ -497,16 +633,22 @@ function createShopService({
     deactivateOffer,
     purchase,
     slots:BLOCK_SLOTS,
-    discounts:DISCOUNTS
+    discounts:DISCOUNTS,
+    offerModes:OFFER_MODES,
+    maxOfferItems:MAX_OFFER_ITEMS
   };
 }
 
 module.exports = {
   BLOCK_SLOTS,
   DISCOUNTS,
+  OFFER_MODES,
+  MAX_OFFER_ITEMS,
   RARITY_LABELS,
   validWalletToken,
   normalizeCurrency,
+  normalizeOfferMode,
+  normalizeItemKeys,
   normalizeDiscount,
   normalizePrice,
   normalizeBlock,
