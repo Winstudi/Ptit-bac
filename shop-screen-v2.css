@@ -58,13 +58,13 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 .shop-v2.is-compact-shop-header .shop2-dyn-art{min-height:0;overflow:hidden}
 .shop-v2.is-compact-shop-header .shop2-dyn-art>img{transform-origin:center center;transition:transform .16s ease}
 /* Ajustements par emplacement */
-.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img{transform:scale(.875)}
-.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img{position:relative;top:-15px;transform:scale(.70)}
+.shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img{transform:scale(1.00625)}
+.shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img{position:relative;top:-9px;transform:scale(.805)}
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-1>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art>img,
 .shop-v2.is-compact-shop-header .shop2-block-2>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art>img{transform:scale(1.32)}
-.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-art>img{transform:scale(.69)}
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer .shop2-dyn-art>img{transform:scale(.8625)}
 
 /* Boutons prix : moins hauts et moins larges selon la position */
 .shop-v2.is-compact-shop-header .shop2-dyn-price-row{justify-items:center}
