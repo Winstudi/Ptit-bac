@@ -617,3 +617,23 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   max-width:90%!important;
   max-height:32px!important;
 }
+
+
+/* V33 — cases système B3-P3 / B3-P4 */
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.mode-special .shop2-dyn-art{
+  transform:translateY(-8px);
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.mode-special h3{
+  font-size:.46rem;
+  line-height:1.05;
+}
+.shop-v2.is-compact-shop-header .shop2-special-buy{
+  font-size:.48rem!important;
+  letter-spacing:.02em;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.is-daily-claimed{
+  opacity:.62;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.is-daily-claimed .shop2-dyn-buy{
+  color:#c9d1e9;
+}

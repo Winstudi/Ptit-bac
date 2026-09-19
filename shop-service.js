@@ -22,6 +22,121 @@ const RARITY_LABELS = Object.freeze({
   exclusif:"Exclusif"
 });
 
+const RESERVED_SHOP_SLOTS = Object.freeze(new Set(["3:3","3:4"]));
+const SHOP_CHEST_ITEMS = Object.freeze([
+  Object.freeze({
+    key:"chest:bag",
+    type:"chest",
+    id:"bag",
+    label:"Coffre Sac",
+    asset:"/reward-bag.png",
+    defaultOwned:false,
+    defaultRarity:"commun"
+  }),
+  Object.freeze({
+    key:"chest:star",
+    type:"chest",
+    id:"star",
+    label:"Coffre",
+    asset:"/reward-star-simple-closed.png",
+    defaultOwned:false,
+    defaultRarity:"rare"
+  }),
+  Object.freeze({
+    key:"chest:legendary",
+    type:"chest",
+    id:"legendary",
+    label:"Coffre légendaire",
+    asset:"/reward-legendary-simple-closed.png",
+    defaultOwned:false,
+    defaultRarity:"ultra"
+  })
+]);
+const DAILY_REWARD_POOL = Object.freeze([
+  Object.freeze({ kind:"coins", amount:80 }),
+  Object.freeze({ kind:"coins", amount:150 }),
+  Object.freeze({ kind:"gems", amount:5 }),
+  Object.freeze({ kind:"chest", chestType:"bag" }),
+  Object.freeze({ kind:"rare_item" })
+]);
+
+function isReservedShopSlot(block, position) {
+  return RESERVED_SHOP_SLOTS.has(`${Number(block)}:${Number(position)}`);
+}
+
+function isChestItem(item) {
+  return item?.type === "chest" && ["bag","star","legendary"].includes(String(item.id || ""));
+}
+
+function chestTypesForItems(items = []) {
+  return (items || []).filter(isChestItem).map(item => String(item.id));
+}
+
+const PARIS_DTF = new Intl.DateTimeFormat("en-CA", {
+  timeZone:"Europe/Paris",
+  year:"numeric",
+  month:"2-digit",
+  day:"2-digit",
+  hour:"2-digit",
+  minute:"2-digit",
+  second:"2-digit",
+  hourCycle:"h23"
+});
+
+function parisParts(ms = Date.now()) {
+  const values = {};
+  for (const part of PARIS_DTF.formatToParts(new Date(ms))) {
+    if (part.type !== "literal") values[part.type] = Number(part.value);
+  }
+  return {
+    year:values.year,
+    month:values.month,
+    day:values.day,
+    hour:values.hour,
+    minute:values.minute,
+    second:values.second
+  };
+}
+
+function addCalendarDays(parts, amount) {
+  const d = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + amount, 12, 0, 0));
+  return {
+    year:d.getUTCFullYear(),
+    month:d.getUTCMonth() + 1,
+    day:d.getUTCDate()
+  };
+}
+
+function parisOffsetMs(utcMs) {
+  const p = parisParts(utcMs);
+  const representedAsUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return representedAsUtc - Math.floor(utcMs / 1000) * 1000;
+}
+
+function parisLocalToUtcMs(parts, hour = 11) {
+  const base = Date.UTC(parts.year, parts.month - 1, parts.day, hour, 0, 0);
+  let guess = base;
+  for (let i = 0; i < 3; i += 1) {
+    guess = base - parisOffsetMs(guess);
+  }
+  return guess;
+}
+
+function dailyWindow(now = Date.now()) {
+  const local = parisParts(now);
+  const activeDate = local.hour < 11 ? addCalendarDays(local, -1) : {
+    year:local.year, month:local.month, day:local.day
+  };
+  const nextDate = local.hour < 11 ? {
+    year:local.year, month:local.month, day:local.day
+  } : addCalendarDays(local, 1);
+  const key = `${activeDate.year}-${String(activeDate.month).padStart(2,"0")}-${String(activeDate.day).padStart(2,"0")}`;
+  return {
+    key,
+    nextChangeAt:parisLocalToUtcMs(nextDate, 11)
+  };
+}
+
 function validWalletToken(value) {
   const token = String(value || "").trim();
   return /^[a-f0-9]{48}$/i.test(token) ? token : "";
@@ -209,6 +324,33 @@ function createShopService({
           ON public.ptitbac_shop_purchases(wallet_token,purchased_at DESC)
       `);
 
+      await database.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_daily_rotations(
+          rotation_key text PRIMARY KEY,
+          reward jsonb NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+
+      await database.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_daily_claims(
+          wallet_token text NOT NULL,
+          rotation_key text NOT NULL,
+          result jsonb NOT NULL,
+          claimed_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,rotation_key)
+        )
+      `);
+
+      // B3-P3 et B3-P4 sont désormais des cases système.
+      await database.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET active=false,updated_at=now()
+         WHERE active=true
+           AND block_no=3
+           AND position_no IN (3,4)
+      `);
+
       return database;
     })().catch(error => {
       schemaPromise = null;
@@ -226,7 +368,7 @@ function createShopService({
 
     const settings = new Map((q.rows || []).map(row => [String(row.item_key || ""), row]));
 
-    return catalogEntries().map(item => {
+    return [...catalogEntries(), ...SHOP_CHEST_ITEMS].map(item => {
       const saved = settings.get(item.key) || {};
       const rarity = RARITY_LABELS[String(saved.rarity || item.defaultRarity || "commun")]
         ? String(saved.rarity || item.defaultRarity || "commun")
@@ -296,6 +438,293 @@ function createShopService({
     };
   }
 
+
+  async function ensureDailyRotation() {
+    const database = await db();
+    const window = dailyWindow();
+    const existing = await database.query(
+      `SELECT reward FROM public.ptitbac_shop_daily_rotations WHERE rotation_key=$1 LIMIT 1`,
+      [window.key]
+    );
+    if (existing.rowCount) {
+      return { rotationKey:window.key, nextChangeAt:window.nextChangeAt, reward:existing.rows[0].reward };
+    }
+
+    const reward = DAILY_REWARD_POOL[crypto.randomInt(0, DAILY_REWARD_POOL.length)];
+    await database.query(
+      `INSERT INTO public.ptitbac_shop_daily_rotations(rotation_key,reward)
+       VALUES($1,$2::jsonb)
+       ON CONFLICT(rotation_key) DO NOTHING`,
+      [window.key, JSON.stringify(reward)]
+    );
+
+    const saved = await database.query(
+      `SELECT reward FROM public.ptitbac_shop_daily_rotations WHERE rotation_key=$1 LIMIT 1`,
+      [window.key]
+    );
+    return {
+      rotationKey:window.key,
+      nextChangeAt:window.nextChangeAt,
+      reward:saved.rows?.[0]?.reward || reward
+    };
+  }
+
+  async function dailyStatus(walletToken = "") {
+    const token = validWalletToken(walletToken);
+    const rotation = await ensureDailyRotation();
+    let claimed = false;
+
+    if (token) {
+      const database = await db();
+      const q = await database.query(
+        `SELECT 1 FROM public.ptitbac_shop_daily_claims
+          WHERE wallet_token=$1 AND rotation_key=$2 LIMIT 1`,
+        [token, rotation.rotationKey]
+      );
+      claimed = q.rowCount > 0;
+    }
+
+    return { ...rotation, claimed };
+  }
+
+  function dailyRewardDisplay(reward = {}) {
+    if (reward.kind === "coins") {
+      return {
+        name:`${Math.max(0, Number(reward.amount) || 0)} pièces`,
+        asset:"/coin.png",
+        rarity:"commun",
+        item:{ key:`reward:coins:${reward.amount}`, type:"reward", id:`coins_${reward.amount}`, label:`${reward.amount} pièces`, asset:"/coin.png", rarity:"commun", rarityLabel:"Commun" }
+      };
+    }
+    if (reward.kind === "gems") {
+      return {
+        name:`${Math.max(0, Number(reward.amount) || 0)} gemmes`,
+        asset:"/gem.png",
+        rarity:"epique",
+        item:{ key:`reward:gems:${reward.amount}`, type:"reward", id:`gems_${reward.amount}`, label:`${reward.amount} gemmes`, asset:"/gem.png", rarity:"epique", rarityLabel:"Épique" }
+      };
+    }
+    if (reward.kind === "chest") {
+      return {
+        name:"Coffre Sac",
+        asset:"/reward-bag.png",
+        rarity:"commun",
+        item:{ key:"chest:bag", type:"chest", id:"bag", label:"Coffre Sac", asset:"/reward-bag.png", rarity:"commun", rarityLabel:"Commun" }
+      };
+    }
+    return {
+      name:"Icône rare",
+      asset:"/reward-star.png",
+      rarity:"rare",
+      item:{ key:"reward:rare_item", type:"reward", id:"rare_item", label:"Icône rare", asset:"/reward-star.png", rarity:"rare", rarityLabel:"Rare" }
+    };
+  }
+
+  async function specialOffers(walletToken = "") {
+    const daily = await dailyStatus(walletToken);
+    const display = dailyRewardDisplay(daily.reward);
+    const farFuture = Date.now() + 365 * 24 * 60 * 60 * 1000;
+
+    return [
+      {
+        id:"special_ad_bag",
+        specialKind:"ad_bag",
+        offerMode:"single",
+        itemKeys:["chest:bag"],
+        items:[{
+          key:"chest:bag", type:"chest", id:"bag", label:"Coffre Sac",
+          asset:"/reward-bag.png", rarity:"commun", rarityLabel:"Commun", owned:false
+        }],
+        itemKey:"chest:bag",
+        itemType:"chest",
+        itemId:"bag",
+        name:"Coffre Sac",
+        asset:"/reward-bag.png",
+        rarity:"commun",
+        rarityLabel:"Commun",
+        currency:"coins",
+        basePrice:0,
+        discountPercent:0,
+        finalPrice:0,
+        block:3,
+        position:3,
+        badge:"PUB",
+        active:true,
+        startsAt:Date.now(),
+        endsAt:farFuture,
+        hideTimer:true,
+        owned:false,
+        partiallyOwned:false
+      },
+      {
+        id:`special_daily_${daily.rotationKey}`,
+        specialKind:"daily",
+        offerMode:"single",
+        itemKeys:[display.item.key],
+        items:[{ ...display.item, owned:daily.claimed }],
+        itemKey:display.item.key,
+        itemType:display.item.type,
+        itemId:display.item.id,
+        name:display.name,
+        asset:display.asset,
+        rarity:display.rarity,
+        rarityLabel:RARITY_LABELS[display.rarity] || "Commun",
+        currency:"coins",
+        basePrice:0,
+        discountPercent:0,
+        finalPrice:0,
+        block:3,
+        position:4,
+        badge:"QUOTIDIEN",
+        active:true,
+        startsAt:Date.now(),
+        endsAt:daily.nextChangeAt,
+        rotationKey:daily.rotationKey,
+        dailyReward:daily.reward,
+        dailyClaimed:daily.claimed,
+        owned:false,
+        partiallyOwned:false
+      }
+    ];
+  }
+
+  async function claimDaily(walletToken) {
+    const token = validWalletToken(walletToken);
+    if (!token) throw new Error("Session boutique invalide.");
+
+    await inventory.getState(token);
+    const rotation = await ensureDailyRotation();
+    const database = await db();
+    const items = await catalogMap();
+    const client = await database.connect();
+    let finished = false;
+    let walletResult = null;
+    let result = null;
+    let duplicateClaim = false;
+
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        [`${token}:daily:${rotation.rotationKey}`]
+      );
+
+      const duplicate = await client.query(
+        `SELECT result FROM public.ptitbac_shop_daily_claims
+          WHERE wallet_token=$1 AND rotation_key=$2 LIMIT 1`,
+        [token, rotation.rotationKey]
+      );
+      if (duplicate.rowCount) {
+        duplicateClaim = true;
+        result = duplicate.rows[0].result;
+        await client.query("COMMIT");
+        finished = true;
+      } else {
+        const reward = rotation.reward || {};
+
+        if (reward.kind === "coins") {
+          walletResult = await wallet.changeCoinsWithClient(client, {
+            walletToken:token,
+            delta:Math.max(0, Math.floor(Number(reward.amount) || 0)),
+            kind:"SHOP_DAILY_REWARD",
+            details:{ note:`Récompense quotidienne ${rotation.rotationKey}` },
+            idempotencyKey:`daily:${rotation.rotationKey}:coins`
+          });
+          if (!walletResult?.ok) throw new Error(walletResult?.error || "Crédit impossible.");
+          result = { kind:"coins", amount:Math.max(0, Math.floor(Number(reward.amount) || 0)) };
+        } else if (reward.kind === "gems") {
+          walletResult = await wallet.changeGemsWithClient(client, {
+            walletToken:token,
+            delta:Math.max(0, Math.floor(Number(reward.amount) || 0)),
+            kind:"SHOP_DAILY_REWARD",
+            details:{ note:`Récompense quotidienne ${rotation.rotationKey}` },
+            idempotencyKey:`daily:${rotation.rotationKey}:gems`
+          });
+          if (!walletResult?.ok) throw new Error(walletResult?.error || "Crédit impossible.");
+          result = { kind:"gems", amount:Math.max(0, Math.floor(Number(reward.amount) || 0)) };
+        } else if (reward.kind === "chest") {
+          result = { kind:"chest", chestType:"bag" };
+        } else {
+          const rareCandidates = [...items.values()].filter(item =>
+            item.type === "avatar" &&
+            item.rarity === "rare" &&
+            !item.defaultOwned &&
+            !item.levelOnly
+          );
+
+          const ownedRows = await client.query(
+            `SELECT item_type,item_id FROM public.ptitbac_inventory_items WHERE wallet_token=$1`,
+            [token]
+          );
+          const ownedKeys = new Set((ownedRows.rows || []).map(row => `${row.item_type}:${row.item_id}`));
+          const available = rareCandidates.filter(item => !ownedKeys.has(item.key));
+
+          if (available.length) {
+            const item = available[crypto.randomInt(0, available.length)];
+            await client.query(
+              `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
+               VALUES($1,$2,$3,'daily_shop')
+               ON CONFLICT(wallet_token,item_type,item_id) DO NOTHING`,
+              [token,item.type,item.id]
+            );
+            result = {
+              kind:"item",
+              rarity:"rare",
+              item:{
+                key:item.key,
+                type:item.type,
+                id:item.id,
+                label:item.label,
+                asset:item.asset || ""
+              }
+            };
+          } else {
+            walletResult = await wallet.changeCoinsWithClient(client, {
+              walletToken:token,
+              delta:100,
+              kind:"SHOP_DAILY_REWARD",
+              details:{ note:"Compensation icône rare quotidienne" },
+              idempotencyKey:`daily:${rotation.rotationKey}:rare-comp`
+            });
+            if (!walletResult?.ok) throw new Error(walletResult?.error || "Crédit impossible.");
+            result = { kind:"coins", amount:100, compensationFor:"rare_item" };
+          }
+        }
+
+        await client.query(
+          `INSERT INTO public.ptitbac_shop_daily_claims(wallet_token,rotation_key,result)
+           VALUES($1,$2,$3::jsonb)`,
+          [token,rotation.rotationKey,JSON.stringify(result)]
+        );
+
+        await client.query("COMMIT");
+        finished = true;
+      }
+    } catch (error) {
+      if (!finished) {
+        try { await client.query("ROLLBACK"); } catch {}
+      }
+      throw error;
+    } finally {
+      client.release?.();
+    }
+
+    const inventoryState = result?.kind === "item"
+      ? await inventory.getState(token).catch(() => null)
+      : null;
+
+    return {
+      duplicate:duplicateClaim,
+      rotationKey:rotation.rotationKey,
+      nextChangeAt:rotation.nextChangeAt,
+      reward:result,
+      chestType:result?.kind === "chest" ? String(result.chestType || "bag") : "",
+      balance:Number.isFinite(Number(walletResult?.balance)) ? Number(walletResult.balance) : null,
+      gems:Number.isFinite(Number(walletResult?.gems)) ? Number(walletResult.gems) : null,
+      inventory:inventoryState
+    };
+  }
+
   async function adminOffers() {
     const database = await db();
     const items = await catalogMap();
@@ -330,17 +759,28 @@ function createShopService({
       return Array.isArray(owned.owned?.[bucket]) && owned.owned[bucket].includes(item.id);
     };
 
-    return (q.rows || []).map(row => {
-      const offer = mapOffer(row, items);
-      const itemStates = offer.items.map(item => ({ ...item, owned:ownsItem(item) }));
-      const ownedCount = itemStates.filter(item => item.owned).length;
-      return {
-        ...offer,
-        items:itemStates,
-        owned:itemStates.length > 0 && ownedCount === itemStates.length,
-        partiallyOwned:ownedCount > 0 && ownedCount < itemStates.length
-      };
-    });
+    const normalOffers = (q.rows || [])
+      .map(row => {
+        const offer = mapOffer(row, items);
+        if (isReservedShopSlot(offer.block, offer.position)) return null;
+        const itemStates = offer.items.map(item => ({
+          ...item,
+          owned:item.type === "chest" ? false : ownsItem(item)
+        }));
+        const ownableItems = itemStates.filter(item => item.type !== "chest");
+        const ownedCount = ownableItems.filter(item => item.owned).length;
+        return {
+          ...offer,
+          items:itemStates,
+          owned:ownableItems.length > 0 && ownedCount === ownableItems.length && itemStates.every(item => item.type !== "chest"),
+          partiallyOwned:ownedCount > 0 && ownedCount < ownableItems.length
+        };
+      })
+      .filter(Boolean);
+
+    const specials = await specialOffers(token);
+    return [...normalOffers, ...specials]
+      .sort((a,b) => Number(a.block) - Number(b.block) || Number(a.position) - Number(b.position));
   }
 
   async function saveOffer(adminToken, payload = {}) {
@@ -365,6 +805,9 @@ function createShopService({
     const block = normalizeBlock(payload.block);
     const position = normalizePosition(block, payload.position);
     if (!block || !position) throw new Error("Emplacement boutique invalide.");
+    if (isReservedShopSlot(block, position)) {
+      throw new Error("B3-P3 et B3-P4 sont réservés aux récompenses système.");
+    }
 
     const basePrice = normalizePrice(payload.price);
     const discount = normalizeDiscount(payload.discountPercent);
@@ -477,6 +920,7 @@ function createShopService({
     let resultOffer = null;
     let purchasedItems = [];
     let selectedKey = "";
+    let purchaseId = "";
 
     try {
       await client.query("BEGIN");
@@ -486,19 +930,26 @@ function createShopService({
       );
 
       const duplicate = await client.query(
-        `SELECT offer_id,item_key,currency,price_paid
+        `SELECT id,offer_id,item_key,selected_item_key,purchased_item_keys,currency,price_paid
            FROM public.ptitbac_shop_purchases
           WHERE wallet_token=$1 AND request_id=$2
           LIMIT 1`,
         [token, reqId]
       );
       if (duplicate.rowCount) {
+        const row = duplicate.rows[0];
+        const duplicateKeys = normalizeItemKeys(row.purchased_item_keys, row.item_key);
+        const duplicateItems = duplicateKeys.map(key => items.get(key)).filter(Boolean);
         await client.query("COMMIT");
         finished = true;
         const inventoryState = await inventory.getState(token);
         return {
           duplicate:true,
-          offerId:String(duplicate.rows[0].offer_id || id),
+          purchaseId:String(row.id || ""),
+          offerId:String(row.offer_id || id),
+          selectedItemKey:String(row.selected_item_key || ""),
+          purchasedItemKeys:duplicateKeys,
+          rewardChests:chestTypesForItems(duplicateItems),
           inventory:inventoryState
         };
       }
@@ -537,6 +988,7 @@ function createShopService({
       }
 
       for (const item of [...purchasedItems].sort((a,b) => a.key.localeCompare(b.key))) {
+        if (isChestItem(item)) continue;
         await client.query(
           `SELECT pg_advisory_xact_lock(hashtext($1))`,
           [`${token}:item:${item.key}`]
@@ -544,6 +996,7 @@ function createShopService({
       }
 
       for (const item of purchasedItems) {
+        if (isChestItem(item)) continue;
         const owned = await client.query(
           `SELECT 1
              FROM public.ptitbac_inventory_items
@@ -580,6 +1033,7 @@ function createShopService({
       }
 
       for (const item of purchasedItems) {
+        if (isChestItem(item)) continue;
         await client.query(
           `INSERT INTO public.ptitbac_inventory_items(wallet_token,item_type,item_id,source)
            VALUES($1,$2,$3,'shop')
@@ -588,12 +1042,14 @@ function createShopService({
         );
       }
 
+      purchaseId = `buy_${crypto.randomBytes(10).toString("hex")}`;
+
       await client.query(
         `INSERT INTO public.ptitbac_shop_purchases(
            id,wallet_token,offer_id,item_key,selected_item_key,purchased_item_keys,currency,price_paid,request_id
          ) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)`,
         [
-          `buy_${crypto.randomBytes(10).toString("hex")}`,
+          purchaseId,
           token,id,purchasedItems[0]?.key || resultOffer.itemKey,
           resultOffer.offerMode === "choice" ? selectedKey : null,
           JSON.stringify(purchasedItems.map(item => item.key)),
@@ -615,9 +1071,11 @@ function createShopService({
     const inventoryState = await inventory.getState(token);
     return {
       duplicate:false,
+      purchaseId,
       offer:resultOffer,
       selectedItemKey:resultOffer?.offerMode === "choice" ? selectedKey : null,
       purchasedItemKeys:purchasedItems.map(item => item.key),
+      rewardChests:chestTypesForItems(purchasedItems),
       balance:Number.isFinite(Number(walletResult?.balance)) ? Number(walletResult.balance) : null,
       gems:Number.isFinite(Number(walletResult?.gems)) ? Number(walletResult.gems) : null,
       inventory:inventoryState
@@ -632,6 +1090,9 @@ function createShopService({
     saveOffer,
     deactivateOffer,
     purchase,
+    dailyStatus,
+    claimDaily,
+    specialOffers,
     slots:BLOCK_SLOTS,
     discounts:DISCOUNTS,
     offerModes:OFFER_MODES,
@@ -645,6 +1106,9 @@ module.exports = {
   OFFER_MODES,
   MAX_OFFER_ITEMS,
   RARITY_LABELS,
+  SHOP_CHEST_ITEMS,
+  RESERVED_SHOP_SLOTS,
+  DAILY_REWARD_POOL,
   validWalletToken,
   normalizeCurrency,
   normalizeOfferMode,

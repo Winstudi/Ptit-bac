@@ -291,6 +291,29 @@
   }
 
   function adminSlotMarkup(block, position, size) {
+    if (Number(block) === 3 && Number(position) === 3) {
+      return `
+        <button class="admin-shop-slot size-${size} is-filled is-system-slot" type="button" disabled>
+          <small>B3 · P3</small>
+          <span class="admin-shop-mode-chip">SYSTÈME</span>
+          <div class="admin-shop-slot-art"><img src="/reward-bag.png" alt=""></div>
+          <b>Coffre Sac</b>
+          <span>▶ Pub récompensée</span>
+          <em>Fixe</em>
+        </button>`;
+    }
+    if (Number(block) === 3 && Number(position) === 4) {
+      return `
+        <button class="admin-shop-slot size-${size} is-filled is-system-slot" type="button" disabled>
+          <small>B3 · P4</small>
+          <span class="admin-shop-mode-chip">SYSTÈME</span>
+          <div class="admin-shop-slot-art"><span class="admin-shop-item-fallback">🎁</span></div>
+          <b>Récompense quotidienne</b>
+          <span>Gratuite · 11h</span>
+          <em>Rotation auto</em>
+        </button>`;
+    }
+
     const offer = activeShopOffer(block, position);
     const items = offer ? itemsForKeys(offerItemKeys(offer)) : [];
     return `
@@ -323,9 +346,9 @@
 
   function groupItemOptions(selectedKey = "", unavailableKeys = []) {
     const unavailable = new Set(unavailableKeys);
-    const groups = { avatar:[], frame:[], tag:[] };
+    const groups = { avatar:[], frame:[], tag:[], chest:[] };
     shopCatalog.forEach(item => groups[item.type]?.push(item));
-    const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags" };
+    const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags", chest:"Coffres" };
     return Object.entries(groups).map(([type, items]) => items.length ? `
       <optgroup label="${labels[type]}">
         ${items.map(item => {
@@ -346,9 +369,9 @@
   }
 
   function singleItemSelectMarkup(selectedKey = "") {
-    const groups = { avatar:[], frame:[], tag:[] };
+    const groups = { avatar:[], frame:[], tag:[], chest:[] };
     shopCatalog.forEach(item => groups[item.type]?.push(item));
-    const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags" };
+    const labels = { avatar:"Avatars", frame:"Cadres", tag:"Tags", chest:"Coffres" };
     return Object.entries(groups).map(([type, items]) => items.length ? `
       <optgroup label="${labels[type]}">
         ${items.map(item => `<option value="${esc(item.key)}" ${item.key === selectedKey ? "selected" : ""}>${esc(item.label)} — ${esc(item.rarityLabel || "Commun")}</option>`).join("")}

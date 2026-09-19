@@ -10,6 +10,8 @@
   let expiryRefreshPending = false;
   let confirmingOfferId = "";
   const selectedChoiceItems = new Map();
+  const grantedChestQueue = [];
+  let grantedChestObserver = null;
 
   function shopEconomyState() {
     try {
@@ -137,6 +139,109 @@
     return `${days} j ${hours % 24 ? `${hours % 24} h` : ""}`.trim();
   }
 
+
+  function specialOfferCardMarkup(offer, size = "tiny") {
+    const rarity = String(offer.rarity || "commun").replace(/[^a-z0-9_-]/gi, "");
+    const item = offerItems(offer)[0];
+    const timer = offer.hideTimer
+      ? ""
+      : `<small data-offer-ends="${Number(offer.endsAt) || 0}">${esc(durationLabel(offer.endsAt))}</small>`;
+
+    if (offer.specialKind === "ad_bag") {
+      return `
+        <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special" data-shop-offer-card="${esc(offer.id)}">
+          <div class="shop2-dyn-topline">
+            <div class="shop2-dyn-meta"><span class="shop2-dyn-badge">PUB</span></div>
+            ${timer}
+          </div>
+          <div class="shop2-dyn-art">${itemAssetMarkup(item, offer.name)}</div>
+          <h3>${esc(offer.name)}</h3>
+          <div class="shop2-dyn-price-row">
+            <div class="shop2-dyn-actions">
+              <button class="shop2-dyn-buy shop2-special-buy" type="button" data-shop-ad-bag>
+                <b>▶ PUB</b>
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    return `
+      <article class="shop2-dyn-offer size-${size} rarity-${rarity} mode-special${offer.dailyClaimed ? " is-daily-claimed" : ""}" data-shop-offer-card="${esc(offer.id)}">
+        <div class="shop2-dyn-topline">
+          <div class="shop2-dyn-meta"><span class="shop2-dyn-badge">QUOTIDIEN</span></div>
+          ${timer}
+        </div>
+        <div class="shop2-dyn-art">${itemAssetMarkup(item, offer.name)}</div>
+        <h3>${esc(offer.name)}</h3>
+        <div class="shop2-dyn-price-row">
+          <div class="shop2-dyn-actions">
+            <button class="shop2-dyn-buy shop2-special-buy" type="button" data-shop-daily ${offer.dailyClaimed ? "disabled" : ""}>
+              <b>${offer.dailyClaimed ? "RÉCUPÉRÉ" : "GRATUIT"}</b>
+            </button>
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function ensureGrantedChestObserver() {
+    if (grantedChestObserver || typeof MutationObserver === "undefined") return;
+    grantedChestObserver = new MutationObserver(() => {
+      const openReward = document.querySelector(".ptb-reward-open.is-open");
+      if (!openReward && grantedChestQueue.length) {
+        setTimeout(openNextGrantedChest, 80);
+      }
+    });
+    grantedChestObserver.observe(document.body, {
+      subtree:true,
+      attributes:true,
+      attributeFilter:["class"]
+    });
+  }
+
+  function openNextGrantedChest() {
+    if (!grantedChestQueue.length) return;
+    if (document.querySelector(".ptb-reward-open.is-open")) return;
+    const next = grantedChestQueue.shift();
+    if (!next?.reward || !next?.chestType) return openNextGrantedChest();
+    if (!window.PtitBacRewards?.receiveGranted) {
+      notify("Ouverture du coffre indisponible.");
+      grantedChestQueue.length = 0;
+      return;
+    }
+    window.PtitBacRewards.receiveGranted(next);
+  }
+
+  function queueGrantedChests(chests = []) {
+    const valid = (Array.isArray(chests) ? chests : [chests])
+      .filter(chest => chest?.chestType && chest?.reward);
+    if (!valid.length) return;
+    grantedChestQueue.push(...valid);
+    ensureGrantedChestObserver();
+    openNextGrantedChest();
+  }
+
+  async function runRewardedAd() {
+    const ads = window.PtitBacAds || window.ptitBacAds || null;
+    const fn = ads?.showRewarded || ads?.showRewardedAd;
+    if (typeof fn !== "function") {
+      notify("Les pubs récompensées seront disponibles quand le module publicitaire de l’application sera connecté.");
+      return null;
+    }
+
+    try {
+      const result = await fn.call(ads, { placement:"shop_bag" });
+      if (result === true) return { completed:true, proof:"" };
+      if (result?.completed === true || result?.rewarded === true) {
+        return {
+          completed:true,
+          proof:String(result.proof || result.receipt || result.token || "").slice(0,500)
+        };
+      }
+    } catch {}
+    return null;
+  }
+
   function offerCardMarkup(offer, size = "small") {
     if (!offer) {
       return `
@@ -144,6 +249,8 @@
           <div class="shop2-empty-star">✦</div>
         </article>`;
     }
+
+    if (offer.specialKind) return specialOfferCardMarkup(offer, size);
 
     const currencyAsset = offer.currency === "gems" ? "/gem.png" : "/coin.png";
     const rarity = String(offer.rarity || "commun").replace(/[^a-z0-9_-]/gi, "");
@@ -423,6 +530,72 @@
   function bindFeaturedButtons() {
     syncConfirmingOfferUI();
 
+    document.querySelectorAll("[data-shop-ad-bag]").forEach(button => {
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        const old = button.innerHTML;
+        button.disabled = true;
+        button.textContent = "…";
+
+        const ad = await runRewardedAd();
+        if (!ad?.completed) {
+          button.disabled = false;
+          button.innerHTML = old;
+          return;
+        }
+
+        const response = await emitShop("shop:claimAdBag", {
+          requestId:requestId(),
+          adCompleted:true,
+          adProof:ad.proof || ""
+        });
+
+        if (!response.ok) {
+          button.disabled = false;
+          button.innerHTML = old;
+          notify(response.error || "Impossible de récupérer le coffre.");
+          return;
+        }
+
+        queueGrantedChests(response.grantedChests || []);
+        featuredLoaded = false;
+        await refreshFeaturedOffers({ force:true });
+      });
+    });
+
+    document.querySelectorAll("[data-shop-daily]").forEach(button => {
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        const old = button.innerHTML;
+        button.disabled = true;
+        button.textContent = "…";
+
+        const response = await emitShop("shop:claimDaily", {
+          requestId:requestId()
+        });
+
+        if (!response.ok) {
+          button.disabled = false;
+          button.innerHTML = old;
+          notify(response.error || "Récompense quotidienne indisponible.");
+          return;
+        }
+
+        if (response.grantedChests?.length) {
+          queueGrantedChests(response.grantedChests);
+        } else if (response.reward?.kind === "item") {
+          notify(`${response.reward.item?.label || "Objet rare"} ajouté à ton inventaire !`);
+        } else if (response.reward?.kind === "coins") {
+          notify(`+${fmtNumber(response.reward.amount)} pièces`);
+        } else if (response.reward?.kind === "gems") {
+          notify(`+${fmtNumber(response.reward.amount)} gemmes`);
+        }
+
+        featuredLoaded = false;
+        await refreshFeaturedOffers({ force:true });
+      });
+    });
+
     document.querySelectorAll("[data-shop-offer-card]").forEach(card => {
       card.addEventListener("click", event => {
         if (event.target.closest?.("button")) return;
@@ -473,7 +646,9 @@
 
         setConfirmingOffer("");
         selectedChoiceItems.delete(offerId);
-        notify(`${offer.name} ajouté à ton inventaire !`);
+        const grantedChests = Array.isArray(response.grantedChests) ? response.grantedChests : [];
+        if (grantedChests.length) queueGrantedChests(grantedChests);
+        notify(grantedChests.length ? "Achat effectué — ouvre ton coffre !" : `${offer.name} ajouté à ton inventaire !`);
         featuredLoaded = false;
         await refreshFeaturedOffers({ force:true });
       });

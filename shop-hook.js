@@ -73,6 +73,30 @@ module.exports = function installShop(io) {
     if (result.inventory) socket.emit("inventory:update", result.inventory);
   }
 
+  function rewardChestService() {
+    return global.__ptbRewardChestService || null;
+  }
+
+  async function grantChestRewards(socket, token, chestTypes = [], claimPrefix = "shop") {
+    const service = rewardChestService();
+    if (!service?.grant) throw new Error("Service de coffres indisponible.");
+    const granted = [];
+
+    for (let index = 0; index < chestTypes.length; index += 1) {
+      const chestType = String(chestTypes[index] || "");
+      if (!["bag","star","legendary"].includes(chestType)) continue;
+      const result = await service.grant({
+        walletToken:token,
+        chestType,
+        claimKey:`${claimPrefix}:${index}`
+      });
+      emitPurchaseSideEffects(socket, result);
+      granted.push({ chestType, reward:result.reward });
+    }
+
+    return granted;
+  }
+
   io.on("connection", socket => {
     socket.on("shop:get", async (payload = {}, cb = () => {}) => {
       const token = await socketWalletToken(socket, payload);
@@ -92,7 +116,14 @@ module.exports = function installShop(io) {
       try {
         const result = await service.purchase(token, payload.offerId, payload.requestId, payload.itemKey);
         emitPurchaseSideEffects(socket, result);
-        cb({ ok:true, ...result });
+
+        const chestTypes = Array.isArray(result.rewardChests) ? result.rewardChests : [];
+        const claimBase = String(result.purchaseId || payload.requestId || "purchase").replace(/[^a-zA-Z0-9:_-]/g, "").slice(0,80);
+        const grantedChests = chestTypes.length
+          ? await grantChestRewards(socket, token, chestTypes, `shop:${claimBase}`)
+          : [];
+
+        cb({ ok:true, ...result, grantedChests });
       } catch (err) {
         console.error("shop:purchase:", err.message);
         cb({
@@ -100,6 +131,52 @@ module.exports = function installShop(io) {
           code:String(err?.code || ""),
           error:err?.message || "Achat impossible."
         });
+      }
+    });
+
+
+    socket.on("shop:claimAdBag", async (payload = {}, cb = () => {}) => {
+      const token = await socketWalletToken(socket, payload);
+      if (!token) return cb({ ok:false, error:"Session boutique non autorisée." });
+      if (payload.adCompleted !== true) {
+        return cb({ ok:false, error:"La publicité doit être terminée pour récupérer le coffre." });
+      }
+
+      const requestId = String(payload.requestId || "").trim().replace(/[^a-zA-Z0-9:_-]/g, "").slice(0,80);
+      if (requestId.length < 8) return cb({ ok:false, error:"Récompense publicitaire invalide." });
+
+      try {
+        const grantedChests = await grantChestRewards(socket, token, ["bag"], `adbag:${requestId}`);
+        cb({ ok:true, grantedChests });
+      } catch (err) {
+        console.error("shop:claimAdBag:", err.message);
+        cb({ ok:false, error:err?.message || "Coffre publicitaire indisponible." });
+      }
+    });
+
+    socket.on("shop:claimDaily", async (payload = {}, cb = () => {}) => {
+      const token = await socketWalletToken(socket, payload);
+      if (!token) return cb({ ok:false, error:"Session boutique non autorisée." });
+
+      try {
+        const result = await service.claimDaily(token);
+        emitPurchaseSideEffects(socket, result);
+
+        let grantedChests = [];
+        if (result.chestType) {
+          grantedChests = await grantChestRewards(
+            socket,
+            token,
+            [result.chestType],
+            `daily:${String(result.rotationKey || "daily")}`
+          );
+        }
+
+        socket.emit("shop:update", { at:Date.now(), daily:true });
+        cb({ ok:true, ...result, grantedChests });
+      } catch (err) {
+        console.error("shop:claimDaily:", err.message);
+        cb({ ok:false, error:err?.message || "Récompense quotidienne indisponible." });
       }
     });
 

@@ -105,3 +105,20 @@
   font-size:.64rem;
   font-weight:900;
 }
+
+
+/* V33 — emplacements boutique système */
+.admin-shop-slot.is-system-slot{
+  opacity:1!important;
+  cursor:default;
+  border-style:solid;
+  border-color:rgba(117,88,239,.65);
+  background:linear-gradient(180deg,rgba(35,27,105,.96),rgba(13,25,77,.96));
+}
+.admin-shop-slot.is-system-slot:disabled{
+  color:#fff;
+}
+.admin-shop-slot.is-system-slot .admin-shop-slot-art img{
+  max-width:72px;
+  max-height:72px;
+}
