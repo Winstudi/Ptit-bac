@@ -465,7 +465,7 @@
     const maxLives = Math.max(1, Number(eco.maxLives) || 5);
 
     setScreen(`
-      <main class="screen shop-v2">
+      <main class="screen shop-v2${activeShopTab === "featured" ? " is-featured-tab" : ""}">
         <div class="shop2-sky" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
@@ -482,10 +482,17 @@
           </div>
         </header>
 
-        <section class="shop2-brand">
-          <h1>Boutique</h1>
-          <p>Petites envies, grandes récompenses</p>
-        </section>
+        ${activeShopTab === "featured" ? `
+          <section class="shop2-brand shop2-brand-featured">
+            <div class="shop2-brand-notice">
+              <img src="/shop.png" alt="">
+              <h1>Boutique</h1>
+            </div>
+          </section>` : `
+          <section class="shop2-brand">
+            <h1>Boutique</h1>
+            <p>Petites envies, grandes récompenses</p>
+          </section>`}
 
         <nav class="shop2-tabs" aria-label="Catégories de la boutique">
           ${tabMarkup("featured", "★", "Offre à l’affiche")}
@@ -497,10 +504,11 @@
           ${viewMarkup()}
         </div>
 
-        <footer class="shop2-footer">
-          <span>💡</span>
-          <p>Plus qu’un jeu de mots,<br>une belle aventure ensemble ! ♥</p>
-        </footer>
+        ${activeShopTab === "featured" ? "" : `
+          <footer class="shop2-footer">
+            <span>💡</span>
+            <p>Plus qu’un jeu de mots,<br>une belle aventure ensemble ! ♥</p>
+          </footer>`}
       </main>`);
 
     bindShopV2();
