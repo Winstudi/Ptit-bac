@@ -187,3 +187,119 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   min-height:0;
   border-radius:0;
 }
+
+/* V23 — bandeau prix 18px, titre au-dessus de l'item, promo au-dessus du prix */
+.shop-v2.is-compact-shop-header .shop2-dyn-offer{
+  padding-bottom:18px;
+}
+
+/* Le titre passe au-dessus de l'icône de l'item */
+.shop-v2.is-compact-shop-header .shop2-dyn-offer h3{
+  order:1;
+  margin:18px 0 0;
+  flex:0 0 auto;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-art{
+  order:2;
+  transform:translateY(6px);
+}
+
+/* Bandeau prix : 18px de haut, couleur de rareté à 20%, collé en bas */
+.shop-v2.is-compact-shop-header .shop2-dyn-price-row{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  width:100%;
+  height:18px;
+  margin:0;
+  z-index:7;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-actions{
+  position:relative;
+  width:100%!important;
+  height:18px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 0;
+  gap:0;
+  align-items:stretch;
+  overflow:visible;
+  background:var(--offer-fill,rgba(72,100,221,.20));
+  border-top:1px solid var(--offer-line,#4864dd);
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-actions::before{
+  display:none;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-buy{
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:18px!important;
+  min-height:18px!important;
+  padding:0 4px;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-buy:disabled{
+  height:18px!important;
+  min-height:18px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.is-confirming .shop2-dyn-actions{
+  grid-template-columns:minmax(0,1fr) 30px;
+  gap:0;
+}
+.shop-v2.is-compact-shop-header .shop2-dyn-cancel,
+.shop-v2.is-compact-shop-header .shop2-dyn-offer.is-confirming .shop2-dyn-cancel{
+  position:relative;
+  z-index:2;
+  width:30px;
+  height:18px!important;
+  min-height:18px!important;
+  padding:0;
+  border-radius:0;
+}
+
+/* Réduction : juste au-dessus du prix, côté droit */
+.shop-v2.is-compact-shop-header .shop2-dyn-promo-price{
+  position:absolute;
+  right:3px;
+  bottom:20px;
+  top:auto;
+  left:auto;
+  z-index:8;
+  max-width:none;
+  padding:2px 4px;
+  border-radius:0;
+  background:#f42f91;
+  color:#fff;
+  font-size:.384rem;
+  line-height:1;
+  font-weight:1000;
+  transform:none;
+}
+
+/* Les anciens styles du promo dans la zone haute ne doivent plus influer */
+.shop-v2.is-compact-shop-header .shop2-dyn-meta .shop2-dyn-promo{
+  display:none;
+}
+
+@media(max-width:380px){
+  .shop-v2.is-compact-shop-header .shop2-dyn-offer h3{
+    margin-top:17px;
+  }
+  .shop-v2.is-compact-shop-header .shop2-dyn-art{
+    transform:translateY(5px);
+  }
+  .shop-v2.is-compact-shop-header .shop2-dyn-promo-price{
+    right:2px;
+    bottom:20px;
+    font-size:.34rem;
+  }
+}

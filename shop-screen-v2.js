@@ -119,10 +119,10 @@
               : promo
                 ? `<span class="shop2-dyn-badge">PROMO</span>`
                 : ""}
-            ${promo ? `<span class="shop2-dyn-promo">-${promo}%</span>` : ""}
           </div>
           <small data-offer-ends="${Number(offer.endsAt) || 0}">${esc(durationLabel(offer.endsAt))}</small>
         </div>
+        ${promo ? `<span class="shop2-dyn-promo shop2-dyn-promo-price">-${promo}%</span>` : ""}
         <div class="shop2-dyn-art">${offerAssetMarkup(offer)}</div>
         <h3>${esc(offer.name)}</h3>
         <div class="shop2-dyn-price-row">
