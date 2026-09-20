@@ -6,7 +6,7 @@ module.exports = function installQuickMatch({
   match,
   admit = () => {},
   leave = () => {},
-  startDelayMs = 700,
+  startDelayMs = 3200,
   participantCount = entries => entries.length,
   hasReplaceableFiller = () => false
 }) {
@@ -282,7 +282,7 @@ module.exports = function installQuickMatch({
             matching: false
           };
 
-        // Un vrai joueur arrivé pendant le bref compte à rebours d'un bot
+        // Un vrai joueur arrivé pendant le compte à rebours d'un bot
         // reprend la place du bot avant que match() ne soit engagé.
         if (group.starting && groupHasReplaceableFiller(group)) {
           cancelPendingStart(group);
