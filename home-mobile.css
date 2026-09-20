@@ -2296,3 +2296,92 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — ajustements bandeau / XP / cartes modes
+   ========================================================= */
+
+/* Bandeau supérieur : descend l'ensemble de 6px. */
+.home-mobile .hm-header{
+  transform:translateY(6px) !important;
+}
+
+/* Barre XP : plus fine, +5px de longueur et déplacée de 4px à gauche.
+   La barre actuelle ne faisant que 5px de haut, on la garde visible à 2px. */
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  width:82px !important;
+  max-width:82px !important;
+  height:2px !important;
+  position:relative !important;
+  left:-4px !important;
+}
+
+/* Icônes des 3 modes : +30%. */
+.home-mobile .hm-mode-grid img{
+  width:99px !important;
+  height:86px !important;
+  max-width:100% !important;
+}
+
+/* Cartes Jouer / Créer / Rejoindre : encore +10px vers le bas. */
+.home-mobile .hm-mode-grid button{
+  min-height:146px !important;
+}
+
+/* Bloc "Choisis ton mode de jeu" : -15px de hauteur globale.
+   On compense la hausse des cartes en resserrant le haut/bas du bloc. */
+.home-mobile .hm-modes{
+  padding-top:2px !important;
+  padding-bottom:0 !important;
+}
+
+.home-mobile .hm-modes h1{
+  margin-bottom:7px !important;
+}
+
+/* Responsive : mêmes proportions sur les écrans plus petits. */
+@media(max-width:370px){
+  .home-mobile .hm-mode-grid button{
+    min-height:138px !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-mode-grid img{
+    width:85px !important;
+    height:73px !important;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:129px !important;
+  }
+
+  .home-mobile .hm-modes{
+    padding-top:1px !important;
+    padding-bottom:0 !important;
+  }
+
+  .home-mobile .hm-modes h1{
+    margin-bottom:5px !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-mode-grid img{
+    width:73px !important;
+    height:62px !important;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:119px !important;
+  }
+
+  .home-mobile .hm-modes{
+    padding-top:0 !important;
+    padding-bottom:0 !important;
+  }
+
+  .home-mobile .hm-modes h1{
+    margin-bottom:4px !important;
+  }
+}
+
