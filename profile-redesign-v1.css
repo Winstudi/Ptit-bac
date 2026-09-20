@@ -722,3 +722,75 @@ body:has(.profile-v10) [data-economy-hud] {
     0 0 13px
     rgba(143,58,242,.24);
 }
+
+/* =========================================================
+   Bandeau Quêtes/Boutique — page Mon profil
+   ========================================================= */
+.profile-v10-top{
+  min-height:58px;
+  margin-left:-18px;
+  margin-right:-28px;
+  padding:0 28px 0 18px;
+  background:linear-gradient(
+    90deg,
+    rgba(49,19,111,.98) 0%,
+    rgba(32,24,119,.97) 42%,
+    rgba(10,35,104,.96) 100%
+  );
+  box-shadow:
+    10px 0 0 rgba(10,35,104,.96),
+    inset 0 0 18px rgba(107,83,255,.14);
+  overflow:visible;
+}
+
+.profile-v10-top::before,
+.profile-v10-top::after{
+  content:"";
+  position:absolute;
+  left:-10px;
+  right:-10px;
+  height:1px;
+  background:rgba(195,58,255,.84);
+  box-shadow:0 0 12px rgba(210,54,255,.42);
+  pointer-events:none;
+  z-index:7;
+}
+
+.profile-v10-top::before{top:0}
+.profile-v10-top::after{bottom:0}
+
+.profile-v10-top h1{
+  color:#fff;
+  font-size:1.40rem;
+  font-weight:1000;
+  text-shadow:
+    0 2px 0 #5d20b3,
+    0 0 8px #eb52ff,
+    0 0 15px rgba(129,71,255,.72);
+}
+
+.profile-v10-back{
+  width:42px;
+  height:42px;
+}
+
+.profile-v10-back img{
+  width:34px;
+  height:34px;
+  filter:drop-shadow(0 0 7px rgba(188,76,255,.55));
+}
+
+.profile-v10-admin-space{
+  width:42px;
+  height:42px;
+}
+
+@media (max-width:370px){
+  .profile-v10-top{
+    margin-left:-13px;
+    margin-right:-23px;
+    padding-left:13px;
+    padding-right:23px;
+  }
+}
+
