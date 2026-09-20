@@ -167,6 +167,13 @@ const CATALOG = Object.freeze({
       asset: "/frame-lave.png",
       defaultOwned: false,
       defaultRarity: "exclusif"
+    }),
+    frame_flamme_cristal: Object.freeze({
+      id: "frame_flamme_cristal",
+      name: "Flamme Cristal",
+      asset: "/frame-flamme-cristal.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
     })
   }),
   tag: Object.freeze({

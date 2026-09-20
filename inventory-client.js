@@ -73,6 +73,11 @@
       id:"frame_lave",
       name:"Lave",
       asset:"/frame-lave.png"
+    },
+    frame_flamme_cristal: {
+      id:"frame_flamme_cristal",
+      name:"Flamme Cristal",
+      asset:"/frame-flamme-cristal.png"
     }
   });
 

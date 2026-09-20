@@ -22,7 +22,8 @@ const FRAME_IDS = [
   "frame-prestige",
   "frame_quantique",
   "frame_ruines",
-  "frame_lave"
+  "frame_lave",
+  "frame_flamme_cristal"
 ];
 
 const NEW_AVATAR_IDS = [
@@ -112,7 +113,7 @@ test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", ()
   const frames = entries.filter(item => item.type === "frame");
   const tags = entries.filter(item => item.type === "tag");
 
-  assert.equal(frames.length, 9);
+  assert.equal(frames.length, 10);
   const quantumTag = tags.find(item => item.key === "tag:tag_quantique");
   assert.ok(quantumTag);
   assert.equal(quantumTag.label, "Tag Quantique");
@@ -156,6 +157,11 @@ test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", ()
   assert.ok(lavaFrame);
   assert.equal(lavaFrame.label, "Lave");
   assert.equal(lavaFrame.asset, "/frame-lave.png");
+
+  const crystalFlameFrame = entries.find(item => item.key === "frame:frame_flamme_cristal");
+  assert.ok(crystalFlameFrame);
+  assert.equal(crystalFlameFrame.label, "Flamme Cristal");
+  assert.equal(crystalFlameFrame.asset, "/frame-flamme-cristal.png");
 
   const prestigeAvatar = entries.find(item => item.key === "avatar:/avatar-prestige.png");
   assert.ok(prestigeAvatar);
