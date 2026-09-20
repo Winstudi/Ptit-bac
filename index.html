@@ -963,7 +963,7 @@
 
       /* Le transform visuel descend seulement le bandeau de 5px.
          Sa place dans le flux ne change pas : le reste de la page ne bouge pas. */
-      transform:translateY(5px)!important;
+      transform:translateY(0)!important;
 
       background:
         linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
@@ -1102,6 +1102,139 @@
 
       html body .pbw1-screen.letter-prototype .pbw1-wallet strong{
         font-size:.78rem!important;
+      }
+    }
+
+
+    /* =========================================================
+       Récap de manche — même bandeau que Lettre / Catégories
+       ========================================================= */
+
+    html body .pri-screen.recap-screen > .recap-top{
+      position:relative!important;
+      z-index:80!important;
+
+      width:calc(100% + 32px)!important;
+      height:52px!important;
+      min-height:52px!important;
+      margin-left:-16px!important;
+      margin-right:-16px!important;
+      padding:0 16px 4px!important;
+      box-sizing:border-box!important;
+
+      display:grid!important;
+      grid-template-columns:1fr 62px 1fr!important;
+      align-items:center!important;
+      gap:0!important;
+
+      background:
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left top / 100% 1px no-repeat,
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left bottom 4px / 100% 1px no-repeat,
+        linear-gradient(
+          90deg,
+          rgba(49,19,111,.98) 0%,
+          rgba(32,24,119,.97) 42%,
+          rgba(10,35,104,.96) 100%
+        )
+          left top / 100% 48px no-repeat!important;
+
+      box-shadow:
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+      overflow:visible!important;
+    }
+
+    /* Flèche identique aux autres pages. */
+    html body .pri-screen.recap-screen .recap-exit{
+      grid-column:1!important;
+      justify-self:start!important;
+      align-self:center!important;
+      width:42px!important;
+      height:42px!important;
+      min-width:42px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      display:grid!important;
+      place-items:center!important;
+    }
+
+    html body .pri-screen.recap-screen .recap-exit img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
+    }
+
+    /* Logo centré. */
+    html body .pri-screen.recap-screen .recap-brand{
+      grid-column:2!important;
+      justify-self:center!important;
+      align-self:center!important;
+      width:auto!important;
+      height:43px!important;
+      max-width:92px!important;
+      max-height:43px!important;
+      margin:0!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
+    }
+
+    /* Numéro de manche directement dans le bandeau. */
+    html body .pri-screen.recap-screen .recap-round{
+      grid-column:3!important;
+      justify-self:end!important;
+      align-self:center!important;
+      width:auto!important;
+      min-width:0!important;
+      height:auto!important;
+      margin:0!important;
+      padding:0!important;
+
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+
+      color:#fff!important;
+      font-size:.78rem!important;
+      line-height:1!important;
+      font-weight:900!important;
+      white-space:nowrap!important;
+      text-shadow:
+        0 0 7px rgba(197,76,255,.45),
+        0 0 12px rgba(111,69,255,.25)!important;
+    }
+
+    @media(max-width:370px){
+      html body .pri-screen.recap-screen > .recap-top{
+        padding-left:10px!important;
+        padding-right:10px!important;
+        grid-template-columns:1fr 56px 1fr!important;
+      }
+
+      html body .pri-screen.recap-screen .recap-exit{
+        width:38px!important;
+        height:38px!important;
+        min-width:38px!important;
+      }
+
+      html body .pri-screen.recap-screen .recap-exit img{
+        width:31px!important;
+        height:31px!important;
+      }
+
+      html body .pri-screen.recap-screen .recap-brand{
+        height:40px!important;
+        max-height:40px!important;
+        max-width:84px!important;
+      }
+
+      html body .pri-screen.recap-screen .recap-round{
+        font-size:.69rem!important;
       }
     }
 
@@ -2126,6 +2259,93 @@
         );
       } else {
         letterHeaderStart();
+      }
+    })();
+  </script>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      let recapHeaderScheduled = false;
+      let recapHeaderObserver = null;
+
+      function recapHeaderPatchExitModal() {
+        const modal = document.querySelector(".pri-exit-modal-backdrop");
+        if (!modal) return;
+
+        const cancel = modal.querySelector('[data-action="cancel"]');
+        const quit = modal.querySelector('[data-action="home"]');
+        const returnLobby = modal.querySelector('[data-action="lobby"]');
+
+        if (cancel) cancel.textContent = "Annuler";
+        if (quit) quit.textContent = "Quitter la partie";
+
+        returnLobby?.remove();
+      }
+
+      function recapHeaderSync() {
+        recapHeaderScheduled = false;
+
+        const root = document.querySelector(".pri-screen.recap-screen");
+
+        if (root) {
+          const backImg = root.querySelector("#priExit img");
+
+          if (
+            backImg &&
+            backImg.getAttribute("src") !== "/back-arrow.png"
+          ) {
+            backImg.src = "/back-arrow.png";
+          }
+        }
+
+        recapHeaderPatchExitModal();
+      }
+
+      function recapHeaderSchedule() {
+        if (recapHeaderScheduled) return;
+        recapHeaderScheduled = true;
+        requestAnimationFrame(recapHeaderSync);
+      }
+
+      function recapHeaderStart() {
+        recapHeaderSchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          recapHeaderSchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          recapHeaderSchedule
+        );
+
+        try {
+          socket?.on?.("room:state", recapHeaderSchedule);
+        } catch {}
+
+        if (!recapHeaderObserver && document.body) {
+          recapHeaderObserver =
+            new MutationObserver(recapHeaderSchedule);
+
+          recapHeaderObserver.observe(document.body, {
+            subtree:true,
+            childList:true
+          });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          recapHeaderStart,
+          { once:true }
+        );
+      } else {
+        recapHeaderStart();
       }
     })();
   </script>
