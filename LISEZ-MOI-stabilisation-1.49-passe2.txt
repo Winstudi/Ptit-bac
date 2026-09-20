@@ -1,0 +1,27 @@
+P'TIT BAC — STABILISATION 1.49 — PASSES 1 + 2
+
+IMPORTANT
+=========
+Le fichier .cjs doit être EXÉCUTÉ à la racine du dépôt.
+Le simple fait de l'uploader sur GitHub ne modifie aucun fichier.
+
+1. Place apply-stabilisation-1.49-passe2.cjs à la racine du dépôt.
+2. Lance :
+   node apply-stabilisation-1.49-passe2.cjs
+3. Puis lance :
+   npm test
+   npm run check
+4. Si les deux commandes passent, commit/push les fichiers modifiés.
+
+Cette passe :
+- retire la référence fantôme shop-header-quest-lines.css ;
+- déplace le CSS du bandeau Résultats vers scoreboard-screen-v1.css ;
+- fait utiliser directement back-arrow.png dans scoreboard-screen-v1.js ;
+- retire le MutationObserver spécifique Résultats de index.html ;
+- ajoute .github/workflows/ci.yml ;
+- ajoute .gitignore ;
+- aligne README.md sur la version package.json ;
+- aligne le fallback de cleanup-frontend-build.cjs ;
+- ajoute stabilisation-149.test.cjs.
+
+Aucun changement volontaire de design ou de gameplay.
