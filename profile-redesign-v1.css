@@ -918,3 +918,54 @@ body:has(.profile-v10) [data-economy-hud] {
   }
 }
 
+/* =========================================================
+   Page Niveaux — nouveau fond visuel simplifié
+   ========================================================= */
+
+/* Fond global de la page Niveaux : remplace l'ancien décor chargé
+   par le nouveau fond spatial validé. */
+html:has(.ptb-levels-header),
+body:has(.ptb-levels-header){
+  background:#06143e !important;
+}
+
+body:has(.ptb-levels-header)::before{
+  content:"" !important;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:-2 !important;
+  pointer-events:none !important;
+  background:
+    url("/levels-bg-v2.png") center top / cover no-repeat !important;
+}
+
+/* On neutralise les anciens fonds de la page Niveaux pour ne garder
+   que le nouveau fond image en arrière-plan. */
+body:has(.ptb-levels-header) .ptb-levels-page,
+body:has(.ptb-levels-header) .ptb-levels-screen,
+body:has(.ptb-levels-header) .ptb-levels-root,
+body:has(.ptb-levels-header) .ptb-levels,
+body:has(.ptb-levels-header) .progression-screen,
+body:has(.ptb-levels-header) .progression-page{
+  background:transparent !important;
+  background-image:none !important;
+}
+
+/* Les overlays décoratifs éventuels passent en transparents
+   pour qu'on voie bien les récompenses sur le nouveau fond. */
+body:has(.ptb-levels-header) .ptb-levels-page::before,
+body:has(.ptb-levels-header) .ptb-levels-page::after,
+body:has(.ptb-levels-header) .ptb-levels-screen::before,
+body:has(.ptb-levels-header) .ptb-levels-screen::after,
+body:has(.ptb-levels-header) .ptb-levels-root::before,
+body:has(.ptb-levels-header) .ptb-levels-root::after,
+body:has(.ptb-levels-header) .ptb-levels::before,
+body:has(.ptb-levels-header) .ptb-levels::after,
+body:has(.ptb-levels-header) .progression-screen::before,
+body:has(.ptb-levels-header) .progression-screen::after,
+body:has(.ptb-levels-header) .progression-page::before,
+body:has(.ptb-levels-header) .progression-page::after{
+  background:transparent !important;
+  opacity:0 !important;
+}
+
