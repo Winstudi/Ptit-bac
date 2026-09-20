@@ -58,6 +58,54 @@ const CATALOG = Object.freeze({
       name: "Game",
       defaultOwned: false,
       defaultRarity: "exclusif"
+    }),
+    "/avatar-sanctuaire.webp": Object.freeze({
+      id: "/avatar-sanctuaire.webp",
+      name: "Sanctuaire",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-ramen.webp": Object.freeze({
+      id: "/avatar-ramen.webp",
+      name: "Ramen",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-volcan.webp": Object.freeze({
+      id: "/avatar-volcan.webp",
+      name: "Volcan",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-orage.webp": Object.freeze({
+      id: "/avatar-orage.webp",
+      name: "Orage",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-potion.webp": Object.freeze({
+      id: "/avatar-potion.webp",
+      name: "Potion",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-arcade.webp": Object.freeze({
+      id: "/avatar-arcade.webp",
+      name: "Arcade",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-tresor.webp": Object.freeze({
+      id: "/avatar-tresor.webp",
+      name: "Trésor",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    "/avatar-portail-cristal.webp": Object.freeze({
+      id: "/avatar-portail-cristal.webp",
+      name: "Portail Cristal",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
     })
   }),
   frame: Object.freeze({
@@ -103,6 +151,20 @@ const CATALOG = Object.freeze({
       id: "frame_quantique",
       name: "Cadre Quantique",
       asset: "/frame-quantique.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    frame_ruines: Object.freeze({
+      id: "frame_ruines",
+      name: "Ruines",
+      asset: "/frame-ruines.png",
+      defaultOwned: false,
+      defaultRarity: "exclusif"
+    }),
+    frame_lave: Object.freeze({
+      id: "frame_lave",
+      name: "Lave",
+      asset: "/frame-lave.png",
       defaultOwned: false,
       defaultRarity: "exclusif"
     })

@@ -20,7 +20,9 @@ const FRAME_IDS = [
   "frame_ice",
   "frame_gold_stars",
   "frame-prestige",
-  "frame_quantique"
+  "frame_quantique",
+  "frame_ruines",
+  "frame_lave"
 ];
 
 const NEW_AVATAR_IDS = [
@@ -30,7 +32,15 @@ const NEW_AVATAR_IDS = [
   "/avatar-spectre.webp",
   "/avatar-minto.webp",
   "/avatar-bot.webp",
-  "/avatar-game.webp"
+  "/avatar-game.webp",
+  "/avatar-sanctuaire.webp",
+  "/avatar-ramen.webp",
+  "/avatar-volcan.webp",
+  "/avatar-orage.webp",
+  "/avatar-potion.webp",
+  "/avatar-arcade.webp",
+  "/avatar-tresor.webp",
+  "/avatar-portail-cristal.webp"
 ];
 
 test("les cinq avatars et Débutant restent possédés par défaut, aucun cadre ne l'est", () => {
@@ -102,7 +112,7 @@ test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", ()
   const frames = entries.filter(item => item.type === "frame");
   const tags = entries.filter(item => item.type === "tag");
 
-  assert.equal(frames.length, 7);
+  assert.equal(frames.length, 9);
   const quantumTag = tags.find(item => item.key === "tag:tag_quantique");
   assert.ok(quantumTag);
   assert.equal(quantumTag.label, "Tag Quantique");
@@ -136,6 +146,16 @@ test("le catalogue admin expose les nouveaux cosmétiques avec leurs assets", ()
   assert.ok(quantumFrame);
   assert.equal(quantumFrame.label, "Cadre Quantique");
   assert.equal(quantumFrame.asset, "/frame-quantique.png");
+
+  const ruinsFrame = entries.find(item => item.key === "frame:frame_ruines");
+  assert.ok(ruinsFrame);
+  assert.equal(ruinsFrame.label, "Ruines");
+  assert.equal(ruinsFrame.asset, "/frame-ruines.png");
+
+  const lavaFrame = entries.find(item => item.key === "frame:frame_lave");
+  assert.ok(lavaFrame);
+  assert.equal(lavaFrame.label, "Lave");
+  assert.equal(lavaFrame.asset, "/frame-lave.png");
 
   const prestigeAvatar = entries.find(item => item.key === "avatar:/avatar-prestige.png");
   assert.ok(prestigeAvatar);

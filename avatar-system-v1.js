@@ -18,7 +18,15 @@
     "/avatar-spectre.webp",
     "/avatar-minto.webp",
     "/avatar-bot.webp",
-    "/avatar-game.webp"
+    "/avatar-game.webp",
+    "/avatar-sanctuaire.webp",
+    "/avatar-ramen.webp",
+    "/avatar-volcan.webp",
+    "/avatar-orage.webp",
+    "/avatar-potion.webp",
+    "/avatar-arcade.webp",
+    "/avatar-tresor.webp",
+    "/avatar-portail-cristal.webp"
   ]);
 
   const LEGACY_AVATARS = Object.freeze({
