@@ -264,8 +264,8 @@ body:has(.quests-v1) .economy-hud{
 .qv1-chest{
   position:relative;
   min-height:0;
-  width:calc(100% - 19px);
-  margin-left:19px;
+  width:calc(100% - 4px);
+  margin-left:4px;
   padding:14px 4px 13px 21px;
   border:1.6px solid #a33fff;
   border-radius:16px;
