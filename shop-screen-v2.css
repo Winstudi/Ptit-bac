@@ -691,3 +691,27 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   margin:0!important;
   border-radius:0!important;
 }
+
+/* =========================================================
+   Offre à l'affiche — ajustements B3 / temps restant
+   ========================================================= */
+
+/* Déplace le bloc "temps restant" de chaque item de 5px vers la gauche. */
+.shop-v2.is-compact-shop-header .shop2-dyn-topline small{
+  transform:translateX(-5px);
+}
+
+/* B3-P1 et B3-P2 : descend uniquement les visuels/items de 12px. */
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art{
+  transform:translateY(18px);
+}
+
+/* Sur mobile, le décalage de base était de 5px : 5 + 12 = 17px. */
+@media(max-width:380px){
+  .shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(1) .shop2-dyn-art,
+  .shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(2) .shop2-dyn-art{
+    transform:translateY(17px);
+  }
+}
+
