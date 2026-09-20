@@ -40,3 +40,25 @@ test('Only actual loopback hosts use the local default', () => {
   assert.equal(config('postgres://u:p@127.0.0.1/db').ssl, false);
   assert.equal(config('postgres://u:p@localhost.example.com/db').ssl.rejectUnauthorized, true);
 });
+
+test('Supabase shared pooler restores encrypted compatibility with no certificate configured', () => {
+  for (const suffix of ['', '?sslmode=require', '?ssl=false']) {
+    const c = config('postgres://example:dummy@aws-1-eu-west-1.pooler.supabase.com:5432/postgres' + suffix);
+    assert.equal(c.ssl.rejectUnauthorized, false);
+    assert.equal(c.host, 'aws-1-eu-west-1.pooler.supabase.com');
+    assert.equal(c.port, 5432);
+  }
+});
+test('Supabase CA and explicit full verification take priority', () => {
+  const url = 'postgres://example:dummy@aws-1-eu-west-1.pooler.supabase.com:5432/postgres';
+  const c = config(url, { PTITBAC_DB_CA: 'test-ca' });
+  assert.equal(c.ssl.rejectUnauthorized, true);
+  assert.equal(c.ssl.ca, 'test-ca');
+  assert.notEqual(config(url + '?sslmode=verify-full').ssl.rejectUnauthorized, false);
+});
+test('Supabase exception does not match unrelated hosts or URL overrides', () => {
+  for (const host of ['aws-1-eu-west-1.pooler.supabase.com.example.org', 'example.org']) {
+    assert.equal(config('postgres://example:dummy@' + host + '/postgres').ssl.rejectUnauthorized, true);
+  }
+  assert.equal(config('postgres://example:dummy@aws-1-eu-west-1.pooler.supabase.com/postgres?host=example.org').ssl.rejectUnauthorized, true);
+});

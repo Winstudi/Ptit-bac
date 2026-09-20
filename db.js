@@ -75,7 +75,12 @@ function createPool() {
   const explicitCertificate = ["sslrootcert", "sslcert", "sslkey"].some(key => databaseUrl.searchParams.has(key));
   const strictMode = ["verify-ca", "verify-full"].includes(databaseUrl.searchParams.get("sslmode"));
   const internalTls = renderInternal && !ca && !explicitCertificate && !strictMode;
-  if (internalTls) {
+  // Recovery: restore the pre-cleanup TLS behaviour for Supabase shared poolers.
+  // TLS stays required, but certificate verification needs PTITBAC_DB_CA.
+  // Keep explicit certificate/strict-mode settings and all other hosts unchanged.
+  const supabasePooler = /^aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com$/.test(host);
+  const supabaseCompatibilityTls = supabasePooler && !ca && !explicitCertificate && !strictMode;
+  if (internalTls || supabaseCompatibilityTls) {
     // pg URL SSL options otherwise overwrite the ssl object below.
     databaseUrl.searchParams.delete("ssl");
     databaseUrl.searchParams.delete("sslmode");
@@ -83,7 +88,7 @@ function createPool() {
   const shared = new Pool({
     connectionString: databaseUrl.toString(),
     ssl: local ? false : {
-      rejectUnauthorized: !internalTls,
+      rejectUnauthorized: !(internalTls || supabaseCompatibilityTls),
       ...(ca ? { ca } : {})
     },
     max: POOL_MAX,

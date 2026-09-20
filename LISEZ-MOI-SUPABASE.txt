@@ -1,0 +1,39 @@
+P’TIT BAC — RÉTABLISSEMENT DE LA CONNEXION SUPABASE
+
+Le premier ZIP imposait une vérification du certificat sans configurer
+l’autorité de certification Supabase. Le correctif Render suivant ne ciblait
+pas votre hébergeur de base de données. Cette erreur venait du correctif.
+
+INSTALLATION
+1. Décompresser ce ZIP.
+2. Remplacer db.js et db-render-tls.test.cjs à la racine du dépôt GitHub.
+3. Dans Render, redéployer le dernier commit si le déploiement n’est pas automatique.
+Conserver votre base Supabase existante. Aucune base Render n’est nécessaire.
+La commande npm ci actuelle n’est pas la cause de l’erreur de certificat ;
+ne pas multiplier les modifications de configuration pour cette réparation.
+
+MOT DE PASSE
+Un mot de passe de base a été partagé dans la conversation. Le remplacer
+dans Supabase, puis reporter le nouveau mot de passe dans DATABASE_URL sur
+Render avant le redéploiement. Utiliser la chaîne de connexion du même projet,
+en mode Session pooler. Les caractères réservés du mot de passe doivent être
+encodés pour une URL. Ne pas publier cette chaîne sur GitHub ou dans le chat.
+Le ZIP ne contient aucun identifiant de projet ni mot de passe.
+
+PORTÉE TECHNIQUE
+Pour les hôtes aws-… .pooler.supabase.com (sans espace), le code rétablit le
+comportement TLS antérieur : connexion chiffrée obligatoire, sans validation
+du certificat serveur lorsqu’aucun certificat CA ni mode strict n’est fourni.
+C’est un correctif de rétablissement, pas un renforcement de sécurité TLS.
+Il ne vérifie donc pas l’identité du serveur contre une interception active.
+La configuration d’un certificat Supabase via PTITBAC_DB_CA permet de réactiver
+cette vérification ; les options explicites verify-full/verify-ca sont conservées.
+Les autres domaines conservent leur comportement actuel.
+Aucun changement dans les migrations, les données, les règles ou le visuel.
+
+VALIDATION
+Syntaxe JavaScript valide et 7 tests de configuration réussis avec le client pg.
+Tests réalisés avec des identifiants fictifs, sans connexion à votre base privée.
+Le démarrage réel doit être confirmé dans les prochains logs Render.
+
+Référence TLS : https://supabase.com/docs/guides/database/connecting-to-postgres#ssl
