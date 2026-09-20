@@ -2904,3 +2904,37 @@ body:has(.home-mobile) .economy-hud {
   border-radius:20px !important;
 }
 
+/* =========================================================
+   ACCUEIL V2 — barre XP encore plus fine + décalage gauche
+   ========================================================= */
+
+/* Coque PNG réelle :
+   39px -> 32px de hauteur (-7px)
+   et déplacement de 15px vers la gauche. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+  left:1px !important;
+  height:32px !important;
+  min-height:32px !important;
+}
+
+/* Barre de progression intérieure :
+   13px -> 6px de hauteur (-7px). */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+  height:6px !important;
+  min-height:6px !important;
+}
+
+/* Reflet interne adapté à la nouvelle barre plus fine. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill::after{
+  top:1px !important;
+  height:1px !important;
+}
+
+/* Zone cliquable déplacée avec la barre et ajustée à sa nouvelle hauteur. */
+.home-mobile #homeLevelsOpen{
+  left:-1px !important;
+  top:56px !important;
+  width:160px !important;
+  height:33px !important;
+}
+
