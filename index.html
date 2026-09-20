@@ -49,8 +49,127 @@
   <link rel="preload" as="image" href="/lobby-exit.png" />
   <link rel="stylesheet" href="/category-prototype.css?v=1.48.0" />
   <link rel="stylesheet" href="/private-lobby.css?v=1.48.0">
-  <link rel="stylesheet" href="/public-lobby-header-v1.css?v=1.48.0-public-header1" />
   <link rel="stylesheet" href="/reward-chests.css?v=1.48.0-rewards13" />
+
+  <!-- Partie Rapide : même bandeau supérieur que la page Mon profil. -->
+  <style>
+    .lobby-v5[data-mode="quick"]{
+      padding-top:0!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header{
+      position:relative!important;
+      z-index:20!important;
+      width:calc(100% + 24px)!important;
+      min-height:48px!important;
+      height:48px!important;
+      margin:0 -12px!important;
+      padding:0 12px!important;
+      display:grid!important;
+      grid-template-columns:42px minmax(0,1fr) 42px!important;
+      align-items:center!important;
+      gap:0!important;
+      overflow:visible!important;
+      background:linear-gradient(
+        90deg,
+        rgba(49,19,111,.98) 0%,
+        rgba(32,24,119,.97) 42%,
+        rgba(10,35,104,.96) 100%
+      )!important;
+      box-shadow:
+        10px 0 0 rgba(10,35,104,.96),
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header::before,
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header::after{
+      content:"";
+      position:absolute;
+      left:-10px;
+      right:-10px;
+      height:1px;
+      background:rgba(195,58,255,.84);
+      box-shadow:0 0 12px rgba(210,54,255,.42);
+      pointer-events:none;
+      z-index:7;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header::before{top:0}
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header::after{bottom:0}
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-back,
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .quick-lobby-back{
+      grid-column:1!important;
+      width:42px!important;
+      height:42px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      display:grid!important;
+      place-items:center!important;
+      justify-self:start!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-back img,
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .quick-lobby-back img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-title{
+      grid-column:2!important;
+      min-width:0!important;
+      width:100%!important;
+      display:block!important;
+      text-align:center!important;
+      justify-self:stretch!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-title h1{
+      margin:0!important;
+      color:#fff!important;
+      font-size:1.40rem!important;
+      line-height:1!important;
+      font-weight:1000!important;
+      text-align:center!important;
+      white-space:nowrap!important;
+      text-shadow:
+        0 2px 0 #5d20b3,
+        0 0 8px #eb52ff,
+        0 0 15px rgba(129,71,255,.72)!important;
+    }
+
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-code,
+    .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-coin-pill{
+      display:none!important;
+    }
+
+    @media(max-width:370px){
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header{
+        grid-template-columns:38px minmax(0,1fr) 38px!important;
+      }
+
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-title h1{
+        font-size:1.25rem!important;
+      }
+
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-back,
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header .quick-lobby-back{
+        width:38px!important;
+        height:38px!important;
+      }
+
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header .lobby-v5-back img,
+      .lobby-v5[data-mode="quick"] > .lobby-v5-header .quick-lobby-back img{
+        width:31px!important;
+        height:31px!important;
+      }
+    }
+  </style>
 </head>
 
 <body>
