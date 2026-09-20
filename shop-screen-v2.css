@@ -44,7 +44,7 @@ body:has(.shop-v2) .economy-hud{display:none!important}
 
 
 /* Boutique — bandeau compact partagé par Offre à l’affiche, Ressource et Utile */
-.shop-v2.is-compact-shop-header{padding-top:max(3px,env(safe-area-inset-top))!important}
+.shop-v2.is-compact-shop-header{padding-top:max(3px,env(safe-area-inset-top))!important;overflow:visible!important}
 .shop-v2.is-compact-shop-header .shop2-brand{height:44px;box-sizing:border-box;padding:0;text-align:left;display:flex;align-items:flex-start;justify-content:flex-start;overflow:visible}
 .shop-v2.is-compact-shop-header .shop2-brand-notice{height:40px;width:calc(100% + 62px);max-width:none;margin-left:-10px;padding:0 20px 0 8px;border:0;border-top:1px solid rgba(195,58,255,.84);border-bottom:1px solid rgba(195,58,255,.84);border-radius:0;background:linear-gradient(90deg,rgba(49,19,111,.98) 0%,rgba(32,24,119,.97) 42%,rgba(10,35,104,.96) 100%);display:flex;align-items:center;justify-content:space-between;gap:5px;box-sizing:border-box;box-shadow:0 0 20px rgba(210,54,255,.24),inset 0 0 18px rgba(107,83,255,.14)}
 .shop-v2.is-compact-shop-header .shop2-brand-notice-main{min-width:0;display:flex;align-items:center;gap:4px;flex:0 1 auto}
