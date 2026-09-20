@@ -2938,3 +2938,21 @@ body:has(.home-mobile) .economy-hud {
   height:33px !important;
 }
 
+/* =========================================================
+   ACCUEIL V2 — largeur XP -10px + descente 5px
+   ========================================================= */
+
+/* Coque + progression :
+   -10px de longueur sur la droite
+   et +5px vers le bas. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+  width:146px !important;
+  top:59px !important;
+}
+
+/* Zone cliquable déplacée avec la barre. */
+.home-mobile #homeLevelsOpen{
+  top:61px !important;
+  width:150px !important;
+}
+
