@@ -2721,3 +2721,54 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — logo / livre / cadre modes
+   ========================================================= */
+
+/* Logo P'tit Bac : encore +25px vers le bas. */
+.home-mobile .hm-brand{
+  transform:translate(-50%,88px) !important;
+}
+
+/* Livre décoratif : encore +20px vers le bas. */
+.home-mobile .hm-book{
+  transform:translateY(134px) perspective(300px) rotateX(18deg) !important;
+}
+
+/* Agrandit uniquement le cadre visuel « Choisis ton mode de jeu »
+   de 18px vers le bas, sans modifier la taille des 3 cartes. */
+.home-mobile .hm-modes::before{
+  bottom:2px !important;
+}
+
+/* Responsive */
+@media(max-width:370px){
+  .home-mobile .hm-brand{
+    transform:translate(-50%,88px) !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(134px) perspective(300px) rotateX(18deg) !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-brand{
+    transform:translate(-50%,81px) !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(128px) perspective(280px) rotateX(18deg) !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-brand{
+    transform:translate(-50%,73px) !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(122px) perspective(260px) rotateX(18deg) !important;
+  }
+}
+
