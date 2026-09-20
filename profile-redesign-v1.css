@@ -819,7 +819,7 @@ body:has(.profile-v10) [data-economy-hud] {
   width:calc(100% + 26px) !important;
   min-height:48px !important;
   height:48px !important;
-  margin:-14px -13px 8px !important;
+  margin:-4px -13px 8px !important;
   padding:0 13px !important;
   display:flex !important;
   align-items:center !important;
@@ -905,7 +905,7 @@ body:has(.profile-v10) [data-economy-hud] {
 @media(max-width:370px){
   .ptb-levels-header{
     width:calc(100% + 20px) !important;
-    margin:-14px -10px 8px !important;
+    margin:-4px -10px 8px !important;
     padding:0 10px !important;
   }
 
