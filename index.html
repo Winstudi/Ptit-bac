@@ -1326,12 +1326,31 @@
       filter:drop-shadow(0 0 7px rgba(188,76,255,.62))!important;
     }
 
-    /* Anciennes infos du header masquées. */
+    /* L'ancien numéro de manche n'est plus affiché. */
     html.gameplay-flow body
-      .flow-screen.asv1-screen .asv1-round-mini,
-    html.gameplay-flow body
-      .flow-screen.asv1-screen .asv1-brand{
+      .flow-screen.asv1-screen .asv1-round-mini{
       display:none!important;
+    }
+
+    /* Logo P'tit Bac au centre du bandeau. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-header .asv1-brand{
+      position:absolute!important;
+      z-index:83!important;
+      left:50%!important;
+      top:50%!important;
+      transform:translate(-50%,-50%)!important;
+
+      display:block!important;
+      width:auto!important;
+      height:43px!important;
+      max-width:92px!important;
+      max-height:43px!important;
+      margin:0!important;
+
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
+      pointer-events:none!important;
     }
 
     /* Le hero reste dans son DOM d'origine mais se pose dans le bandeau. */
@@ -1402,13 +1421,14 @@
       text-shadow:0 0 10px rgba(192,81,255,.58)!important;
     }
 
-    /* Chrono exactement au centre du bandeau. */
+    /* Chrono à droite du bandeau. */
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
       position:absolute!important;
-      left:50%!important;
+      left:auto!important;
+      right:14px!important;
       top:50%!important;
-      transform:translate(-50%,-50%)!important;
+      transform:translateY(-50%)!important;
 
       width:42px!important;
       height:42px!important;
@@ -1495,6 +1515,13 @@
       }
 
       html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-header .asv1-brand{
+        height:40px!important;
+        max-height:40px!important;
+        max-width:84px!important;
+      }
+
+      html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card{
         left:56px!important;
         width:38px!important;
@@ -1515,6 +1542,7 @@
 
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
+        right:10px!important;
         width:38px!important;
         height:38px!important;
         min-width:38px!important;
@@ -2834,8 +2862,26 @@
             backImg.src = "/back-arrow.png";
           }
 
-          /* Nettoie les éléments ajoutés par l'ancienne version. */
-          root.querySelector(".asv1-brand")?.remove();
+          /* Ajoute le logo au centre du bandeau sans déplacer
+             la lettre ni le chrono de leur bloc d'origine. */
+          const header =
+            root.querySelector(".asv1-header");
+
+          if (
+            header &&
+            !header.querySelector(".asv1-brand")
+          ) {
+            const logo =
+              document.createElement("img");
+
+            logo.className = "asv1-brand";
+            logo.src = "/ptitbac.logo.png";
+            logo.alt = "P’tit Bac";
+            logo.width = 62;
+            logo.height = 52;
+
+            header.appendChild(logo);
+          }
 
           /* Sécurité pour une mise à jour à chaud :
              si l'ancienne version avait déplacé lettre/chrono dans le
