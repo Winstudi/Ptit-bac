@@ -316,6 +316,102 @@
       }
     }
 
+
+    /* =========================================================
+       Partie Rapide — statut joueur, bouton carte et PNG des tags
+       ========================================================= */
+
+    /* Le statut "En attente…" se place par rapport à la carte entière. */
+    .lobby-v5[data-mode="quick"] .lobby-v5-player-copy{
+      position:static!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-player-state{
+      right:9px!important;
+      bottom:8px!important;
+      left:auto!important;
+      top:auto!important;
+      margin:0!important;
+    }
+
+    /* Le petit bouton Prêt dans la carte du joueur n'est jamais affiché.
+       Le vrai bouton Prêt apparaît en bas à partir de 2 joueurs. */
+    .lobby-v5[data-mode="quick"]
+      .quick-self-row > .quick-ready-btn:not(.quick-ready-bottom){
+      display:none!important;
+    }
+
+    /* Tags avec PNG : aucune pilule/cadre autour de l'image. */
+    .lobby-v5[data-mode="quick"]
+      .quick-player-title-row .pl-player-title.quick-tag-image{
+      width:auto!important;
+      max-width:100%!important;
+      min-height:20px!important;
+      height:20px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      overflow:visible!important;
+    }
+
+    .lobby-v5[data-mode="quick"]
+      .quick-player-title-row .pl-player-title.quick-tag-image > img{
+      display:block!important;
+      width:auto!important;
+      max-width:100%!important;
+      height:20px!important;
+      max-height:20px!important;
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      object-fit:contain!important;
+      object-position:left center!important;
+    }
+
+    /* Même principe dans la petite fenêtre profil du lobby. */
+    .lobby-v5[data-mode="quick"]
+      .pl-profile-v2-title-row .pl-player-title.quick-tag-image{
+      width:auto!important;
+      max-width:100%!important;
+      min-height:25px!important;
+      height:25px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      overflow:visible!important;
+    }
+
+    .lobby-v5[data-mode="quick"]
+      .pl-profile-v2-title-row .pl-player-title.quick-tag-image > img{
+      display:block!important;
+      width:auto!important;
+      max-width:100%!important;
+      height:25px!important;
+      max-height:25px!important;
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      object-fit:contain!important;
+    }
+
+    @media(max-width:370px){
+      .lobby-v5[data-mode="quick"]
+        .quick-player-title-row .pl-player-title.quick-tag-image{
+        min-height:16px!important;
+        height:16px!important;
+      }
+
+      .lobby-v5[data-mode="quick"]
+        .quick-player-title-row .pl-player-title.quick-tag-image > img{
+        height:16px!important;
+        max-height:16px!important;
+      }
+    }
+
   </style>
 </head>
 
@@ -517,12 +613,164 @@
         }
       }
 
+
+      function quickLobbyTagFallbackName(tagId, tag) {
+        if (tag?.name) return String(tag.name);
+
+        return String(tagId || "")
+          .replace(/^tag[_-]?/i, "")
+          .replace(/[_-]+/g, " ")
+          .replace(/\b\w/g, char => char.toUpperCase())
+          .trim();
+      }
+
+      function quickLobbyApplyTagAsset(target, tagId, tag) {
+        if (!target) return;
+
+        const asset = String(tag?.asset || "").trim();
+        const label = quickLobbyTagFallbackName(tagId, tag);
+
+        if (!asset) {
+          if (target.dataset.quickTagAsset) {
+            target.classList.remove("quick-tag-image");
+            delete target.dataset.quickTagAsset;
+
+            const strong = document.createElement("strong");
+            strong.textContent = label;
+            target.replaceChildren(strong);
+          }
+          return;
+        }
+
+        if (
+          target.dataset.quickTagAsset === asset &&
+          target.querySelector(":scope > img")
+        ) {
+          return;
+        }
+
+        const img = document.createElement("img");
+        img.src = asset;
+        img.alt = label;
+        img.draggable = false;
+
+        img.addEventListener(
+          "error",
+          () => {
+            if (!target.isConnected) return;
+
+            target.classList.remove("quick-tag-image");
+            delete target.dataset.quickTagAsset;
+
+            const strong = document.createElement("strong");
+            strong.textContent = label;
+            target.replaceChildren(strong);
+          },
+          { once:true }
+        );
+
+        target.classList.add("quick-tag-image");
+        target.dataset.quickTagAsset = asset;
+        target.replaceChildren(img);
+      }
+
+      function quickLobbySyncTagImages(root) {
+        if (!root) return;
+
+        let catalog = {};
+        let players = [];
+
+        try {
+          catalog = window.PtitBacInventory?.tags || {};
+          players = Array.isArray(session?.state?.players)
+            ? session.state.players
+            : [];
+        } catch {}
+
+        const myId = (() => {
+          try {
+            return String(session?.playerId || "");
+          } catch {
+            return "";
+          }
+        })();
+
+        root
+          .querySelectorAll(".lobby-v5-player[data-lobby-player-profile]")
+          .forEach(row => {
+            const playerId =
+              String(row.dataset.lobbyPlayerProfile || "");
+
+            const player =
+              players.find(
+                item => String(item?.id || "") === playerId
+              ) || null;
+
+            let tagId = String(player?.tagId || "").trim();
+
+            if (!tagId && playerId === myId) {
+              try {
+                tagId = String(
+                  window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+                ).trim();
+              } catch {}
+            }
+
+            if (!tagId) return;
+
+            const tag = catalog?.[tagId] || null;
+            const target = row.querySelector(
+              ".quick-player-title-row .pl-player-title"
+            );
+
+            quickLobbyApplyTagAsset(target, tagId, tag);
+          });
+
+        const modalTarget = root.querySelector(
+          ".pl-profile-v2-title-row .pl-player-title"
+        );
+
+        if (modalTarget) {
+          try {
+            const modalName =
+              root.querySelector(".pl-profile-v2-name-row > strong")
+                ?.textContent
+                ?.trim() || "";
+
+            const player = players.find(
+              item => String(item?.name || "").trim() === modalName
+            );
+
+            let tagId = String(player?.tagId || "").trim();
+
+            if (
+              !tagId &&
+              String(player?.id || "") === myId
+            ) {
+              tagId = String(
+                window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+              ).trim();
+            }
+
+            if (tagId) {
+              quickLobbyApplyTagAsset(
+                modalTarget,
+                tagId,
+                catalog?.[tagId] || null
+              );
+            }
+          } catch {}
+        }
+      }
+
       function quickBottomReadySync() {
         const root = document.querySelector(
           ".lobby-v5[data-mode='quick'].quick-lobby-v1"
         );
 
         if (!root) return;
+
+        quickLobbySyncTagImages(root);
 
         const playerCount =
           root.querySelectorAll(".lobby-v5-player").length;
