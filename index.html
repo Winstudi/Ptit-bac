@@ -1536,6 +1536,131 @@
       }
     }
 
+
+    /* =========================================================
+       Attente des autres joueurs — bandeau partagé
+       ========================================================= */
+
+    html.gameplay-flow body
+      .flow-screen.wsv1-screen{
+      padding-top:0!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.wsv1-screen > .wsv1-brandbar{
+      position:relative!important;
+      z-index:80!important;
+
+      flex:0 0 52px!important;
+      width:calc(100% + 28px)!important;
+      height:52px!important;
+      min-height:52px!important;
+      margin:0 -14px!important;
+      padding:0 14px 4px!important;
+      box-sizing:border-box!important;
+
+      display:grid!important;
+      grid-template-columns:1fr 62px 1fr!important;
+      align-items:center!important;
+      gap:0!important;
+
+      background:
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left top / 100% 1px no-repeat,
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left bottom 4px / 100% 1px no-repeat,
+        linear-gradient(
+          90deg,
+          rgba(49,19,111,.98) 0%,
+          rgba(32,24,119,.97) 42%,
+          rgba(10,35,104,.96) 100%
+        )
+          left top / 100% 48px no-repeat!important;
+
+      box-shadow:
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+      overflow:visible!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-exit{
+      grid-column:1!important;
+      justify-self:start!important;
+      align-self:center!important;
+
+      width:42px!important;
+      height:42px!important;
+      min-width:42px!important;
+      min-height:42px!important;
+      margin:0!important;
+      padding:0!important;
+
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+
+      display:grid!important;
+      place-items:center!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-exit img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.62))!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-brand{
+      grid-column:2!important;
+      justify-self:center!important;
+      align-self:center!important;
+
+      display:block!important;
+      width:auto!important;
+      height:43px!important;
+      max-width:92px!important;
+      max-height:43px!important;
+      margin:0!important;
+
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
+      pointer-events:none!important;
+    }
+
+    @media(max-width:370px){
+      html.gameplay-flow body
+        .flow-screen.wsv1-screen > .wsv1-brandbar{
+        grid-template-columns:1fr 56px 1fr!important;
+        padding-left:10px!important;
+        padding-right:10px!important;
+      }
+
+      html.gameplay-flow body
+        .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-exit{
+        width:38px!important;
+        height:38px!important;
+        min-width:38px!important;
+        min-height:38px!important;
+      }
+
+      html.gameplay-flow body
+        .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-exit img{
+        width:31px!important;
+        height:31px!important;
+      }
+
+      html.gameplay-flow body
+        .flow-screen.wsv1-screen > .wsv1-brandbar .wsv1-brand{
+        height:40px!important;
+        max-height:40px!important;
+        max-width:84px!important;
+      }
+    }
+
+
   </style>
 </head>
 
@@ -2791,6 +2916,91 @@
         );
       } else {
         answerHeaderStart();
+      }
+    })();
+  </script>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      let waitingHeaderScheduled = false;
+      let waitingHeaderObserver = null;
+
+      function waitingHeaderSync() {
+        waitingHeaderScheduled = false;
+
+        const root =
+          document.querySelector(".wsv1-screen");
+
+        if (!root) return;
+
+        const backImg =
+          root.querySelector("#wsv1Exit img");
+
+        if (
+          backImg &&
+          backImg.getAttribute("src") !== "/back-arrow.png"
+        ) {
+          backImg.src = "/back-arrow.png";
+        }
+      }
+
+      function waitingHeaderSchedule() {
+        if (waitingHeaderScheduled) return;
+
+        waitingHeaderScheduled = true;
+        requestAnimationFrame(waitingHeaderSync);
+      }
+
+      function waitingHeaderStart() {
+        waitingHeaderSchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          waitingHeaderSchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          waitingHeaderSchedule
+        );
+
+        try {
+          socket?.on?.(
+            "room:state",
+            waitingHeaderSchedule
+          );
+        } catch {}
+
+        if (
+          !waitingHeaderObserver &&
+          document.body
+        ) {
+          waitingHeaderObserver =
+            new MutationObserver(
+              waitingHeaderSchedule
+            );
+
+          waitingHeaderObserver.observe(
+            document.body,
+            {
+              subtree:true,
+              childList:true
+            }
+          );
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          waitingHeaderStart,
+          { once:true }
+        );
+      } else {
+        waitingHeaderStart();
       }
     })();
   </script>
