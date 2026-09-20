@@ -1,7 +1,7 @@
 /* =========================================================
    P'tit Bac — Quêtes V2
    Refonte fidèle au prototype néon mobile
-   3 quêtes quotidiennes, rotation à 11h (Europe/Paris)
+   +3 nouvelles quêtes à 11h (Europe/Paris), sans remplacer les précédentes
    ========================================================= */
 
 html:has(.quests-v1),
@@ -299,7 +299,7 @@ body:has(.quests-v1) .economy-hud{
   min-height:0;
   width:calc(100% - 9px);
   margin-left:9px;
-  padding:14px 14px 13px 21px;
+  padding:14px 4px 13px 21px;
   border:1.6px solid #a33fff;
   border-radius:16px;
   background:
@@ -505,8 +505,18 @@ body:has(.quests-v1) .economy-hud{
 .qv1-list{
   min-height:0;
   display:grid;
-  grid-template-rows:repeat(3,minmax(0,1fr));
+  grid-template-rows:none;
+  grid-auto-rows:calc((100% - 20px) / 3);
   gap:10px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+
+.qv1-list::-webkit-scrollbar{
+  display:none;
 }
 
 .qv1-quest{
@@ -843,7 +853,7 @@ button.qv1-state-button{
 
   .qv1-chest{
     grid-template-columns:minmax(0,1fr) 116px;
-    padding:12px 10px 12px 15px;
+    padding:12px 0 12px 15px;
   }
 
   .qv1-chest h2{font-size:1.12rem}

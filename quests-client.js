@@ -216,7 +216,7 @@
           </div>
         </section>
 
-        <section class="qv1-list" aria-label="Quêtes du jour">
+        <section class="qv1-list" aria-label="Quêtes">
           ${loading
             ? loadingMarkup()
             : (status?.quests || []).map(questCardMarkup).join("")}

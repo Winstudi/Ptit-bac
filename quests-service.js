@@ -28,7 +28,7 @@ const QUEST_POOL = Object.freeze([
     target:5,
     xp:80,
     title:"Valider 5 réponses",
-    description:"Fais valider 5 réponses dans tes parties.",
+    description:"Fais valider 5 réponses",
     icon:"answers"
   }),
   Object.freeze({
@@ -37,7 +37,7 @@ const QUEST_POOL = Object.freeze([
     target:10,
     xp:200,
     title:"Valider 10 réponses",
-    description:"Fais valider 10 réponses dans tes parties.",
+    description:"Fais valider 10 réponses",
     icon:"answers"
   }),
   Object.freeze({
@@ -50,6 +50,8 @@ const QUEST_POOL = Object.freeze([
     icon:"reroll"
   })
 ]);
+
+const QUEST_BY_ID = new Map(QUEST_POOL.map(quest => [quest.id, quest]));
 
 const PARIS_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone:"Europe/Paris",
@@ -165,6 +167,10 @@ function publicProgression(row = {}) {
   };
 }
 
+function questInstanceId(rotationKey, questId) {
+  return `${rotationKey}::${questId}`;
+}
+
 function createQuestsService({
   getPool,
   ensureSchema
@@ -210,9 +216,29 @@ function createQuestsService({
         )
       `);
 
+      // Chaque lot quotidien est maintenant mémorisé par joueur. Ainsi, à 11 h,
+      // les 3 nouvelles quêtes sont ajoutées à la liste existante au lieu de
+      // remplacer celles des jours précédents.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_player_quests(
+          wallet_token text NOT NULL,
+          rotation_key text NOT NULL,
+          quest_id text NOT NULL,
+          starts_at_ms bigint NOT NULL,
+          slot smallint NOT NULL DEFAULT 0 CHECK(slot >= 0 AND slot <= 2),
+          created_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,rotation_key,quest_id)
+        )
+      `);
+
       await pool.query(`
         CREATE INDEX IF NOT EXISTS ptitbac_quest_claims_wallet_idx
           ON public.ptitbac_quest_claims(wallet_token,claimed_at DESC)
+      `);
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_player_quests_wallet_idx
+          ON public.ptitbac_player_quests(wallet_token,starts_at_ms DESC,slot ASC)
       `);
 
       return pool;
@@ -224,7 +250,48 @@ function createQuestsService({
     return schemaPromise;
   }
 
-  async function statsForWindow(walletToken, window) {
+  async function ensureAssignedForWindow(walletToken, window) {
+    const pool = await db();
+    const quests = dailyQuests(window.key);
+
+    for (let slot = 0; slot < quests.length; slot += 1) {
+      const quest = quests[slot];
+      await pool.query(
+        `INSERT INTO public.ptitbac_player_quests(
+           wallet_token,rotation_key,quest_id,starts_at_ms,slot
+         ) VALUES($1,$2,$3,$4,$5)
+         ON CONFLICT(wallet_token,rotation_key,quest_id) DO NOTHING`,
+        [walletToken, window.key, quest.id, window.startsAt, slot]
+      );
+    }
+  }
+
+  async function assignedRows(walletToken) {
+    const pool = await db();
+    const q = await pool.query(
+      `SELECT rotation_key,quest_id,starts_at_ms,slot
+         FROM public.ptitbac_player_quests
+        WHERE wallet_token=$1
+        ORDER BY starts_at_ms DESC,slot ASC`,
+      [walletToken]
+    );
+    return q.rows || [];
+  }
+
+  async function claimedKeys(walletToken) {
+    const pool = await db();
+    const q = await pool.query(
+      `SELECT rotation_key,quest_id
+         FROM public.ptitbac_quest_claims
+        WHERE wallet_token=$1`,
+      [walletToken]
+    );
+    return new Set(
+      (q.rows || []).map(row => questInstanceId(row.rotation_key, row.quest_id))
+    );
+  }
+
+  async function statsForRange(walletToken, startsAt, endsAt = Date.now()) {
     const pool = await db();
     const [gameStats, rerollStats] = await Promise.all([
       pool.query(
@@ -239,7 +306,7 @@ function createQuestsService({
         WHERE wallet_token=$1
           AND created_at >= to_timestamp($2::double precision / 1000.0)
           AND created_at <  to_timestamp($3::double precision / 1000.0)`,
-        [walletToken, window.startsAt, window.endsAt]
+        [walletToken, startsAt, endsAt]
       ),
       pool.query(
         `SELECT COUNT(*)::int AS rerolls
@@ -248,7 +315,7 @@ function createQuestsService({
             AND kind IN ('CATEGORY_REROLL','LETTER_REROLL')
             AND created_at >= to_timestamp($2::double precision / 1000.0)
             AND created_at <  to_timestamp($3::double precision / 1000.0)`,
-        [walletToken, window.startsAt, window.endsAt]
+        [walletToken, startsAt, endsAt]
       )
     ]);
 
@@ -257,17 +324,6 @@ function createQuestsService({
       answers:Math.max(0, Number(gameStats.rows?.[0]?.answers) || 0),
       rerolls:Math.max(0, Number(rerollStats.rows?.[0]?.rerolls) || 0)
     };
-  }
-
-  async function claimedIds(walletToken, rotationKey) {
-    const pool = await db();
-    const q = await pool.query(
-      `SELECT quest_id
-         FROM public.ptitbac_quest_claims
-        WHERE wallet_token=$1 AND rotation_key=$2`,
-      [walletToken, rotationKey]
-    );
-    return new Set((q.rows || []).map(row => String(row.quest_id || "")));
   }
 
   async function chestStatus(walletToken) {
@@ -317,27 +373,52 @@ function createQuestsService({
     if (!token) throw new Error("Session joueur invalide.");
 
     const window = questWindow();
-    const active = dailyQuests(window.key);
-    const [stats, claimed, chest] = await Promise.all([
-      statsForWindow(token, window),
-      claimedIds(token, window.key),
+    await ensureAssignedForWindow(token, window);
+
+    const [rows, claimed, chest] = await Promise.all([
+      assignedRows(token),
+      claimedKeys(token),
       chestStatus(token)
     ]);
+
+    const uniqueStarts = [...new Set(
+      rows.map(row => Math.max(0, Number(row.starts_at_ms) || 0)).filter(Boolean)
+    )];
+    const statsEntries = await Promise.all(
+      uniqueStarts.map(async startsAt => [startsAt, await statsForRange(token, startsAt)])
+    );
+    const statsByStart = new Map(statsEntries);
+
+    const quests = rows
+      .map(row => {
+        const template = QUEST_BY_ID.get(String(row.quest_id || ""));
+        if (!template) return null;
+
+        const rotationKey = String(row.rotation_key || "");
+        const startsAt = Math.max(0, Number(row.starts_at_ms) || 0);
+        const instanceId = questInstanceId(rotationKey, template.id);
+        const progress = progressForQuest(template, statsByStart.get(startsAt) || {});
+
+        return {
+          ...template,
+          id:instanceId,
+          questId:template.id,
+          rotationKey,
+          startsAt,
+          slot:Math.max(0, Number(row.slot) || 0),
+          progress,
+          completed:progress >= template.target,
+          claimed:claimed.has(instanceId)
+        };
+      })
+      .filter(Boolean);
 
     return {
       rotationKey:window.key,
       startsAt:window.startsAt,
       refreshAt:window.endsAt,
       serverNow:Date.now(),
-      quests:active.map(quest => {
-        const progress = progressForQuest(quest, stats);
-        return {
-          ...quest,
-          progress,
-          completed:progress >= quest.target,
-          claimed:claimed.has(quest.id)
-        };
-      }),
+      quests,
       chest
     };
   }
@@ -453,14 +534,15 @@ function createQuestsService({
     }
   }
 
-  async function claimQuest(walletToken, questId) {
+  async function claimQuest(walletToken, questRef) {
     const token = validWalletToken(walletToken);
-    const id = String(questId || "").trim();
-    if (!token || !id) throw new Error("Quête invalide.");
+    const ref = String(questRef || "").trim();
+    if (!token || !ref) throw new Error("Quête invalide.");
 
     const current = await status(token);
-    const quest = current.quests.find(item => item.id === id);
-    if (!quest) throw new Error("Cette quête n’est pas active aujourd’hui.");
+    const quest = current.quests.find(item => item.id === ref) ||
+      current.quests.find(item => item.questId === ref && !item.claimed);
+    if (!quest) throw new Error("Cette quête n’est plus disponible.");
     if (!quest.completed) throw new Error("Cette quête n’est pas encore terminée.");
 
     const pool = await db();
@@ -469,7 +551,7 @@ function createQuestsService({
          FROM public.ptitbac_quest_claims
         WHERE wallet_token=$1 AND rotation_key=$2 AND quest_id=$3
         LIMIT 1`,
-      [token, current.rotationKey, id]
+      [token, quest.rotationKey, quest.questId]
     );
 
     const tokenHash = crypto
@@ -481,7 +563,7 @@ function createQuestsService({
     const award = await awardBonusXp(
       token,
       quest.xp,
-      `quest-xp:${tokenHash}:${current.rotationKey}:${quest.id}`
+      `quest-xp:${tokenHash}:${quest.rotationKey}:${quest.questId}`
     );
 
     if (!existing.rowCount) {
@@ -490,7 +572,7 @@ function createQuestsService({
            wallet_token,rotation_key,quest_id,xp_reward
          ) VALUES($1,$2,$3,$4)
          ON CONFLICT(wallet_token,rotation_key,quest_id) DO NOTHING`,
-        [token,current.rotationKey,quest.id,quest.xp]
+        [token,quest.rotationKey,quest.questId,quest.xp]
       );
     }
 
