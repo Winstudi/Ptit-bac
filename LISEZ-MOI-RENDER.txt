@@ -1,0 +1,29 @@
+CORRECTION DU DÉMARRAGE RENDER
+Base : commit e71ef582fe9087601f7146b25c799660972b50c9.
+
+Remplacer db.js à la racine du dépôt et ajouter db-render-tls.test.cjs.
+Aucun changement de visuel, de règles de jeu ou de données enregistrées.
+
+La vérification TLS introduite dans le précédent ZIP refusait les certificats
+autosignés du réseau interne Render. Ce correctif garde TLS obligatoire mais
+accepte ces certificats uniquement pour un hôte interne dpg-... quand le
+processus tourne sur Render (RENDER=true). Les serveurs externes gardent la
+vérification par défaut. Les options explicites verify-full/verify-ca et CA
+sont conservées.
+
+Dans Render, vérifier que DATABASE_URL est l'Internal Database URL de la
+base existante, dans le même compte et la même région. Copier cette URL depuis
+la page de la base ; ne pas la publier ni changer de base. Utiliser l'URL telle
+que fournie par Render, sans ajout manuel sslmode=verify-full/verify-ca.
+
+Les logs montrent également une Build Command restée sur npm install.
+Dans le service web Render, Settings > Build & Deploy > Build Command,
+utiliser la commande prévue dans render.yaml :
+npm ci --include=dev && npm test && npm run check && node cleanup-frontend-build.cjs && npm run check:production && (node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
+
+Redéployer le dernier commit une fois ces réglages enregistrés.
+
+Validation : syntaxe JavaScript et 4 tests ciblés réussis, dont la configuration
+effective du client pg. Aucune connexion à votre base privée n'a été effectuée.
+La disparition de l'erreur TLS au prochain démarrage reste à confirmer.
+Documentation : https://render.com/docs/postgresql-creating-connecting

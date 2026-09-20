@@ -65,11 +65,27 @@ function createPool() {
   if (!DATABASE_URL) return null;
 
   const { Pool } = require("pg");
+  const databaseUrl = new URL(DATABASE_URL);
+  const host = (databaseUrl.searchParams.get("host") || databaseUrl.hostname).toLowerCase();
+  const local = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host);
+  const ca = process.env.PTITBAC_DB_CA?.replace(/\\n/g, "\n");
+  // Render's private Postgres endpoint uses a self-signed certificate.
+  // Keep TLS required; limit this exception to Render's internal hostname.
+  const renderInternal = process.env.RENDER === "true" && /^dpg-[a-z0-9-]+$/.test(host);
+  const explicitCertificate = ["sslrootcert", "sslcert", "sslkey"].some(key => databaseUrl.searchParams.has(key));
+  const strictMode = ["verify-ca", "verify-full"].includes(databaseUrl.searchParams.get("sslmode"));
+  const internalTls = renderInternal && !ca && !explicitCertificate && !strictMode;
+  if (internalTls) {
+    // pg URL SSL options otherwise overwrite the ssl object below.
+    databaseUrl.searchParams.delete("ssl");
+    databaseUrl.searchParams.delete("sslmode");
+  }
   const shared = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL)
-      ? false
-      : { rejectUnauthorized: true, ...(process.env.PTITBAC_DB_CA ? { ca:process.env.PTITBAC_DB_CA.replace(/\\n/g, "\n") } : {}) },
+    connectionString: databaseUrl.toString(),
+    ssl: local ? false : {
+      rejectUnauthorized: !internalTls,
+      ...(ca ? { ca } : {})
+    },
     max: POOL_MAX,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
