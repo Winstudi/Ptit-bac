@@ -1,0 +1,181 @@
+/* =========================================================
+   P'tit Bac — bandeau du salon public / Partie Rapide
+   Reprend le langage visuel Profil / Quêtes / Boutique.
+   Ne s'applique PAS au salon privé ni au matchmaking quick.
+   ========================================================= */
+
+html main.lobby-v5.pl-private.pl-public-mode {
+  padding-top:max(3px,env(safe-area-inset-top)) !important;
+}
+
+/* Bandeau supérieur */
+html body .pl-private.pl-public-mode > .pl-header {
+  position:relative;
+  z-index:20;
+  width:calc(100% + 24px);
+  min-height:48px !important;
+  height:48px !important;
+  margin-left:-12px !important;
+  margin-right:-12px !important;
+  padding:0 12px !important;
+
+  display:grid !important;
+  grid-template-columns:36px minmax(0,1fr) auto !important;
+  align-items:center !important;
+  gap:7px !important;
+
+  background:
+    radial-gradient(circle at 33% 45%,rgba(136,51,255,.21),transparent 32%),
+    linear-gradient(
+      90deg,
+      rgba(49,19,111,.98) 0%,
+      rgba(32,24,119,.97) 42%,
+      rgba(10,35,104,.96) 100%
+    ) !important;
+
+  box-shadow:
+    0 0 20px rgba(210,54,255,.20),
+    inset 0 0 18px rgba(107,83,255,.14) !important;
+}
+
+/* Les deux fines lignes violettes du bandeau */
+html body .pl-private.pl-public-mode > .pl-header::before,
+html body .pl-private.pl-public-mode > .pl-header::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  height:1px;
+  background:rgba(195,58,255,.84);
+  box-shadow:0 0 12px rgba(210,54,255,.42);
+  pointer-events:none;
+  z-index:2;
+}
+
+html body .pl-private.pl-public-mode > .pl-header::before {
+  top:0;
+}
+
+html body .pl-private.pl-public-mode > .pl-header::after {
+  bottom:0;
+}
+
+/* Flèche retour = quitter le salon */
+html body .pl-private.pl-public-mode > .pl-header > #lobbyV5Leave {
+  width:34px !important;
+  height:34px !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  display:grid !important;
+  place-items:center !important;
+  position:relative;
+  z-index:3;
+}
+
+html body .pl-private.pl-public-mode > .pl-header > #lobbyV5Leave img {
+  width:30px !important;
+  height:30px !important;
+  object-fit:contain !important;
+  filter:drop-shadow(0 0 7px rgba(221,69,255,.72));
+}
+
+/* Titre du salon public : Partie Rapide */
+html body .pl-private.pl-public-mode .pl-title-mode {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+html body .pl-private.pl-public-mode .pl-title-mode > h1 {
+  min-width:0;
+  margin:0 !important;
+  font-size:0 !important;
+  line-height:1 !important;
+  white-space:nowrap;
+}
+
+html body .pl-private.pl-public-mode .pl-title-mode > h1::after {
+  content:"Partie Rapide";
+  display:inline-block;
+  color:#fff;
+  font-size:1.08rem;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:-.03em;
+  text-shadow:
+    0 2px 0 #5d20b3,
+    0 0 8px #eb52ff,
+    0 0 15px rgba(129,71,255,.78);
+}
+
+/* Le bouton Public/Privé reste fonctionnel mais plus compact dans le bandeau. */
+html body .pl-private.pl-public-mode .pl-mode-toggle {
+  min-width:55px !important;
+  height:24px !important;
+  padding:0 6px !important;
+  gap:4px !important;
+  font-size:9px !important;
+  position:relative;
+  z-index:3;
+}
+
+/* Code du salon conservé à droite du bandeau. */
+html body .pl-private.pl-public-mode > .pl-header .pl-header-code {
+  width:auto !important;
+  min-width:60px !important;
+  height:32px !important;
+  padding:2px 7px !important;
+  border:1px solid rgba(142,86,220,.72) !important;
+  border-radius:10px !important;
+  background:rgba(14,22,75,.68) !important;
+  position:relative;
+  z-index:3;
+}
+
+html body .pl-private.pl-public-mode > .pl-header .pl-header-code small {
+  font-size:8px !important;
+  line-height:10px !important;
+}
+
+html body .pl-private.pl-public-mode > .pl-header .pl-header-code strong {
+  font-size:11px !important;
+  line-height:13px !important;
+}
+
+html body .pl-private.pl-public-mode > .pl-header .pl-header-code img {
+  width:17px !important;
+  height:17px !important;
+}
+
+/* Petits écrans */
+@media (max-width:370px) {
+  html body .pl-private.pl-public-mode > .pl-header {
+    grid-template-columns:32px minmax(0,1fr) auto !important;
+    gap:4px !important;
+    padding-left:9px !important;
+    padding-right:9px !important;
+  }
+
+  html body .pl-private.pl-public-mode .pl-title-mode {
+    gap:4px;
+  }
+
+  html body .pl-private.pl-public-mode .pl-title-mode > h1::after {
+    font-size:.96rem;
+  }
+
+  html body .pl-private.pl-public-mode .pl-mode-toggle {
+    min-width:48px !important;
+    height:22px !important;
+    padding:0 5px !important;
+    font-size:8px !important;
+  }
+
+  html body .pl-private.pl-public-mode > .pl-header .pl-header-code {
+    min-width:54px !important;
+    padding-left:5px !important;
+    padding-right:5px !important;
+  }
+}
