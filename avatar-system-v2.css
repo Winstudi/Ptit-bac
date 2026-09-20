@@ -829,3 +829,19 @@ html body .wsv1-screen .wsv1-player
   }
 }
 
+/* =========================================================
+   Inventaire — écart bandeau / aperçu + tag agrandi
+   ========================================================= */
+
+/* 5px entre le bandeau du haut et le bloc aperçu du joueur. */
+.inventory-v2-preview,
+.inventory-v2-preview.is-minimal{
+  margin-top:5px !important;
+}
+
+/* Le tag de l'aperçu passe de 40% à 56% de sa taille d'origine,
+   soit +40% par rapport à la version précédente. */
+.inv-tag.inv-tag-preview{
+  transform:scale(.56) !important;
+}
+
