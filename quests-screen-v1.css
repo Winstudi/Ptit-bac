@@ -472,9 +472,10 @@ body:has(.quests-v1) .economy-hud{
 .qv1-list{
   min-height:0;
   display:grid;
-  grid-template-rows:none;
-  grid-auto-rows:calc((100% - 20px) / 3);
-  gap:10px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:111px;
+  gap:12px;
+  align-content:start;
   overflow-y:auto;
   overflow-x:hidden;
   overscroll-behavior-y:contain;
@@ -489,20 +490,19 @@ body:has(.quests-v1) .economy-hud{
 .qv1-quest{
   position:relative;
   min-height:0;
-  padding:10px 9px 10px 10px;
+  padding:12px 12px 10px;
   border:1.55px solid #a13fff;
   border-radius:15px;
   background:
-    radial-gradient(circle at 1% 50%,rgba(165,55,255,.20),transparent 28%),
-    radial-gradient(circle at 88% 48%,rgba(39,83,188,.15),transparent 31%),
-    linear-gradient(120deg,rgba(34,19,101,.98),rgba(8,31,91,.98));
+    radial-gradient(circle at 6% 50%,rgba(165,55,255,.18),transparent 30%),
+    radial-gradient(circle at 92% 20%,rgba(84,86,255,.10),transparent 34%),
+    linear-gradient(120deg,rgba(49,31,124,.98),rgba(27,26,109,.98));
   box-shadow:
-    inset 0 0 20px rgba(112,68,255,.09),
+    inset 0 0 20px rgba(112,68,255,.08),
     0 4px 12px rgba(0,0,0,.14);
   display:grid;
-  grid-template-columns:61px minmax(0,1fr) 56px 76px;
-  align-items:center;
-  gap:8px;
+  grid-template-rows:minmax(0,1fr) auto;
+  gap:10px;
   overflow:hidden;
 }
 
@@ -514,13 +514,21 @@ body:has(.quests-v1) .economy-hud{
 }
 
 .qv1-quest.is-claimed{
-  opacity:.67;
+  opacity:.72;
   border-color:#596bbf;
 }
 
+.qv1-quest-top{
+  min-width:0;
+  display:grid;
+  grid-template-columns:50px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+}
+
 .qv1-quest-icon{
-  width:59px;
-  height:59px;
+  width:50px;
+  height:50px;
   border:1px solid rgba(101,88,218,.74);
   border-radius:12px;
   display:grid;
@@ -530,15 +538,15 @@ body:has(.quests-v1) .economy-hud{
 }
 
 .qv1-quest-icon img{
-  width:51px;
-  height:51px;
+  width:42px;
+  height:42px;
   object-fit:contain;
   filter:drop-shadow(0 0 8px rgba(160,80,255,.34));
 }
 
 .qv1-quest-icon svg{
-  width:41px;
-  height:41px;
+  width:33px;
+  height:33px;
   fill:none;
   stroke:#4eb3ff;
   stroke-width:2.15;
@@ -553,38 +561,35 @@ body:has(.quests-v1) .economy-hud{
 
 .qv1-quest-copy h3{
   margin:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
   color:#fff;
-  font-size:.90rem;
-  line-height:1.04;
+  font-size:.82rem;
+  line-height:1.08;
   font-weight:1000;
-  letter-spacing:-.026em;
+  letter-spacing:-.02em;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 
-.qv1-quest-copy p{
-  margin:5px 0 8px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:#c9ccf1;
-  font-size:.57rem;
-  line-height:1;
-  font-weight:650;
+.qv1-quest-bottom{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:10px;
 }
 
 .qv1-progress{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 31px;
+  grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  gap:6px;
+  gap:7px;
 }
 
 .qv1-progress>span{
-  height:7px;
+  height:10px;
   padding:1px;
-  border:1px solid #695de2;
+  border:1px solid #9386e3;
   border-radius:999px;
   background:#10194d;
   overflow:hidden;
@@ -605,72 +610,36 @@ body:has(.quests-v1) .economy-hud{
 
 .qv1-progress b{
   color:#fff;
-  font-size:.57rem;
+  font-size:.58rem;
   line-height:1;
   font-weight:1000;
+  white-space:nowrap;
 }
 
 .qv1-quest-reward{
-  width:56px;
-  height:57px;
-  border:0;
-  border-radius:0;
-  display:grid;
-  place-content:center;
-  text-align:center;
-  background:none;
-  box-shadow:none;
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap:2px;
+  white-space:nowrap;
+  text-align:right;
 }
 
 .qv1-quest-reward strong{
   display:block;
   color:#fff;
-  font-size:.88rem;
-  line-height:.9;
+  font-size:.80rem;
+  line-height:1;
   font-weight:1000;
-  letter-spacing:-.04em;
+  letter-spacing:-.03em;
 }
 
 .qv1-quest-reward small{
   display:block;
-  margin-top:5px;
-  color:#dc58ff;
-  font-size:.62rem;
-  line-height:1;
-  font-weight:1000;
-}
-
-.qv1-claim-button,
-.qv1-state-button{
-  width:76px;
-  min-width:76px;
-  height:43px;
-  padding:0 5px;
-  border-radius:12px;
-  display:grid;
-  place-items:center;
-  text-align:center;
-  font-size:.61rem;
-  line-height:1;
-  font-weight:1000;
-}
-
-.qv1-claim-button{
-  border:1px solid #5aff92;
-  background:linear-gradient(180deg,#25e273,#11a953);
-  color:#fff;
-  box-shadow:0 0 11px rgba(41,226,112,.29);
-}
-
-.qv1-state-button{
-  border:1px solid rgba(101,108,205,.68);
-  background:linear-gradient(180deg,rgba(57,63,143,.78),rgba(45,50,119,.72));
-  color:#cfd2f4;
-  box-shadow:inset 0 0 10px rgba(120,118,231,.08);
-}
-
-button.qv1-state-button{
-  opacity:.84;
+  color:#f1f0ff;
+  font-size:.56rem;
+  line-height:1.05;
+  font-weight:900;
 }
 
 /* ---------- Décor inférieur ---------- */
@@ -822,50 +791,45 @@ button.qv1-state-button{
 
   .qv1-chest-progress{padding-right:40px}
 
+  .qv1-list{
+    grid-auto-rows:102px;
+    gap:10px;
+  }
+
   .qv1-quest{
-    grid-template-columns:52px minmax(0,1fr) 50px 67px;
-    gap:5px;
-    padding:8px 7px;
+    padding:10px 10px 9px;
+    gap:8px;
+  }
+
+  .qv1-quest-top{
+    grid-template-columns:44px minmax(0,1fr);
+    gap:8px;
   }
 
   .qv1-quest-icon{
-    width:50px;
-    height:50px;
+    width:44px;
+    height:44px;
     border-radius:10px;
   }
 
   .qv1-quest-icon img{
-    width:44px;
-    height:44px;
-  }
-
-  .qv1-quest-icon svg{
     width:36px;
     height:36px;
   }
 
-  .qv1-quest-copy h3{font-size:.78rem}
-  .qv1-quest-copy p{font-size:.50rem;margin:4px 0 7px}
-
-  .qv1-progress{grid-template-columns:minmax(0,1fr) 28px;gap:4px}
-  .qv1-progress b{font-size:.51rem}
-
-  .qv1-quest-reward{
-    width:50px;
-    height:52px;
+  .qv1-quest-icon svg{
+    width:29px;
+    height:29px;
   }
 
-  .qv1-quest-reward strong{font-size:.77rem}
-  .qv1-quest-reward small{font-size:.54rem}
+  .qv1-quest-copy h3{font-size:.72rem}
 
-  .qv1-claim-button,
-  .qv1-state-button{
-    width:67px;
-    min-width:67px;
-    height:39px;
-    border-radius:11px;
-    font-size:.55rem;
-  }
+  .qv1-progress{gap:5px}
+  .qv1-progress>span{height:9px}
+  .qv1-progress b{font-size:.50rem}
+
+  .qv1-quest-reward strong{font-size:.73rem}
+  .qv1-quest-reward small{font-size:.50rem}
 }
 
 @media(max-height:710px){
@@ -877,10 +841,14 @@ button.qv1-state-button{
   .qv1-header{height:44px}
   .qv1-chest{padding-block:10px}
   .qv1-chest-art img{height:96px}
-  .qv1-quest{padding-block:6px}
-  .qv1-quest-icon{height:46px;width:46px}
-  .qv1-quest-icon img{height:41px;width:41px}
-  .qv1-quest{grid-template-columns:48px minmax(0,1fr) 48px 66px}
-  .qv1-quest-reward{width:48px;height:49px}
-  .qv1-claim-button,.qv1-state-button{width:66px;min-width:66px;height:37px}
+  .qv1-list{grid-auto-rows:96px}
+  .qv1-quest{padding:8px 8px 7px;gap:7px}
+  .qv1-quest-top{grid-template-columns:40px minmax(0,1fr);gap:7px}
+  .qv1-quest-icon{height:40px;width:40px}
+  .qv1-quest-icon img{height:33px;width:33px}
+  .qv1-quest-icon svg{height:26px;width:26px}
+  .qv1-quest-copy h3{font-size:.69rem}
+  .qv1-progress>span{height:8px}
+  .qv1-quest-reward strong{font-size:.69rem}
+  .qv1-quest-reward small{font-size:.48rem}
 }

@@ -82,27 +82,24 @@
 
     return `
       <article class="qv1-quest ${state}" data-quest-id="${esc(quest.id)}">
-        <div class="qv1-quest-icon">${questIcon(quest)}</div>
+        <div class="qv1-quest-top">
+          <div class="qv1-quest-icon">${questIcon(quest)}</div>
 
-        <div class="qv1-quest-copy">
-          <h3>${esc(quest.title)}</h3>
-          <p>${esc(quest.description)}</p>
+          <div class="qv1-quest-copy">
+            <h3>${esc(quest.title)}</h3>
+          </div>
+        </div>
+
+        <div class="qv1-quest-bottom">
           <div class="qv1-progress">
             <span><i style="width:${percent}%"></i></span>
             <b>${progress}/${target}</b>
           </div>
-        </div>
 
-        <div class="qv1-quest-reward" aria-label="Récompense ${fmt(quest.xp)} XP">
-          <strong>+${fmt(quest.xp)}</strong>
-          <small>XP</small>
+          <div class="qv1-quest-reward" aria-label="Récompense ${fmt(quest.xp)} XP">
+            <strong>+${fmt(quest.xp)}</strong><small>XP</small>
+          </div>
         </div>
-
-        ${quest.claimed
-          ? `<button class="qv1-state-button" type="button" disabled>Validée</button>`
-          : quest.completed
-            ? `<button class="qv1-claim-button" type="button" data-quest-claim="${esc(quest.id)}">Récupérer</button>`
-            : `<span class="qv1-state-button">En cours</span>`}
       </article>`;
   }
 
