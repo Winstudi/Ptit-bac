@@ -2772,3 +2772,36 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — micro-ajustements livre / cadre modes
+   ========================================================= */
+
+/* Livre décoratif : +5px vers le bas. */
+.home-mobile .hm-book{
+  transform:translateY(139px) perspective(300px) rotateX(18deg) !important;
+}
+
+/* Cadre « Choisis ton mode de jeu » : +5px vers le bas. */
+.home-mobile .hm-modes::before{
+  bottom:-3px !important;
+}
+
+/* Responsive */
+@media(max-width:370px){
+  .home-mobile .hm-book{
+    transform:translateY(139px) perspective(300px) rotateX(18deg) !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-book{
+    transform:translateY(133px) perspective(280px) rotateX(18deg) !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-book{
+    transform:translateY(127px) perspective(260px) rotateX(18deg) !important;
+  }
+}
+
