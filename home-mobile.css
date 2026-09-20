@@ -1559,3 +1559,654 @@ body:has(.home-mobile) .economy-hud {
   font-size:1.23rem;
   line-height:1.32;
 }
+
+/* =========================================================
+   ACCUEIL V2 — redesign visuel
+   Base : home-mobile.css actuel du dépôt
+   ========================================================= */
+
+.home-mobile{
+  --hm-v2-purple:#b14cff;
+  --hm-v2-blue:#3a68ff;
+  --hm-v2-deep:#070d3e;
+  grid-template-rows:52px minmax(286px,1fr) auto auto !important;
+  gap:5px !important;
+  padding-top:0 !important;
+  background:
+    radial-gradient(circle at 50% 22%,rgba(136,42,255,.48),transparent 29%),
+    radial-gradient(circle at 8% 43%,rgba(31,82,227,.28),transparent 30%),
+    radial-gradient(circle at 94% 48%,rgba(126,38,229,.26),transparent 30%),
+    linear-gradient(180deg,#090a48 0%,#07103b 67%,#060c32 100%) !important;
+}
+
+/* ---------- Bandeau supérieur ---------- */
+.home-mobile .hm-header{
+  position:relative;
+  z-index:30;
+  width:calc(100% + 8px);
+  height:52px;
+  min-height:52px;
+  margin:0 0 0 -4px;
+  padding:0 7px;
+  grid-template-columns:116px minmax(0,1fr) 36px;
+  gap:5px;
+  align-items:center;
+  overflow:visible;
+  background:linear-gradient(
+    90deg,
+    rgba(49,19,111,.985) 0%,
+    rgba(32,24,119,.98) 42%,
+    rgba(10,35,104,.975) 100%
+  );
+  box-shadow:
+    10px 0 0 rgba(10,35,104,.975),
+    inset 0 0 20px rgba(107,83,255,.16),
+    0 7px 22px rgba(4,2,38,.24);
+}
+
+.home-mobile .hm-header::before,
+.home-mobile .hm-header::after{
+  content:"";
+  position:absolute;
+  left:-10px;
+  right:-10px;
+  height:1px;
+  z-index:31;
+  pointer-events:none;
+  background:rgba(203,68,255,.9);
+  box-shadow:0 0 12px rgba(210,54,255,.48);
+}
+.home-mobile .hm-header::before{top:0}
+.home-mobile .hm-header::after{bottom:0}
+
+.home-mobile .hm-profile{
+  height:44px;
+  min-width:0;
+  transform:none;
+  margin:0;
+  padding:0 3px 0 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  gap:6px;
+}
+
+.home-mobile .hm-avatar{
+  width:46px;
+  height:46px;
+  flex:0 0 46px;
+  margin:0;
+  transform:none;
+  border:2px solid #d868ff;
+  border-radius:11px;
+  box-shadow:
+    0 0 11px rgba(218,72,255,.72),
+    inset 0 0 11px rgba(255,255,255,.06);
+}
+
+.home-mobile .hm-profile-copy{
+  gap:3px;
+  align-content:center;
+}
+
+.home-mobile .hm-profile-copy b{
+  max-width:64px;
+  font-size:.68rem;
+  text-shadow:0 0 7px rgba(180,110,255,.36);
+}
+
+.home-mobile .hm-profile-copy small{
+  transform:none;
+  font-size:.47rem;
+  color:#d0bcff;
+}
+
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  transform:none !important;
+  width:62px !important;
+  max-width:62px !important;
+}
+
+.home-mobile #homeLevelsOpen{
+  top:28px !important;
+  left:48px !important;
+  width:70px !important;
+  height:24px !important;
+}
+
+.home-mobile .hm-resources{
+  width:min(100%,205px);
+  grid-template-columns:60px 72px 65px;
+  gap:4px;
+  margin:0;
+}
+
+.home-mobile .hm-resources button,
+.home-mobile #homePlaqueLivesBtn,
+.home-mobile #homePlaqueCoinsBtn{
+  height:32px;
+  min-height:32px;
+  border:1.2px solid #7659ff;
+  border-radius:13px;
+  background:
+    radial-gradient(circle at 50% 0,rgba(132,80,255,.16),transparent 65%),
+    linear-gradient(180deg,#27196c,#10194d);
+  box-shadow:
+    inset 0 0 11px rgba(139,93,255,.12),
+    0 0 8px rgba(94,62,255,.12);
+}
+
+.home-mobile #homePlaqueLivesBtn{
+  width:60px;
+  min-width:60px;
+  grid-template-columns:16px minmax(0,1fr);
+}
+.home-mobile #homePlaqueCoinsBtn{
+  width:72px;
+  min-width:72px;
+}
+.home-mobile #homeGemButton{
+  width:65px;
+  min-width:65px;
+}
+
+.home-mobile .hm-resources img{
+  width:18px;
+  height:18px;
+  filter:drop-shadow(0 0 5px rgba(255,255,255,.18));
+}
+
+.home-mobile .hm-resources b,
+.home-mobile #homePlaqueCoinsBtn b{
+  font-size:.57rem !important;
+  letter-spacing:-.02em;
+}
+
+.home-mobile .hm-menu-button{
+  width:35px;
+  height:35px;
+  margin:0;
+  padding:7px 6px;
+  border:1.4px solid #8564ff;
+  border-radius:12px;
+  background:linear-gradient(180deg,#272265,#101747);
+  box-shadow:
+    inset 0 0 10px rgba(156,111,255,.1),
+    0 0 9px rgba(115,72,255,.16);
+}
+
+/* ---------- Hero ---------- */
+.home-mobile .hm-hero{
+  min-height:292px;
+  padding-bottom:4px;
+  overflow:visible;
+}
+
+.home-mobile .hm-side{
+  top:34px;
+  gap:14px;
+}
+
+.home-mobile .hm-left{left:3px}
+.home-mobile .hm-right{right:3px}
+
+.home-mobile .hm-side button{
+  width:55px;
+  height:61px;
+  border:1.4px solid #8e62ff;
+  border-radius:15px;
+  background:
+    radial-gradient(circle at 50% 10%,rgba(157,95,255,.20),transparent 45%),
+    linear-gradient(150deg,rgba(40,20,100,.98),rgba(8,20,65,.98));
+  box-shadow:
+    inset 0 0 13px rgba(136,91,255,.10),
+    0 0 10px rgba(114,65,255,.15);
+}
+
+.home-mobile .hm-side img{
+  width:34px;
+  height:34px;
+  filter:drop-shadow(0 0 5px rgba(151,86,255,.24));
+}
+
+.home-mobile .hm-side b{
+  font-size:.59rem;
+}
+
+.home-mobile .hm-brand{
+  top:1%;
+  width:61%;
+  height:61%;
+  transform:translate(-50%,28px);
+}
+
+.home-mobile .hm-brand-glow{
+  width:104%;
+  background:radial-gradient(
+    circle,
+    rgba(184,46,255,.42),
+    rgba(82,54,239,.12) 52%,
+    transparent 73%
+  );
+  filter:blur(9px);
+}
+
+.home-mobile .hm-logo{
+  width:88%;
+  max-width:202px;
+  filter:
+    drop-shadow(0 0 11px rgba(216,52,255,.72))
+    drop-shadow(0 0 19px rgba(80,69,255,.30));
+}
+
+.home-mobile .hm-letters span{
+  border-color:rgba(160,126,255,.43);
+  background:linear-gradient(
+    135deg,
+    rgba(70,63,205,.34),
+    rgba(145,73,255,.12)
+  );
+  box-shadow:none;
+  opacity:.28;
+}
+
+.home-mobile .hm-book{
+  width:72%;
+  height:78px;
+  transform:translateY(34px) perspective(300px) rotateX(18deg);
+  filter:
+    drop-shadow(0 0 12px rgba(191,77,255,.52))
+    drop-shadow(0 6px 8px rgba(2,4,30,.25));
+}
+
+.home-mobile .hm-book span{
+  padding-top:10px;
+  border-bottom-width:6px;
+  font-size:.66rem;
+}
+
+/* ---------- Modes de jeu ---------- */
+.home-mobile .hm-modes{
+  margin-top:75px;
+  padding:12px 10px 11px;
+  border:1.6px solid #a25dff;
+  border-radius:23px;
+  background:
+    radial-gradient(circle at 50% 0,rgba(125,69,255,.22),transparent 48%),
+    linear-gradient(145deg,rgba(47,30,118,.77),rgba(9,17,63,.97));
+  box-shadow:
+    inset 0 0 23px rgba(132,66,255,.18),
+    0 0 17px rgba(89,54,244,.20);
+}
+
+.home-mobile .hm-modes h1{
+  margin:0 0 11px;
+  font-size:1.03rem;
+  text-shadow:0 0 9px rgba(171,105,255,.22);
+}
+
+.home-mobile .hm-mode-grid{
+  gap:8px;
+}
+
+.home-mobile .hm-mode-grid button{
+  min-height:116px;
+  padding:7px 4px 9px;
+  border-radius:18px;
+  border-width:2px;
+}
+
+.home-mobile .hm-mode-grid .hm-quick{
+  border-color:#ffe27a;
+  background:
+    radial-gradient(circle at 50% 14%,rgba(255,112,188,.35),transparent 45%),
+    linear-gradient(140deg,#f15d7f 0%,#c51ddd 42%,#431557 100%);
+  box-shadow:
+    0 0 15px rgba(255,150,102,.48),
+    inset 0 0 14px rgba(255,235,126,.37);
+}
+
+.home-mobile .hm-mode-grid .hm-create{
+  border-color:#48d5ff;
+  background:
+    radial-gradient(circle at 50% 12%,rgba(48,196,255,.23),transparent 48%),
+    linear-gradient(145deg,#0759dd,#082056 88%);
+  box-shadow:
+    inset 0 0 15px rgba(59,202,255,.28),
+    0 0 12px rgba(32,137,255,.20);
+}
+
+.home-mobile .hm-mode-grid .hm-join{
+  border-color:#b96aff;
+  background:
+    radial-gradient(circle at 50% 12%,rgba(184,91,255,.26),transparent 45%),
+    linear-gradient(145deg,#7436dc,#1a165a 87%);
+  box-shadow:
+    inset 0 0 15px rgba(168,104,255,.20),
+    0 0 11px rgba(124,67,255,.16);
+}
+
+.home-mobile .hm-mode-grid img{
+  width:76px;
+  height:66px;
+}
+
+.home-mobile .hm-mode-grid b{
+  font-size:.73rem;
+}
+
+.home-mobile .hm-mode-grid > button .hm-chevron{
+  right:0;
+  color:#fff;
+}
+
+/* Le mode classé disparaît totalement dans la V2. */
+.home-mobile .hm-ranked{
+  display:none !important;
+}
+
+/* ---------- Voie des trophées / Inventaire ---------- */
+.home-mobile .hm-bottom{
+  margin:10px 10px 6px;
+  gap:8px;
+  transform:none;
+  grid-template-columns:minmax(0,2.35fr) minmax(0,1fr);
+}
+
+.home-mobile .hm-bottom > button{
+  min-height:80px;
+  padding:7px;
+  border:1.4px solid #8f58ff;
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 25% 0,rgba(116,65,255,.17),transparent 38%),
+    linear-gradient(130deg,#211357,#091641);
+  box-shadow:
+    inset 0 0 16px rgba(113,78,224,.10),
+    0 0 10px rgba(72,48,205,.14);
+}
+
+.home-mobile .hm-trophies-title{
+  grid-template-columns:25px minmax(0,1fr) 13px;
+  gap:7px;
+}
+
+.home-mobile .hm-trophies-title > img{
+  width:24px;
+  height:24px;
+  filter:drop-shadow(0 0 5px rgba(255,195,51,.22));
+}
+
+.home-mobile .hm-trophies-title > span{
+  font-size:.66rem;
+}
+
+.home-mobile .hm-milestones{
+  margin-top:5px;
+}
+
+.home-mobile .hm-milestone-icon{
+  width:27px;
+  height:25px;
+  border-color:#5d50dc;
+}
+
+.home-mobile .hm-milestone-icon img{
+  width:22px;
+  height:21px;
+}
+
+.home-mobile .hm-trophy-track{
+  top:28px;
+  height:4px;
+}
+
+.home-mobile .hm-milestones > span > i{
+  margin-top:4px;
+}
+
+.home-mobile .hm-milestones > span > small{
+  font-size:.42rem;
+}
+
+.home-mobile .hm-inventory{
+  gap:5px;
+}
+
+.home-mobile .hm-inventory > img{
+  width:56px;
+  height:53px;
+  filter:drop-shadow(0 0 7px rgba(158,80,255,.22));
+}
+
+.home-mobile .hm-inventory b{
+  font-size:.66rem;
+}
+
+/* Petite signature sous les deux blocs, comme sur la maquette V2. */
+.home-mobile .hm-bottom::after{
+  content:"✦  Des mots. Des amis. Des fous rires !  ✦";
+  grid-column:1 / -1;
+  margin-top:2px;
+  color:rgba(188,168,236,.58);
+  text-align:center;
+  font-size:.46rem;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+
+/* ---------- Responsive ---------- */
+@media(max-width:370px){
+  .home-mobile{
+    grid-template-rows:50px minmax(268px,1fr) auto auto !important;
+  }
+
+  .home-mobile .hm-header{
+    height:50px;
+    min-height:50px;
+    grid-template-columns:104px minmax(0,1fr) 32px;
+    padding-inline:5px;
+  }
+
+  .home-mobile .hm-avatar{
+    width:43px;
+    height:43px;
+    flex-basis:43px;
+  }
+
+  .home-mobile .hm-profile-copy b{
+    max-width:54px;
+    font-size:.62rem;
+  }
+
+  .home-mobile .hm-resources{
+    width:min(100%,178px);
+    grid-template-columns:52px 64px 56px;
+    gap:3px;
+  }
+
+  .home-mobile #homePlaqueLivesBtn{
+    width:52px;
+    min-width:52px;
+  }
+
+  .home-mobile #homePlaqueCoinsBtn{
+    width:64px;
+    min-width:64px;
+  }
+
+  .home-mobile #homeGemButton{
+    width:56px;
+    min-width:56px;
+  }
+
+  .home-mobile .hm-resources button{
+    height:29px;
+    min-height:29px;
+  }
+
+  .home-mobile .hm-menu-button{
+    width:32px;
+    height:32px;
+  }
+
+  .home-mobile .hm-side button{
+    width:49px;
+    height:55px;
+  }
+
+  .home-mobile .hm-brand{
+    width:60%;
+  }
+
+  .home-mobile .hm-logo{
+    max-width:184px;
+  }
+
+  .home-mobile .hm-book{
+    width:70%;
+    height:70px;
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:68px;
+    padding-inline:8px;
+  }
+
+  .home-mobile .hm-mode-grid{
+    gap:6px;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:108px;
+  }
+
+  .home-mobile .hm-bottom{
+    margin-inline:7px;
+    grid-template-columns:minmax(0,2.25fr) minmax(0,1fr);
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile{
+    grid-template-rows:50px minmax(242px,1fr) auto auto !important;
+  }
+
+  .home-mobile .hm-header{
+    height:50px;
+    min-height:50px;
+  }
+
+  .home-mobile .hm-hero{
+    min-height:242px;
+  }
+
+  .home-mobile .hm-brand{
+    height:62%;
+    transform:translate(-50%,21px);
+  }
+
+  .home-mobile .hm-book{
+    height:62px;
+    transform:translateY(28px) perspective(280px) rotateX(18deg);
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:58px;
+    padding-top:9px;
+    padding-bottom:8px;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:99px;
+  }
+
+  .home-mobile .hm-mode-grid img{
+    width:65px;
+    height:56px;
+  }
+
+  .home-mobile .hm-bottom{
+    margin-top:7px;
+  }
+
+  .home-mobile .hm-bottom > button{
+    min-height:68px;
+  }
+
+  .home-mobile .hm-bottom::after{
+    display:none;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile{
+    grid-template-rows:48px 205px auto auto !important;
+  }
+
+  .home-mobile .hm-header{
+    height:48px;
+    min-height:48px;
+  }
+
+  .home-mobile .hm-avatar{
+    width:41px;
+    height:41px;
+    flex-basis:41px;
+  }
+
+  .home-mobile .hm-hero{
+    min-height:205px;
+  }
+
+  .home-mobile .hm-side{
+    top:12px;
+    gap:8px;
+  }
+
+  .home-mobile .hm-side button{
+    width:46px;
+    height:46px;
+  }
+
+  .home-mobile .hm-brand{
+    transform:translate(-50%,13px);
+  }
+
+  .home-mobile .hm-logo{
+    max-width:156px;
+  }
+
+  .home-mobile .hm-book{
+    width:66%;
+    height:54px;
+    transform:translateY(22px) perspective(260px) rotateX(18deg);
+  }
+
+  .home-mobile .hm-book span{
+    font-size:.54rem;
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:42px;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:89px;
+  }
+
+  .home-mobile .hm-mode-grid img{
+    width:56px;
+    height:48px;
+  }
+
+  .home-mobile .hm-bottom{
+    margin-top:5px;
+  }
+
+  .home-mobile .hm-bottom > button{
+    min-height:58px;
+  }
+}
+
