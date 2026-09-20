@@ -194,36 +194,6 @@ body:has(.quests-v1) .economy-hud{
     0 0 16px rgba(130,72,255,.9);
 }
 
-.qv1-resources{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:9px;
-}
-
-.qv1-resources span{
-  min-width:0;
-  display:flex;
-  align-items:center;
-  gap:3px;
-}
-
-.qv1-resources img{
-  width:25px;
-  height:25px;
-  object-fit:contain;
-  filter:drop-shadow(0 0 5px rgba(255,255,255,.08));
-}
-
-.qv1-resources b{
-  color:#fff;
-  font-size:.88rem;
-  line-height:1;
-  font-weight:1000;
-  white-space:nowrap;
-  text-shadow:0 1px 4px rgba(0,0,0,.38);
-}
-
 /* ---------- Intro ---------- */
 
 .qv1-intro{
@@ -239,13 +209,10 @@ body:has(.quests-v1) .economy-hud{
   flex:0 0 142px;
   height:39px;
   padding:0 9px 0 7px;
-  border:1.25px solid #a342ff;
-  border-radius:22px;
-  background:
-    linear-gradient(90deg,rgba(78,29,163,.87),rgba(15,34,103,.82));
-  box-shadow:
-    inset 0 0 15px rgba(153,65,255,.20),
-    0 0 12px rgba(151,61,255,.16);
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
   display:flex;
   align-items:center;
   gap:7px;
@@ -282,6 +249,11 @@ body:has(.quests-v1) .economy-hud{
   display:block;
 }
 
+
+.qv1-reset-header{
+  justify-self:end;
+  margin:0;
+}
 .qv1-reset b{
   display:block;
   margin-top:3px;
@@ -297,8 +269,8 @@ body:has(.quests-v1) .economy-hud{
 .qv1-chest{
   position:relative;
   min-height:0;
-  width:calc(100% - 9px);
-  margin-left:9px;
+  width:calc(100% - 19px);
+  margin-left:19px;
   padding:14px 4px 13px 21px;
   border:1.6px solid #a33fff;
   border-radius:16px;
@@ -818,17 +790,6 @@ button.qv1-state-button{
 
   .qv1-brand h1{
     font-size:1.20rem;
-  }
-
-  .qv1-resources{gap:5px}
-
-  .qv1-resources img{
-    width:21px;
-    height:21px;
-  }
-
-  .qv1-resources b{
-    font-size:.72rem;
   }
 
   .qv1-daily-copy{

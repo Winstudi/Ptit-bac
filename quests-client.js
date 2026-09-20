@@ -15,20 +15,6 @@
     ).trim();
   }
 
-  function economyState() {
-    try {
-      const live = window.PtitBacEconomy?.state?.();
-      if (live) return live;
-    } catch {}
-
-    return {
-      coins:Number(localStorage.getItem("petitbac_walletBalance") || 0),
-      gems:0,
-      lives:5,
-      maxLives:5
-    };
-  }
-
   function esc(value = "") {
     return String(value).replace(/[&<>"']/g, c => ({
       "&":"&amp;",
@@ -82,18 +68,6 @@
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return mins ? `${hours} h ${mins} min` : `${hours} h`;
-  }
-
-  function resourceMarkup() {
-    const eco = economyState();
-    const lives = Math.max(0, Number(eco.lives) || 0);
-    const maxLives = Math.max(1, Number(eco.maxLives) || 5);
-    return `
-      <div class="qv1-resources">
-        <span><img src="/coin.png" alt=""><b data-qv1-coins>${fmt(eco.coins)}</b></span>
-        <span><img src="/gem.png" alt=""><b data-qv1-gems>${fmt(eco.gems)}</b></span>
-        <span><img src="/heart.png" alt=""><b data-qv1-lives>${lives}/${maxLives}</b></span>
-      </div>`;
   }
 
   function questCardMarkup(quest) {
@@ -170,11 +144,7 @@
             <h1>Quêtes</h1>
           </div>
 
-          ${resourceMarkup()}
-        </header>
-
-        <section class="qv1-intro">
-          <span class="qv1-reset">
+          <span class="qv1-reset qv1-reset-header">
             <span class="qv1-reset-clock" aria-hidden="true">
               <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="7.5"></circle>
@@ -186,7 +156,9 @@
               <b data-qv1-reset>${status ? timeRemaining(status.refreshAt) : "—"}</b>
             </span>
           </span>
-        </section>
+        </header>
+
+        <section class="qv1-intro" aria-hidden="true"></section>
 
         <section class="qv1-chest ${chest.claimable ? "is-ready" : ""}">
           <div class="qv1-chest-copy">
@@ -237,19 +209,8 @@
     bind();
   }
 
-  function refreshResources() {
+  function refreshTimer() {
     if (!document.querySelector(".quests-v1")) return;
-    const eco = economyState();
-    const coin = document.querySelector("[data-qv1-coins]");
-    const gems = document.querySelector("[data-qv1-gems]");
-    const lives = document.querySelector("[data-qv1-lives]");
-
-    if (coin) coin.textContent = fmt(eco.coins);
-    if (gems) gems.textContent = fmt(eco.gems);
-    if (lives) {
-      lives.textContent = `${Math.max(0, Number(eco.lives) || 0)}/${Math.max(1, Number(eco.maxLives) || 5)}`;
-    }
-
     const reset = document.querySelector("[data-qv1-reset]");
     if (reset && questStatus?.refreshAt) {
       reset.textContent = timeRemaining(questStatus.refreshAt);
@@ -265,7 +226,7 @@
         return;
       }
 
-      refreshResources();
+      refreshTimer();
 
       if (
         questStatus?.refreshAt &&
