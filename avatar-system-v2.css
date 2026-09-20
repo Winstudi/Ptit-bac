@@ -511,3 +511,131 @@ html body .wsv1-screen .wsv1-player
 }
 
 @media (prefers-reduced-motion:reduce) {.inventory-v2-spinner {animation:none;}}
+
+/* =========================================================
+   Bandeau Quêtes/Boutique — Inventaire
+   ========================================================= */
+.inventory-v2-header{
+  position:relative;
+  z-index:6;
+  min-height:58px;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  margin-left:-16px;
+  margin-right:-26px;
+  padding:0 26px 0 16px;
+  background:linear-gradient(
+    90deg,
+    rgba(49,19,111,.98) 0%,
+    rgba(32,24,119,.97) 42%,
+    rgba(10,35,104,.96) 100%
+  );
+  box-shadow:
+    10px 0 0 rgba(10,35,104,.96),
+    inset 0 0 18px rgba(107,83,255,.14);
+  overflow:visible;
+}
+
+.inventory-v2-header::before,
+.inventory-v2-header::after{
+  content:"";
+  position:absolute;
+  left:-10px;
+  right:-10px;
+  height:1px;
+  background:rgba(195,58,255,.84);
+  box-shadow:0 0 12px rgba(210,54,255,.42);
+  pointer-events:none;
+  z-index:7;
+}
+
+.inventory-v2-header::before{top:0}
+.inventory-v2-header::after{bottom:0}
+
+.inventory-v2-back{
+  width:42px;
+  height:42px;
+}
+
+.inventory-v2-back img{
+  width:34px;
+  height:34px;
+  filter:drop-shadow(0 0 7px rgba(188,76,255,.55));
+}
+
+.inventory-v2-title{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:9px;
+  text-align:left;
+}
+
+.inventory-v2-title::before{
+  content:"";
+  flex:0 0 36px;
+  width:36px;
+  height:36px;
+  background:url("/inventaire.png") center/contain no-repeat;
+  filter:
+    drop-shadow(0 0 6px rgba(235,82,255,.54))
+    drop-shadow(0 0 10px rgba(94,91,255,.28));
+}
+
+.inventory-v2-title h1{
+  margin:0;
+  color:#fff;
+  font-size:1.40rem;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:-.03em;
+  text-shadow:
+    0 2px 0 #5d20b3,
+    0 0 8px #eb52ff,
+    0 0 15px rgba(129,71,255,.72);
+}
+
+.inventory-v2-title p{
+  display:none !important;
+}
+
+.inventory-v2-header-crown{
+  display:none !important;
+}
+
+@media (max-width:430px){
+  .inventory-v2-header{
+    grid-template-columns:38px minmax(0,1fr);
+    min-height:56px;
+    margin-left:-10px;
+    margin-right:-20px;
+    padding:0 20px 0 10px;
+  }
+
+  .inventory-v2-back{
+    width:38px;
+    height:38px;
+  }
+
+  .inventory-v2-back img{
+    width:31px;
+    height:31px;
+  }
+
+  .inventory-v2-title{
+    gap:7px;
+  }
+
+  .inventory-v2-title::before{
+    flex-basis:32px;
+    width:32px;
+    height:32px;
+  }
+
+  .inventory-v2-title h1{
+    font-size:1.24rem;
+  }
+}
+

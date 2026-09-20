@@ -794,3 +794,11 @@ body:has(.profile-v10) [data-economy-hud] {
   }
 }
 
+/* =========================================================
+   Profil — retirer l'accès admin du haut de page
+   ========================================================= */
+.profile-v10 > .admin-v1-crown-btn,
+.profile-v13 > .admin-v1-crown-btn{
+  display:none !important;
+}
+
