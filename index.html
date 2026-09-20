@@ -1689,6 +1689,80 @@
     }
 
 
+
+    /* =========================================================
+       Réponses — correctif scroll clavier iPhone / Android
+       La zone de jeu suit réellement visualViewport quand le
+       clavier est ouvert, afin que la liste reste scrollable.
+       ========================================================= */
+
+    html.gameplay-flow
+      body:has(.asv1-screen.is-keyboard-open)
+      #app{
+      position:fixed!important;
+      inset:auto!important;
+      top:var(--game-top,0px)!important;
+      right:0!important;
+      bottom:auto!important;
+      left:0!important;
+
+      width:100%!important;
+      height:var(--game-height,100dvh)!important;
+      min-height:0!important;
+      max-height:var(--game-height,100dvh)!important;
+
+      overflow:hidden!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open{
+      width:min(100%,480px)!important;
+      height:100%!important;
+      min-height:0!important;
+      max-height:100%!important;
+
+      /* #app gère déjà le décalage visualViewport. */
+      transform:none!important;
+
+      overflow:hidden!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open
+      > .asv1-list{
+      position:relative!important;
+      flex:1 1 0!important;
+
+      width:100%!important;
+      height:auto!important;
+      min-height:0!important;
+      max-height:none!important;
+
+      overflow-x:hidden!important;
+      overflow-y:scroll!important;
+
+      -webkit-overflow-scrolling:touch!important;
+      touch-action:pan-y!important;
+      overscroll-behavior-y:contain!important;
+
+      scroll-behavior:auto!important;
+      scroll-padding-top:8px!important;
+      scroll-padding-bottom:18px!important;
+    }
+
+    /* Les champs ne doivent jamais bloquer le geste vertical. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open
+      .asv1-row,
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open
+      .asv1-input-wrap,
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open
+      .asv1-input{
+      touch-action:pan-y!important;
+    }
+
   </style>
 </head>
 
