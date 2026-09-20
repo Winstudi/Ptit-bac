@@ -969,3 +969,43 @@ body:has(.ptb-levels-header) .progression-page::after{
   opacity:0 !important;
 }
 
+/* =========================================================
+   NIVEAUX — correction réelle du fond V2
+   progression-client.js injecte après coup un fond !important
+   directement sur .ptb-levels-panel. On surcharge donc CE panneau
+   avec une spécificité supérieure + une URL versionnée anti-cache.
+   ========================================================= */
+
+body:has(.ptb-levels-header)
+.ptb-levels-overlay
+.ptb-levels-panel{
+  background-color:#050d35 !important;
+  background-image:url("/level-background-v1.png?v=levels-bg-v2-20260920") !important;
+  background-position:center center !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
+}
+
+/* Les anciens décors injectés par progression-client.js ne doivent
+   plus recouvrir le nouveau fond. */
+body:has(.ptb-levels-header)
+.ptb-levels-overlay
+.ptb-levels-panel::before,
+body:has(.ptb-levels-header)
+.ptb-levels-overlay
+.ptb-levels-panel::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  opacity:0 !important;
+}
+
+/* Le conteneur qui défile reste transparent :
+   le nouveau fond reste visible derrière les niveaux/récompenses. */
+body:has(.ptb-levels-header)
+.ptb-levels-overlay
+.ptb-levels-scroll{
+  background:transparent !important;
+  background-image:none !important;
+}
+
