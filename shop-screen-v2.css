@@ -715,3 +715,31 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   }
 }
 
+/* =========================================================
+   Offre à l'affiche — B3-P3 / B3-P4 au premier plan
+   ========================================================= */
+
+/* Les visuels des deux cases spéciales ne doivent plus être masqués
+   par les autres éléments internes de la carte. */
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(4) .shop2-dyn-art{
+  position:relative!important;
+  z-index:50!important;
+  overflow:visible!important;
+  isolation:auto!important;
+}
+
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(3) .shop2-dyn-art>img,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(4) .shop2-dyn-art>img{
+  position:relative!important;
+  z-index:51!important;
+}
+
+/* Les textes et le bandeau prix restent derrière le visuel. */
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(3) h3,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(4) h3,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(3) .shop2-dyn-price-row,
+.shop-v2.is-compact-shop-header .shop2-block-3>.shop2-dyn-offer:nth-child(4) .shop2-dyn-price-row{
+  z-index:10!important;
+}
+
