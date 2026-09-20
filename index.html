@@ -307,7 +307,7 @@
 
     @media(max-height:760px){
       .lobby-v5[data-mode="quick"] .quick-ready-bottom-panel{
-        min-height:82px!important;
+        min-height:41px!important;
       }
 
       .lobby-v5[data-mode="quick"] .quick-ready-bottom{
@@ -852,7 +852,7 @@
       top:50%!important;
       width:auto!important;
       height:43px!important;
-      max-width:92px!important;
+      max-width:38px!important;
       max-height:43px!important;
       margin:0!important;
       transform:translate(-50%,-50%)!important;
@@ -1014,7 +1014,7 @@
       align-self:center!important;
       width:auto!important;
       height:43px!important;
-      max-width:92px!important;
+      max-width:38px!important;
       max-height:43px!important;
       margin:0!important;
       object-fit:contain!important;
@@ -1269,12 +1269,12 @@
       inset:auto!important;
       z-index:80!important;
 
-      flex:0 0 116px!important;
+      flex:0 0 86px!important;
       width:calc(100% + 28px)!important;
       min-width:0!important;
       max-width:none!important;
-      height:116px!important;
-      min-height:116px!important;
+      height:86px!important;
+      min-height:86px!important;
 
       margin:0 -14px!important;
       padding:0 14px!important;
@@ -1352,13 +1352,13 @@
       right:14px!important;
 
       width:auto!important;
-      height:116px!important;
-      min-height:116px!important;
+      height:86px!important;
+      min-height:86px!important;
       margin:0!important;
       padding:0!important;
 
       display:grid!important;
-      grid-template-columns:82px 104px!important;
+      grid-template-columns:41px 42px!important;
       align-items:center!important;
       justify-content:space-between!important;
       gap:10px!important;
@@ -1369,20 +1369,18 @@
     /* Lettre actuelle */
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card{
-      width:82px!important;
+      width:41px!important;
       height:82px!important;
-      min-width:82px!important;
-      min-height:82px!important;
+      min-width:41px!important;
+      min-height:41px!important;
       flex:none!important;
       margin:0!important;
-      padding:9px 4px 5px!important;
+      padding:0!important;
 
-      border:1.2px solid #3155a4!important;
-      border-radius:15px!important;
-      background:rgba(8,30,82,.82)!important;
-      box-shadow:
-        inset 0 0 14px rgba(113,63,255,.05),
-        0 0 10px rgba(73,82,213,.08)!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
 
       display:grid!important;
       align-content:center!important;
@@ -1392,18 +1390,14 @@
 
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card small{
-      margin:0!important;
-      color:#d1c2e8!important;
-      font-size:.58rem!important;
-      line-height:1.05!important;
-      font-weight:800!important;
+      display:none!important;
     }
 
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card strong{
       margin-top:5px!important;
       color:#c15cff!important;
-      font-size:2.1rem!important;
+      font-size:1.05rem!important;
       line-height:1!important;
       font-weight:900!important;
       text-shadow:0 0 12px rgba(192,81,255,.58)!important;
@@ -1412,22 +1406,27 @@
     /* Chrono : même cercle et même décompte. */
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
-      width:104px!important;
-      height:104px!important;
-      min-width:104px!important;
-      min-height:104px!important;
-      max-width:104px!important;
-      max-height:104px!important;
+      width:42px!important;
+      height:42px!important;
+      min-width:42px!important;
+      min-height:42px!important;
+      max-width:42px!important;
+      max-height:42px!important;
       flex:none!important;
       margin:0!important;
-      padding:6px!important;
+      padding:3px!important;
       aspect-ratio:1/1!important;
     }
 
     html.gameplay-flow body
       .flow-screen.asv1-screen > .asv1-hero .asv1-timer strong{
-      font-size:1.85rem!important;
+      font-size:.86rem!important;
       line-height:1!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-timer span{
+      display:none!important;
     }
 
     /* La liste et le bouton retrouvent un flux normal sous le bandeau. */
@@ -1462,17 +1461,17 @@
 
     html.gameplay-flow body
       .flow-screen.asv1-screen.is-keyboard-open > .asv1-header{
-      flex-basis:116px!important;
-      height:116px!important;
-      min-height:116px!important;
+      flex-basis:86px!important;
+      height:86px!important;
+      min-height:86px!important;
     }
 
     @media(max-width:370px){
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-header{
-        flex-basis:106px!important;
-        height:106px!important;
-        min-height:106px!important;
+        flex-basis:76px!important;
+        height:76px!important;
+        min-height:76px!important;
         padding-left:10px!important;
         padding-right:10px!important;
       }
@@ -1498,36 +1497,36 @@
         right:10px!important;
         height:106px!important;
         min-height:106px!important;
-        grid-template-columns:74px 92px!important;
+        grid-template-columns:37px 38px!important;
         gap:6px!important;
       }
 
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card{
-        width:74px!important;
-        height:74px!important;
-        min-width:74px!important;
-        min-height:74px!important;
+        width:37px!important;
+        height:37px!important;
+        min-width:37px!important;
+        min-height:37px!important;
       }
 
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card strong{
-        font-size:1.9rem!important;
+        font-size:.95rem!important;
       }
 
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
         width:92px!important;
-        height:92px!important;
-        min-width:92px!important;
-        min-height:92px!important;
+        height:38px!important;
+        min-width:38px!important;
+        min-height:38px!important;
         max-width:92px!important;
-        max-height:92px!important;
+        max-height:38px!important;
       }
 
       html.gameplay-flow body
         .flow-screen.asv1-screen > .asv1-hero .asv1-timer strong{
-        font-size:1.65rem!important;
+        font-size:.78rem!important;
       }
 
       html.gameplay-flow body
