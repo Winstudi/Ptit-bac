@@ -758,6 +758,186 @@
       }
     }
 
+
+    /* =========================================================
+       Choix des catégories — bandeau partagé des salons
+       ========================================================= */
+    html body .cat-v2.cat-prototype{
+      padding-top:0!important;
+    }
+
+    html body .cat-v2.cat-prototype > .cat-v2-top{
+      position:absolute!important;
+      z-index:80!important;
+      top:0!important;
+      left:0!important;
+      right:0!important;
+      width:100%!important;
+      height:48px!important;
+      min-height:48px!important;
+      margin:0!important;
+      padding:0 16px!important;
+      box-sizing:border-box!important;
+
+      display:grid!important;
+      grid-template-columns:42px minmax(0,1fr) auto!important;
+      align-items:center!important;
+      gap:6px!important;
+
+      background:linear-gradient(
+        90deg,
+        rgba(49,19,111,.98) 0%,
+        rgba(32,24,119,.97) 42%,
+        rgba(10,35,104,.96) 100%
+      )!important;
+
+      box-shadow:
+        10px 0 0 rgba(10,35,104,.96),
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+
+      transform:none!important;
+      overflow:visible!important;
+    }
+
+    html body .cat-v2.cat-prototype > .cat-v2-top::before,
+    html body .cat-v2.cat-prototype > .cat-v2-top::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      height:1px;
+      background:rgba(195,58,255,.84);
+      box-shadow:0 0 12px rgba(210,54,255,.42);
+      pointer-events:none;
+      z-index:3;
+    }
+
+    html body .cat-v2.cat-prototype > .cat-v2-top::before{top:0}
+    html body .cat-v2.cat-prototype > .cat-v2-top::after{bottom:0}
+
+    /* Flèche : même rendu que les salons. */
+    html body .cat-v2.cat-prototype .cat-v2-back{
+      grid-column:1!important;
+      justify-self:start!important;
+      width:42px!important;
+      height:42px!important;
+      min-width:42px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      display:grid!important;
+      place-items:center!important;
+    }
+
+    html body .cat-v2.cat-prototype .cat-v2-back img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
+    }
+
+    html body .cat-v2.cat-prototype .cat-v2-back-spacer{
+      grid-column:1!important;
+      width:42px!important;
+      height:42px!important;
+    }
+
+    /* Logo strictement centré dans le bandeau. */
+    html body .cat-v2.cat-prototype > .cat-v2-top .cat-brand{
+      position:absolute!important;
+      z-index:2!important;
+      left:50%!important;
+      top:50%!important;
+      width:auto!important;
+      height:43px!important;
+      max-width:92px!important;
+      max-height:43px!important;
+      margin:0!important;
+      transform:translate(-50%,-50%)!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
+      pointer-events:none!important;
+    }
+
+    /* Solde : pièce + nombre, sans cadre/capsule. */
+    html body .cat-v2.cat-prototype > .cat-v2-top .cat-v2-balance{
+      grid-column:3!important;
+      justify-self:end!important;
+      width:auto!important;
+      min-width:0!important;
+      height:auto!important;
+      min-height:0!important;
+      margin:0!important;
+      padding:0!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:flex-end!important;
+      gap:5px!important;
+
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      color:#fff!important;
+    }
+
+    html body .cat-v2.cat-prototype > .cat-v2-top .cat-v2-balance img{
+      width:27px!important;
+      height:27px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 6px rgba(255,190,46,.30))!important;
+    }
+
+    html body .cat-v2.cat-prototype > .cat-v2-top .cat-v2-balance strong{
+      color:#fff!important;
+      font-size:.88rem!important;
+      line-height:1!important;
+      font-weight:900!important;
+      text-shadow:0 0 7px rgba(132,88,255,.25)!important;
+    }
+
+    /* Garde le contenu sous le nouveau bandeau. */
+    html body .cat-v2.cat-prototype .cat-steps{
+      margin-top:58px!important;
+    }
+
+    @media(max-width:370px){
+      html body .cat-v2.cat-prototype > .cat-v2-top{
+        padding-left:10px!important;
+        padding-right:10px!important;
+        grid-template-columns:38px minmax(0,1fr) auto!important;
+      }
+
+      html body .cat-v2.cat-prototype .cat-v2-back,
+      html body .cat-v2.cat-prototype .cat-v2-back-spacer{
+        width:38px!important;
+        height:38px!important;
+        min-width:38px!important;
+      }
+
+      html body .cat-v2.cat-prototype .cat-v2-back img{
+        width:31px!important;
+        height:31px!important;
+      }
+
+      html body .cat-v2.cat-prototype > .cat-v2-top .cat-brand{
+        height:40px!important;
+        max-height:40px!important;
+        max-width:84px!important;
+      }
+
+      html body .cat-v2.cat-prototype > .cat-v2-top .cat-v2-balance img{
+        width:24px!important;
+        height:24px!important;
+      }
+
+      html body .cat-v2.cat-prototype > .cat-v2-top .cat-v2-balance strong{
+        font-size:.78rem!important;
+      }
+    }
+
   </style>
 </head>
 
@@ -1613,6 +1793,83 @@
         );
       } else {
         startQuickCountdownRuntime();
+      }
+    })();
+  </script>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      let categoryHeaderScheduled = false;
+
+      function categoryHeaderSync() {
+        categoryHeaderScheduled = false;
+
+        const root = document.querySelector(".cat-v2.cat-prototype");
+        if (!root) return;
+
+        const back = root.querySelector("#returnLobbyCategoriesBtn");
+        const backImg = back?.querySelector("img");
+
+        if (backImg && backImg.getAttribute("src") !== "/back-arrow.png") {
+          backImg.src = "/back-arrow.png";
+        }
+
+        /* Fenêtre de confirmation demandée : Annuler / Quitter la partie. */
+        const cancel = root.querySelector("#categoryExitNo");
+        const quit = root.querySelector("#categoryExitHome");
+        const returnLobby = root.querySelector("#categoryExitLobby");
+
+        if (cancel) cancel.textContent = "Annuler";
+        if (quit) quit.textContent = "Quitter la partie";
+
+        /* La flèche sert à quitter la partie, pas à retourner au salon. */
+        if (returnLobby) returnLobby.remove();
+      }
+
+      function categoryHeaderSchedule() {
+        if (categoryHeaderScheduled) return;
+        categoryHeaderScheduled = true;
+        requestAnimationFrame(categoryHeaderSync);
+      }
+
+      function categoryHeaderStart() {
+        categoryHeaderSchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          categoryHeaderSchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          categoryHeaderSchedule
+        );
+
+        try {
+          socket?.on?.("room:state", categoryHeaderSchedule);
+        } catch {}
+
+        const app = document.getElementById("app");
+
+        if (app) {
+          new MutationObserver(categoryHeaderSchedule).observe(app, {
+            subtree:true,
+            childList:true
+          });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          categoryHeaderStart,
+          { once:true }
+        );
+      } else {
+        categoryHeaderStart();
       }
     })();
   </script>
