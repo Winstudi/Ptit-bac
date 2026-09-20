@@ -2385,3 +2385,55 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — ressources / XP / bas de page / cadre modes
+   ========================================================= */
+
+/* Vies / Pièces / Gemmes : cadres -5px en hauteur. */
+.home-mobile .hm-resources button,
+.home-mobile #homePlaqueLivesBtn,
+.home-mobile #homePlaqueCoinsBtn,
+.home-mobile #homeGemButton{
+  height:27px !important;
+  min-height:27px !important;
+}
+
+/* Barre XP : encore plus fine.
+   Elle était déjà à 2px dans la version précédente :
+   on la ramène au minimum visible de 1px. */
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  height:1px !important;
+  min-height:1px !important;
+}
+
+/* Voie des trophées + Inventaire : remontés de 15px. */
+.home-mobile .hm-bottom{
+  transform:translateY(-15px) !important;
+}
+
+/* Cadre "Choisis ton mode de jeu" :
+   le bas du cadre reste à seulement 5px sous les 3 cartes. */
+.home-mobile .hm-modes{
+  padding-bottom:5px !important;
+}
+
+/* Évite qu'une ancienne règle responsive réaugmente le bas du cadre. */
+@media(max-width:370px),
+       (max-height:760px),
+       (max-height:670px){
+  .home-mobile .hm-modes{
+    padding-bottom:5px !important;
+  }
+}
+
+/* Ressources sur petit écran : même réduction de 5px. */
+@media(max-width:370px){
+  .home-mobile .hm-resources button,
+  .home-mobile #homePlaqueLivesBtn,
+  .home-mobile #homePlaqueCoinsBtn,
+  .home-mobile #homeGemButton{
+    height:24px !important;
+    min-height:24px !important;
+  }
+}
+
