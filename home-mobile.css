@@ -2210,3 +2210,89 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — ajustements niveaux / raccourcis / modes
+   ========================================================= */
+
+/* Bloc niveau : étoile -30% et barre XP +15px vers la droite. */
+.home-mobile .hm-profile-copy small{
+  transform:scale(.7) !important;
+  transform-origin:left center !important;
+}
+
+.home-mobile img[src*="level-badge"],
+.home-mobile .ptb-home-level-badge,
+.home-mobile .ptb-home-level-star{
+  transform:scale(.7) !important;
+  transform-origin:center !important;
+}
+
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  width:77px !important;
+  max-width:77px !important;
+}
+
+/* Quêtes / Magasin / Info / Amis : texte -20% et remonté de 4px. */
+.home-mobile .hm-side b{
+  font-size:.472rem !important;
+  transform:translateY(-4px) !important;
+}
+
+/* Livre décoratif descendu de 40px. */
+.home-mobile .hm-book{
+  transform:translateY(74px) perspective(300px) rotateX(18deg) !important;
+}
+
+/* Bloc modes de jeu descendu de 20px. */
+.home-mobile .hm-modes{
+  margin-top:95px !important;
+}
+
+/* Cartes Jouer / Créer / Rejoindre : +20px de hauteur vers le bas. */
+.home-mobile .hm-mode-grid button{
+  min-height:136px !important;
+}
+
+/* Ajustements responsive : on conserve exactement les mêmes décalages. */
+@media(max-width:370px){
+  .home-mobile .hm-book{
+    transform:translateY(74px) perspective(300px) rotateX(18deg) !important;
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:88px !important;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:128px !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-book{
+    transform:translateY(68px) perspective(280px) rotateX(18deg) !important;
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:78px !important;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:119px !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-book{
+    transform:translateY(62px) perspective(260px) rotateX(18deg) !important;
+  }
+
+  .home-mobile .hm-modes{
+    margin-top:62px !important;
+  }
+
+  .home-mobile .hm-mode-grid button{
+    min-height:109px !important;
+  }
+}
+
