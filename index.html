@@ -171,7 +171,8 @@
     }
 
     /* =========================================================
-       Partie Rapide — paramètres en violet néon
+       Partie Rapide — paramètres : cadre néon + séparateurs
+       Textes et icônes conservés dans leurs couleurs d'origine.
        ========================================================= */
     .lobby-v5[data-mode="quick"] .lobby-v5-settings-panel{
       border:1.5px solid #b94cff!important;
@@ -181,28 +182,6 @@
       box-shadow:
         0 0 12px rgba(193,66,255,.28),
         inset 0 0 20px rgba(174,60,255,.10)!important;
-    }
-
-    .lobby-v5[data-mode="quick"] .lobby-v5-settings-panel h2{
-      color:#d86cff!important;
-      text-shadow:
-        0 0 5px rgba(216,108,255,.82),
-        0 0 11px rgba(177,57,255,.52)!important;
-    }
-
-    .lobby-v5[data-mode="quick"] .lobby-v5-settings-panel h2 img,
-    .lobby-v5[data-mode="quick"] .lobby-v5-setting-icon{
-      filter:
-        brightness(0)
-        saturate(100%)
-        invert(50%)
-        sepia(97%)
-        saturate(4145%)
-        hue-rotate(253deg)
-        brightness(111%)
-        contrast(105%)
-        drop-shadow(0 0 4px rgba(207,77,255,.78))
-        drop-shadow(0 0 8px rgba(167,54,255,.42))!important;
     }
 
     .lobby-v5[data-mode="quick"] .lobby-v5-settings-grid{
@@ -217,35 +196,50 @@
       box-shadow:none!important;
     }
 
-    /* Traits néon 2px × 10px à la place des cadres individuels. */
+    /* Séparateurs néon : 2px de large × 30px de haut. */
     .lobby-v5[data-mode="quick"] .lobby-v5-setting-card:not(:last-child)::after{
       content:"";
       position:absolute;
       right:-1px;
       top:50%;
-      width:2px;
-      height:30px;
+      width:2px!important;
+      height:30px!important;
+      min-height:30px!important;
+      max-height:30px!important;
       border-radius:999px;
-      background:#d35cff;
+      background:#d35cff!important;
       box-shadow:
         0 0 4px #d35cff,
         0 0 9px rgba(196,66,255,.88),
-        0 0 14px rgba(149,48,255,.50);
+        0 0 14px rgba(149,48,255,.50)!important;
       transform:translateY(-50%);
       pointer-events:none;
     }
 
-    .lobby-v5[data-mode="quick"] .lobby-v5-setting-card small{
-      color:#c976ff!important;
-      text-shadow:0 0 6px rgba(193,77,255,.45)!important;
+    /* Restauration explicite des couleurs d'origine. */
+    .lobby-v5[data-mode="quick"] .lobby-v5-settings-panel h2{
+      color:#fff!important;
+      text-shadow:none!important;
     }
 
-    .lobby-v5[data-mode="quick"] .lobby-v5-setting-value strong,
+    .lobby-v5[data-mode="quick"] .lobby-v5-settings-panel h2 img,
+    .lobby-v5[data-mode="quick"] .lobby-v5-setting-icon{
+      filter:none!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .lobby-v5-setting-card small{
+      color:#adbbe1!important;
+      text-shadow:none!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .lobby-v5-setting-value strong{
+      color:#fff!important;
+      text-shadow:none!important;
+    }
+
     .lobby-v5[data-mode="quick"] .lobby-v5-setting-card.is-difficulty .lobby-v5-setting-value strong{
-      color:#e08cff!important;
-      text-shadow:
-        0 0 5px rgba(224,140,255,.72),
-        0 0 10px rgba(185,62,255,.42)!important;
+      color:#63e8c9!important;
+      text-shadow:none!important;
     }
 
   </style>
