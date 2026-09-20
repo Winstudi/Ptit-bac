@@ -412,6 +412,352 @@
       }
     }
 
+
+    /* =========================================================
+       Salon privé — bandeau / paramètres / couronne / tags PNG
+       ========================================================= */
+
+    /* ---------- Bandeau supérieur privé ---------- */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode){
+      padding-top:0!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header{
+      position:relative!important;
+      z-index:20!important;
+      width:calc(100% + 24px)!important;
+      min-height:48px!important;
+      height:48px!important;
+      margin:0 -12px!important;
+      padding:0 12px!important;
+      display:grid!important;
+      grid-template-columns:42px minmax(0,1fr) auto!important;
+      align-items:center!important;
+      gap:6px!important;
+      overflow:visible!important;
+      background:linear-gradient(
+        90deg,
+        rgba(49,19,111,.98) 0%,
+        rgba(32,24,119,.97) 42%,
+        rgba(10,35,104,.96) 100%
+      )!important;
+      box-shadow:
+        10px 0 0 rgba(10,35,104,.96),
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header::before,
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header::after{
+      content:"";
+      position:absolute;
+      left:-10px;
+      right:-10px;
+      height:1px;
+      background:rgba(195,58,255,.84);
+      box-shadow:0 0 12px rgba(210,54,255,.42);
+      pointer-events:none;
+      z-index:7;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header::before{top:0}
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header::after{bottom:0}
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header > #lobbyV5Leave{
+      width:42px!important;
+      height:42px!important;
+      padding:0!important;
+      border:0!important;
+      background:transparent!important;
+      display:grid!important;
+      place-items:center!important;
+      justify-self:start!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header > #lobbyV5Leave img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-title-mode{
+      min-width:0!important;
+      display:flex!important;
+      align-items:center!important;
+      gap:6px!important;
+      overflow:hidden!important;
+    }
+
+    /* Affiche exactement "Salon Privé". */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-title-mode > h1{
+      flex:0 1 auto!important;
+      min-width:0!important;
+      margin:0!important;
+      font-size:0!important;
+      line-height:1!important;
+      white-space:nowrap!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-title-mode > h1::after{
+      content:"Salon Privé";
+      display:inline-block;
+      color:#fff;
+      font-size:1.12rem;
+      line-height:1;
+      font-weight:1000;
+      letter-spacing:-.03em;
+      white-space:nowrap;
+      text-shadow:
+        0 2px 0 #5d20b3,
+        0 0 8px #eb52ff,
+        0 0 15px rgba(129,71,255,.72);
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-mode-toggle{
+      flex:none!important;
+      min-width:54px!important;
+      height:24px!important;
+      padding:0 6px!important;
+      gap:4px!important;
+      border-color:#8d67df!important;
+      background:rgba(21,22,71,.70)!important;
+      color:#e3dcff!important;
+      font-size:9px!important;
+      box-shadow:0 0 8px rgba(168,79,255,.10)!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header .pl-header-code{
+      width:auto!important;
+      min-width:62px!important;
+      height:32px!important;
+      padding:2px 7px!important;
+      border:1px solid rgba(142,86,220,.78)!important;
+      border-radius:10px!important;
+      background:rgba(14,22,75,.68)!important;
+      display:grid!important;
+      grid-template-columns:auto 16px!important;
+      gap:0 5px!important;
+      text-align:left!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header .pl-header-code small{
+      font-size:8px!important;
+      line-height:10px!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header .pl-header-code strong{
+      font-size:11px!important;
+      line-height:13px!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      > .pl-header .pl-header-code img{
+      width:16px!important;
+      height:16px!important;
+    }
+
+    /* ---------- Paramètres : même rendu que Partie Rapide ---------- */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-settings{
+      border:1.5px solid #b94cff!important;
+      border-radius:14px!important;
+      background:
+        radial-gradient(circle at 50% 0%,rgba(180,61,255,.10),transparent 56%),
+        linear-gradient(145deg,rgba(26,20,82,.96),rgba(11,22,68,.96))!important;
+      box-shadow:
+        0 0 12px rgba(193,66,255,.28),
+        inset 0 0 20px rgba(174,60,255,.10)!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid{
+      gap:0!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid .lobby-v5-setting-card{
+      position:relative!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid .lobby-v5-setting-card:not(:last-child)::after{
+      content:"";
+      position:absolute;
+      right:-1px;
+      top:50%;
+      width:2px!important;
+      height:30px!important;
+      min-height:30px!important;
+      max-height:30px!important;
+      border-radius:999px;
+      background:#d35cff!important;
+      box-shadow:
+        0 0 4px #d35cff,
+        0 0 9px rgba(196,66,255,.88),
+        0 0 14px rgba(149,48,255,.50)!important;
+      transform:translateY(-50%);
+      pointer-events:none;
+    }
+
+    /* Garde les couleurs d'origine des textes / icônes. */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-settings h2{
+      color:#fff!important;
+      text-shadow:none!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-settings h2 > img,
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid .lobby-v5-setting-icon{
+      filter:none!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid small{
+      color:#adbbe1!important;
+      text-shadow:none!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid strong{
+      color:#fff!important;
+      text-shadow:none!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-setting-grid .is-difficulty strong{
+      color:#63e8c9!important;
+      text-shadow:none!important;
+    }
+
+    /* ---------- Couronne à droite du pseudo ---------- */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-player-head{
+      justify-content:flex-start!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-player-head > strong{
+      flex:0 1 auto!important;
+      max-width:calc(100% - 26px)!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-player-head > .pl-host-crown-inline{
+      width:18px!important;
+      height:18px!important;
+      margin-left:5px!important;
+      flex:none!important;
+      display:block!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 5px rgba(255,196,64,.30))!important;
+    }
+
+    /* ---------- Tags PNG sans cadre ---------- */
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-player-title.private-tag-image{
+      width:auto!important;
+      max-width:100%!important;
+      min-height:20px!important;
+      height:20px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      overflow:visible!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-player-title.private-tag-image > img{
+      display:block!important;
+      width:auto!important;
+      max-width:100%!important;
+      height:20px!important;
+      max-height:20px!important;
+      margin:0!important;
+      padding:0!important;
+      border:0!important;
+      object-fit:contain!important;
+      object-position:left center!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-profile-v2-title-row .pl-player-title.private-tag-image{
+      min-height:25px!important;
+      height:25px!important;
+    }
+
+    html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+      .pl-profile-v2-title-row .pl-player-title.private-tag-image > img{
+      height:25px!important;
+      max-height:25px!important;
+    }
+
+    @media(max-width:370px){
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        > .pl-header{
+        grid-template-columns:38px minmax(0,1fr) auto!important;
+        gap:4px!important;
+        padding-left:9px!important;
+        padding-right:9px!important;
+      }
+
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        .pl-title-mode{
+        gap:4px!important;
+      }
+
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        .pl-title-mode > h1::after{
+        font-size:.94rem;
+      }
+
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        .pl-mode-toggle{
+        min-width:48px!important;
+        height:22px!important;
+        padding:0 5px!important;
+        font-size:8px!important;
+      }
+
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        > .pl-header .pl-header-code{
+        min-width:55px!important;
+        padding-left:5px!important;
+        padding-right:5px!important;
+      }
+
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        .pl-player-title.private-tag-image,
+      html body main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)
+        .pl-player-title.private-tag-image > img{
+        height:16px!important;
+        min-height:16px!important;
+        max-height:16px!important;
+      }
+    }
+
   </style>
 </head>
 
@@ -824,6 +1170,240 @@
         );
       } else {
         quickBottomReadyStart();
+      }
+    })();
+  </script>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      let privateLobbyVisualScheduled = false;
+
+      function privateLobbyVisualSchedule() {
+        if (privateLobbyVisualScheduled) return;
+        privateLobbyVisualScheduled = true;
+
+        requestAnimationFrame(() => {
+          privateLobbyVisualScheduled = false;
+          privateLobbyVisualSync();
+        });
+      }
+
+      function privateLobbyTagFallbackName(tagId, tag) {
+        if (tag?.name) return String(tag.name);
+
+        return String(tagId || "")
+          .replace(/^tag[_-]?/i, "")
+          .replace(/[_-]+/g, " ")
+          .replace(/\b\w/g, char => char.toUpperCase())
+          .trim();
+      }
+
+      function privateLobbyApplyTag(target, tagId, tag) {
+        if (!target) return;
+
+        const asset = String(tag?.asset || "").trim();
+        const label = privateLobbyTagFallbackName(tagId, tag);
+
+        /* Aucun PNG : on garde le tag texte actuel. */
+        if (!asset) {
+          if (target.dataset.privateTagAsset) {
+            target.classList.remove("private-tag-image");
+            delete target.dataset.privateTagAsset;
+
+            const strong = document.createElement("strong");
+            strong.textContent = label;
+            target.replaceChildren(strong);
+          }
+          return;
+        }
+
+        if (
+          target.dataset.privateTagAsset === asset &&
+          target.querySelector(":scope > img")
+        ) {
+          return;
+        }
+
+        const img = document.createElement("img");
+        img.src = asset;
+        img.alt = label;
+        img.draggable = false;
+
+        /* Si l'image ne charge pas, retour automatique au texte. */
+        img.addEventListener(
+          "error",
+          () => {
+            if (!target.isConnected) return;
+
+            target.classList.remove("private-tag-image");
+            delete target.dataset.privateTagAsset;
+
+            const strong = document.createElement("strong");
+            strong.textContent = label;
+            target.replaceChildren(strong);
+          },
+          { once:true }
+        );
+
+        target.classList.add("private-tag-image");
+        target.dataset.privateTagAsset = asset;
+        target.replaceChildren(img);
+      }
+
+      function privateLobbyMoveHostCrown(root) {
+        root
+          .querySelectorAll(".pl-player-v2.is-host")
+          .forEach(card => {
+            const head = card.querySelector(".pl-player-head");
+            const crown = card.querySelector(".pl-host-crown-inline");
+
+            if (!head || !crown) return;
+
+            if (crown.parentElement !== head) {
+              head.appendChild(crown);
+            }
+          });
+      }
+
+      function privateLobbySyncTags(root) {
+        let catalog = {};
+        let players = [];
+
+        try {
+          catalog = window.PtitBacInventory?.tags || {};
+          players = Array.isArray(session?.state?.players)
+            ? session.state.players
+            : [];
+        } catch {}
+
+        const myId = (() => {
+          try {
+            return String(session?.playerId || "");
+          } catch {
+            return "";
+          }
+        })();
+
+        root
+          .querySelectorAll(".pl-player-v2[data-lobby-player-profile]")
+          .forEach(card => {
+            const playerId =
+              String(card.dataset.lobbyPlayerProfile || "");
+
+            const player =
+              players.find(
+                item => String(item?.id || "") === playerId
+              ) || null;
+
+            let tagId = String(player?.tagId || "").trim();
+
+            if (!tagId && playerId === myId) {
+              try {
+                tagId = String(
+                  window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+                ).trim();
+              } catch {}
+            }
+
+            if (!tagId) return;
+
+            const target = card.querySelector(
+              ".pl-player-title-row .pl-player-title"
+            );
+
+            privateLobbyApplyTag(
+              target,
+              tagId,
+              catalog?.[tagId] || null
+            );
+          });
+
+        /* Même rendu dans la fenêtre profil si elle est ouverte. */
+        const modalTarget = root.querySelector(
+          ".pl-profile-v2-title-row .pl-player-title"
+        );
+
+        if (modalTarget) {
+          try {
+            const modalName =
+              root.querySelector(".pl-profile-v2-name-row > strong")
+                ?.textContent
+                ?.trim() || "";
+
+            const player = players.find(
+              item => String(item?.name || "").trim() === modalName
+            );
+
+            let tagId = String(player?.tagId || "").trim();
+
+            if (
+              !tagId &&
+              String(player?.id || "") === myId
+            ) {
+              tagId = String(
+                window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+              ).trim();
+            }
+
+            if (tagId) {
+              privateLobbyApplyTag(
+                modalTarget,
+                tagId,
+                catalog?.[tagId] || null
+              );
+            }
+          } catch {}
+        }
+      }
+
+      function privateLobbyVisualSync() {
+        const root = document.querySelector(
+          'main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)'
+        );
+
+        if (!root) return;
+
+        privateLobbyMoveHostCrown(root);
+        privateLobbySyncTags(root);
+      }
+
+      function privateLobbyVisualStart() {
+        privateLobbyVisualSchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          privateLobbyVisualSchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          privateLobbyVisualSchedule
+        );
+
+        try {
+          socket?.on?.("room:state", privateLobbyVisualSchedule);
+        } catch {}
+
+        const app = document.getElementById("app");
+        if (app) {
+          new MutationObserver(privateLobbyVisualSchedule).observe(app, {
+            subtree:true,
+            childList:true
+          });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          privateLobbyVisualStart,
+          { once:true }
+        );
+      } else {
+        privateLobbyVisualStart();
       }
     })();
   </script>
