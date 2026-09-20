@@ -713,3 +713,119 @@ html body .wsv1-screen .wsv1-player
   }
 }
 
+/* =========================================================
+   Inventaire — bandeau plus fin + aperçu joueur compact
+   ========================================================= */
+
+/* Bandeau : -10px de hauteur et collé en haut de la page. */
+.inventory-v2-page{
+  padding-top:0 !important;
+}
+
+.inventory-v2-header{
+  min-height:48px !important;
+  height:48px !important;
+  margin-top:0 !important;
+}
+
+/* Aperçu joueur : largeur réduite de 50% et bloc centré. */
+.inventory-v2-preview,
+.inventory-v2-preview.is-minimal{
+  width:50% !important;
+  max-width:50% !important;
+  min-height:96px;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  padding:9px 10px !important;
+  grid-template-columns:76px minmax(0,1fr) !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+
+/* Avatar + cadre restent à gauche. */
+.inventory-v2-preview-avatar{
+  justify-self:center !important;
+}
+
+/* Pseudo centré, tag juste dessous. */
+.inventory-v2-preview-copy{
+  min-width:0;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+.inventory-v2-preview-copy > small{
+  display:none !important;
+}
+
+.inventory-v2-preview-copy > strong{
+  width:100%;
+  max-width:100%;
+  text-align:center !important;
+}
+
+.inv-tag.inv-tag-preview{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+/* Version mobile : bandeau toujours 10px plus bas que l'ancien 56px => 46px. */
+@media(max-width:430px){
+  .inventory-v2-page{
+    padding-top:0 !important;
+  }
+
+  .inventory-v2-header{
+    min-height:46px !important;
+    height:46px !important;
+  }
+
+  .inventory-v2-preview,
+  .inventory-v2-preview.is-minimal{
+    width:50% !important;
+    max-width:50% !important;
+    grid-template-columns:68px minmax(0,1fr) !important;
+    gap:6px !important;
+    padding:8px !important;
+  }
+
+  .inventory-v2-preview-avatar{
+    width:64px !important;
+    height:64px !important;
+  }
+
+  .inventory-v2-preview-avatar > img{
+    width:60px !important;
+    height:60px !important;
+  }
+
+  .inventory-v2-preview-copy > strong{
+    font-size:1rem !important;
+  }
+}
+
+@media(max-width:350px){
+  .inventory-v2-preview,
+  .inventory-v2-preview.is-minimal{
+    grid-template-columns:60px minmax(0,1fr) !important;
+    gap:4px !important;
+    padding:7px !important;
+  }
+
+  .inventory-v2-preview-avatar{
+    width:56px !important;
+    height:56px !important;
+  }
+
+  .inventory-v2-preview-avatar > img{
+    width:52px !important;
+    height:52px !important;
+  }
+
+  .inventory-v2-preview-copy > strong{
+    font-size:.92rem !important;
+  }
+}
+
