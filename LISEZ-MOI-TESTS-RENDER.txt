@@ -1,0 +1,41 @@
+P’TIT BAC — CORRECTIF DES TESTS DE DÉPLOIEMENT
+Base : bafe742f6d0af934cd75e9475446ea97b2014ad9.
+
+Décompresser le ZIP et déposer les quatre fichiers à la racine du dépôt GitHub.
+Remplacer les fichiers existants et ajouter les deux nouveaux fichiers.
+Conserver la commande de build complète déjà renseignée dans Render.
+Redéployer le dernier commit. Ne pas enlever npm test de la commande.
+Aucune modification de DATABASE_URL ni des autres variables Render n’est nécessaire.
+
+CAUSES
+Sept tests de sécurité utilisaient des assertions synchrones prévues sans base,
+mais héritaient de DATABASE_URL sur Render, ce qui activait les vérifications
+asynchrones de sessions contre la base réelle. Ces sept échecs ont été reproduits
+avec une URL de base fictive, sans accès à votre Supabase.
+Le test SQL supposait que deux transactions d’économie reviendraient dans leur
+ordre d’insertion alors que leur created_at est identique dans la transaction.
+
+CORRECTIONS
+npm test lance désormais toute la suite avec un environnement isolé, sans URL
+de production, sans clés IA et sans paramètres applicatifs de l’hébergement.
+Cela ne change pas l’environnement utilisé ensuite par npm start.
+Le test SQL retrouve les opérations par leur clé unique et vérifie toujours
+les deux montants, les types, l’idempotence et le rollback.
+Le pool SQL du test est fermé même si une assertion échoue.
+Le test PostgreSQL distant n’utilise plus DATABASE_URL. Pour le lancer
+volontairement hors Render sur une base dédiée avec le schéma préparé :
+PTITBAC_TEST_DATABASE_URL doit désigner cette base, puis npm run test:postgres.
+Ne pas y mettre l’adresse de la base des joueurs.
+Le lancement distant est refusé sur Render et si les deux URL sont identiques.
+
+VALIDATION
+212 tests réussis, aucun échec, 1 test distant ignoré faute de base de test dédiée.
+Suite exécutée avec des variables simulant un environnement de production.
+Vérifications des sources et du build de production réussies.
+Le test SQL corrigé a aussi été exécuté avec PostgreSQL embarqué PGlite,
+en imposant volontairement l’ordre inverse des opérations : réussite et
+rollback vérifié. Aucun accès à votre base privée pendant ces vérifications.
+Les autres sept erreurs des logs complets n’étaient pas fournies ; les sept
+échecs de sécurité reproduits sont cohérents avec le total annoncé.
+
+Ce ZIP modifie uniquement les tests et leur lancement, pas le jeu ni son visuel.

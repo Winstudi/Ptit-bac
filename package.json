@@ -7,10 +7,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test *.test.cjs",
+    "test": "node run-tests.cjs",
     "check": "node ci-check.cjs",
     "check:production": "node ci-check.cjs --production",
-    "ci": "npm test && npm run check"
+    "ci": "npm test && npm run check",
+    "test:postgres": "node run-tests.cjs --postgres"
   },
   "engines": {
     "node": "22.x"
