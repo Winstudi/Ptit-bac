@@ -1228,3 +1228,18 @@ html .friends-mobile .friends-header-code small{font-size:9px;color:#bca2df;line
 html .friends-mobile .friends-header-code strong{font-size:15px;letter-spacing:1px;line-height:1.2}
 html .friends-mobile .friends-header-code svg{width:18px;height:18px;fill:none;stroke:#c790ff;stroke-width:1.8}
 html .friends-mobile .friends-header-code:disabled{opacity:.5}
+
+/* Bandeau Quêtes/Boutique — Amis */
+html .friends-mobile .friends-v2-header{position:relative!important;z-index:6!important;height:40px!important;min-height:40px!important;width:calc(100% + 24px)!important;max-width:none!important;margin:0 0 10px -12px!important;padding:0 8px!important;display:grid!important;grid-template-columns:28px minmax(0,1fr) auto!important;align-items:center!important;gap:6px!important;overflow:visible!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,rgba(49,19,111,.98) 0%,rgba(32,24,119,.97) 42%,rgba(10,35,104,.96) 100%)!important;box-shadow:10px 0 0 rgba(10,35,104,.96),inset 0 0 18px rgba(107,83,255,.14)!important}
+html .friends-mobile .friends-v2-header::before,html .friends-mobile .friends-v2-header::after{content:"";position:absolute;left:-10px;right:-10px;height:1px;background:rgba(195,58,255,.84);box-shadow:0 0 12px rgba(210,54,255,.42);pointer-events:none;z-index:7}
+html .friends-mobile .friends-v2-header::before{top:0}html .friends-mobile .friends-v2-header::after{bottom:0}
+html .friends-mobile .friends-v2-back{width:28px!important;height:28px!important;padding:0!important}
+html .friends-mobile .friends-v2-back img{width:27px!important;height:27px!important;filter:drop-shadow(0 0 7px rgba(188,76,255,.55))}
+html .friends-mobile .friends-v2-title{min-width:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:4px!important;text-align:left!important}
+html .friends-mobile .friends-v2-title::before{content:"";flex:0 0 27px;width:27px;height:27px;background:url("/friends.png") center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(235,82,255,.62)) drop-shadow(0 0 10px rgba(94,91,255,.34))}
+html .friends-mobile .friends-v2-title h1{margin:0!important;color:#fff!important;font-size:1.144rem!important;line-height:1!important;font-weight:1000!important;letter-spacing:-.035em!important;text-align:left!important;white-space:nowrap!important;position:relative!important;top:1px!important;text-shadow:0 2px 0 #5d20b3,0 0 8px #eb52ff,0 0 15px rgba(129,71,255,.92)!important}
+html .friends-mobile .friends-header-code{justify-self:end!important;min-width:0!important;min-height:25px!important;height:25px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;gap:4px!important}
+html .friends-mobile .friends-header-code>span{gap:0!important;text-align:right!important}
+html .friends-mobile .friends-header-code small{font-size:8px!important;color:#c7b9f1!important;line-height:1!important}
+html .friends-mobile .friends-header-code strong{font-size:13px!important;letter-spacing:.8px!important;line-height:1.1!important}
+html .friends-mobile .friends-header-code svg{width:17px!important;height:17px!important;stroke:#d69cff!important}
