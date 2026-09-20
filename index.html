@@ -242,6 +242,80 @@
       text-shadow:none!important;
     }
 
+
+    /* =========================================================
+       Partie Rapide — bouton Prêt en bas dès 2 joueurs
+       ========================================================= */
+    .lobby-v5[data-mode="quick"].quick-ready-bottom-active
+      .quick-self-row > .quick-ready-btn{
+      display:none!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-ready-bottom-panel{
+      flex:0 0 auto!important;
+      width:100%!important;
+      min-height:96px!important;
+      margin:auto 0 0!important;
+      display:grid!important;
+      place-items:center!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-ready-bottom{
+      position:static!important;
+      right:auto!important;
+      bottom:auto!important;
+      width:100%!important;
+      min-width:0!important;
+      height:58px!important;
+      min-height:58px!important;
+      margin:0!important;
+      padding:0 18px!important;
+      border:1.5px solid #a95cff!important;
+      border-radius:18px!important;
+      background:
+        linear-gradient(180deg,rgba(91,48,171,.96),rgba(48,35,122,.98))!important;
+      color:#fff!important;
+      box-shadow:
+        0 0 15px rgba(174,70,255,.20),
+        inset 0 0 15px rgba(199,111,255,.08)!important;
+      display:flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:8px!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-ready-bottom span{
+      font-size:1rem!important;
+      font-weight:1000!important;
+      line-height:1!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-ready-bottom strong{
+      font-size:.95rem!important;
+      line-height:1!important;
+      font-weight:1000!important;
+      letter-spacing:.01em!important;
+    }
+
+    .lobby-v5[data-mode="quick"] .quick-ready-bottom.is-ready{
+      border-color:#62dcb2!important;
+      background:linear-gradient(180deg,#1a6558,#154f47)!important;
+      box-shadow:
+        0 0 15px rgba(98,220,178,.20),
+        inset 0 0 14px rgba(125,255,214,.07)!important;
+    }
+
+    @media(max-height:760px){
+      .lobby-v5[data-mode="quick"] .quick-ready-bottom-panel{
+        min-height:82px!important;
+      }
+
+      .lobby-v5[data-mode="quick"] .quick-ready-bottom{
+        height:52px!important;
+        min-height:52px!important;
+      }
+    }
+
   </style>
 </head>
 
@@ -281,5 +355,230 @@
   <script defer src="/scoreboard-screen-v1.js?v=1.48.0"></script>
   <script defer src="/final-screen-v1.js?v=1.48.0"></script>
   <script defer src="/wallet-client.js?v=1.48.0"></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      let quickBottomReadyScheduled = false;
+
+      function quickBottomReadySchedule() {
+        if (quickBottomReadyScheduled) return;
+        quickBottomReadyScheduled = true;
+
+        requestAnimationFrame(() => {
+          quickBottomReadyScheduled = false;
+          quickBottomReadySync();
+        });
+      }
+
+      function quickBottomReadySearchMarkup() {
+        return `
+          <section class="quick-search-panel" aria-live="polite">
+            <div class="quick-search-icon" aria-hidden="true">
+              <img src="/friends.png" alt="">
+              <span></span>
+            </div>
+
+            <div class="quick-search-copy">
+              <strong>Recherche d’autres joueurs…</strong>
+              <small>Tu peux annuler sans perdre de vie.</small>
+
+              <div class="quick-search-dots">
+                <i></i><i></i><i></i>
+              </div>
+
+              <button
+                id="quickCancelSearch"
+                class="quick-cancel-search"
+                type="button"
+              >
+                <b>×</b>
+                <span>Annuler la recherche</span>
+              </button>
+            </div>
+          </section>
+        `;
+      }
+
+      function quickBottomReadyBindCancel(root) {
+        const cancel = root?.querySelector("#quickCancelSearch");
+        if (!cancel || cancel.dataset.quickBottomReadyBound === "1") return;
+
+        cancel.dataset.quickBottomReadyBound = "1";
+        cancel.addEventListener("click", () => {
+          root.querySelector("#lobbyV5Leave")?.click();
+        });
+      }
+
+      function quickBottomReadyMirror(source, target) {
+        if (!source || !target) return;
+
+        const ready = source.classList.contains("is-ready");
+        const starting = source.classList.contains("is-starting");
+        const pressed = source.getAttribute("aria-pressed") || "false";
+
+        target.classList.toggle("is-ready", ready);
+        target.classList.toggle("is-starting", starting);
+
+        if (target.getAttribute("aria-pressed") !== pressed) {
+          target.setAttribute("aria-pressed", pressed);
+        }
+
+        if (target.disabled !== source.disabled) {
+          target.disabled = source.disabled;
+        }
+
+        if (target.innerHTML !== source.innerHTML) {
+          target.innerHTML = source.innerHTML;
+        }
+      }
+
+      function quickBottomReadyEnsureSearch(root) {
+        root.classList.remove("quick-ready-bottom-active");
+
+        root.querySelector(".quick-ready-bottom-panel")?.remove();
+
+        if (root.querySelector(".quick-search-panel")) {
+          quickBottomReadyBindCancel(root);
+          return;
+        }
+
+        const actions = root.querySelector(".lobby-v5-actions");
+        if (actions) {
+          actions.outerHTML = quickBottomReadySearchMarkup();
+        } else {
+          root
+            .querySelector(".lobby-v5-players-section")
+            ?.insertAdjacentHTML("afterend", quickBottomReadySearchMarkup());
+        }
+
+        quickBottomReadyBindCancel(root);
+      }
+
+      function quickBottomReadyEnsureButton(root, sourceButton) {
+        if (!sourceButton) return;
+
+        root.classList.add("quick-ready-bottom-active");
+
+        let panel = root.querySelector(".quick-ready-bottom-panel");
+
+        if (!panel) {
+          const markup = `
+            <section class="quick-ready-bottom-panel" aria-live="polite">
+              <button
+                class="quick-ready-btn quick-ready-bottom"
+                type="button"
+                aria-pressed="false"
+              >
+                <span></span>
+                <strong>PRÊT ?</strong>
+              </button>
+            </section>
+          `;
+
+          const search = root.querySelector(".quick-search-panel");
+          const actions = root.querySelector(".lobby-v5-actions");
+
+          if (search) {
+            search.outerHTML = markup;
+          } else if (actions) {
+            actions.outerHTML = markup;
+          } else {
+            root
+              .querySelector(".lobby-v5-players-section")
+              ?.insertAdjacentHTML("afterend", markup);
+          }
+
+          panel = root.querySelector(".quick-ready-bottom-panel");
+        }
+
+        const bottomButton = panel?.querySelector(".quick-ready-bottom");
+        if (!bottomButton) return;
+
+        quickBottomReadyMirror(sourceButton, bottomButton);
+
+        if (bottomButton.dataset.quickBottomReadyBound !== "1") {
+          bottomButton.dataset.quickBottomReadyBound = "1";
+
+          bottomButton.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (bottomButton.disabled) return;
+
+            const liveSource =
+              root.querySelector(".quick-self-row > .quick-ready-btn:not(.quick-ready-bottom)") ||
+              root.querySelector(".lobby-v5-player .quick-ready-btn:not(.quick-ready-bottom)");
+
+            liveSource?.click();
+            setTimeout(quickBottomReadySchedule, 0);
+          });
+        }
+      }
+
+      function quickBottomReadySync() {
+        const root = document.querySelector(
+          ".lobby-v5[data-mode='quick'].quick-lobby-v1"
+        );
+
+        if (!root) return;
+
+        const playerCount =
+          root.querySelectorAll(".lobby-v5-player").length;
+
+        const sourceButton =
+          root.querySelector(".quick-self-row > .quick-ready-btn:not(.quick-ready-bottom)") ||
+          root.querySelector(".lobby-v5-player .quick-ready-btn:not(.quick-ready-bottom)");
+
+        if (playerCount >= 2) {
+          quickBottomReadyEnsureButton(root, sourceButton);
+        } else {
+          quickBottomReadyEnsureSearch(root);
+        }
+      }
+
+      function quickBottomReadyStart() {
+        quickBottomReadySchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          quickBottomReadySchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          quickBottomReadySchedule
+        );
+
+        try {
+          socket?.on?.("room:state", quickBottomReadySchedule);
+          socket?.on?.("quick:ready-state", quickBottomReadySchedule);
+        } catch {}
+
+        const app = document.getElementById("app");
+        if (app) {
+          new MutationObserver(quickBottomReadySchedule).observe(app, {
+            subtree:true,
+            childList:true,
+            characterData:true,
+            attributes:true,
+            attributeFilter:["class","disabled","aria-pressed"]
+          });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          quickBottomReadyStart,
+          { once:true }
+        );
+      } else {
+        quickBottomReadyStart();
+      }
+    })();
+  </script>
+
 </body>
 </html>
