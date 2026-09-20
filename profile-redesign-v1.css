@@ -802,3 +802,119 @@ body:has(.profile-v10) [data-economy-hud] {
   display:none !important;
 }
 
+/* =========================================================
+   Bandeau partagé — Profil plus fin + page Niveaux
+   ========================================================= */
+
+/* Profil : même bandeau, hauteur réduite de 10px. */
+.profile-v10-top{
+  min-height:48px !important;
+  height:48px !important;
+}
+
+/* Niveaux : adaptation du bandeau Quêtes/Boutique. */
+.ptb-levels-header{
+  position:relative !important;
+  z-index:20 !important;
+  width:calc(100% + 26px) !important;
+  min-height:48px !important;
+  height:48px !important;
+  margin:-14px -13px 8px !important;
+  padding:0 13px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box !important;
+  overflow:visible !important;
+  background:linear-gradient(
+    90deg,
+    rgba(49,19,111,.98) 0%,
+    rgba(32,24,119,.97) 42%,
+    rgba(10,35,104,.96) 100%
+  ) !important;
+  box-shadow:
+    10px 0 0 rgba(10,35,104,.96),
+    inset 0 0 18px rgba(107,83,255,.14) !important;
+}
+
+/* Les deux lignes violettes du bandeau. */
+.ptb-levels-header::before{
+  content:"" !important;
+  position:absolute !important;
+  left:-10px !important;
+  right:-10px !important;
+  top:0 !important;
+  height:1px !important;
+  display:block !important;
+  background:rgba(195,58,255,.84) !important;
+  box-shadow:0 0 12px rgba(210,54,255,.42) !important;
+  pointer-events:none !important;
+  z-index:21 !important;
+}
+
+/* Remplace l'ancienne étoile décorative par la ligne basse. */
+.ptb-levels-header::after{
+  content:"" !important;
+  position:absolute !important;
+  left:-10px !important;
+  right:-10px !important;
+  top:auto !important;
+  bottom:0 !important;
+  width:auto !important;
+  height:1px !important;
+  display:block !important;
+  opacity:1 !important;
+  background:rgba(195,58,255,.84) !important;
+  clip-path:none !important;
+  filter:none !important;
+  transform:none !important;
+  box-shadow:0 0 12px rgba(210,54,255,.42) !important;
+  pointer-events:none !important;
+  z-index:21 !important;
+}
+
+.ptb-levels-back{
+  left:7px !important;
+  top:5px !important;
+  width:38px !important;
+  height:38px !important;
+  padding:0 !important;
+  z-index:22 !important;
+}
+
+.ptb-levels-back img{
+  width:30px !important;
+  height:30px !important;
+  filter:drop-shadow(0 0 7px rgba(188,76,255,.55)) !important;
+}
+
+.ptb-levels-title{
+  margin:0 !important;
+  color:#fff !important;
+  font-size:1.40rem !important;
+  line-height:1 !important;
+  font-weight:1000 !important;
+  letter-spacing:-.035em !important;
+  text-align:center !important;
+  text-shadow:
+    0 2px 0 #5d20b3,
+    0 0 8px #eb52ff,
+    0 0 15px rgba(129,71,255,.72) !important;
+}
+
+@media(max-width:370px){
+  .ptb-levels-header{
+    width:calc(100% + 20px) !important;
+    margin:-14px -10px 8px !important;
+    padding:0 10px !important;
+  }
+
+  .ptb-levels-back{
+    left:5px !important;
+  }
+
+  .ptb-levels-title{
+    font-size:1.24rem !important;
+  }
+}
+
