@@ -2550,3 +2550,17 @@ body:has(.home-mobile) .economy-hud {
   pointer-events:none !important;
 }
 
+/* =========================================================
+   ACCUEIL V2 — contenu du bloc modes descendu
+   ========================================================= */
+
+/* Titre « Choisis ton mode de jeu » : +6px vers le bas. */
+.home-mobile .hm-modes h1{
+  transform:translateY(6px) !important;
+}
+
+/* Les 3 cartes Jouer / Créer / Rejoindre : +13px vers le bas. */
+.home-mobile .hm-mode-grid{
+  transform:translateY(13px) !important;
+}
+
