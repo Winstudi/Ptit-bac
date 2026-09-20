@@ -842,6 +842,6 @@ html body .wsv1-screen .wsv1-player
 /* Le tag de l'aperçu passe de 40% à 56% de sa taille d'origine,
    soit +40% par rapport à la version précédente. */
 .inv-tag.inv-tag-preview{
-  transform:scale(.56) !important;
+  transform:scale(.728) !important;
 }
 
