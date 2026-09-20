@@ -1238,6 +1238,159 @@
       }
     }
 
+
+    /* =========================================================
+       Page réponses — même bandeau que Récap / Lettre / Catégories
+       ========================================================= */
+
+    html body .asv1-screen > .asv1-header{
+      position:relative!important;
+      z-index:80!important;
+
+      width:calc(100% + 32px)!important;
+      min-width:0!important;
+      max-width:none!important;
+      height:52px!important;
+      min-height:52px!important;
+      margin-left:-16px!important;
+      margin-right:-16px!important;
+      padding:0 16px 4px!important;
+      box-sizing:border-box!important;
+
+      display:grid!important;
+      grid-template-columns:1fr 62px 1fr!important;
+      align-items:center!important;
+      gap:0!important;
+
+      background:
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left top / 100% 1px no-repeat,
+        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
+          left bottom 4px / 100% 1px no-repeat,
+        linear-gradient(
+          90deg,
+          rgba(49,19,111,.98) 0%,
+          rgba(32,24,119,.97) 42%,
+          rgba(10,35,104,.96) 100%
+        )
+          left top / 100% 48px no-repeat!important;
+
+      box-shadow:
+        inset 0 0 18px rgba(107,83,255,.14)!important;
+      overflow:visible!important;
+    }
+
+    /* Flèche identique aux autres pages. */
+    html body .asv1-screen .asv1-quit{
+      grid-column:1!important;
+      justify-self:start!important;
+      align-self:center!important;
+      width:42px!important;
+      height:42px!important;
+      min-width:42px!important;
+      padding:0!important;
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      display:grid!important;
+      place-items:center!important;
+    }
+
+    html body .asv1-screen .asv1-quit img{
+      width:34px!important;
+      height:34px!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
+    }
+
+    /* Logo centré. */
+    html body .asv1-screen .asv1-brand{
+      grid-column:2!important;
+      justify-self:center!important;
+      align-self:center!important;
+      width:auto!important;
+      height:43px!important;
+      max-width:92px!important;
+      max-height:43px!important;
+      margin:0!important;
+      object-fit:contain!important;
+      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
+      pointer-events:none!important;
+    }
+
+    /* Numéro de manche à droite, sans capsule. */
+    html body .asv1-screen .asv1-round-mini{
+      position:static!important;
+      grid-column:3!important;
+      justify-self:end!important;
+      align-self:center!important;
+
+      width:auto!important;
+      min-width:0!important;
+      max-width:none!important;
+      min-height:0!important;
+      height:auto!important;
+      margin:0!important;
+      padding:0!important;
+
+      border:0!important;
+      border-radius:0!important;
+      background:transparent!important;
+      box-shadow:none!important;
+
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:flex-end!important;
+      gap:4px!important;
+
+      color:#fff!important;
+      font-size:.75rem!important;
+      line-height:1!important;
+      font-weight:900!important;
+      white-space:nowrap!important;
+      text-shadow:
+        0 0 7px rgba(197,76,255,.45),
+        0 0 12px rgba(111,69,255,.25)!important;
+    }
+
+    html body .asv1-screen .asv1-round-mini > span,
+    html body .asv1-screen .asv1-round-mini strong{
+      color:#fff!important;
+      font-size:inherit!important;
+      line-height:1!important;
+      font-weight:900!important;
+    }
+
+    @media(max-width:370px){
+      html body .asv1-screen > .asv1-header{
+        padding-left:10px!important;
+        padding-right:10px!important;
+        grid-template-columns:1fr 56px 1fr!important;
+      }
+
+      html body .asv1-screen .asv1-quit{
+        width:38px!important;
+        height:38px!important;
+        min-width:38px!important;
+      }
+
+      html body .asv1-screen .asv1-quit img{
+        width:31px!important;
+        height:31px!important;
+      }
+
+      html body .asv1-screen .asv1-brand{
+        height:40px!important;
+        max-height:40px!important;
+        max-width:84px!important;
+      }
+
+      html body .asv1-screen .asv1-round-mini{
+        font-size:.68rem!important;
+      }
+    }
+
   </style>
 </head>
 
@@ -2346,6 +2499,106 @@
         );
       } else {
         recapHeaderStart();
+      }
+    })();
+  </script>
+
+
+  <script>
+    (() => {
+      "use strict";
+
+      let answerHeaderScheduled = false;
+      let answerHeaderObserver = null;
+
+      function answerHeaderPatchExitModal() {
+        const modal = document.querySelector(".asv1-exit-modal-backdrop");
+        if (!modal) return;
+
+        const cancel = modal.querySelector('[data-action="cancel"]');
+        const quit = modal.querySelector('[data-action="home"]');
+        const returnLobby = modal.querySelector('[data-action="lobby"]');
+
+        if (cancel) cancel.textContent = "Annuler";
+        if (quit) quit.textContent = "Quitter la partie";
+
+        returnLobby?.remove();
+      }
+
+      function answerHeaderSync() {
+        answerHeaderScheduled = false;
+
+        const root = document.querySelector(".asv1-screen");
+
+        if (root) {
+          const header = root.querySelector(".asv1-header");
+          const backImg = root.querySelector("#leaveGameBtn img");
+
+          if (
+            backImg &&
+            backImg.getAttribute("src") !== "/back-arrow.png"
+          ) {
+            backImg.src = "/back-arrow.png";
+          }
+
+          if (header && !header.querySelector(".asv1-brand")) {
+            const logo = document.createElement("img");
+            logo.className = "asv1-brand";
+            logo.src = "/ptitbac.logo.png";
+            logo.alt = "P’tit Bac";
+            logo.width = 62;
+            logo.height = 52;
+
+            const round = header.querySelector(".asv1-round-mini");
+            header.insertBefore(logo, round || null);
+          }
+        }
+
+        answerHeaderPatchExitModal();
+      }
+
+      function answerHeaderSchedule() {
+        if (answerHeaderScheduled) return;
+        answerHeaderScheduled = true;
+        requestAnimationFrame(answerHeaderSync);
+      }
+
+      function answerHeaderStart() {
+        answerHeaderSchedule();
+
+        document.addEventListener(
+          "ptitbac:screen-rendered",
+          answerHeaderSchedule
+        );
+
+        document.addEventListener(
+          "ptitbac:dom-updated",
+          answerHeaderSchedule
+        );
+
+        try {
+          socket?.on?.("room:state", answerHeaderSchedule);
+        } catch {}
+
+        if (!answerHeaderObserver && document.body) {
+          answerHeaderObserver =
+            new MutationObserver(answerHeaderSchedule);
+
+          answerHeaderObserver.observe(document.body, {
+            subtree:true,
+            childList:true
+          });
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener(
+          "DOMContentLoaded",
+          answerHeaderStart,
+          { once:true }
+        );
+      } else {
+        answerHeaderStart();
       }
     })();
   </script>
