@@ -676,3 +676,23 @@ body:has(.shop-v2) .economy-hud{display:none!important}
   margin:0!important;
   border-radius:0!important;
 }
+
+/* =========================================================
+   Boutique — header réellement bord à bord
+   ========================================================= */
+.shop-v2.is-compact-shop-header,
+.shop-v2.is-compact-shop-header .shop2-brand{
+  overflow:visible!important;
+}
+
+.shop-v2.is-compact-shop-header .shop2-brand-notice{
+  position:relative!important;
+  left:50%!important;
+  width:100vw!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  transform:translateX(-50%)!important;
+  box-sizing:border-box!important;
+}
+
