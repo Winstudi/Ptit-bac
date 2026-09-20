@@ -2805,3 +2805,55 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — bloc niveau/XP descendu + coque XP ajustée
+   ========================================================= */
+
+/* Tout le bloc niveau/XP descend de 5px. */
+.home-mobile .hm-profile-copy small{
+  transform:translateY(5px) scale(.7) !important;
+  transform-origin:left center !important;
+}
+
+.home-mobile img[src*="level-badge"],
+.home-mobile .ptb-home-level-badge,
+.home-mobile .ptb-home-level-star{
+  transform:translateY(5px) scale(.7) !important;
+  transform-origin:center !important;
+}
+
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  top:5px !important;
+  left:-4px !important;
+}
+
+/* Coque / PNG décoratif de la grande barre :
+   -8px en hauteur et +10px vers la droite. */
+.home-mobile .ptb-home-xp-shell,
+.home-mobile .ptb-home-xp-bar-shell,
+.home-mobile img[src*="level-bar-shell-v1"]{
+  width:calc(100% + 10px) !important;
+  height:calc(100% - 8px) !important;
+  min-height:0 !important;
+  object-fit:fill !important;
+  transform:translateY(5px) !important;
+  transform-origin:left center !important;
+}
+
+/* Si la coque est appliquée comme background de la barre,
+   on ajuste aussi directement son rendu. */
+.home-mobile .hm-profile-copy .ptb-home-xp-bar{
+  background-position:left center !important;
+  background-size:calc(100% + 10px) calc(100% - 8px) !important;
+}
+
+/* Zone cliquable alignée sur toute la barre après déplacement/agrandissement. */
+.home-mobile #homeLevelsOpen{
+  left:44px !important;
+  top:39px !important;
+  width:97px !important;
+  height:28px !important;
+  z-index:40 !important;
+  pointer-events:auto !important;
+}
+
