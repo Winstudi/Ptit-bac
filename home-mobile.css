@@ -2437,3 +2437,84 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — correction barre XP + cadre modes plus compact
+   ========================================================= */
+
+/* Bandeau niveaux / XP :
+   on cible cette fois directement le bloc flottant sous le header
+   pour écraser l'épaisseur visuelle du PNG de barre. */
+.home-mobile #homeLevelsOpen{
+  top:34px !important;
+}
+
+.home-mobile #homeLevelsOpen .ptb-home-xp-bar,
+.home-mobile #homeLevelsOpen [class*="xp-bar"]{
+  width:87px !important;          /* +5px vers la droite par rapport à la version 82px */
+  max-width:87px !important;
+  height:1px !important;
+  min-height:1px !important;
+  margin-left:-4px !important;    /* 4px sur la gauche */
+  overflow:visible !important;
+}
+
+/* Réduit aussi le PNG / l'élément interne de la barre. */
+.home-mobile #homeLevelsOpen .ptb-home-xp-bar > *,
+.home-mobile #homeLevelsOpen [class*="xp-bar"] > *,
+.home-mobile #homeLevelsOpen .ptb-home-xp-bar img,
+.home-mobile #homeLevelsOpen [class*="xp-bar"] img{
+  height:1px !important;
+  min-height:1px !important;
+  max-height:1px !important;
+  transform:scaleY(.22) !important;
+  transform-origin:left center !important;
+}
+
+/* Le cadre "Choisis ton mode de jeu" est encore trop haut :
+   on le compacte en resserrant le titre et les paddings.
+   Le bas du cadre reste très proche des 3 cartes. */
+.home-mobile .hm-modes{
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+}
+
+.home-mobile .hm-modes h1{
+  margin-bottom:3px !important;
+  line-height:1.02 !important;
+}
+
+.home-mobile .hm-mode-grid{
+  margin-bottom:0 !important;
+  align-items:start !important;
+}
+
+/* Responsive */
+@media(max-width:370px){
+  .home-mobile #homeLevelsOpen .ptb-home-xp-bar,
+  .home-mobile #homeLevelsOpen [class*="xp-bar"]{
+    width:82px !important;
+    max-width:82px !important;
+  }
+
+  .home-mobile .hm-modes h1{
+    margin-bottom:2px !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-modes{
+    padding-top:0 !important;
+    padding-bottom:0 !important;
+  }
+
+  .home-mobile .hm-modes h1{
+    margin-bottom:2px !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-modes h1{
+    margin-bottom:1px !important;
+  }
+}
+
