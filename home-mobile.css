@@ -2857,3 +2857,50 @@ body:has(.home-mobile) .economy-hud {
   pointer-events:auto !important;
 }
 
+/* =========================================================
+   ACCUEIL V2 — correction réelle du bloc niveau / XP
+   La coque est un background-image défini dans economy.css.
+   ========================================================= */
+
+/* Étoile + numéro : +5px vers le bas, sans ajouter un second translateY. */
+.home-mobile .hm-profile .hm-profile-copy > small{
+  top:50px !important;
+  transform:scale(.7) !important;
+  transform-origin:left center !important;
+}
+
+/* Coque PNG réelle de la barre :
+   base actuelle 146x49 -> 156x39
+   +5px vers le bas pour la coque ET son remplissage. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar{
+  top:54px !important;
+  left:16px !important;
+  width:156px !important;
+  max-width:none !important;
+  height:39px !important;
+  min-height:39px !important;
+
+  /* Le PNG level-bar-shell-v1.png est le background de CET élément. */
+  background:
+    url("/level-bar-shell-v1.png") center / 100% 100% no-repeat !important;
+
+  /* Annule les anciens essais qui déplaçaient seulement le conteneur. */
+  transform:none !important;
+}
+
+/* Le remplissage suit maintenant réellement la coque descendue. */
+.home-mobile .hm-profile .hm-profile-copy > .ptb-home-xp-bar > .ptb-home-xp-fill{
+  align-self:center !important;
+}
+
+/* Zone invisible de clic positionnée exactement sur la nouvelle barre. */
+.home-mobile #homeLevelsOpen{
+  left:14px !important;
+  top:56px !important;
+  width:160px !important;
+  height:40px !important;
+  z-index:40 !important;
+  pointer-events:auto !important;
+  border-radius:20px !important;
+}
+
