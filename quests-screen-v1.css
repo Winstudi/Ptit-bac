@@ -48,8 +48,8 @@ body:has(.quests-v1) .economy-hud{
   margin:0 auto;
   padding:max(3px,env(safe-area-inset-top)) 9px max(5px,env(safe-area-inset-bottom));
   display:grid;
-  grid-template-rows:48px 62px 156px 330px minmax(0,1fr);
-  gap:9px;
+  grid-template-rows:48px 156px 330px minmax(0,1fr);
+  gap:10px;
   overflow:hidden;
   color:var(--q-text);
   font-family:"DM Sans",system-ui,sans-serif;
@@ -197,12 +197,7 @@ body:has(.quests-v1) .economy-hud{
 /* ---------- Intro ---------- */
 
 .qv1-intro{
-  min-height:0;
-  padding:0 2px 0 4px;
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:9px;
+  display:none;
 }
 
 .qv1-reset{
@@ -763,8 +758,8 @@ button.qv1-state-button{
 @media(max-width:390px){
   .quests-v1{
     padding-inline:7px;
-    grid-template-rows:46px 58px 149px 316px minmax(0,1fr);
-    gap:8px;
+    grid-template-rows:46px 149px 316px minmax(0,1fr);
+    gap:10px;
   }
 
   .qv1-header{
@@ -875,8 +870,8 @@ button.qv1-state-button{
 
 @media(max-height:710px){
   .quests-v1{
-    grid-template-rows:44px 52px 140px 292px minmax(0,1fr);
-    gap:7px;
+    grid-template-rows:44px 140px 292px minmax(0,1fr);
+    gap:10px;
   }
 
   .qv1-header{height:44px}
