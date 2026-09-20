@@ -639,3 +639,77 @@ html body .wsv1-screen .wsv1-player
   }
 }
 
+/* =========================================================
+   Inventaire — aperçu joueur / cadres / tags
+   ========================================================= */
+
+/* Aperçu joueur : retire le second aperçu avatar + cadre tout à droite. */
+.inventory-v2-frame-preview{
+  display:none !important;
+}
+
+.inventory-v2-preview,
+.inventory-v2-preview.is-minimal{
+  grid-template-columns:88px minmax(0,1fr) !important;
+}
+
+/* Centre le pseudo et le tag ensemble. */
+.inventory-v2-preview-copy{
+  align-items:center !important;
+}
+
+/* Tag sous le pseudo : aucun cadre/fond et 60% plus petit. */
+.inv-tag.inv-tag-preview{
+  min-height:0 !important;
+  margin:4px auto -14px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  transform:scale(.4) !important;
+  transform-origin:top center !important;
+  align-self:center !important;
+}
+
+/* Choix des cadres : masque uniquement l'avatar placé sous le cadre. */
+.inventory-v2-frame-choice:not(.is-empty) .inventory-v2-frame-swatch > img{
+  display:none !important;
+}
+
+/* Choix des tags : retire le titre sous chaque tag en image. */
+.inventory-v2-tag-choice:not(.is-none) > strong{
+  display:none !important;
+}
+
+/* Tags en image : 30% plus petits. */
+.inventory-v2-tag-choice:not(.is-none) > img{
+  width:70% !important;
+  max-width:154px !important;
+  height:auto !important;
+  max-height:31px !important;
+  margin:0 auto !important;
+  object-fit:contain !important;
+}
+
+/* Tags texte/emoji : même réduction visuelle de 30%. */
+.inventory-v2-tag-choice:not(.is-none) > span:not(.inventory-v2-check){
+  transform:scale(.7) !important;
+  transform-origin:center !important;
+}
+
+/* Ajustements mobile après suppression de la 3e colonne. */
+@media(max-width:430px){
+  .inventory-v2-preview,
+  .inventory-v2-preview.is-minimal{
+    grid-template-columns:76px minmax(0,1fr) !important;
+  }
+}
+
+@media(max-width:350px){
+  .inventory-v2-preview,
+  .inventory-v2-preview.is-minimal{
+    grid-template-columns:78px minmax(0,1fr) !important;
+  }
+}
+
