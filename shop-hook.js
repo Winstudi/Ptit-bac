@@ -141,21 +141,12 @@ module.exports = function installShop(io) {
     socket.on("shop:claimAdBag", async (payload = {}, cb = () => {}) => {
       const token = await socketWalletToken(socket, payload);
       if (!token) return cb({ ok:false, error:"Session boutique non autorisée." });
-      if (payload.adCompleted !== true) {
-        return cb({ ok:false, error:"La publicité doit être terminée pour récupérer le coffre." });
-      }
-
-      const requestId = String(payload.requestId || "").trim().replace(/[^a-zA-Z0-9:_-]/g, "").slice(0,80);
-      if (requestId.length < 8) return cb({ ok:false, error:"Récompense publicitaire invalide." });
-
-      try {
-        const grantedChests = await grantChestRewards(socket, token, ["bag"], `adbag:${requestId}`);
-        cb({ ok:true, grantedChests });
-      } catch (err) {
-        console.error("shop:claimAdBag:", err.message);
-        cb({ ok:false, error:err?.message || "Coffre publicitaire indisponible." });
-      }
+      return cb({
+        ok:false,
+        error:"Les récompenses publicitaires seront disponibles avec le module publicitaire vérifié."
+      });
     });
+
 
     socket.on("shop:claimDaily", async (payload = {}, cb = () => {}) => {
       const token = await socketWalletToken(socket, payload);

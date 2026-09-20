@@ -44,6 +44,7 @@ function fakeSocket({
 
 function authorizeAdmin(socket, token = "a".repeat(48)) {
   socket.data.accountEmail = DEFAULT_ADMIN_ACCOUNT_EMAIL;
+  socket.data.isAccountAdmin = true;
   socket.data.accountWalletToken = token;
   return token;
 }

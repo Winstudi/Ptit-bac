@@ -697,6 +697,26 @@
     renderGate("profileSetup", { required:true });
   }
 
+  function handleExpiredSession() {
+    localStorage.removeItem(ACCOUNT_SESSION_KEY);
+    localStorage.removeItem("petitbac_walletToken");
+    localStorage.removeItem("petitbac_walletBalance");
+    localStorage.removeItem(GUEST_MODE_KEY);
+    accountState = null;
+    clearPlayerCaches();
+    clearSession();
+    session.walletToken = "";
+    session.walletBalance = 0;
+    renderGate("login", { required:true });
+    setMessage("Ta session a expiré. Reconnecte-toi.", "error");
+    socket.disconnect();
+    socket.connect();
+  }
+  socket.on("connect_error", error => {
+    if (error?.data?.code === "session_expired") handleExpiredSession();
+  });
+  socket.on("auth:expired", handleExpiredSession);
+
   socket.on("connect", () => {
     setTimeout(resumeAccount, 0);
   });

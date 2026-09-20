@@ -26,8 +26,8 @@
 
   if (typeof originalIo === "function") {
     function mobileAwareIo(...args) {
-      if (!args.length && apiUrl) {
-        return originalIo(apiUrl);
+      if (apiUrl && (!args.length || (args.length === 1 && typeof args[0] === "object"))) {
+        return originalIo(apiUrl, args[0]);
       }
       return originalIo(...args);
     }

@@ -202,17 +202,6 @@ function createRewardChestService({
       await ensureSchema();
       const pool = getPool();
       if (!pool) throw new Error("PostgreSQL indisponible");
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_reward_claims(
-          wallet_token text NOT NULL,
-          claim_key text NOT NULL,
-          chest_type text NOT NULL,
-          star_state text NOT NULL DEFAULT '',
-          result jsonb NOT NULL,
-          created_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY(wallet_token,claim_key)
-        )
-      `);
       return pool;
     })().catch(error => {
       schemaPromise = null;

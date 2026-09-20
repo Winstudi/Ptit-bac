@@ -43,7 +43,10 @@ function createKeyedWriteQueue() {
 
   return {
     enqueue,
-    pending
+    pending,
+    async drain() {
+      while (tails.size) await Promise.all([...tails.values()]);
+    }
   };
 }
 

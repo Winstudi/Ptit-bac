@@ -4,7 +4,7 @@ Jeu multijoueur mobile-first de Petit Bac, développé en Node.js avec Express, 
 
 ## État actuel
 
-Version applicative : **1.46.1**
+Version applicative : **1.48.0**
 
 Le dépôt contient désormais directement le code réellement exécuté en production. Les anciennes transformations E2, E3, E4 et E5 ne sont plus nécessaires au déploiement.
 
@@ -63,7 +63,7 @@ Salon sur invitation/code.
 - `socket-security.js` : sécurité et limites de fréquence ;
 - `inventory-service.js` : inventaire serveur ;
 - `progression-service.js` : XP et niveaux ;
-- `quick-match.js` : recherche de partie rapide ;
+- `quick-match-v2.js` : recherche de partie rapide ;
 - `economy-config.js` : valeurs officielles de l’économie et de la boutique ;
 - `game-economy.js` : récompenses de fin de partie ;
 - `friends-hook.js`, `chat-hook.js`, `admin-hook.js`, `player-report-hook.js` : modules serveur spécialisés.
@@ -212,3 +212,27 @@ Les gros PNG sont convertis en WebP pendant le build lorsque `sharp` est disponi
 Le code présent dans GitHub doit rester la source de vérité.
 
 Ne pas réintroduire de système qui modifie `server.js`, `app.js`, `style.css` ou les modules fonctionnels pendant le build.
+
+
+## Correctif de nettoyage et de sécurité — septembre 2026
+
+Les corrections sont directement intégrées aux sources. Ne pas exécuter les anciens
+scripts `apply-stabilisation-1.49*.cjs` après cette mise à jour.
+
+- `npm ci --include=dev` installe aussi les outils des tests utilisés au build.
+- Les migrations de l’inventaire, des quêtes, de la boutique et des récompenses sont centralisées.
+- Les comptes enregistrés doivent présenter une session valide, y compris à la connexion Socket.IO.
+- Le propriétaire admin déjà enregistré est conservé. Une adresse e-mail déclarée ne donne plus de rôle.
+  Pour provisionner un propriétaire sur une nouvelle base, définir `PTITBAC_ADMIN_USER_ID` avec
+  l’UUID du profil utilisateur existant (`public.users.id`), pas son e-mail ou son code ami.
+- Les connexions PostgreSQL distantes vérifient le certificat. Si l’hébergeur utilise une autorité
+  privée, fournir son certificat CA via `PTITBAC_DB_CA`.
+- La remise à zéro globale n’est plus déclenchée par le démarrage du serveur.
+- `shop:claimAdBag` reste indisponible tant qu’une preuve publicitaire serveur n’est pas intégrée.
+- `sql-integration.test.cjs` exécute les migrations et des parcours sur PostgreSQL embarqué PGlite.
+  Cela ne remplace pas les tests de connexion/TLS et de concurrence sur le PostgreSQL de l’hébergement.
+
+Les quêtes anciennes restent cumulatives ; le chargement de leurs statistiques regroupe les requêtes.
+Les règles récentes de bots de matchmaking priment sur les descriptions historiques ci-dessus :
+un humain avec des bots de matchmaking peut recevoir de l’XP, mais pas de trophées compétitifs.
+Les images et feuilles CSS existantes ne sont pas modifiées par ce correctif.

@@ -2,7 +2,6 @@
 
 const { runDatabaseMigrations } = require("./db-migrations.js");
 const { createKeyedWriteQueue } = require("./db-wallet-write-queue.js");
-const { maybeRunPlayerDataReset } = require("./player-data-reset.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const POOL_MAX = Math.max(
@@ -70,7 +69,7 @@ function createPool() {
     connectionString: DATABASE_URL,
     ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL)
       ? false
-      : { rejectUnauthorized: false },
+      : { rejectUnauthorized: true, ...(process.env.PTITBAC_DB_CA ? { ca:process.env.PTITBAC_DB_CA.replace(/\\n/g, "\n") } : {}) },
     max: POOL_MAX,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
@@ -123,9 +122,19 @@ function ensureDatabaseSchema() {
   if (!db) return Promise.reject(new Error("DATABASE_URL manquant"));
   if (migrationPromise) return migrationPromise;
 
-  migrationPromise = runDatabaseMigrations(db)
-    .then(async () => {
-      await maybeRunPlayerDataReset(db);
+  migrationPromise = (async () => {
+    const client = await db.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('ptitbac-schema'))");
+      await runDatabaseMigrations(client);
+      await client.query("COMMIT");
+    } catch (error) {
+      try { await client.query("ROLLBACK"); } catch {}
+      throw error;
+    } finally { client.release(); }
+  })()
+    .then(() => {
       console.log("PostgreSQL: schéma central prêt.");
       return db;
     })

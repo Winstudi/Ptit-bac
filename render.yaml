@@ -4,12 +4,12 @@ services:
     runtime: node
     plan: free
     buildCommand: >-
-      npm ci &&
+      npm ci --include=dev &&
       npm test &&
       npm run check &&
       node cleanup-frontend-build.cjs &&
       npm run check:production &&
-      (npm install --no-save --package-lock=false sharp@0.34.1 && node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
+      (node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
     startCommand: npm start
     healthCheckPath: /health
     autoDeploy: true

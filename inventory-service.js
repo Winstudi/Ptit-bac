@@ -341,13 +341,6 @@ function createInventoryService({ getPool, ensureSchema: ensureSharedSchema = nu
       }
 
       await ensureSharedSchema();
-      await db.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_reset_flags (
-          wallet_token text PRIMARY KEY,
-          avatars_only boolean NOT NULL DEFAULT false,
-          updated_at timestamptz NOT NULL DEFAULT now()
-        )
-      `);
       return db;
     })().catch(err => {
       schemaPromise = null;

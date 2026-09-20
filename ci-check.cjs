@@ -395,7 +395,11 @@ function checkBackendArchitecture() {
     "player-report-hook.js",
     "inventory-service.js",
     "progression-service.js",
-    "friend-code-v2-hook.js"
+    "friend-code-v2-hook.js",
+    "quests-service.js",
+    "shop-service.js",
+    "reward-chests-service.js",
+    "level-rewards-service.js"
   ];
 
   const schemaPattern = /CREATE\s+(?:TABLE|INDEX|EXTENSION|TRIGGER|OR\s+REPLACE\s+FUNCTION)|ALTER\s+TABLE|DROP\s+TRIGGER/i;

@@ -504,6 +504,21 @@ function ensureWallet(token) {
   return { token: safeToken, wallet: wallets.get(safeToken) };
 }
 
+async function refreshWalletFromDatabase(token) {
+  if (!pgPool || !/^[a-f0-9]{48}$/i.test(String(token || ""))) return;
+  const result = await pgPool.query(
+    "SELECT token,coins,gems,created_at,updated_at,history FROM public.ptitbac_wallets WHERE token=$1",
+    [token]
+  );
+  const row = result.rows[0];
+  if (!row) return;
+  const cached = wallets.get(token);
+  // Never overwrite a cache synchronized by a newer committed mutation.
+  if (cached && Number(cached.updatedAt) > Number(row.updated_at)) return;
+  wallets.set(token, normalizeWalletRecord({ coins:row.coins, gems:row.gems,
+    createdAt:row.created_at, updatedAt:row.updated_at, history:row.history }));
+}
+
 function walletBalance(token) {
   if (global.__ptbInfiniteCoins?.has(token)) return 999999;
   return wallets.get(token)?.coins ?? 0;
@@ -767,15 +782,16 @@ function computedLives(row, nowMs = Date.now()) {
 }
 
 async function economyState(walletToken) {
+  await refreshWalletFromDatabase(walletToken);
   const user = await ensureEconomyUser(walletToken);
-  if (!user) return null;
+  if (!user && pgPool) throw new Error("Profil économie introuvable.");
 
-  const life = computedLives(user);
+  const life = computedLives(user || { lives:ECONOMY_MAX_LIVES, life_updated_at:new Date() });
   const coins = walletBalance(walletToken);
 
 
   return {
-    userId:user.id,
+    userId:user?.id || null,
     coins,
     gems: wallets.get(walletToken)?.gems ?? 0,
     lives:life.lives,
@@ -945,7 +961,8 @@ async function recordEconomyCoinTransaction(walletToken, kind, delta, details, i
   if (!pgPool || !walletToken || delta === 0) return;
 
   try {
-    const user = await ensureEconomyUser(walletToken);
+    await refreshWalletFromDatabase(walletToken);
+  const user = await ensureEconomyUser(walletToken);
     if (!user) return;
 
     await pgPool.query(
@@ -1233,6 +1250,7 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const rooms = new Map();
 const roomPersistTimers = new Map();
+const roomWrites = require("./db-wallet-write-queue.js").createKeyedWriteQueue();
 let roomPersistenceReady = false;
 let roomStorageMode = "initializing";
 
@@ -1351,14 +1369,14 @@ async function persistRoomNow(room) {
     return;
   }
 
-  await pgPool.query(
+  await roomWrites.enqueue(room.code, () => pgPool.query(
     `INSERT INTO public.ptitbac_active_rooms(code,snapshot,created_at,updated_at)
      VALUES($1,$2::jsonb,now(),now())
      ON CONFLICT(code) DO UPDATE
        SET snapshot=EXCLUDED.snapshot,
            updated_at=now()`,
     [room.code, JSON.stringify(snapshot)]
-  );
+  ));
 }
 
 function queueRoomPersist(room, delayMs = 60) {
@@ -1389,6 +1407,7 @@ async function flushRoomPersistence() {
   await Promise.all(
     [...rooms.values()].map(room => persistRoomNow(room))
   );
+  await roomWrites.drain();
 }
 
 function removeRoom(code) {
@@ -1406,10 +1425,10 @@ function removeRoom(code) {
   if (!pgPool) {
     saveRoomsToFile();
   } else {
-    pgPool.query(
+    roomWrites.enqueue(safeCode, () => pgPool.query(
       "DELETE FROM public.ptitbac_active_rooms WHERE code=$1",
       [safeCode]
-    ).catch(err => {
+    )).catch(err => {
       console.error(`Suppression snapshot salon ${safeCode}:`, err.message);
     });
   }
@@ -1828,6 +1847,7 @@ function requireMember(socket, payload) {
   const room = getRoom(payload?.code);
   const player = getPlayer(room, payload?.playerId);
   if (!room || !player || player.isBot || player.socketId !== socket.id) return {};
+  if (socket.data?.accountWalletToken && player.walletToken !== socket.data.accountWalletToken) return {};
   return { room, player };
 }
 
@@ -4330,10 +4350,15 @@ io.on("connection", socket => {
 
     cb({ ok: true, durationMs });
   });
-  socket.on("wallet:init", ({ token } = {}, cb = () => {}) => {
-    const result = ensureWallet(token);
-    socket.data.walletToken = result.token;
-    cb({ ok: true, token: result.token, balance: result.wallet.coins });
+  socket.on("wallet:init", async ({ token } = {}, cb = () => {}) => {
+    try {
+      await refreshWalletFromDatabase(token);
+      const result = ensureWallet(token);
+      socket.data.walletToken = result.token;
+      cb({ ok:true, token:result.token, balance:result.wallet.coins, gems:result.wallet.gems });
+    } catch (error) {
+      cb({ ok:false, error:"Portefeuille temporairement indisponible." });
+    }
   });
 
   socket.on("wallet:history", ({ token, limit } = {}, cb = () => {}) => {
@@ -5179,6 +5204,7 @@ async function shutdownApplication(signal) {
   shutdownInProgress = true;
   startupReady = false;
 
+  try { await new Promise(resolve => io.close(() => resolve())); } catch {}
   try {
     await Promise.race([
       flushRoomPersistence(),
@@ -5188,9 +5214,6 @@ async function shutdownApplication(signal) {
     console.warn(`Flush salons (${signal}):`, err.message);
   }
 
-  try {
-    await new Promise(resolve => io.close(() => resolve()));
-  } catch {}
   try { await pgPool?.end?.(); } catch {}
   process.exit(0);
 }

@@ -258,6 +258,7 @@ function createAccountAuthService(options = {}) {
         ok:true,
         account: accountPayload({
           ...user,
+          user_id:user.id,
           email_display: displayEmail || emailNormalized,
           coins: DEFAULT_COINS,
           gems: 0,

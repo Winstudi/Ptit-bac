@@ -1,5 +1,5 @@
 const CLIENT_BUILD = "1.48.0";
-const socket = io();
+const socket = io({ auth: callback => callback({ sessionToken:localStorage.getItem("ptitbac_account_session") || "" }) });
 const app = document.getElementById("app");
 const toastEl = document.getElementById("toast");
 

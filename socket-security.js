@@ -14,9 +14,17 @@ const ADMIN_DEFAULT_POLICY = Object.freeze({
   message: "Trop de requêtes administrateur."
 });
 
-const DEFAULT_ADMIN_ACCOUNT_EMAIL = "cantetkillian@gmail.com";
+const DEFAULT_ADMIN_ACCOUNT_EMAIL = ""; // Compatibilité : les rôles ne dépendent plus des e-mails.
 
 const EVENT_POLICIES = Object.freeze({
+  "shop:purchase": Object.freeze({ limit:12, windowMs:60_000, scope:"identity" }),
+  "shop:claimAdBag": Object.freeze({ limit:4, windowMs:60_000, scope:"identity" }),
+  "shop:claimDaily": Object.freeze({ limit:8, windowMs:60_000, scope:"identity" }),
+  "quests:get": Object.freeze({ limit:30, windowMs:60_000, scope:"identity" }),
+  "quests:sync": Object.freeze({ limit:20, windowMs:60_000, scope:"identity" }),
+  "quests:claim": Object.freeze({ limit:20, windowMs:60_000, scope:"identity" }),
+  "quests:claimChest": Object.freeze({ limit:8, windowMs:60_000, scope:"identity" }),
+  "level-rewards:claim": Object.freeze({ limit:12, windowMs:60_000, scope:"identity" }),
   "admin:claim": Object.freeze({
     limit: 5,
     windowMs: 10 * 60_000,
@@ -217,12 +225,8 @@ function walletToken(value) {
   return /^[a-f0-9]{48}$/i.test(token) ? token.toLowerCase() : "";
 }
 
-function isAuthorizedAdminSocket(socket, adminEmail = DEFAULT_ADMIN_ACCOUNT_EMAIL) {
-  const email = normalizeAccountEmail(socket?.data?.accountEmail);
-  const expectedEmail = normalizeAccountEmail(adminEmail);
-  const accountToken = walletToken(socket?.data?.accountWalletToken);
-
-  return !!expectedEmail && email === expectedEmail && !!accountToken;
+function isAuthorizedAdminSocket(socket) {
+  return socket?.data?.isAccountAdmin === true && !!walletToken(socket?.data?.accountWalletToken);
 }
 
 function clientNetworkKey(socket) {
@@ -233,15 +237,12 @@ function clientNetworkKey(socket) {
     80
   );
 
-  const forwarded = safeText(
-    String(socket?.handshake?.headers?.["x-forwarded-for"] || "")
-      .split(",")[0],
-    80
-  );
-
-  return [direct, forwarded].filter(Boolean).join("|") ||
-    safeText(socket?.id, 80) ||
-    "unknown";
+  // Ignore untrusted forwarding headers. A trusted edge can be configured explicitly.
+  const hops = Math.max(0, Math.min(5, Number(process.env.PTITBAC_TRUST_PROXY_HOPS) || 0));
+  const forwarded = String(socket?.handshake?.headers?.["x-forwarded-for"] || "")
+    .split(",").map(value => safeText(value, 80)).filter(Boolean);
+  const trustedAddress = hops && forwarded.length >= hops ? forwarded[forwarded.length - hops] : "";
+  return trustedAddress || direct || safeText(socket?.id, 80) || "unknown";
 }
 
 function knownSocketToken(socket) {
@@ -256,8 +257,8 @@ function knownSocketToken(socket) {
 
 function identityKey(socket, payload) {
   return (
-    walletToken(payload?.walletToken) ||
     knownSocketToken(socket) ||
+    walletToken(payload?.walletToken) ||
     safeText(socket?.id, 80) ||
     clientNetworkKey(socket)
   );
@@ -351,6 +352,7 @@ function installSocketSecurity(io, options = {}) {
   }
 
   const limiter = options.limiter || createRateLimiter();
+  const access = options.access || require("./session-access.js").createSessionAccess();
   const policies = options.policies || EVENT_POLICIES;
   const globalPolicy = options.globalPolicy || GLOBAL_POLICY;
   const adminAccountEmail = normalizeAccountEmail(
@@ -360,6 +362,7 @@ function installSocketSecurity(io, options = {}) {
   );
 
   io.use((socket, nextConnection) => {
+    let packetTail = Promise.resolve();
     socket.use((packet, dispatch) => {
       const eventName = safeText(packet?.[0], 100);
       const payload =
@@ -411,7 +414,8 @@ function installSocketSecurity(io, options = {}) {
       if (
         (accountBoundToken && suppliedToken && accountBoundToken !== suppliedToken) ||
         (accountBoundToken && suppliedDirectToken && accountBoundToken !== suppliedDirectToken) ||
-        (!accountBoundToken && boundToken && suppliedToken && boundToken !== suppliedToken)
+        (!accountBoundToken && boundToken && suppliedToken && boundToken !== suppliedToken) ||
+        (!accountBoundToken && boundToken && suppliedDirectToken && boundToken !== suppliedDirectToken)
       ) {
         callback?.({
           ok: false,
@@ -476,10 +480,26 @@ function installSocketSecurity(io, options = {}) {
         }
       }
 
-      dispatch();
+      // Rate limiting precedes database access; fail closed on storage errors.
+      if (!options.access && !require("./db.js").getPool()) return dispatch();
+      packetTail = packetTail.then(() => access.authorize(socket, eventName, payload)).then(allowed => {
+        if (!allowed) {
+          callback?.({ ok:false, code:"session_required", error:"Reconnecte-toi à ton compte." });
+          if (socket.data.accountSessionToken) socket.emit?.("auth:expired");
+          return;
+        }
+        dispatch();
+      }).catch(() => callback?.({ ok:false, error:"Vérification de session indisponible." }));
     });
 
-    nextConnection();
+    const raw = String(socket.handshake?.auth?.sessionToken || "").trim();
+    if (!raw) return nextConnection();
+    access.authenticate(socket, raw).then(ok => {
+      if (ok) return nextConnection();
+      const error = new Error("Session expirée.");
+      error.data = { code:"session_expired" };
+      nextConnection(error);
+    }).catch(() => nextConnection(new Error("Service de compte indisponible.")));
   });
 
   if (typeof io.on === "function" && options.installAccountAuth !== false) {

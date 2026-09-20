@@ -195,51 +195,13 @@ function createQuestsService({
       const pool = getPool();
       if (!pool) throw new Error("PostgreSQL indisponible");
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_quest_claims(
-          wallet_token text NOT NULL,
-          rotation_key text NOT NULL,
-          quest_id text NOT NULL,
-          xp_reward integer NOT NULL DEFAULT 0 CHECK(xp_reward >= 0),
-          claimed_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY(wallet_token,rotation_key,quest_id)
-        )
-      `);
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_quest_chest_claims(
-          wallet_token text NOT NULL,
-          cycle_no integer NOT NULL CHECK(cycle_no >= 1),
-          reward_result jsonb NOT NULL DEFAULT '{}'::jsonb,
-          claimed_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY(wallet_token,cycle_no)
-        )
-      `);
 
       // Chaque lot quotidien est maintenant mémorisé par joueur. Ainsi, à 11 h,
       // les 3 nouvelles quêtes sont ajoutées à la liste existante au lieu de
       // remplacer celles des jours précédents.
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_player_quests(
-          wallet_token text NOT NULL,
-          rotation_key text NOT NULL,
-          quest_id text NOT NULL,
-          starts_at_ms bigint NOT NULL,
-          slot smallint NOT NULL DEFAULT 0 CHECK(slot >= 0 AND slot <= 2),
-          created_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY(wallet_token,rotation_key,quest_id)
-        )
-      `);
 
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS ptitbac_quest_claims_wallet_idx
-          ON public.ptitbac_quest_claims(wallet_token,claimed_at DESC)
-      `);
 
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS ptitbac_player_quests_wallet_idx
-          ON public.ptitbac_player_quests(wallet_token,starts_at_ms DESC,slot ASC)
-      `);
 
       return pool;
     })().catch(error => {
@@ -291,39 +253,33 @@ function createQuestsService({
     );
   }
 
-  async function statsForRange(walletToken, startsAt, endsAt = Date.now()) {
+  async function statsForStarts(walletToken, starts, endsAt = Date.now()) {
+    if (!starts.length) return new Map();
     const pool = await db();
-    const [gameStats, rerollStats] = await Promise.all([
-      pool.query(
-        `SELECT
-           COUNT(*) FILTER (
-             WHERE rank=1 AND event_key LIKE 'game-xp:%'
-           )::int AS wins,
-           COALESCE(SUM(valid_answers) FILTER (
-             WHERE event_key LIKE 'game-xp:%'
-           ),0)::int AS answers
-         FROM public.ptitbac_progression_events
-        WHERE wallet_token=$1
-          AND created_at >= to_timestamp($2::double precision / 1000.0)
-          AND created_at <  to_timestamp($3::double precision / 1000.0)`,
-        [walletToken, startsAt, endsAt]
-      ),
-      pool.query(
-        `SELECT COUNT(*)::int AS rerolls
-           FROM public.economy_transactions
-          WHERE wallet_token=$1
-            AND kind IN ('CATEGORY_REROLL','LETTER_REROLL')
-            AND created_at >= to_timestamp($2::double precision / 1000.0)
-            AND created_at <  to_timestamp($3::double precision / 1000.0)`,
-        [walletToken, startsAt, endsAt]
-      )
+    const [games, rerolls] = await Promise.all([
+      pool.query(`SELECT s.start_ms,
+          COUNT(e.event_key) FILTER (WHERE e.rank=1)::int AS wins,
+          COALESCE(SUM(e.valid_answers),0)::int AS answers
+        FROM unnest($2::bigint[]) AS s(start_ms)
+        LEFT JOIN public.ptitbac_progression_events e
+          ON e.wallet_token=$1 AND e.event_key LIKE 'game-xp:%'
+          AND e.created_at>=to_timestamp(s.start_ms::double precision/1000.0)
+          AND e.created_at<to_timestamp($3::double precision/1000.0)
+        GROUP BY s.start_ms`, [walletToken, starts, endsAt]),
+      pool.query(`SELECT s.start_ms,COUNT(e.id)::int AS rerolls
+        FROM unnest($2::bigint[]) AS s(start_ms)
+        LEFT JOIN public.economy_transactions e
+          ON e.wallet_token=$1 AND e.kind IN ('CATEGORY_REROLL','LETTER_REROLL')
+          AND e.created_at>=to_timestamp(s.start_ms::double precision/1000.0)
+          AND e.created_at<to_timestamp($3::double precision/1000.0)
+        GROUP BY s.start_ms`, [walletToken, starts, endsAt])
     ]);
-
-    return {
-      wins:Math.max(0, Number(gameStats.rows?.[0]?.wins) || 0),
-      answers:Math.max(0, Number(gameStats.rows?.[0]?.answers) || 0),
-      rerolls:Math.max(0, Number(rerollStats.rows?.[0]?.rerolls) || 0)
-    };
+    const result = new Map(starts.map(start => [start, { wins:0, answers:0, rerolls:0 }]));
+    for (const row of games.rows) Object.assign(result.get(Number(row.start_ms)), {
+      wins:Math.max(0, Number(row.wins) || 0), answers:Math.max(0, Number(row.answers) || 0)
+    });
+    for (const row of rerolls.rows) result.get(Number(row.start_ms)).rerolls = Math.max(0, Number(row.rerolls) || 0);
+    return result;
   }
 
   async function chestStatus(walletToken) {
@@ -384,10 +340,7 @@ function createQuestsService({
     const uniqueStarts = [...new Set(
       rows.map(row => Math.max(0, Number(row.starts_at_ms) || 0)).filter(Boolean)
     )];
-    const statsEntries = await Promise.all(
-      uniqueStarts.map(async startsAt => [startsAt, await statsForRange(token, startsAt)])
-    );
-    const statsByStart = new Map(statsEntries);
+    const statsByStart = await statsForStarts(token, uniqueStarts);
 
     const quests = rows
       .map(row => {

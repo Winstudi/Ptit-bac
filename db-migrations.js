@@ -525,6 +525,174 @@ async function runDatabaseMigrations(pool) {
        SET friend_code = friend_code
      WHERE friend_code !~ '^[0-9]{5}$'
   `);
+  // Schéma centralisé depuis inventory-service.js
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_inventory_reset_flags (
+          wallet_token text PRIMARY KEY,
+          avatars_only boolean NOT NULL DEFAULT false,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+
+  // Schéma centralisé depuis quests-service.js
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_quest_claims(
+          wallet_token text NOT NULL,
+          rotation_key text NOT NULL,
+          quest_id text NOT NULL,
+          xp_reward integer NOT NULL DEFAULT 0 CHECK(xp_reward >= 0),
+          claimed_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,rotation_key,quest_id)
+        )
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_quest_chest_claims(
+          wallet_token text NOT NULL,
+          cycle_no integer NOT NULL CHECK(cycle_no >= 1),
+          reward_result jsonb NOT NULL DEFAULT '{}'::jsonb,
+          claimed_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,cycle_no)
+        )
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_player_quests(
+          wallet_token text NOT NULL,
+          rotation_key text NOT NULL,
+          quest_id text NOT NULL,
+          starts_at_ms bigint NOT NULL,
+          slot smallint NOT NULL DEFAULT 0 CHECK(slot >= 0 AND slot <= 2),
+          created_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,rotation_key,quest_id)
+        )
+      `);
+  await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_quest_claims_wallet_idx
+          ON public.ptitbac_quest_claims(wallet_token,claimed_at DESC)
+      `);
+  await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_player_quests_wallet_idx
+          ON public.ptitbac_player_quests(wallet_token,starts_at_ms DESC,slot ASC)
+      `);
+
+  // Schéma centralisé depuis shop-service.js
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_offers(
+          id text PRIMARY KEY,
+          item_key text NOT NULL,
+          offer_mode text NOT NULL DEFAULT 'single',
+          item_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
+          display_name text NOT NULL,
+          currency text NOT NULL CHECK(currency IN ('coins','gems')),
+          base_price integer NOT NULL CHECK(base_price >= 1),
+          discount_percent integer NOT NULL DEFAULT 0 CHECK(discount_percent BETWEEN 0 AND 90),
+          block_no integer NOT NULL CHECK(block_no BETWEEN 1 AND 3),
+          position_no integer NOT NULL CHECK(position_no BETWEEN 1 AND 4),
+          badge text NOT NULL DEFAULT '',
+          active boolean NOT NULL DEFAULT true,
+          starts_at timestamptz NOT NULL DEFAULT now(),
+          ends_at timestamptz NOT NULL,
+          created_by_wallet_token text,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+  await pool.query(`ALTER TABLE public.ptitbac_shop_offers ADD COLUMN IF NOT EXISTS offer_mode text NOT NULL DEFAULT 'single'`);
+  await pool.query(`ALTER TABLE public.ptitbac_shop_offers ADD COLUMN IF NOT EXISTS item_keys jsonb NOT NULL DEFAULT '[]'::jsonb`);
+  await pool.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET item_keys=jsonb_build_array(item_key)
+         WHERE item_keys IS NULL OR jsonb_array_length(item_keys)=0
+      `);
+  await pool.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET offer_mode='single'
+         WHERE offer_mode NOT IN ('single','pack','choice')
+      `);
+  await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_shop_offers_active_slot_idx
+          ON public.ptitbac_shop_offers(active,block_no,position_no,ends_at)
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_purchases(
+          id text PRIMARY KEY,
+          wallet_token text NOT NULL,
+          offer_id text NOT NULL,
+          item_key text NOT NULL,
+          selected_item_key text,
+          purchased_item_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
+          currency text NOT NULL,
+          price_paid integer NOT NULL,
+          request_id text NOT NULL,
+          purchased_at timestamptz NOT NULL DEFAULT now(),
+          UNIQUE(wallet_token,request_id)
+        )
+      `);
+  await pool.query(`ALTER TABLE public.ptitbac_shop_purchases ADD COLUMN IF NOT EXISTS selected_item_key text`);
+  await pool.query(`ALTER TABLE public.ptitbac_shop_purchases ADD COLUMN IF NOT EXISTS purchased_item_keys jsonb NOT NULL DEFAULT '[]'::jsonb`);
+  await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_shop_purchases_wallet_idx
+          ON public.ptitbac_shop_purchases(wallet_token,purchased_at DESC)
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_daily_rotations(
+          rotation_key text PRIMARY KEY,
+          reward jsonb NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_shop_daily_claims(
+          wallet_token text NOT NULL,
+          rotation_key text NOT NULL,
+          result jsonb NOT NULL,
+          claimed_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,rotation_key)
+        )
+      `);
+  await pool.query(`
+        UPDATE public.ptitbac_shop_offers
+           SET active=false,updated_at=now()
+         WHERE active=true
+           AND block_no=3
+           AND position_no IN (3,4)
+      `);
+
+  // Schéma centralisé depuis reward-chests-service.js
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_reward_claims(
+          wallet_token text NOT NULL,
+          claim_key text NOT NULL,
+          chest_type text NOT NULL,
+          star_state text NOT NULL DEFAULT '',
+          result jsonb NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,claim_key)
+        )
+      `);
+
+  // Schéma centralisé depuis level-rewards-service.js
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_level_reward_claims(
+          wallet_token text NOT NULL,
+          level integer NOT NULL CHECK(level BETWEEN 1 AND 50),
+          reward_type text NOT NULL,
+          reward_result jsonb NOT NULL DEFAULT '{}'::jsonb,
+          claimed_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(wallet_token,level)
+        )
+      `);
+  await pool.query(`
+        CREATE TABLE IF NOT EXISTS public.ptitbac_level_unlimited_lives(
+          wallet_token text PRIMARY KEY,
+          expires_at timestamptz NOT NULL,
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+  await pool.query(`
+        CREATE INDEX IF NOT EXISTS ptitbac_level_reward_claims_wallet_idx
+          ON public.ptitbac_level_reward_claims(wallet_token, level)
+      `);
+
 }
 
 module.exports = {

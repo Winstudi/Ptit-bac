@@ -95,29 +95,8 @@ function createLevelRewardsService({
       const pool = getPool();
       if (!pool) throw new Error("PostgreSQL indisponible");
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_level_reward_claims(
-          wallet_token text NOT NULL,
-          level integer NOT NULL CHECK(level BETWEEN 1 AND 50),
-          reward_type text NOT NULL,
-          reward_result jsonb NOT NULL DEFAULT '{}'::jsonb,
-          claimed_at timestamptz NOT NULL DEFAULT now(),
-          PRIMARY KEY(wallet_token,level)
-        )
-      `);
 
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS public.ptitbac_level_unlimited_lives(
-          wallet_token text PRIMARY KEY,
-          expires_at timestamptz NOT NULL,
-          updated_at timestamptz NOT NULL DEFAULT now()
-        )
-      `);
 
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS ptitbac_level_reward_claims_wallet_idx
-          ON public.ptitbac_level_reward_claims(wallet_token, level)
-      `);
 
       return pool;
     })().catch(error => {

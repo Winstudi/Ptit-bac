@@ -1,0 +1,80 @@
+P’TIT BAC — NETTOYAGE ET STABILISATION
+
+Base GitHub : a4540720d595466a097343d82690a87e3ac2a37c
+Ce ZIP contient uniquement les fichiers modifiés ou ajoutés, pas le projet complet.
+
+INSTALLATION
+1. Décompresser le ZIP.
+2. Copier son contenu à la racine du dépôt GitHub en remplaçant les fichiers
+   de même nom. Conserver le dossier .github et son sous-dossier workflows.
+3. Conserver tous les autres fichiers du dépôt. Ne pas déposer le ZIP lui-même
+   comme remplacement du code.
+4. Aucun script de correction n’est à exécuter. Ne pas lancer les anciens
+   apply-stabilisation-1.49*.cjs après ce correctif.
+
+CORRECTIONS LIVRÉES
+- Dépendances verrouillées corrigées et actualisées ; installation reproductible.
+- Migrations SQL centralisées, transaction et verrou au démarrage.
+- Suppression de la remise à zéro automatique des données au démarrage.
+- Sessions et accès aux portefeuilles mieux contrôlés ; rôle administrateur
+  vérifié côté serveur, sans attribution automatique selon une adresse e-mail.
+- Écritures des salons ordonnées et vidées à l’arrêt ; synchronisation du portefeuille.
+- Chargement des statistiques de quêtes regroupé en moins de requêtes.
+- Build frontend corrigé, tests de régression et workflow GitHub ajoutés.
+- Récompense publicitaire refusée tant qu’une preuve serveur n’est pas intégrée.
+
+VISUEL
+Les CSS, images, sons et blocs de style inline existants sont conservés.
+Les ajouts visuels du dernier commit GitHub sont conservés également.
+Seul le lien vers une feuille CSS absente a été retiré du HTML.
+
+CONFIGURATION / RENDER
+Le propriétaire administrateur déjà enregistré est conservé.
+Pour attribuer explicitement un propriétaire sur une nouvelle base, utiliser
+PTITBAC_ADMIN_USER_ID avec l’UUID d’un utilisateur existant (public.users.id).
+Les connexions PostgreSQL distantes vérifient désormais le certificat TLS.
+Si nécessaire, fournir le certificat de l’autorité privée via PTITBAC_DB_CA.
+Si Render utilise une commande de build définie manuellement, l’aligner sur
+render.yaml :
+npm ci --include=dev && npm test && npm run check && node cleanup-frontend-build.cjs && npm run check:production && (node optimize-assets.cjs || echo "Optimisation WebP ignorée - fallback PNG actif")
+
+VÉRIFICATIONS
+203 tests réussis, 0 échec, 1 test ignoré faute de DATABASE_URL de test distante.
+Installation propre, vérification des sources et build de production validés.
+Audit npm : aucune vulnérabilité connue signalée lors de la vérification.
+Les migrations et plusieurs parcours SQL sont testés avec PGlite (PostgreSQL
+embarqué). La connexion TLS et la concurrence sur la base Render réelle,
+ainsi que le rendu sur téléphones réels, restent à vérifier après déploiement.
+Ce correctif ne constitue pas encore une application mobile native et ne
+remplace pas les étapes restantes du diagnostic initial.
+
+FICHIERS DU CORRECTIF
+- .github/workflows/ci.yml
+- .gitignore
+- README.md
+- account-auth.js
+- account-v1.js
+- app.js
+- auth-hook.js
+- ci-check.cjs
+- db-migrations.js
+- db-wallet-write-queue.js
+- db.js
+- frontend-assets.cjs
+- index.html
+- inventory-service.js
+- level-rewards-service.js
+- mobile-runtime.js
+- package-lock.json
+- package.json
+- quests-service.js
+- render.yaml
+- reward-chests-service.js
+- server.js
+- session-access.js
+- shop-hook.js
+- shop-service.js
+- socket-security.js
+- socket-security.test.cjs
+- sql-integration.test.cjs
+- stabilization.test.cjs

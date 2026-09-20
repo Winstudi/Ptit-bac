@@ -22,6 +22,7 @@ const BUNDLES = Object.freeze([
       "profile-screen-v2.css",
       "profile-redesign-v1.css",
       "shop-screen-v2.css",
+      "quests-screen-v1.css",
       "lobby-screen-v4.css",
       "quick-lobby-v1.css"
     ])
@@ -36,6 +37,7 @@ const BUNDLES = Object.freeze([
       "shared-footer-v1.css",
       "avatar-system-v2.css",
       "admin-v1.css",
+      "admin-extra-v1.css",
       "inbox-v1.css",
       "ui-runtime-v1.css",
       "letter-wheel-fx-v1.css",
@@ -67,8 +69,10 @@ const BUNDLES = Object.freeze([
       "avatar-system-v1.js",
       "inventory-client.js",
       "progression-client.js",
+      "reward-chests-client.js",
       "icon-theme-v1.js",
       "home-screen-v1.js",
+      "quests-client.js",
       "profile-module-v1.js",
       "friends-client.js",
       "chat-client.js",
@@ -84,6 +88,7 @@ const BUNDLES = Object.freeze([
       "quick-lobby-v1.js",
       "category-selection-v2.js",
       "admin-v1.js",
+      "admin-extra-v1.js",
       "inbox-v1.js",
       "ui-runtime-v1.js",
       "letter-wheel-v1.js"
