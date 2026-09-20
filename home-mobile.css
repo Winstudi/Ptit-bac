@@ -2645,3 +2645,21 @@ body:has(.home-mobile) .economy-hud {
   }
 }
 
+/* =========================================================
+   ACCUEIL V2 — PNG barre XP plus fin et décalé
+   ========================================================= */
+
+/* Le PNG / contenu interne de la barre XP est encore trop épais :
+   on réduit sa hauteur visuelle et on le décale de 4px à gauche. */
+.home-mobile #homeLevelsOpen .ptb-home-xp-bar > *,
+.home-mobile #homeLevelsOpen [class*="xp-bar"] > *,
+.home-mobile #homeLevelsOpen .ptb-home-xp-bar img,
+.home-mobile #homeLevelsOpen [class*="xp-bar"] img{
+  height:8px !important;
+  min-height:8px !important;
+  max-height:8px !important;
+  margin-left:-4px !important;
+  transform:scaleY(.08) !important;
+  transform-origin:left center !important;
+}
+
