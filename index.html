@@ -1242,185 +1242,47 @@
 
 
     /* =========================================================
-       Page réponses — même bandeau que Récap / Lettre / Catégories
+       Réponses — bandeau stable : flèche + lettre + chrono
+       Corrige le conflit avec gameplay-flow.css :
+       aucun élément n'est déplacé dans le DOM.
        ========================================================= */
 
-    html body .asv1-screen > .asv1-header{
+    /* gameplay-flow.css force cette page en flex :
+       on s'appuie volontairement sur ce layout. */
+    html.gameplay-flow body .flow-screen.asv1-screen{
       position:relative!important;
-      z-index:80!important;
-
-      width:calc(100% + 32px)!important;
-      min-width:0!important;
-      max-width:none!important;
-      height:52px!important;
-      min-height:52px!important;
-      margin-left:-16px!important;
-      margin-right:-16px!important;
-      padding:0 16px 4px!important;
-      box-sizing:border-box!important;
-
-      display:grid!important;
-      grid-template-columns:1fr 62px 1fr!important;
-      align-items:center!important;
-      gap:0!important;
-
-      background:
-        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
-          left top / 100% 1px no-repeat,
-        linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
-          left bottom 4px / 100% 1px no-repeat,
-        linear-gradient(
-          90deg,
-          rgba(49,19,111,.98) 0%,
-          rgba(32,24,119,.97) 42%,
-          rgba(10,35,104,.96) 100%
-        )
-          left top / 100% 48px no-repeat!important;
-
-      box-shadow:
-        inset 0 0 18px rgba(107,83,255,.14)!important;
-      overflow:visible!important;
-    }
-
-    /* Flèche identique aux autres pages. */
-    html body .asv1-screen .asv1-quit{
-      grid-column:1!important;
-      justify-self:start!important;
-      align-self:center!important;
-      width:42px!important;
-      height:42px!important;
-      min-width:42px!important;
-      padding:0!important;
-      border:0!important;
-      border-radius:0!important;
-      background:transparent!important;
-      box-shadow:none!important;
-      display:grid!important;
-      place-items:center!important;
-    }
-
-    html body .asv1-screen .asv1-quit img{
-      width:34px!important;
-      height:34px!important;
-      object-fit:contain!important;
-      filter:drop-shadow(0 0 7px rgba(188,76,255,.55))!important;
-    }
-
-    /* Logo centré. */
-    html body .asv1-screen .asv1-brand{
-      grid-column:2!important;
-      justify-self:center!important;
-      align-self:center!important;
-      width:auto!important;
-      height:43px!important;
-      max-width:92px!important;
-      max-height:43px!important;
-      margin:0!important;
-      object-fit:contain!important;
-      filter:drop-shadow(0 0 7px rgba(189,70,255,.48))!important;
-      pointer-events:none!important;
-    }
-
-    /* Numéro de manche à droite, sans capsule. */
-    html body .asv1-screen .asv1-round-mini{
-      position:static!important;
-      grid-column:3!important;
-      justify-self:end!important;
-      align-self:center!important;
-
-      width:auto!important;
-      min-width:0!important;
-      max-width:none!important;
-      min-height:0!important;
-      height:auto!important;
-      margin:0!important;
-      padding:0!important;
-
-      border:0!important;
-      border-radius:0!important;
-      background:transparent!important;
-      box-shadow:none!important;
-
-      display:inline-flex!important;
-      align-items:center!important;
-      justify-content:flex-end!important;
-      gap:4px!important;
-
-      color:#fff!important;
-      font-size:.75rem!important;
-      line-height:1!important;
-      font-weight:900!important;
-      white-space:nowrap!important;
-      text-shadow:
-        0 0 7px rgba(197,76,255,.45),
-        0 0 12px rgba(111,69,255,.25)!important;
-    }
-
-    html body .asv1-screen .asv1-round-mini > span,
-    html body .asv1-screen .asv1-round-mini strong{
-      color:#fff!important;
-      font-size:inherit!important;
-      line-height:1!important;
-      font-weight:900!important;
-    }
-
-    @media(max-width:370px){
-      html body .asv1-screen > .asv1-header{
-        padding-left:10px!important;
-        padding-right:10px!important;
-        grid-template-columns:1fr 56px 1fr!important;
-      }
-
-      html body .asv1-screen .asv1-quit{
-        width:38px!important;
-        height:38px!important;
-        min-width:38px!important;
-      }
-
-      html body .asv1-screen .asv1-quit img{
-        width:31px!important;
-        height:31px!important;
-      }
-
-      html body .asv1-screen .asv1-brand{
-        height:40px!important;
-        max-height:40px!important;
-        max-width:84px!important;
-      }
-
-      html body .asv1-screen .asv1-round-mini{
-        font-size:.68rem!important;
-      }
-    }
-
-
-    /* =========================================================
-       Réponses — bandeau gameplay : flèche + lettre + chrono
-       ========================================================= */
-
-    html body .asv1-screen{
-      padding-top:0!important;
-      grid-template-rows:116px minmax(0,1fr) auto!important;
+      display:flex!important;
+      flex-direction:column!important;
+      padding:
+        0
+        14px
+        max(10px,env(safe-area-inset-bottom))!important;
       gap:8px!important;
+      overflow:hidden!important;
     }
 
-    html body .asv1-screen > .asv1-header{
+    /* Le bandeau occupe réellement sa place :
+       la liste commence donc après lui. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-header{
       position:relative!important;
+      inset:auto!important;
       z-index:80!important;
 
-      width:calc(100% + 24px)!important;
+      flex:0 0 116px!important;
+      width:calc(100% + 28px)!important;
       min-width:0!important;
       max-width:none!important;
       height:116px!important;
       min-height:116px!important;
-      margin:0 -12px!important;
-      padding:0 12px!important;
+
+      margin:0 -14px!important;
+      padding:0 14px!important;
       box-sizing:border-box!important;
 
-      display:grid!important;
-      grid-template-columns:42px minmax(0,1fr) 104px!important;
+      display:flex!important;
       align-items:center!important;
-      column-gap:10px!important;
+      justify-content:flex-start!important;
 
       background:
         linear-gradient(rgba(195,58,255,.84),rgba(195,58,255,.84))
@@ -1440,40 +1302,80 @@
       overflow:visible!important;
     }
 
-    /* Flèche à gauche */
-    html body .asv1-screen > .asv1-header .asv1-quit{
-      grid-column:1!important;
-      justify-self:start!important;
-      align-self:center!important;
+    /* Flèche à gauche, au-dessus du bloc lettre/chrono. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-header .asv1-quit{
+      position:relative!important;
+      z-index:84!important;
+      flex:0 0 42px!important;
+
       width:42px!important;
       height:42px!important;
       min-width:42px!important;
+      min-height:42px!important;
+      margin:0!important;
       padding:0!important;
+
       border:0!important;
       border-radius:0!important;
       background:transparent!important;
       box-shadow:none!important;
+
+      display:grid!important;
+      place-items:center!important;
     }
 
-    html body .asv1-screen > .asv1-header .asv1-quit img{
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-header .asv1-quit img{
       width:34px!important;
       height:34px!important;
       object-fit:contain!important;
       filter:drop-shadow(0 0 7px rgba(188,76,255,.62))!important;
     }
 
-    /* La lettre actuelle vient directement dans le bandeau. */
-    html body .asv1-screen > .asv1-header .asv1-letter-card{
-      grid-column:2!important;
-      justify-self:center!important;
-      align-self:center!important;
+    /* Le numéro de manche de l'ancien header n'est plus affiché. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen .asv1-round-mini,
+    html.gameplay-flow body
+      .flow-screen.asv1-screen .asv1-brand{
+      display:none!important;
+    }
 
+    /* .asv1-hero reste à sa place dans le DOM, mais sort du flux
+       et se pose PAR-DESSUS le bandeau. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero{
+      position:absolute!important;
+      z-index:82!important;
+      top:0!important;
+      left:66px!important;
+      right:14px!important;
+
+      width:auto!important;
+      height:116px!important;
+      min-height:116px!important;
+      margin:0!important;
+      padding:0!important;
+
+      display:grid!important;
+      grid-template-columns:82px 104px!important;
+      align-items:center!important;
+      justify-content:space-between!important;
+      gap:10px!important;
+
+      pointer-events:none!important;
+    }
+
+    /* Lettre actuelle */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card{
       width:82px!important;
       height:82px!important;
       min-width:82px!important;
       min-height:82px!important;
       flex:none!important;
       margin:0!important;
+      padding:9px 4px 5px!important;
 
       border:1.2px solid #3155a4!important;
       border-radius:15px!important;
@@ -1481,22 +1383,35 @@
       box-shadow:
         inset 0 0 14px rgba(113,63,255,.05),
         0 0 10px rgba(73,82,213,.08)!important;
+
+      display:grid!important;
+      align-content:center!important;
+      justify-items:center!important;
+      text-align:center!important;
     }
 
-    html body .asv1-screen > .asv1-header .asv1-letter-card small{
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card small{
+      margin:0!important;
       color:#d1c2e8!important;
+      font-size:.58rem!important;
+      line-height:1.05!important;
+      font-weight:800!important;
     }
 
-    html body .asv1-screen > .asv1-header .asv1-letter-card strong{
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card strong{
+      margin-top:5px!important;
       color:#c15cff!important;
+      font-size:2.1rem!important;
+      line-height:1!important;
+      font-weight:900!important;
+      text-shadow:0 0 12px rgba(192,81,255,.58)!important;
     }
 
-    /* Le chrono reste circulaire et conserve son décompte. */
-    html body .asv1-screen > .asv1-header .asv1-timer{
-      grid-column:3!important;
-      justify-self:end!important;
-      align-self:center!important;
-
+    /* Chrono : même cercle et même décompte. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
       width:104px!important;
       height:104px!important;
       min-width:104px!important;
@@ -1505,51 +1420,103 @@
       max-height:104px!important;
       flex:none!important;
       margin:0!important;
+      padding:6px!important;
+      aspect-ratio:1/1!important;
     }
 
-    /* L'ancien bloc intermédiaire n'occupe plus de place :
-       ses deux éléments sont maintenant dans le bandeau. */
-    html body .asv1-screen > .asv1-hero{
-      display:none!important;
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-hero .asv1-timer strong{
+      font-size:1.85rem!important;
+      line-height:1!important;
     }
 
-    /* Plus de logo ni de numéro de manche sur la page Réponses. */
-    html body .asv1-screen .asv1-brand,
-    html body .asv1-screen .asv1-round-mini{
-      display:none!important;
+    /* La liste et le bouton retrouvent un flux normal sous le bandeau. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-list{
+      position:relative!important;
+      z-index:2!important;
+      flex:1 1 0!important;
+      width:100%!important;
+      min-height:0!important;
+      margin:0!important;
+      padding:3px!important;
+      overflow-y:auto!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.asv1-screen > .asv1-submit-wrap{
+      position:relative!important;
+      z-index:5!important;
+      flex:0 0 auto!important;
+      width:100%!important;
+      margin:0!important;
+    }
+
+    /* Quand le clavier est ouvert, le bandeau garde exactement
+       la même hauteur ; seule la liste perd de la hauteur. */
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open{
+      padding-top:0!important;
+      padding-bottom:5px!important;
+    }
+
+    html.gameplay-flow body
+      .flow-screen.asv1-screen.is-keyboard-open > .asv1-header{
+      flex-basis:116px!important;
+      height:116px!important;
+      min-height:116px!important;
     }
 
     @media(max-width:370px){
-      html body .asv1-screen > .asv1-header{
-        grid-template-columns:38px minmax(0,1fr) 92px!important;
-        column-gap:6px!important;
-        padding-left:9px!important;
-        padding-right:9px!important;
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-header{
+        flex-basis:106px!important;
+        height:106px!important;
+        min-height:106px!important;
+        padding-left:10px!important;
+        padding-right:10px!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-quit{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-header .asv1-quit{
         width:38px!important;
         height:38px!important;
         min-width:38px!important;
+        min-height:38px!important;
+        flex-basis:38px!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-quit img{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-header .asv1-quit img{
         width:31px!important;
         height:31px!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-letter-card{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-hero{
+        left:56px!important;
+        right:10px!important;
+        height:106px!important;
+        min-height:106px!important;
+        grid-template-columns:74px 92px!important;
+        gap:6px!important;
+      }
+
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card{
         width:74px!important;
         height:74px!important;
         min-width:74px!important;
         min-height:74px!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-letter-card strong{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-hero .asv1-letter-card strong{
         font-size:1.9rem!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-timer{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-hero .asv1-timer{
         width:92px!important;
         height:92px!important;
         min-width:92px!important;
@@ -1558,8 +1525,16 @@
         max-height:92px!important;
       }
 
-      html body .asv1-screen > .asv1-header .asv1-timer strong{
+      html.gameplay-flow body
+        .flow-screen.asv1-screen > .asv1-hero .asv1-timer strong{
         font-size:1.65rem!important;
+      }
+
+      html.gameplay-flow body
+        .flow-screen.asv1-screen.is-keyboard-open > .asv1-header{
+        flex-basis:106px!important;
+        height:106px!important;
+        min-height:106px!important;
       }
     }
 
@@ -2675,7 +2650,6 @@
     })();
   </script>
 
-
   <script>
     (() => {
       "use strict";
@@ -2684,12 +2658,19 @@
       let answerHeaderObserver = null;
 
       function answerHeaderPatchExitModal() {
-        const modal = document.querySelector(".asv1-exit-modal-backdrop");
+        const modal =
+          document.querySelector(".asv1-exit-modal-backdrop");
+
         if (!modal) return;
 
-        const cancel = modal.querySelector('[data-action="cancel"]');
-        const quit = modal.querySelector('[data-action="home"]');
-        const returnLobby = modal.querySelector('[data-action="lobby"]');
+        const cancel =
+          modal.querySelector('[data-action="cancel"]');
+
+        const quit =
+          modal.querySelector('[data-action="home"]');
+
+        const returnLobby =
+          modal.querySelector('[data-action="lobby"]');
 
         if (cancel) cancel.textContent = "Annuler";
         if (quit) quit.textContent = "Quitter la partie";
@@ -2700,14 +2681,21 @@
       function answerHeaderSync() {
         answerHeaderScheduled = false;
 
-        const root = document.querySelector(".asv1-screen");
+        const root =
+          document.querySelector(".asv1-screen");
 
         if (root) {
-          const header = root.querySelector(".asv1-header");
-          const hero = root.querySelector(".asv1-hero");
-          const letterCard = root.querySelector(".asv1-letter-card");
-          const timer = root.querySelector(".asv1-timer");
-          const backImg = root.querySelector("#leaveGameBtn img");
+          const hero =
+            root.querySelector(".asv1-hero");
+
+          const letterCard =
+            root.querySelector(".asv1-letter-card");
+
+          const timer =
+            root.querySelector(".asv1-timer");
+
+          const backImg =
+            root.querySelector("#leaveGameBtn img");
 
           if (
             backImg &&
@@ -2716,31 +2704,29 @@
             backImg.src = "/back-arrow.png";
           }
 
-          /* Cette page n'affiche plus logo / numéro de manche. */
+          /* Nettoie les éléments ajoutés par l'ancienne version. */
           root.querySelector(".asv1-brand")?.remove();
-          root.querySelector(".asv1-round-mini")?.remove();
 
-          /* Déplace les éléments existants : le chrono garde donc
-             exactement son ID, sa progression et son décompte. */
+          /* Sécurité pour une mise à jour à chaud :
+             si l'ancienne version avait déplacé lettre/chrono dans le
+             header, on les remet dans leur bloc d'origine. */
           if (
-            header &&
+            hero &&
             letterCard &&
-            letterCard.parentElement !== header
+            letterCard.parentElement !== hero
           ) {
-            header.appendChild(letterCard);
+            hero.appendChild(letterCard);
           }
 
           if (
-            header &&
+            hero &&
             timer &&
-            timer.parentElement !== header
+            timer.parentElement !== hero
           ) {
-            header.appendChild(timer);
+            hero.appendChild(timer);
           }
 
-          if (hero) {
-            hero.setAttribute("aria-hidden", "true");
-          }
+          hero?.removeAttribute("aria-hidden");
         }
 
         answerHeaderPatchExitModal();
@@ -2748,6 +2734,7 @@
 
       function answerHeaderSchedule() {
         if (answerHeaderScheduled) return;
+
         answerHeaderScheduled = true;
         requestAnimationFrame(answerHeaderSync);
       }
@@ -2766,17 +2753,28 @@
         );
 
         try {
-          socket?.on?.("room:state", answerHeaderSchedule);
+          socket?.on?.(
+            "room:state",
+            answerHeaderSchedule
+          );
         } catch {}
 
-        if (!answerHeaderObserver && document.body) {
+        if (
+          !answerHeaderObserver &&
+          document.body
+        ) {
           answerHeaderObserver =
-            new MutationObserver(answerHeaderSchedule);
+            new MutationObserver(
+              answerHeaderSchedule
+            );
 
-          answerHeaderObserver.observe(document.body, {
-            subtree:true,
-            childList:true
-          });
+          answerHeaderObserver.observe(
+            document.body,
+            {
+              subtree:true,
+              childList:true
+            }
+          );
         }
       }
 
