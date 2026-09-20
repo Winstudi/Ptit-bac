@@ -2663,3 +2663,61 @@ body:has(.home-mobile) .economy-hud {
   transform-origin:left center !important;
 }
 
+/* =========================================================
+   ACCUEIL V2 — descente modes / livre / logo
+   ========================================================= */
+
+/* Tout le bloc « Choisis ton mode de jeu » : +25px vers le bas. */
+.home-mobile .hm-modes{
+  margin-top:145px !important;
+}
+
+/* Livre décoratif : +40px vers le bas. */
+.home-mobile .hm-book{
+  transform:translateY(114px) perspective(300px) rotateX(18deg) !important;
+}
+
+/* Logo P'tit Bac : +35px vers le bas. */
+.home-mobile .hm-brand{
+  transform:translate(-50%,63px) !important;
+}
+
+/* Même décalage sur les variantes responsive. */
+@media(max-width:370px){
+  .home-mobile .hm-modes{
+    margin-top:138px !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(114px) perspective(300px) rotateX(18deg) !important;
+  }
+}
+
+@media(max-height:760px){
+  .home-mobile .hm-modes{
+    margin-top:128px !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(108px) perspective(280px) rotateX(18deg) !important;
+  }
+
+  .home-mobile .hm-brand{
+    transform:translate(-50%,56px) !important;
+  }
+}
+
+@media(max-height:670px){
+  .home-mobile .hm-modes{
+    margin-top:112px !important;
+  }
+
+  .home-mobile .hm-book{
+    transform:translateY(102px) perspective(260px) rotateX(18deg) !important;
+  }
+
+  .home-mobile .hm-brand{
+    transform:translate(-50%,48px) !important;
+  }
+}
+
