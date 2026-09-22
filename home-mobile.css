@@ -295,6 +295,7 @@ body:has(.home-mobile) .economy-hud {
 
 .hm-menu {
   position:absolute;
+  z-index:200;
   right:0;
   top:42px;
   width:224px;
