@@ -9,7 +9,8 @@ body:has(.quests-v1){
   width:100%;
   min-height:100%;
   margin:0;
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:auto;
   background:#050b31;
 }
 
@@ -43,14 +44,14 @@ body:has(.quests-v1) .economy-hud{
   position:relative;
   isolation:isolate;
   width:min(100%,430px);
-  height:100svh;
+  height:auto;
   min-height:100svh;
   margin:0 auto;
   padding:max(3px,env(safe-area-inset-top)) 9px max(5px,env(safe-area-inset-bottom));
   display:grid;
-  grid-template-rows:48px 156px 330px minmax(0,1fr);
+  grid-template-rows:48px 156px auto minmax(180px,1fr);
   gap:10px;
-  overflow:hidden;
+  overflow:visible;
   color:var(--q-text);
   font-family:"DM Sans",system-ui,sans-serif;
   background:
@@ -476,11 +477,8 @@ body:has(.quests-v1) .economy-hud{
   grid-auto-rows:111px;
   gap:12px;
   align-content:start;
-  overflow-y:auto;
-  overflow-x:hidden;
-  overscroll-behavior-y:contain;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
+  overflow:visible;
+  overscroll-behavior-y:auto;
 }
 
 .qv1-list::-webkit-scrollbar{
@@ -727,7 +725,7 @@ body:has(.quests-v1) .economy-hud{
 @media(max-width:390px){
   .quests-v1{
     padding-inline:7px;
-    grid-template-rows:46px 149px 316px minmax(0,1fr);
+    grid-template-rows:46px 149px auto minmax(170px,1fr);
     gap:10px;
   }
 
@@ -834,7 +832,7 @@ body:has(.quests-v1) .economy-hud{
 
 @media(max-height:710px){
   .quests-v1{
-    grid-template-rows:44px 140px 292px minmax(0,1fr);
+    grid-template-rows:44px 140px auto minmax(150px,1fr);
     gap:10px;
   }
 
