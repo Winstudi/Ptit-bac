@@ -70,6 +70,23 @@
     return mins ? `${hours} h ${mins} min` : `${hours} h`;
   }
 
+  function orderedQuests(quests = []) {
+    return [...quests].sort((a, b) => {
+      const aDone = Boolean(a?.completed || a?.claimed);
+      const bDone = Boolean(b?.completed || b?.claimed);
+
+      // Les quêtes encore en cours restent toujours avant les quêtes accomplies.
+      if (aDone !== bDone) return aDone ? 1 : -1;
+
+      // Dans chaque groupe, on conserve l'ordre prévu par le serveur.
+      const aStart = Number(a?.startsAt) || 0;
+      const bStart = Number(b?.startsAt) || 0;
+      if (aStart !== bStart) return bStart - aStart;
+
+      return (Number(a?.slot) || 0) - (Number(b?.slot) || 0);
+    });
+  }
+
   function questCardMarkup(quest) {
     const target = Math.max(1, Number(quest.target) || 1);
     const progress = Math.max(0, Math.min(target, Number(quest.progress) || 0));
@@ -188,7 +205,7 @@
         <section class="qv1-list" aria-label="Quêtes">
           ${loading
             ? loadingMarkup()
-            : (status?.quests || []).map(questCardMarkup).join("")}
+            : orderedQuests(status?.quests || []).map(questCardMarkup).join("")}
         </section>
 
         <div class="qv1-bottom-art" aria-hidden="true">
