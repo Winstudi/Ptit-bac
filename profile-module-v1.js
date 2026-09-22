@@ -128,11 +128,8 @@
     if (!value) return fallback;
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return fallback;
-    let label = date.toLocaleDateString("fr-FR", {
-      month: "short",
-      year: "numeric"
-    });
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${month}/${date.getFullYear()}`;
   }
 
   function normalizeAccountStats(value) {
