@@ -2769,3 +2769,39 @@ html body main.pl-private-v3[data-mode="private"] .pl-player.is-voice-speaking .
 .pl-room-voice-settings > button:disabled {
   opacity:.38!important;
 }
+
+
+/* =========================================================
+   VOCAL V1.1 — icônes coupées rouges + barrées
+   ========================================================= */
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button {
+  position:relative!important;
+  overflow:hidden!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is-muted {
+  color:#ff5f7f!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is-muted .pl-v3-comms-svg,
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is-muted svg {
+  color:#ff5f7f!important;
+  stroke:#ff5f7f!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is-muted::after {
+  content:""!important;
+  position:absolute!important;
+  z-index:4!important;
+  left:50%!important;
+  top:50%!important;
+  width:27px!important;
+  height:2.5px!important;
+  border-radius:999px!important;
+  background:#ff5f7f!important;
+  box-shadow:0 0 5px rgba(255,95,127,.55)!important;
+  transform:translate(-50%,-50%) rotate(-48deg)!important;
+  transform-origin:center!important;
+  pointer-events:none!important;
+}
