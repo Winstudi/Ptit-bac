@@ -81,3 +81,70 @@ test("SQL intégré : migration, compte, sessions, achats, gemmes, quêtes et ni
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM public.ptitbac_shop_purchases WHERE wallet_token=$1", [token])).rows[0].n, 1);
   } finally { await engine.close(); }
 });
+
+test('groupes persistants : invitations, capacité, permissions, départ et salon privé', async () => {
+  const { createPartyService } = require('./friends-hook.js');
+  const engine = new PGlite({ extensions:{ pgcrypto } });
+  const query = async (sql, values) => {
+    const result = await engine.query(sql, values);
+    return { ...result, rowCount:result.rows.length || result.affectedRows || 0 };
+  };
+  const pool = { query, connect:async () => ({ query, release() {} }) };
+  let roomLive = false;
+  const service = () => createPartyService({ pool,
+    roomAvailable:(code, token) => roomLive && code === 'ABC123' && token === '1'.repeat(48),
+    online:() => true });
+  try {
+    await runDatabaseMigrations(pool);
+    await runDatabaseMigrations(pool); // Safe on a deployment that runs migrations again.
+    const users = [];
+    for (let i=1;i<=8;i++) {
+      const inserted = await query('INSERT INTO public.users(friend_code,username,wallet_token) VALUES($1,$2,$3) RETURNING id',
+        [String(20000+i),`Ami ${i}`,String(i).repeat(48)]);
+      users.push(inserted.rows[0].id);
+    }
+    const [leader, friend, outsider] = users;
+    for (const id of users.slice(1)) await query('INSERT INTO public.friendships(user_id,friend_id) VALUES($1,$2)', [leader,id]);
+    const party = service();
+    await party.mutate(leader,'create');
+    const id = (await party.state(leader)).party.id;
+    await party.mutate(leader,'create');
+    assert.equal((await party.state(leader)).party.id,id);
+    await assert.rejects(party.mutate(outsider,'accept',{partyId:id}), /Invitation/);
+    await party.mutate(leader,'invite',{friendId:friend});
+    assert.equal((await party.state(friend)).invitations.length,1);
+    await party.mutate(friend,'accept',{partyId:id});
+    await party.mutate(friend,'accept',{partyId:id}); // Retry does not add a duplicate.
+    assert.equal((await party.state(leader)).party.members.length,2);
+    assert.equal((await service().state(friend)).party.id,id); // New service instance, same saved group.
+    await assert.rejects(party.mutate(friend,'invite',{friendId:outsider}), /responsable/);
+    await assert.rejects(party.mutate(friend,'shareRoom',{roomCode:'ABC123'}), /responsable/);
+    await assert.rejects(party.mutate(leader,'shareRoom',{roomCode:'ABC123'}), /salon privé/);
+    roomLive = true;
+    await party.mutate(leader,'shareRoom',{roomCode:'ABC123'});
+    assert.equal((await party.state(friend)).party.roomCode,'ABC123');
+    roomLive = false;
+    assert.equal((await party.state(friend)).party.roomCode,'');
+    await party.mutate(leader,'invite',{friendId:outsider});
+    await query("UPDATE public.ptitbac_party_invites SET expires_at=now()-interval '1 second' WHERE user_id=$1",[outsider]);
+    await assert.rejects(party.mutate(outsider,'accept',{partyId:id}), /Invitation/);
+    await party.mutate(leader,'invite',{friendId:outsider});
+    await party.mutate(outsider,'decline',{partyId:id});
+    assert.equal((await party.state(outsider)).invitations.length,0);
+    // Five pending invitations can compete for the four remaining seats.
+    for (const uid of users.slice(2,7)) await party.mutate(leader,'invite',{friendId:uid});
+    for (const uid of users.slice(2,6)) await party.mutate(uid,'accept',{partyId:id});
+    assert.equal((await party.state(leader)).party.members.length,6);
+    await assert.rejects(party.mutate(users[6],'accept',{partyId:id}), /complet/);
+    assert.equal((await party.state(users[6])).party,null);
+    await party.mutate(leader,'leave');
+    const transferred = (await party.state(friend)).party;
+    assert.equal(transferred.leaderId,friend);
+    assert.equal(transferred.roomCode,'');
+    assert.equal((await party.state(leader)).party,null);
+    await party.mutate(leader,'create');
+    assert.notEqual((await party.state(leader)).party.id,id);
+    for (const uid of users.slice(1,6)) await party.mutate(uid,'leave');
+    assert.equal((await query('SELECT 1 FROM public.ptitbac_parties WHERE id=$1',[id])).rowCount,0);
+  } finally { await engine.close(); }
+});

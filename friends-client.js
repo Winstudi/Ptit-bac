@@ -21,7 +21,107 @@
   let openedFriendId = "";
   let inviteTimer = null;
 
+  let partyState = { party:null, invitations:[] };
+  let partyBusy = false;
+  let partyLoading = true;
+  let partyError = '';
+  let partyRequestNumber = 0;
+
+  function partyRequest(action, extra = {}) {
+    const identity = identityPayload(extra);
+    const requestNumber = ++partyRequestNumber;
+    return new Promise(resolve => {
+      friendSocket.timeout(8000).emit(`party:${action}`, identity, (err, res) => {
+        if (identity.walletToken !== identityPayload().walletToken) return resolve({ ok:false });
+        const result = err ? { ok:false, error:'Connexion au groupe non confirmée. Réessaie.' } : res;
+        if (requestNumber === partyRequestNumber) {
+          partyLoading = false;
+          partyError = result?.ok ? '' : (result?.error || 'Groupe indisponible.');
+          if (result?.ok) {
+            const previousInvites = new Set(partyState.invitations.map(i => i.id));
+            if ((result.invitations || []).some(i => !previousInvites.has(i.id))) {
+              localToast('Invitation à un groupe reçue : ouvre Amis.');
+            }
+            if (result.party?.roomCode && result.party.roomCode !== partyState.party?.roomCode &&
+                result.party.leaderId !== friendsState.profile?.id) {
+              localToast('Le salon de ton groupe est prêt. Retrouve-le dans Amis.');
+            }
+            partyState = { party:result.party, invitations:result.invitations || [] };
+          }
+          paintParty();
+        }
+        resolve(result || { ok:false });
+      });
+    });
+  }
+  function paintParty() {
+    const panel = document.getElementById('friendsPartyPanel');
+    if (!panel) return;
+    const group = partyState.party;
+    const leader = group?.leaderId === friendsState.profile?.id;
+    const disabled = partyBusy ? ' disabled' : '';
+    const btn = (action, text, data = '') => `<button type="button" data-party-action="${action}" ${data}${disabled}>${text}</button>`;
+    panel.innerHTML = `<h2>Mon groupe${group ? ` · ${group.members.length}/6` : ''}</h2>` +
+      (partyLoading ? '<p>Chargement du groupe…</p>' : group ?
+        `<ul>${group.members.map(member => `<li><strong>${escapeHtml(member.username)}</strong><span>${member.id === group.leaderId ? 'Responsable · ' : ''}${member.online ? 'En ligne' : 'Hors ligne'}</span></li>`).join('')}</ul>
+        <div class="friends-party-actions">${group.roomCode && !leader ? btn('joinRoom','Rejoindre le salon') : ''}${leader ? btn('openRoom',group.roomCode ? 'Ouvrir le salon' : 'Préparer un salon privé') : ''}${btn('leave','Quitter le groupe')}</div>
+        <p>Le groupe reste réuni après les parties et les reconnexions.</p>
+        ${leader ? `<label for="partyFriendSelect">Inviter un ami</label><div class="friends-party-actions"><select id="partyFriendSelect" aria-label="Ami à inviter">${friendsState.friends.filter(f => !group.members.some(m => m.id === f.id)).map(f => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.username)}</option>`).join('')}</select>${btn('invite','Inviter', group.members.length >= 6 ? 'disabled' : '')}</div>` : '<p>Le responsable prépare le salon ; tu pourras le rejoindre ici.</p>'}`
+        : btn('create','Créer mon groupe')) +
+      (!group ? partyState.invitations.map(invite => `<div class="friends-party-invitation"><p>Groupe de <strong>${escapeHtml(invite.leader_name)}</strong></p><div class="friends-party-actions">${btn('accept','Accepter',`data-party-id="${escapeHtml(invite.id)}"`)}${btn('decline','Refuser',`data-party-id="${escapeHtml(invite.id)}"`)}</div></div>`).join('') : '') +
+      `<p role="status">${escapeHtml(partyError)}</p>`;
+    panel.querySelectorAll('[data-party-action]').forEach(button => button.onclick = async () => {
+      if (partyBusy) return;
+      const action = button.dataset.partyAction;
+      const friendId = panel.querySelector('#partyFriendSelect')?.value;
+      if (action === 'invite' && !friendId) return localToast('Ajoute un ami à ta liste pour l’inviter.');
+      if (action === 'leave' && !window.confirm('Quitter le groupe ? Tu resteras dans ta partie actuelle.')) return;
+      partyBusy = true; paintParty();
+      try {
+        if (action === 'openRoom' || action === 'joinRoom') await enterPartyRoom(action);
+        else {
+          const res = await partyRequest(action, { friendId, partyId:button.dataset.partyId });
+          if (!res?.ok) localToast(res?.error || 'Action non confirmée.');
+          else if (action === 'invite') localToast('Invitation au groupe envoyée (valable 5 minutes).');
+        }
+      } finally { partyBusy = false; paintParty(); }
+    });
+  }
+  async function enterPartyRoom(action) {
+    // Recheck shared room availability before leaving or creating any game.
+    const fresh = await partyRequest('get');
+    if (!fresh?.ok || !fresh.party) return;
+    const code = fresh.party.roomCode;
+    const state = typeof session !== 'undefined' ? session.state : null;
+    if (code && state?.code === code) { friendsOpen = false; render(); return; }
+    if (state && state.phase !== 'finished') {
+      if (action === 'openRoom' && state.mode === 'private' && state.phase === 'lobby') {
+        const shared = await partyRequest('shareRoom', { roomCode:state.code });
+        if (shared?.ok) { friendsOpen = false; render(); }
+      } else localToast('Quitte ton salon actuel avant de rejoindre celui du groupe.');
+      return;
+    }
+    if (!code && action !== 'openRoom') return localToast('Le salon n’est plus disponible.');
+    const p = identityPayload();
+    const res = await new Promise(resolve => friendSocket.timeout(10000).emit(
+      code ? 'room:join' : 'room:create',
+      { code, name:p.username, avatar:p.avatar, walletToken:p.walletToken, mode:'private' },
+      (err, value) => resolve(err ? { ok:false, error:'Connexion non confirmée. Vérifie ton salon avant de réessayer.' } : value)
+    ));
+    if (p.walletToken !== identityPayload().walletToken) return;
+    if (!res?.ok) return localToast(res?.error || 'Salon indisponible.');
+    if (typeof setWalletState === 'function') setWalletState(res.walletToken,res.balance);
+    saveSession(res.code,res.playerId); session.state = res.state;
+    if (!code) {
+      const shared = await partyRequest('shareRoom', { roomCode:res.code });
+      if (!shared?.ok) localToast(shared?.error || 'Salon créé, mais partage au groupe non confirmé.');
+    }
+    friendsOpen = false; render();
+  }
+
   function resetFriendsIdentityState() {
+    partyState = { party:null, invitations:[] }; partyLoading = true; partyError = '';
+    partyRequestNumber += 1;
     clearTimeout(bootstrapTimer);
     bootstrapTimer = null;
     friendsState.profile = null;
@@ -210,6 +310,7 @@
       friendsState.friends = res.friends || [];
       friendsState.incoming = res.incoming || [];
       friendsState.outgoing = res.outgoing || [];
+      if (!partyBusy) partyRequest("get");
 
       if (friendsOpen && friendsState.activeTab !== "messages" && document.querySelector(".friends-mobile")) renderFriends();
     });
@@ -229,6 +330,7 @@
       friendsState.friends = res.friends || [];
       friendsState.incoming = res.incoming || [];
       friendsState.outgoing = res.outgoing || [];
+      if (!partyBusy) partyRequest("get");
       if (openedFriendId && !friendsState.friends.some(item => String(item.id) === String(openedFriendId))) {
         openedFriendId = "";
       }
@@ -556,6 +658,7 @@
         </nav>
 
         <div class="friends-v2-content">
+          ${friendsState.activeTab === "friends" ? '<section id="friendsPartyPanel" class="friends-party-panel"></section>' : ""}
           ${currentPanel()}
         </div>
 
@@ -567,6 +670,7 @@
       </main>`;
 
     bindFriendsUI();
+    paintParty();
     if (friendsState.activeTab === "messages") window.PtitBacChat?.mount?.();
   }
 
@@ -884,6 +988,15 @@
     if (friendsOpen && document.querySelector(".friends-mobile") && friendsState.activeTab === "friends") renderFriends();
   });
 
+  friendSocket.on("party:changed", () => {
+    if (!partyBusy) partyRequest('get');
+  });
+  // Refresh only while the friends page is visible; updates include online status
+  // and availability of a shared salon after a game or server restart.
+  setInterval(() => {
+    if (friendSocket.connected && document.getElementById('friendsPartyPanel') &&
+        document.visibilityState !== 'hidden' && !partyBusy) partyRequest('get');
+  }, 15000);
   friendSocket.on("friends:room-invite", invitation);
   if(typeof socket!=="undefined"){
     socket.on("room:state",state=>{if(state&&state.phase!=="finished")closeInvite();});

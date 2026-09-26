@@ -156,6 +156,102 @@ async function identityForSocket(socket, payload = {}) {
   return profile;
 }
 
+// A single membership per user and a row lock per group serialize mutations.
+function createPartyService({ pool, roomAvailable = () => false, online = () => false }) {
+  const fail = message => { throw new Error(message); };
+  async function state(userId) {
+    const group = await pool.query(`SELECT p.*, u.wallet_token AS leader_token
+      FROM public.ptitbac_parties p
+      JOIN public.ptitbac_party_members m ON m.party_id=p.id
+      JOIN public.users u ON u.id=p.leader_id WHERE m.user_id=$1`, [userId]);
+    let party = null;
+    if (group.rowCount) {
+      const row = group.rows[0];
+      const members = await pool.query(`SELECT u.id,u.username FROM public.ptitbac_party_members m
+        JOIN public.users u ON u.id=m.user_id WHERE m.party_id=$1 ORDER BY m.joined_at,u.id`, [row.id]);
+      party = { id:row.id, leaderId:row.leader_id,
+        roomCode:roomAvailable(row.room_code, row.leader_token) ? row.room_code : '',
+        members:members.rows.map(u => ({ id:u.id, username:u.username, online:online(u.id) })) };
+    }
+    const invites = await pool.query(`SELECT i.party_id AS id,u.username AS leader_name,i.expires_at
+      FROM public.ptitbac_party_invites i JOIN public.ptitbac_parties p ON p.id=i.party_id
+      JOIN public.users u ON u.id=p.leader_id
+      WHERE i.user_id=$1 AND i.expires_at>now() ORDER BY i.expires_at DESC LIMIT 10`, [userId]);
+    return { party, invitations:invites.rows };
+  }
+  async function mutate(userId, action, payload = {}) {
+    const client = await pool.connect();
+    const changed = new Set([userId]);
+    try {
+      await client.query('BEGIN');
+      // Also serialize simultaneous accepts/creates by this user on two devices.
+      await client.query('SELECT id FROM public.users WHERE id=$1 FOR UPDATE', [userId]);
+      const membership = await client.query('SELECT party_id FROM public.ptitbac_party_members WHERE user_id=$1', [userId]);
+      const current = membership.rows[0]?.party_id;
+      if (action === 'create' && !current) {
+        const id = require('node:crypto').randomUUID();
+        await client.query('INSERT INTO public.ptitbac_parties(id,leader_id) VALUES($1,$2)', [id,userId]);
+        await client.query('INSERT INTO public.ptitbac_party_members(user_id,party_id) VALUES($1,$2)', [userId,id]);
+      } else if (action !== 'create') {
+        const requested = String(payload.partyId || '');
+        const partyId = ['accept','decline'].includes(action) ? requested : current;
+        if (!partyId || !/^[a-f0-9-]{36}$/i.test(partyId)) fail('Groupe introuvable.');
+        const found = await client.query('SELECT * FROM public.ptitbac_parties WHERE id=$1 FOR UPDATE', [partyId]);
+        if (!found.rowCount) fail('Ce groupe n’existe plus.');
+        const party = found.rows[0];
+        const members = await client.query('SELECT user_id FROM public.ptitbac_party_members WHERE party_id=$1 ORDER BY joined_at,user_id', [partyId]);
+        members.rows.forEach(m => changed.add(m.user_id));
+        if (action === 'accept') {
+          if (current && current !== partyId) fail('Quitte ton groupe actuel avant de rejoindre celui-ci.');
+          if (!current) {
+            const invite = await client.query('SELECT 1 FROM public.ptitbac_party_invites WHERE party_id=$1 AND user_id=$2 AND expires_at>now()', [partyId,userId]);
+            if (!invite.rowCount) fail('Invitation expirée ou indisponible.');
+            const friendship = await client.query('SELECT 1 FROM public.friendships WHERE user_id=$1 AND friend_id=$2', [party.leader_id,userId]);
+            if (!friendship.rowCount) fail('Le responsable du groupe n’est plus dans tes amis.');
+            if (members.rowCount >= 6) fail('Ce groupe est complet (6 joueurs).');
+            await client.query('INSERT INTO public.ptitbac_party_members(user_id,party_id) VALUES($1,$2)', [userId,partyId]);
+          }
+          await client.query('DELETE FROM public.ptitbac_party_invites WHERE user_id=$1', [userId]);
+        } else if (action === 'decline') {
+          await client.query('DELETE FROM public.ptitbac_party_invites WHERE party_id=$1 AND user_id=$2', [partyId,userId]);
+        } else if (action === 'invite') {
+          if (party.leader_id !== userId) fail('Seul le responsable peut inviter dans le groupe.');
+          if (members.rowCount >= 6) fail('Ton groupe est complet (6 joueurs).');
+          const target = String(payload.friendId || '');
+          if (!/^[a-f0-9-]{36}$/i.test(target) || target === userId) fail('Ami invalide.');
+          const friend = await client.query('SELECT 1 FROM public.friendships WHERE user_id=$1 AND friend_id=$2', [userId,target]);
+          if (!friend.rowCount) fail('Ce joueur n’est pas dans tes amis.');
+          const occupied = await client.query('SELECT 1 FROM public.ptitbac_party_members WHERE user_id=$1', [target]);
+          if (occupied.rowCount) fail('Cet ami est déjà dans un groupe.');
+          await client.query(`INSERT INTO public.ptitbac_party_invites(party_id,user_id) VALUES($1,$2)
+            ON CONFLICT(party_id,user_id) DO UPDATE SET expires_at=now()+interval '5 minutes'`, [partyId,target]);
+          changed.add(target);
+        } else if (action === 'leave') {
+          await client.query('DELETE FROM public.ptitbac_party_members WHERE user_id=$1', [userId]);
+          const remaining = members.rows.filter(m => m.user_id !== userId);
+          if (!remaining.length) await client.query('DELETE FROM public.ptitbac_parties WHERE id=$1', [partyId]);
+          else if (party.leader_id === userId) {
+            await client.query("UPDATE public.ptitbac_parties SET leader_id=$2,room_code='' WHERE id=$1", [partyId,remaining[0].user_id]);
+            await client.query('DELETE FROM public.ptitbac_party_invites WHERE party_id=$1', [partyId]);
+          }
+        } else if (action === 'shareRoom') {
+          if (party.leader_id !== userId) fail('Seul le responsable peut choisir le salon.');
+          const user = await client.query('SELECT wallet_token FROM public.users WHERE id=$1', [userId]);
+          const code = String(payload.roomCode || '').trim().toUpperCase();
+          if (!roomAvailable(code,user.rows[0]?.wallet_token)) fail('Crée ou rejoins ton salon privé avant de le partager.');
+          await client.query('UPDATE public.ptitbac_parties SET room_code=$2 WHERE id=$1', [partyId,code]);
+        } else fail('Action inconnue.');
+      }
+      await client.query('COMMIT');
+      return [...changed];
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally { client.release(); }
+  }
+  return { state, mutate };
+}
+
 function installFriends(io, game = {}) {
   if (!DATABASE_URL) {
     console.warn("Amis V1 désactivé: DATABASE_URL absent.");
@@ -166,7 +262,22 @@ function installFriends(io, game = {}) {
     console.error("Amis V1 initialisation impossible:", err.message)
   );
 
+  const parties = createPartyService({ pool, roomAvailable:game.partyRoomAvailable, online:presence.isOnline });
   io.on("connection", socket => {
+    for (const action of ['get','create','invite','accept','decline','leave','shareRoom']) {
+      socket.on(`party:${action}`, async (payload = {}, callback = () => {}) => {
+        try {
+          const profile = await identityForSocket(socket, payload);
+          const changed = action === 'get' ? [] : await parties.mutate(profile.id, action, payload);
+          for (const userId of changed) presence.emitToUser(io,userId,'party:changed',{});
+          callback({ ok:true, ...(await parties.state(profile.id)) });
+        } catch (err) {
+          const message = err.code ? 'Impossible de modifier le groupe. Réessaie.' : err.message;
+          callback({ ok:false, error:message || 'Groupe indisponible.' });
+        }
+      });
+    }
+
     socket.on("friends:bootstrap", async (payload, callback = () => {}) => {
       try {
         const profile = await identityForSocket(socket, payload);
@@ -419,6 +530,7 @@ function installFriends(io, game = {}) {
 }
 
 module.exports = installFriends;
+module.exports.createPartyService = createPartyService;
 
 process.on("SIGTERM", () => {
   pool?.end().catch(() => {});

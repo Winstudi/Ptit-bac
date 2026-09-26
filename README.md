@@ -253,3 +253,29 @@ session reste disponible et le bouton permet de réessayer.
 Validation de ce lot : tests ciblés des règles, transitions et protections
 Socket.IO, ainsi que `node ci-check.cjs`. Le parcours réel à plusieurs iPhone
 reste à vérifier après installation. Aucun nouveau fichier source requis.
+
+## Groupes d'amis persistants — septembre 2026
+
+Dans **Amis → Mon groupe**, créer un groupe puis sélectionner un ami et l'inviter.
+L'invitation doit être acceptée ; elle expire après cinq minutes. Un groupe
+contient au maximum six joueurs et chaque joueur appartient à un seul groupe.
+Les membres sont sauvegardés dans PostgreSQL : retourner à l'accueil, se
+reconnecter ou redémarrer le serveur ne dissout pas le groupe.
+
+Le responsable peut préparer un salon privé ou partager celui qu'il héberge.
+Les membres retrouvent « Rejoindre le salon » dans Amis : ils rejoignent à leur
+initiative, sans nouvelle invitation et sans quitter automatiquement une partie
+en cours. Après une partie, la revanche garde le salon existant ; si tous sont
+revenus à l'accueil, le responsable peut en préparer un autre pour le groupe.
+Quitter le groupe ne quitte pas la partie en cours. Si le responsable quitte
+le groupe, le membre le plus ancien prend sa place. Le dernier départ supprime
+le groupe. Un salon fermé ou devenu public n'est plus proposé au groupe.
+
+Les tables sont créées automatiquement par les migrations habituelles, sans
+commande SQL manuelle. Ce lot contient aussi le correctif de revanche précédent.
+Il n'ajoute ni mode Sprint ni parties à thème.
+
+Tests : suite automatisée incluant PostgreSQL embarqué, contrôle des fichiers
+et contrôle syntaxique de l'interface. La vérification visuelle et un essai réel à plusieurs iPhone restent
+nécessaire après déploiement. Le test PostgreSQL distant nécessite une base
+de test explicitement configurée ; il n'a pas été exécuté dans cette livraison.

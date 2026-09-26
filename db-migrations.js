@@ -693,6 +693,27 @@ async function runDatabaseMigrations(pool) {
           ON public.ptitbac_level_reward_claims(wallet_token, level)
       `);
 
+  // Groupes d'amis persistants, indépendants des salons de jeu.
+  await pool.query(`CREATE TABLE IF NOT EXISTS public.ptitbac_parties (
+    id uuid PRIMARY KEY,
+    leader_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    room_code text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS public.ptitbac_party_members (
+    user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    party_id uuid NOT NULL REFERENCES public.ptitbac_parties(id) ON DELETE CASCADE,
+    joined_at timestamptz NOT NULL DEFAULT now()
+  )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS ptitbac_party_members_party_idx
+    ON public.ptitbac_party_members(party_id)`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS public.ptitbac_party_invites (
+    party_id uuid NOT NULL REFERENCES public.ptitbac_parties(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    expires_at timestamptz NOT NULL DEFAULT (now() + interval '5 minutes'),
+    PRIMARY KEY(party_id, user_id)
+  )`);
+
 }
 
 module.exports = {

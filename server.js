@@ -67,6 +67,12 @@ require("./friends-hook.js")(io, {
       (room.players.length < 6 || room.players.some(publicBotEngine.isMatchmakingBot)) &&
       room.players.some(p => !p.isBot && p.walletToken === token && p.connected);
   },
+  partyRoomAvailable: (code, token) => {
+    const room = rooms.get(code);
+    return !!room && room.mode === "private" && room.phase === "lobby" &&
+      !room.economyStartPending && room.players.some(p =>
+        !p.isBot && p.isHost && p.connected && p.walletToken === token);
+  },
   isBusy: token => hasActiveRoom(token)
 });
 require("./chat-hook.js")(io);

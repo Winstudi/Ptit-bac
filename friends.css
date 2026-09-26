@@ -1243,3 +1243,18 @@ html .friends-mobile .friends-header-code>span{gap:0!important;text-align:right!
 html .friends-mobile .friends-header-code small{font-size:8px!important;color:#c7b9f1!important;line-height:1!important}
 html .friends-mobile .friends-header-code strong{font-size:13px!important;letter-spacing:.8px!important;line-height:1.1!important}
 html .friends-mobile .friends-header-code svg{width:17px!important;height:17px!important;stroke:#d69cff!important}
+
+/* Groupe sauvegardé, dans le défilement normal de la page Amis. */
+.friends-party-panel{margin:0 0 16px;padding:16px;border:1px solid #965ce4;border-radius:20px;background:linear-gradient(135deg,#242055,#131c45);color:#fff;min-width:0}
+.friends-party-panel h2{margin:0 0 12px;font-size:18px}
+.friends-party-panel p,.friends-party-panel label{font-size:12px;line-height:1.5;color:#d6c9ee}
+.friends-party-panel ul{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:8px}
+.friends-party-panel li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;font-size:13px}
+.friends-party-panel li strong{overflow-wrap:anywhere;min-width:0}
+.friends-party-panel li span{font-size:11px;color:#c9b8e8}
+.friends-party-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.friends-party-actions button,.friends-party-panel>button{border:1px solid #ab79ec;border-radius:12px;background:#6439aa;color:#fff;padding:10px 12px;min-height:44px;font-size:13px;font-weight:700;cursor:pointer}
+.friends-party-panel button:disabled{opacity:.45;cursor:default}
+.friends-party-panel button:focus-visible,.friends-party-panel select:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.friends-party-panel select{flex:1;min-width:120px;max-width:100%;padding:10px;border-radius:12px;background:#171d42;color:#fff;border:1px solid #8c68b7;font-size:16px}
+.friends-party-invitation{border-top:1px solid #645082;margin-top:12px;padding-top:8px}

@@ -17,6 +17,14 @@ const ADMIN_DEFAULT_POLICY = Object.freeze({
 const DEFAULT_ADMIN_ACCOUNT_EMAIL = ""; // Compatibilité : les rôles ne dépendent plus des e-mails.
 
 const EVENT_POLICIES = Object.freeze({
+  "party:get": Object.freeze({ limit:30, windowMs:60_000, scope:"identity" }),
+  "party:create": Object.freeze({ limit:6, windowMs:60_000, scope:"identity" }),
+  "party:invite": Object.freeze({ limit:10, windowMs:60_000, scope:"identity" }),
+  "party:accept": Object.freeze({ limit:10, windowMs:60_000, scope:"identity" }),
+  "party:decline": Object.freeze({ limit:10, windowMs:60_000, scope:"identity" }),
+  "party:leave": Object.freeze({ limit:10, windowMs:60_000, scope:"identity" }),
+  "party:shareRoom": Object.freeze({ limit:12, windowMs:60_000, scope:"identity" }),
+
   "game:rematchReady": Object.freeze({ limit:20, windowMs:10_000, scope:"socket" }),
   "game:restart": Object.freeze({ limit:10, windowMs:10_000, scope:"socket" }),
   "shop:purchase": Object.freeze({ limit:12, windowMs:60_000, scope:"identity" }),
