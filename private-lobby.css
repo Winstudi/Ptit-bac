@@ -2051,3 +2051,37 @@ html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-i
   display:block!important;
   margin:0 auto!important;
 }
+
+
+/* =========================================================
+   SALON PRIVE V3.13 — agrandissement réel du titre/tag
+   Le texte visible est dans .pl-player-title strong.
+   ========================================================= */
+
+html body main.pl-private-v3[data-mode="private"] .pl-player-title {
+  min-height:30px!important;
+  height:30px!important;
+  padding:3px 10px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-player-title strong {
+  display:block!important;
+  max-width:100%!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  font-size:15px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  text-align:center!important;
+  transform:none!important;
+}
+
+/* Laisse assez de hauteur à la ligne du tag. */
+html body main.pl-private-v3[data-mode="private"] .pl-player-title-row {
+  min-height:32px!important;
+}
