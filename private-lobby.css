@@ -1573,12 +1573,13 @@ html body main.pl-private-v3[data-mode="private"] .pl-player.is-self {
 html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
   position:relative!important;
   z-index:20!important;
-  width:min(64px,17vw)!important;
-  height:min(64px,17vw)!important;
+  width:min(74px,19.55vw)!important;
+  height:min(74px,19.55vw)!important;
   flex:none!important;
   display:grid!important;
   place-items:center!important;
   overflow:visible!important;
+  transform:translateY(-4px)!important;
 }
 
 /* Couronne remontée de 4px supplémentaires et au premier plan. */
@@ -1680,31 +1681,32 @@ html body main.pl-private-v3[data-mode="private"] .pl-player-head > strong {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title-row {
-  min-height:16px!important;
+  min-height:19px!important;
   max-width:100%!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
+  overflow:visible!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title {
-  width:102px!important;
-  max-width:102px!important;
-  min-height:15px!important;
-  height:15px!important;
+  width:122px!important;
+  max-width:122px!important;
+  min-height:18px!important;
+  height:18px!important;
   padding:0 4px!important;
-  font-size:7px!important;
+  font-size:8.4px!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image {
-  width:102px!important;
-  max-width:102px!important;
+  width:122px!important;
+  max-width:122px!important;
   overflow:visible!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image > img {
-  width:102px!important;
-  max-width:102px!important;
+  width:122px!important;
+  max-width:122px!important;
   height:auto!important;
   object-fit:contain!important;
 }
@@ -1954,8 +1956,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
-    width:min(57px,16vw)!important;
-    height:min(57px,16vw)!important;
+    width:min(66px,18.4vw)!important;
+    height:min(66px,18.4vw)!important;
   }
 }
 
@@ -2007,8 +2009,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
-    width:50px!important;
-    height:50px!important;
+    width:58px!important;
+    height:58px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-launch {
