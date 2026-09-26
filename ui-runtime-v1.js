@@ -240,7 +240,7 @@
 
   document.addEventListener("click", event => {
     const button = event.target.closest?.(
-      'main.pl-private-v3[data-mode="private"] #lobbyV5Leave'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"]) #lobbyV5Leave'
     );
 
     if (!button) return;
@@ -398,7 +398,7 @@
 
   function roomVoicePlayerCard(playerId) {
     const root = document.querySelector(
-      'main.pl-private-v3[data-mode="private"]'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"])'
     );
     if (!root) return null;
 
@@ -688,9 +688,9 @@
     if (roomVoiceState.joined || roomVoiceState.joining) return;
 
     const state = currentLobbyState();
-    if (!state || state.mode !== "private") {
+    if (!state || !["private", "public"].includes(state.mode)) {
       return privateLobbyToast(
-        "Le vocal est disponible uniquement en salon privé."
+        "Le vocal est disponible dans les salons privé et public."
       );
     }
 
@@ -854,15 +854,15 @@
 
   function syncRoomVoiceContext() {
     const state = currentLobbyState();
-    const privateLobby =
-      state?.mode === "private" &&
+    const voiceLobby =
+      ["private", "public"].includes(state?.mode) &&
       state?.phase === "lobby" &&
       String(state?.code || "");
 
     if (
       roomVoiceState.joined &&
       (
-        !privateLobby ||
+        !voiceLobby ||
         String(state.code) !== String(roomVoiceState.roomCode)
       )
     ) {
@@ -1130,7 +1130,7 @@
         <header class="pl-room-chat-header">
           <div>
             <strong>Chat du salon</strong>
-            <small>Salon privé</small>
+            <small id="plRoomChatSubtitle">Salon privé</small>
           </div>
           <button id="plRoomChatClose" type="button" aria-label="Fermer">×</button>
         </header>
@@ -1382,7 +1382,11 @@
     const state = currentLobbyState();
     const code = String(state?.code || "").trim();
 
-    if (!state || state.mode !== "private" || !code) {
+    if (
+      !state ||
+      !["private", "public"].includes(state.mode) ||
+      !code
+    ) {
       if (roomChatState.open) closeRoomChat();
       roomChatState.roomCode = "";
       roomChatState.messages = [];
@@ -1406,13 +1410,21 @@
 
   function openRoomChat() {
     const state = currentLobbyState();
-    if (!state || state.mode !== "private") {
-      return privateLobbyToast("Le chat est disponible dans les salons privés.");
+    if (!state || !["private", "public"].includes(state.mode)) {
+      return privateLobbyToast(
+        "Le chat est disponible dans les salons privé et public."
+      );
     }
 
     syncRoomChatContext();
 
     const overlay = ensureRoomChatOverlay();
+    const subtitle = overlay.querySelector("#plRoomChatSubtitle");
+    if (subtitle) {
+      subtitle.textContent =
+        state.mode === "public" ? "Salon public" : "Salon privé";
+    }
+
     roomChatState.open = true;
     roomChatState.unread = 0;
     roomChatState.loading = true;
@@ -1496,7 +1508,11 @@
 
   function receiveRoomChatMessage(message) {
     const state = currentLobbyState();
-    if (!state || state.mode !== "private" || String(message?.roomCode || "") !== String(state.code || "")) {
+    if (
+      !state ||
+      !["private", "public"].includes(state.mode) ||
+      String(message?.roomCode || "") !== String(state.code || "")
+    ) {
       return;
     }
 
@@ -1627,7 +1643,8 @@
     if (privateLobbyV3State.decorating) return;
 
     const root = document.querySelector(
-      'main.lobby-v5.pl-private[data-mode="private"]:not(.pl-public-mode)'
+      'main.lobby-v5.pl-private[data-mode="private"], ' +
+      'main.lobby-v5.pl-private.pl-public-mode[data-mode="public"]'
     );
 
     if (!root) return;
@@ -1665,7 +1682,7 @@
     if (privateLobbyV3State.busy) return;
 
     const root = document.querySelector(
-      'main.lobby-v5.pl-private.pl-private-v3[data-mode="private"]'
+      'main.lobby-v5.pl-private.pl-private-v3:is([data-mode="private"],[data-mode="public"])'
     );
     if (!root) return;
 
