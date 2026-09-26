@@ -16,6 +16,7 @@
    */
 
   const QUICK_REROLL_FALLBACK_COST = 20;
+  const QUICK_DIFFICULTY_ICON = "/difficulty.png";
   let scheduled = false;
 
   function liveSession() {
@@ -498,8 +499,19 @@
     );
   }
 
+  function syncQuickModeClass() {
+    let quick = false;
+
+    try {
+      quick = stateNow()?.mode === "quick";
+    } catch {}
+
+    document.documentElement.classList.toggle("ptb-quick-game", quick);
+  }
+
   function enhance() {
     scheduled = false;
+    syncQuickModeClass();
     ensureQuickLetterReroll();
     ensureQuickCategoryReroll();
   }
@@ -529,10 +541,7 @@
     );
 
     try {
-      socket?.on?.(
-        "room:state",
-        scheduleEnhance
-      );
+      socket?.on?.("room:state", scheduleEnhance);
 
       socket?.on?.(
         "wallet:update",

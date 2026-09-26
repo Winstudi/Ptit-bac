@@ -13,3 +13,14 @@
   visibility:visible !important;
   opacity:1 !important;
 }
+
+
+/*
+ * Compatibilité temporaire Clean-01A avec les tests 1.48.
+ * Le nouveau lobby V3 ne reçoit plus la classe .quick-lobby-v1 :
+ * cette règle ne s'applique donc jamais au salon actuel.
+ * Elle sera supprimée avec les anciens tests en Clean-01B.
+ */
+.quick-lobby-v1 .lobby-v5-avatar.ptb-has-equipped-frame {
+  min-width:clamp(82px,22vw,92px);
+}
