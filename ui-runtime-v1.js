@@ -1657,6 +1657,12 @@
       const codeLabel = root.querySelector(".pl-header-code small");
       if (codeLabel) codeLabel.textContent = "Code salon";
 
+      const roomTitle = root.querySelector(".pl-title-mode > h1");
+      if (roomTitle) {
+        roomTitle.textContent =
+          root.dataset.mode === "public" ? "Salon Public" : "Salon Privé";
+      }
+
       decorateSettings(root);
 
       if (!root.querySelector(":scope > .pl-v3-comms")) {
