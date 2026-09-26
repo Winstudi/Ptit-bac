@@ -131,6 +131,100 @@
     console.info("[Salon privé]", message);
   }
 
+
+  let privateLobbyLeaving = false;
+
+  function finishPrivateLobbyLeave() {
+    try {
+      if (typeof clearSession === "function") {
+        clearSession();
+      } else {
+        localStorage.removeItem("petitbac_code");
+        localStorage.removeItem("petitbac_playerId");
+        if (typeof session !== "undefined") {
+          session.code = "";
+          session.playerId = "";
+          session.state = null;
+        }
+      }
+    } catch {}
+
+    try {
+      if (typeof renderHome === "function") {
+        renderHome();
+      } else {
+        window.location.assign("/");
+      }
+    } catch {
+      window.location.assign("/");
+    }
+
+    try {
+      if (typeof initWallet === "function") {
+        initWallet(() => {});
+      }
+    } catch {}
+  }
+
+  function leavePrivateLobbyFromHeader(button) {
+    if (privateLobbyLeaving) return;
+    privateLobbyLeaving = true;
+
+    button.disabled = true;
+
+    const state = currentLobbyState();
+    const code = String(state?.code || session?.code || "").trim();
+    const playerId = String(session?.playerId || "").trim();
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      privateLobbyLeaving = false;
+      finishPrivateLobbyLeave();
+    };
+
+    const fallback = setTimeout(finish, 3200);
+
+    try {
+      if (
+        typeof socket === "undefined" ||
+        !socket?.connected ||
+        !code ||
+        !playerId
+      ) {
+        clearTimeout(fallback);
+        return finish();
+      }
+
+      socket.timeout(2500).emit(
+        "room:leave",
+        { code, playerId },
+        () => {
+          clearTimeout(fallback);
+          finish();
+        }
+      );
+    } catch {
+      clearTimeout(fallback);
+      finish();
+    }
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.(
+      'main.pl-private-v3[data-mode="private"] #lobbyV5Leave'
+    );
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    leavePrivateLobbyFromHeader(button);
+  }, true);
+
   function settingMeta(state) {
     const difficulty =
       state?.categoryDifficulty === "hard" ? "Difficile" :
