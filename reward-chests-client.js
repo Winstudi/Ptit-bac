@@ -181,8 +181,9 @@
         position:absolute;inset:0;z-index:4;display:none;width:100%;height:100%;
         pointer-events:none;background:transparent;--poster-color:transparent;
         filter:drop-shadow(0 18px 24px rgba(0,0,0,.28));transform-origin:50% 62%;
-        will-change:transform,filter,opacity
+        will-change:transform,filter,opacity;transition:opacity .08s linear
       }
+      .ptb-star-model.ptb-star-model-resetting{opacity:0!important}
       .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-star-model{
         display:block;animation:ptbStarModelIdle 2.8s ease-in-out infinite
       }
@@ -315,14 +316,34 @@
     return overlay?.querySelector(".ptb-star-model") || null;
   }
 
-  function resetStarModel() {
+  function resetStarModel({ hideUntilClosed = false } = {}) {
     const model = starModelElement();
     if (!model) return;
-    try {
-      model.pause?.();
-      model.animationName = "Open";
-      model.currentTime = 0;
-    } catch {}
+
+    if (hideUntilClosed) model.classList.add("ptb-star-model-resetting");
+
+    const forceClosedPose = () => {
+      try {
+        model.pause?.();
+        model.animationName = "Open";
+        model.currentTime = 0;
+      } catch {}
+    };
+
+    forceClosedPose();
+
+    // Sur iPhone, model-viewer peut conserver visuellement la dernière frame
+    // quand le composant était masqué. Deux frames forcées garantissent que
+    // le coffre est réellement revenu à la pose fermée avant de le montrer.
+    if (hideUntilClosed) {
+      requestAnimationFrame(() => {
+        forceClosedPose();
+        requestAnimationFrame(() => {
+          forceClosedPose();
+          model.classList.remove("ptb-star-model-resetting");
+        });
+      });
+    }
   }
 
   function playStarModel() {
@@ -331,12 +352,22 @@
     if (!model || !root.classList.contains("has-star-model")) return false;
 
     try {
+      model.classList.remove("ptb-star-model-resetting");
       model.pause?.();
       model.animationName = "Open";
       model.currentTime = 0;
+
+      // Ne lance pas l'animation sur la même frame que le retour à 0 :
+      // sinon Safari peut afficher brièvement l'ancienne pose ouverte.
       requestAnimationFrame(() => {
         try {
-          model.play?.({ repetitions:1 });
+          model.pause?.();
+          model.currentTime = 0;
+          requestAnimationFrame(() => {
+            try {
+              model.play?.({ repetitions:1 });
+            } catch {}
+          });
         } catch {}
       });
       return true;
@@ -404,6 +435,13 @@
   function open(type = "star") {
     const root = ensureOverlay();
     reset(type);
+
+    // Toujours remettre le coffre normal fermé AVANT de rendre l'overlay visible.
+    // Cela évite qu'une ancienne ouverture reste affichée à la réouverture.
+    if (activeType === "star" && root.classList.contains("has-star-model")) {
+      resetStarModel({ hideUntilClosed:true });
+    }
+
     root.classList.add("is-open");
     root.setAttribute("aria-hidden", "false");
     document.documentElement.classList.add("ptb-reward-lock");
@@ -420,6 +458,8 @@
     document.body.classList.remove("ptb-reward-lock");
     busy = false;
     grantedChest = null;
+    clearAnimationClasses();
+    resetStarModel();
     if (location.hash.startsWith("#rewards-preview")) {
       history.replaceState(null, "", `${location.pathname}${location.search}`);
     }
@@ -435,6 +475,8 @@
     document.documentElement.classList.remove("ptb-reward-lock");
     document.body.classList.remove("ptb-reward-lock");
     busy = false;
+    clearAnimationClasses();
+    resetStarModel();
 
     if (location.hash.startsWith("#rewards-preview")) {
       if (history.length > 1) {
