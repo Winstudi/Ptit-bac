@@ -1,5 +1,7 @@
 "use strict";
 
+const crypto = require("crypto");
+
 /**
  * P'tit Bac — Chat V1
  * Extension Socket.IO / PostgreSQL chargée avant server.js.
@@ -18,6 +20,120 @@ const presence = require("./presence-service.js");
 
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const pool = getPool();
+
+const ROOM_CHAT_MAX_MESSAGES = 50;
+const ROOM_CHAT_MAX_LENGTH = 200;
+const ROOM_CHAT_RATE_WINDOW_MS = 5000;
+const ROOM_CHAT_RATE_MAX = 5;
+const ROOM_CHAT_TTL_MS = 3 * 60 * 60 * 1000;
+const roomChats = new Map();
+
+function cleanRoomChatText(value) {
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, ROOM_CHAT_MAX_LENGTH);
+}
+
+function cleanRoomChatName(value) {
+  return String(value || "Joueur")
+    .replace(/\u0000/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 24) || "Joueur";
+}
+
+function cleanRoomChatAvatar(value) {
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .trim()
+    .slice(0, 120);
+}
+
+function roomChatMembership(socket, payload = {}) {
+  const code = String(payload.code || "").trim().toUpperCase();
+  const playerId = String(payload.playerId || "").trim();
+
+  if (!code || !playerId) return null;
+  if (String(socket.data.code || "").trim().toUpperCase() !== code) return null;
+  if (String(socket.data.playerId || "").trim() !== playerId) return null;
+  if (!socket.rooms?.has(code)) return null;
+
+  return { code, playerId };
+}
+
+function connectedRoomPlayerIds(io, code) {
+  const ids = new Set();
+  const socketIds = io.sockets.adapter.rooms.get(code);
+  if (!socketIds) return ids;
+
+  for (const socketId of socketIds) {
+    const memberSocket = io.sockets.sockets.get(socketId);
+    const memberPlayerId = String(memberSocket?.data?.playerId || "").trim();
+    if (memberPlayerId) ids.add(memberPlayerId);
+  }
+
+  return ids;
+}
+
+function roomChatBucket(io, code, playerId) {
+  let bucket = roomChats.get(code);
+
+  if (bucket) {
+    const currentPlayerIds = connectedRoomPlayerIds(io, code);
+    const sameRoomSession = [...currentPlayerIds].some(id =>
+      bucket.playerIds.has(id)
+    );
+
+    // Un code peut être réutilisé plus tard. S'il n'y a plus aucun
+    // playerId commun, on repart avec un historique vide.
+    if (!sameRoomSession) {
+      roomChats.delete(code);
+      bucket = null;
+    }
+  }
+
+  if (!bucket) {
+    bucket = {
+      messages: [],
+      playerIds: new Set(),
+      updatedAt: Date.now()
+    };
+    roomChats.set(code, bucket);
+  }
+
+  bucket.playerIds.add(playerId);
+  bucket.updatedAt = Date.now();
+  return bucket;
+}
+
+function roomChatRateAllowed(socket) {
+  const now = Date.now();
+  const recent = Array.isArray(socket.data.ptitRoomChatRate)
+    ? socket.data.ptitRoomChatRate.filter(
+        timestamp => now - timestamp < ROOM_CHAT_RATE_WINDOW_MS
+      )
+    : [];
+
+  if (recent.length >= ROOM_CHAT_RATE_MAX) {
+    socket.data.ptitRoomChatRate = recent;
+    return false;
+  }
+
+  recent.push(now);
+  socket.data.ptitRoomChatRate = recent;
+  return true;
+}
+
+const roomChatCleanupTimer = setInterval(() => {
+  const cutoff = Date.now() - ROOM_CHAT_TTL_MS;
+  for (const [code, bucket] of roomChats.entries()) {
+    if (Number(bucket?.updatedAt || 0) < cutoff) roomChats.delete(code);
+  }
+}, 30 * 60 * 1000);
+roomChatCleanupTimer.unref?.();
+
 
 
 function validToken(value) {
@@ -228,6 +344,62 @@ async function markRead(userId, friendId) {
 }
 
 function installChat(io) {
+
+  // Chat éphémère du salon. Il est séparé du chat privé entre amis,
+  // ne dépend pas de PostgreSQL et ne persiste aucun message.
+  io.on("connection", socket => {
+    socket.on("room:chat:history", (payload = {}, cb = () => {}) => {
+      const membership = roomChatMembership(socket, payload);
+      if (!membership) {
+        return cb({ ok: false, error: "Tu n’es plus dans ce salon." });
+      }
+
+      const bucket = roomChatBucket(io, membership.code, membership.playerId);
+      cb({
+        ok: true,
+        roomCode: membership.code,
+        maxLength: ROOM_CHAT_MAX_LENGTH,
+        messages: bucket.messages.slice(-ROOM_CHAT_MAX_MESSAGES)
+      });
+    });
+
+    socket.on("room:chat:send", (payload = {}, cb = () => {}) => {
+      const membership = roomChatMembership(socket, payload);
+      if (!membership) {
+        return cb({ ok: false, error: "Tu n’es plus dans ce salon." });
+      }
+
+      const content = cleanRoomChatText(payload.content);
+      if (!content) {
+        return cb({ ok: false, error: "Écris un message." });
+      }
+
+      if (!roomChatRateAllowed(socket)) {
+        return cb({ ok: false, error: "Tu envoies des messages trop vite." });
+      }
+
+      const bucket = roomChatBucket(io, membership.code, membership.playerId);
+      const message = {
+        id: crypto.randomUUID(),
+        roomCode: membership.code,
+        playerId: membership.playerId,
+        name: cleanRoomChatName(payload.name),
+        avatar: cleanRoomChatAvatar(payload.avatar),
+        content,
+        createdAt: new Date().toISOString()
+      };
+
+      bucket.messages.push(message);
+      if (bucket.messages.length > ROOM_CHAT_MAX_MESSAGES) {
+        bucket.messages.splice(0, bucket.messages.length - ROOM_CHAT_MAX_MESSAGES);
+      }
+      bucket.updatedAt = Date.now();
+
+      io.to(membership.code).emit("room:chat:message", message);
+      cb({ ok: true, message });
+    });
+  });
+
   if (!DATABASE_URL) {
     console.warn("Chat V1 désactivé: DATABASE_URL absent.");
     return;

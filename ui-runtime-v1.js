@@ -75,6 +75,15 @@
     decorating: false
   };
 
+  const roomChatState = {
+    open: false,
+    roomCode: "",
+    messages: [],
+    unread: 0,
+    loading: false,
+    sending: false
+  };
+
   const micSvg = `
     <svg class="pl-v3-comms-svg" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3"></rect>
@@ -339,12 +348,351 @@
         <span class="pl-v3-textchat-title">
           ${chatSvg}
           <strong>Chat</strong>
+          <em class="pl-room-chat-badge" hidden>0</em>
           <b class="pl-v3-textchat-chevron" aria-hidden="true">›</b>
         </span>
       </button>
     `;
 
     return panel;
+  }
+
+
+  function roomChatPayload(extra = {}) {
+    const state = currentLobbyState();
+    const user = currentLobbyUser();
+
+    return {
+      code: String(state?.code || session?.code || "").trim(),
+      playerId: String(session?.playerId || "").trim(),
+      name: String(user?.name || "Joueur").trim(),
+      avatar: String(user?.avatar || "").trim(),
+      ...extra
+    };
+  }
+
+  function roomChatTime(value) {
+    const date = new Date(value || Date.now());
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function roomChatIdentity(message) {
+    const state = currentLobbyState();
+    const player = state?.players?.find(
+      item => String(item?.id || "") === String(message?.playerId || "")
+    );
+
+    return {
+      name: String(player?.name || message?.name || "Joueur").slice(0, 24),
+      avatar: String(player?.avatar || message?.avatar || "").trim()
+    };
+  }
+
+  function roomChatAvatarElement(message) {
+    const identity = roomChatIdentity(message);
+    const avatar = identity.avatar;
+
+    if (avatar.startsWith("/") && !avatar.startsWith("//")) {
+      const image = document.createElement("img");
+      image.src = avatar;
+      image.alt = "";
+      image.loading = "lazy";
+      return image;
+    }
+
+    const span = document.createElement("span");
+    span.textContent =
+      avatar && avatar.length <= 6
+        ? avatar
+        : (identity.name.charAt(0).toUpperCase() || "?");
+    return span;
+  }
+
+  function updateRoomChatBadge() {
+    const badge = document.querySelector(
+      "#plRoomChatOpen .pl-room-chat-badge"
+    );
+    if (!badge) return;
+
+    const count = Math.max(0, Number(roomChatState.unread) || 0);
+    badge.hidden = count <= 0;
+    badge.textContent = count > 99 ? "99+" : String(count);
+  }
+
+  function ensureRoomChatOverlay() {
+    let overlay = document.getElementById("plRoomChatOverlay");
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "plRoomChatOverlay";
+    overlay.className = "pl-room-chat-overlay";
+    overlay.hidden = true;
+    overlay.setAttribute("aria-hidden", "true");
+
+    overlay.innerHTML = `
+      <section class="pl-room-chat-sheet" role="dialog" aria-modal="true" aria-label="Chat du salon">
+        <header class="pl-room-chat-header">
+          <div>
+            <strong>Chat du salon</strong>
+            <small>Salon privé</small>
+          </div>
+          <button id="plRoomChatClose" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <div id="plRoomChatMessages" class="pl-room-chat-messages" aria-live="polite"></div>
+
+        <form id="plRoomChatForm" class="pl-room-chat-form">
+          <div class="pl-room-chat-input-wrap">
+            <textarea
+              id="plRoomChatInput"
+              maxlength="200"
+              rows="1"
+              placeholder="Écrire un message…"
+              autocomplete="off"
+              enterkeyhint="send"
+              aria-label="Écrire un message"
+            ></textarea>
+            <small id="plRoomChatCount">0/200</small>
+          </div>
+          <button id="plRoomChatSend" type="submit" aria-label="Envoyer">
+            <span aria-hidden="true">➤</span>
+          </button>
+        </form>
+      </section>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", event => {
+      if (event.target === overlay) closeRoomChat();
+    });
+
+    overlay.querySelector("#plRoomChatClose")?.addEventListener(
+      "click",
+      closeRoomChat
+    );
+
+    const input = overlay.querySelector("#plRoomChatInput");
+    const counter = overlay.querySelector("#plRoomChatCount");
+
+    input?.addEventListener("input", () => {
+      if (counter) counter.textContent = `${input.value.length}/200`;
+    });
+
+    input?.addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        overlay.querySelector("#plRoomChatForm")?.requestSubmit?.();
+      }
+    });
+
+    overlay.querySelector("#plRoomChatForm")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+        sendRoomChatMessage();
+      }
+    );
+
+    return overlay;
+  }
+
+  function renderRoomChatMessages() {
+    const overlay = ensureRoomChatOverlay();
+    const list = overlay.querySelector("#plRoomChatMessages");
+    if (!list) return;
+
+    list.replaceChildren();
+
+    if (roomChatState.loading) {
+      const loading = document.createElement("div");
+      loading.className = "pl-room-chat-empty";
+      loading.textContent = "Chargement…";
+      list.appendChild(loading);
+      return;
+    }
+
+    if (!roomChatState.messages.length) {
+      const empty = document.createElement("div");
+      empty.className = "pl-room-chat-empty";
+      const strong = document.createElement("strong");
+      strong.textContent = "Aucun message";
+      const span = document.createElement("span");
+      span.textContent = "Écris le premier message du salon.";
+      empty.append(strong, span);
+      list.appendChild(empty);
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    roomChatState.messages.forEach(message => {
+      const mine = String(message?.playerId || "") === String(session?.playerId || "");
+      const identity = roomChatIdentity(message);
+
+      const row = document.createElement("article");
+      row.className = "pl-room-chat-message " + (mine ? "is-mine" : "is-other");
+
+      const avatar = document.createElement("div");
+      avatar.className = "pl-room-chat-avatar";
+      avatar.appendChild(roomChatAvatarElement(message));
+
+      const body = document.createElement("div");
+      body.className = "pl-room-chat-message-body";
+
+      const meta = document.createElement("div");
+      meta.className = "pl-room-chat-meta";
+
+      const author = document.createElement("strong");
+      author.textContent = mine ? "Moi" : identity.name;
+
+      const time = document.createElement("time");
+      time.textContent = roomChatTime(message?.createdAt);
+
+      const bubble = document.createElement("p");
+      bubble.textContent = String(message?.content || "");
+
+      meta.append(author, time);
+      body.append(meta, bubble);
+
+      if (mine) row.append(body, avatar);
+      else row.append(avatar, body);
+
+      fragment.appendChild(row);
+    });
+
+    list.appendChild(fragment);
+    requestAnimationFrame(() => {
+      list.scrollTop = list.scrollHeight;
+    });
+  }
+
+  function syncRoomChatContext() {
+    const state = currentLobbyState();
+    const code = String(state?.code || "").trim();
+
+    if (!state || state.mode !== "private" || !code) {
+      if (roomChatState.open) closeRoomChat();
+      roomChatState.roomCode = "";
+      roomChatState.messages = [];
+      roomChatState.unread = 0;
+      updateRoomChatBadge();
+      return;
+    }
+
+    if (roomChatState.roomCode !== code) {
+      roomChatState.roomCode = code;
+      roomChatState.messages = [];
+      roomChatState.unread = 0;
+      roomChatState.loading = false;
+      roomChatState.sending = false;
+    }
+
+    updateRoomChatBadge();
+  }
+
+  function openRoomChat() {
+    const state = currentLobbyState();
+    if (!state || state.mode !== "private") {
+      return privateLobbyToast("Le chat est disponible dans les salons privés.");
+    }
+
+    syncRoomChatContext();
+
+    const overlay = ensureRoomChatOverlay();
+    roomChatState.open = true;
+    roomChatState.unread = 0;
+    roomChatState.loading = true;
+    updateRoomChatBadge();
+
+    overlay.hidden = false;
+    overlay.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("pl-room-chat-open");
+    renderRoomChatMessages();
+
+    socket.emit("room:chat:history", roomChatPayload(), res => {
+      roomChatState.loading = false;
+
+      if (!res?.ok) {
+        renderRoomChatMessages();
+        return privateLobbyToast(res?.error || "Impossible de charger le chat.");
+      }
+
+      roomChatState.messages = Array.isArray(res.messages)
+        ? res.messages.slice(-50)
+        : [];
+      renderRoomChatMessages();
+
+      setTimeout(() => {
+        overlay.querySelector("#plRoomChatInput")?.focus?.({ preventScroll: true });
+      }, 80);
+    });
+  }
+
+  function closeRoomChat() {
+    const overlay = document.getElementById("plRoomChatOverlay");
+    roomChatState.open = false;
+    document.documentElement.classList.remove("pl-room-chat-open");
+
+    if (!overlay) return;
+    overlay.hidden = true;
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
+  function sendRoomChatMessage() {
+    if (roomChatState.sending) return;
+
+    const overlay = ensureRoomChatOverlay();
+    const input = overlay.querySelector("#plRoomChatInput");
+    const sendButton = overlay.querySelector("#plRoomChatSend");
+    const counter = overlay.querySelector("#plRoomChatCount");
+    const content = String(input?.value || "").trim();
+    if (!content) return;
+
+    roomChatState.sending = true;
+    if (sendButton) sendButton.disabled = true;
+
+    socket.emit("room:chat:send", roomChatPayload({ content }), res => {
+      roomChatState.sending = false;
+      if (sendButton) sendButton.disabled = false;
+
+      if (!res?.ok) {
+        return privateLobbyToast(res?.error || "Impossible d’envoyer le message.");
+      }
+
+      if (input) input.value = "";
+      if (counter) counter.textContent = "0/200";
+      input?.focus?.({ preventScroll: true });
+    });
+  }
+
+  function receiveRoomChatMessage(message) {
+    const state = currentLobbyState();
+    if (!state || state.mode !== "private" || String(message?.roomCode || "") !== String(state.code || "")) {
+      return;
+    }
+
+    syncRoomChatContext();
+
+    if (roomChatState.messages.some(existing => String(existing?.id || "") === String(message?.id || ""))) {
+      return;
+    }
+
+    roomChatState.messages.push(message);
+    if (roomChatState.messages.length > 50) {
+      roomChatState.messages.splice(0, roomChatState.messages.length - 50);
+    }
+
+    if (roomChatState.open) {
+      renderRoomChatMessages();
+    } else {
+      roomChatState.unread += 1;
+      updateRoomChatBadge();
+    }
   }
 
   function decoratePlayerCards(root) {
@@ -577,7 +925,9 @@
 
     if (event.target.closest?.("#plRoomChatOpen")) {
       event.preventDefault();
-      privateLobbyToast("Le chat écrit sera branché à l’étape suivante.");
+      event.stopPropagation();
+      openRoomChat();
+      return;
     }
   }, true);
 
@@ -619,6 +969,7 @@
     }
 
     decoratePrivateLobbyV3();
+    syncRoomChatContext();
   }
 
   document.addEventListener(
@@ -632,11 +983,16 @@
 
   if (typeof socket !== "undefined") {
     socket.on("connect", () => setTimeout(refreshAdminState, 120));
+    socket.on("room:chat:message", receiveRoomChatMessage);
   }
 
   window.addEventListener("online", () => setTimeout(refreshAdminState, 120));
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) setTimeout(refreshAdminState, 120);
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && roomChatState.open) closeRoomChat();
   });
 
   setTimeout(refreshAdminState, 250);
@@ -647,6 +1003,8 @@
   window.PtitBacUiRuntime = Object.freeze({
     refreshAdminState,
     cleanupCurrentScreen,
-    decoratePrivateLobbyV3
+    decoratePrivateLobbyV3,
+    openRoomChat,
+    closeRoomChat
   });
 })();
