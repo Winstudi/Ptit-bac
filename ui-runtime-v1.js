@@ -1635,6 +1635,307 @@
     }
   }
 
+  function ensurePublicMatchesPrivateStyles() {
+    if (document.getElementById("ptbPublicMatchesPrivateV3Styles")) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = "ptbPublicMatchesPrivateV3Styles";
+    style.textContent = `
+      /* =====================================================
+         PUBLIC = PRIVÉ — seules les mentions Public/Privé changent
+         ===================================================== */
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-settings {
+        border:1.5px solid #b94cff!important;
+        border-radius:14px!important;
+        background:
+          radial-gradient(
+            circle at 50% 0%,
+            rgba(180,61,255,.10),
+            transparent 56%
+          ),
+          linear-gradient(
+            145deg,
+            rgba(26,20,82,.96),
+            rgba(11,22,68,.96)
+          )!important;
+        box-shadow:
+          0 0 12px rgba(193,66,255,.28),
+          inset 0 0 20px rgba(174,60,255,.10)!important;
+      }
+
+      /* Supprime les anciens coins décoratifs spécifiques au Public. */
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-settings::before,
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-settings::after {
+        content:none!important;
+        display:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid {
+        gap:0!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid .lobby-v5-setting-card {
+        position:relative!important;
+        border:0!important;
+        border-radius:0!important;
+        background:transparent!important;
+        box-shadow:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid .lobby-v5-setting-card:not(:last-child)::after {
+        content:""!important;
+        position:absolute!important;
+        right:-1px!important;
+        top:50%!important;
+        width:2px!important;
+        height:30px!important;
+        min-height:30px!important;
+        max-height:30px!important;
+        border-radius:999px!important;
+        background:#d35cff!important;
+        box-shadow:
+          0 0 4px #d35cff,
+          0 0 9px rgba(196,66,255,.88),
+          0 0 14px rgba(149,48,255,.50)!important;
+        transform:translateY(-50%)!important;
+        pointer-events:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-settings h2 {
+        color:#fff!important;
+        text-shadow:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-settings h2 > img,
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid .lobby-v5-setting-icon {
+        filter:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid small {
+        color:#adbbe1!important;
+        text-shadow:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid strong {
+        color:#fff!important;
+        text-shadow:none!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-setting-grid .is-difficulty strong {
+        color:#63e8c9!important;
+        text-shadow:none!important;
+      }
+
+      /* Le PNG du tag a exactement la même taille/rendu qu'en Privé. */
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-player-title.private-tag-image {
+        width:auto!important;
+        max-width:100%!important;
+        min-height:20px!important;
+        height:20px!important;
+        padding:0!important;
+        border:0!important;
+        border-radius:0!important;
+        background:transparent!important;
+        box-shadow:none!important;
+        overflow:visible!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-player-title.private-tag-image > img {
+        display:block!important;
+        width:auto!important;
+        max-width:100%!important;
+        height:20px!important;
+        max-height:20px!important;
+        margin:0!important;
+        padding:0!important;
+        border:0!important;
+        object-fit:contain!important;
+        object-position:left center!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-profile-v2-title-row
+        .pl-player-title.private-tag-image {
+        min-height:25px!important;
+        height:25px!important;
+      }
+
+      html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+        .pl-profile-v2-title-row
+        .pl-player-title.private-tag-image > img {
+        height:25px!important;
+        max-height:25px!important;
+      }
+
+      @media(max-width:370px) {
+        html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+          .pl-player-title.private-tag-image,
+        html body main.pl-private-v3.pl-public-mode[data-mode="public"]
+          .pl-player-title.private-tag-image > img {
+          height:16px!important;
+          min-height:16px!important;
+          max-height:16px!important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  const LOBBY_TAG_ASSETS = Object.freeze({
+    tag_quantique: {
+      name:"Tag Quantique",
+      asset:"/tag-quantique.png"
+    },
+    tag_game_over: {
+      name:"Game Over",
+      asset:"/tag-game-over.png"
+    }
+  });
+
+  function lobbyTagVisual(tagId) {
+    const id = String(tagId || "").trim();
+    if (!id) return null;
+
+    let item = null;
+
+    try {
+      item = window.PtitBacInventory?.tags?.[id] || null;
+    } catch {}
+
+    item = item || LOBBY_TAG_ASSETS[id] || null;
+
+    const asset = String(item?.asset || "").trim();
+    if (!asset) return null;
+
+    return {
+      asset,
+      name:String(item?.name || id).trim()
+    };
+  }
+
+  function applyLobbyTagImage(target, tagId) {
+    if (!target) return;
+
+    const visual = lobbyTagVisual(tagId);
+    if (!visual) return;
+
+    if (
+      target.dataset.privateTagAsset === visual.asset &&
+      target.querySelector(":scope > img")
+    ) {
+      return;
+    }
+
+    const img = document.createElement("img");
+    img.src = visual.asset;
+    img.alt = visual.name;
+    img.draggable = false;
+
+    img.addEventListener("error", () => {
+      if (!target.isConnected) return;
+
+      target.classList.remove("private-tag-image");
+      delete target.dataset.privateTagAsset;
+
+      const strong = document.createElement("strong");
+      strong.textContent = visual.name;
+      target.replaceChildren(strong);
+    }, { once:true });
+
+    target.classList.add("private-tag-image");
+    target.dataset.privateTagAsset = visual.asset;
+    target.replaceChildren(img);
+  }
+
+  function syncLobbyTagImages(root) {
+    if (!root) return;
+
+    const players = currentLobbyState()?.players || [];
+    const myId = String(session?.playerId || "");
+
+    root
+      .querySelectorAll(".pl-player-v2[data-lobby-player-profile]")
+      .forEach(card => {
+        const playerId = String(
+          card.dataset.lobbyPlayerProfile || ""
+        );
+
+        const player = players.find(
+          item => String(item?.id || "") === playerId
+        );
+
+        let tagId = String(player?.tagId || "").trim();
+
+        if (!tagId && playerId === myId) {
+          try {
+            tagId = String(
+              window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+            ).trim();
+          } catch {}
+        }
+
+        if (!tagId) return;
+
+        applyLobbyTagImage(
+          card.querySelector(
+            ".pl-player-title-row .pl-player-title"
+          ),
+          tagId
+        );
+      });
+
+    const modalTarget = root.querySelector(
+      ".pl-profile-v2-title-row .pl-player-title"
+    );
+
+    if (!modalTarget) return;
+
+    const modalName = String(
+      root.querySelector(
+        ".pl-profile-v2-name-row > strong"
+      )?.textContent || ""
+    ).trim();
+
+    const modalPlayer = players.find(
+      item => String(item?.name || "").trim() === modalName
+    );
+
+    let modalTagId = String(modalPlayer?.tagId || "").trim();
+
+    if (
+      !modalTagId &&
+      String(modalPlayer?.id || "") === myId
+    ) {
+      try {
+        modalTagId = String(
+          window.PtitBacInventory?.state?.()?.equipped?.tag || ""
+        ).trim();
+      } catch {}
+    }
+
+    if (modalTagId) {
+      applyLobbyTagImage(modalTarget, modalTagId);
+    }
+  }
+
   function decoratePlayerCards(root) {
     const players = currentLobbyState()?.players || [];
 
@@ -1769,6 +2070,7 @@
 
     try {
       root.classList.add("pl-private-v3");
+      ensurePublicMatchesPrivateStyles();
 
       const codeLabel = root.querySelector(".pl-header-code small");
       if (codeLabel) codeLabel.textContent = "Code salon";
@@ -1788,6 +2090,7 @@
 
       decoratePlayersHeader(root);
       decoratePlayerCards(root);
+      syncLobbyTagImages(root);
       decorateBottom(root);
     } finally {
       privateLobbyV3State.decorating = false;
