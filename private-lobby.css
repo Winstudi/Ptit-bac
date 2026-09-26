@@ -978,6 +978,11 @@ html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 > img {
   filter:drop-shadow(0 0 5px rgba(205,70,255,.35))!important;
 }
 
+html body main.pl-private-v3[data-mode="private"] > .pl-settings h2,
+html body main.pl-private-v3[data-mode="private"] .pl-setting-grid {
+  transform:translateY(-4px)!important;
+}
+
 html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 .pl-settings-edit {
   display:none!important;
 }
@@ -1017,7 +1022,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card + .pl-v3-setting-card {
-  margin-top:3px!important;
+  margin-top:4px!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card > img {
@@ -1550,10 +1555,11 @@ html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-i
 html body main.pl-private-v3[data-mode="private"] .pl-card-status {
   position:absolute!important;
   z-index:15!important;
-  left:12px!important;
-  right:12px!important;
+  left:50%!important;
+  right:auto!important;
   bottom:5px!important;
-  width:auto!important;
+  width:50%!important;
+  transform:translateX(-50%)!important;
   height:15px!important;
   margin:0!important;
   padding:0 5px!important;
