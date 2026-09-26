@@ -64,6 +64,10 @@
   let resetTimer = null;
   let animationTimers = [];
 
+  const STAR_MODEL_SRC = "/coffre_ptitbac_3D_anime.glb";
+  const MODEL_VIEWER_SRC = "https://ajax.googleapis.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js";
+  let modelViewerLoader = null;
+
   function clampRandom(value) {
     return Math.max(0, Math.min(.999999999999, Number(value) || 0));
   }
@@ -135,8 +139,94 @@
     } catch {}
   }
 
+  function ensureModelViewer() {
+    if (!window.customElements) {
+      return Promise.reject(new Error("Custom Elements indisponible"));
+    }
+    if (customElements.get("model-viewer")) return Promise.resolve();
+    if (modelViewerLoader) return modelViewerLoader;
+
+    modelViewerLoader = new Promise((resolve, reject) => {
+      const existing = document.querySelector("script[data-ptb-model-viewer]");
+      if (existing) {
+        customElements.whenDefined("model-viewer").then(resolve).catch(reject);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = MODEL_VIEWER_SRC;
+      script.dataset.ptbModelViewer = "1";
+      script.addEventListener("load", () => {
+        customElements.whenDefined("model-viewer").then(resolve).catch(reject);
+      }, { once:true });
+      script.addEventListener("error", () => {
+        reject(new Error("Impossible de charger model-viewer"));
+      }, { once:true });
+      document.head.appendChild(script);
+    }).catch((error) => {
+      modelViewerLoader = null;
+      throw error;
+    });
+
+    return modelViewerLoader;
+  }
+
+  function ensure3DStyles() {
+    if (document.getElementById("ptbStarModel3DStyles")) return;
+    const style = document.createElement("style");
+    style.id = "ptbStarModel3DStyles";
+    style.textContent = `
+      .ptb-star-model{
+        position:absolute;inset:0;z-index:4;display:none;width:100%;height:100%;
+        pointer-events:none;background:transparent;--poster-color:transparent;
+        filter:drop-shadow(0 18px 24px rgba(0,0,0,.28));transform-origin:50% 62%;
+        will-change:transform,filter,opacity
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-star-model{
+        display:block;animation:ptbStarModelIdle 2.8s ease-in-out infinite
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-star-simple{display:none!important}
+      .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-reward-object{
+        width:min(82vw,380px);height:min(68vw,315px);max-height:315px;aspect-ratio:auto;
+        top:calc(44% - 15px)
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model[data-star-phase="press"] .ptb-star-model{
+        animation:ptbStarModelPress .22s ease both
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model.is-star-model-opening .ptb-star-model{
+        animation:none;transform:none
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model.is-opening .ptb-reward-flash{
+        top:44%;animation:ptbRewardOpenFlash .68s ease-out both
+      }
+      .ptb-reward-open[data-reward-type="star"].has-star-model.is-opening .ptb-reward-rays{
+        top:44%;animation:ptbRewardRays .86s ease-out both
+      }
+      @keyframes ptbStarModelIdle{
+        0%,100%{transform:translateY(-3px) scale(1)}
+        50%{transform:translateY(5px) scale(1.015)}
+      }
+      @keyframes ptbStarModelPress{
+        0%{transform:scale(1)}
+        45%{transform:translateY(3px) scale(.96)}
+        100%{transform:translateY(-1px) scale(1)}
+      }
+      @media(max-height:720px){
+        .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-reward-object{
+          width:min(74vw,340px);height:min(61vw,280px);top:calc(45% - 15px)
+        }
+      }
+      @media(prefers-reduced-motion:reduce){
+        .ptb-reward-open[data-reward-type="star"].has-star-model .ptb-star-model{animation:none!important}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function ensureOverlay() {
     if (overlay?.isConnected) return overlay;
+    ensure3DStyles();
 
     overlay = document.createElement("section");
     overlay.className = "ptb-reward-open";
@@ -148,6 +238,19 @@
         <button class="ptb-reward-object" type="button" aria-label="Ouvrir la récompense">
           <span class="ptb-reward-aura" aria-hidden="true"></span>
           <img class="ptb-reward-object-img" src="/reward-star.png" alt="">
+          <model-viewer
+            class="ptb-star-model"
+            src="${STAR_MODEL_SRC}"
+            alt=""
+            animation-name="Open"
+            animation-crossfade-duration="0"
+            interaction-prompt="none"
+            loading="eager"
+            reveal="auto"
+            shadow-intensity="1"
+            exposure="1.05"
+            camera-orbit="0deg 75deg 105%"
+            field-of-view="30deg"></model-viewer>
           <span class="ptb-star-simple" aria-hidden="true">
             <img class="ptb-star-fx ptb-star-fx-glow" src="/reward-star-glow.png" alt="">
             <img class="ptb-star-fx ptb-star-fx-rays" src="/reward-star-rays.png" alt="">
@@ -169,6 +272,21 @@
       </div>`;
 
     overlay.querySelector(".ptb-reward-object")?.addEventListener("click", handleTap);
+    const starModel = overlay.querySelector(".ptb-star-model");
+    const markStarModelReady = () => {
+      if (!overlay?.isConnected || !starModel) return;
+      overlay.classList.add("has-star-model");
+      resetStarModel();
+    };
+    starModel?.addEventListener("load", markStarModelReady);
+    starModel?.addEventListener("error", () => {
+      overlay?.classList.remove("has-star-model");
+    });
+    ensureModelViewer().then(() => {
+      if (starModel?.loaded) markStarModelReady();
+    }).catch(() => {
+      overlay?.classList.remove("has-star-model");
+    });
     overlay.addEventListener("click", () => {
       if (!overlay?.classList.contains("is-revealed")) return;
       returnToPreviousPage();
@@ -191,6 +309,40 @@
   function setStarPhase(phase = "idle") {
     const root = ensureOverlay();
     root.dataset.starPhase = phase;
+  }
+
+  function starModelElement() {
+    return overlay?.querySelector(".ptb-star-model") || null;
+  }
+
+  function resetStarModel() {
+    const model = starModelElement();
+    if (!model) return;
+    try {
+      model.pause?.();
+      model.animationName = "Open";
+      model.currentTime = 0;
+    } catch {}
+  }
+
+  function playStarModel() {
+    const root = ensureOverlay();
+    const model = starModelElement();
+    if (!model || !root.classList.contains("has-star-model")) return false;
+
+    try {
+      model.pause?.();
+      model.animationName = "Open";
+      model.currentTime = 0;
+      requestAnimationFrame(() => {
+        try {
+          model.play?.({ repetitions:1 });
+        } catch {}
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function assetFor(type) {
@@ -216,6 +368,7 @@
       "is-opening",
       "is-revealed",
       "is-star-flashing",
+      "is-star-model-opening",
       "is-resetting"
     );
   }
@@ -232,6 +385,7 @@
     root.dataset.starPhase = "idle";
     root.querySelector(".ptb-reward-result")?.replaceChildren();
     root.querySelector(".ptb-reward-object")?.removeAttribute("disabled");
+    resetStarModel();
     setSceneType(activeType);
   }
 
@@ -338,13 +492,37 @@
     setStarPhase("press");
     if (navigator.vibrate) navigator.vibrate(12);
 
-    // Version simple temporaire : deux vrais états seulement.
+    // Coffre normal : vraie animation 3D GLB.
+    if (activeType === "star" && playStarModel()) {
+      root.classList.add("is-star-model-opening");
+
+      later(() => {
+        setStarPhase("opened");
+        if (navigator.vibrate) navigator.vibrate(24);
+      }, 180);
+
+      later(() => {
+        root.classList.add("is-opening", "is-star-flashing");
+      }, 520);
+
+      later(() => {
+        root.classList.remove("is-star-flashing");
+        setStarPhase("reward");
+        revealReward(reward);
+      }, 1120);
+
+      later(() => {
+        setStarPhase("settled");
+      }, 1520);
+      return;
+    }
+
+    // Fallback 2D conservé, notamment pour le coffre légendaire.
     later(() => {
       setStarPhase("opened");
       if (navigator.vibrate) navigator.vibrate(24);
     }, 260);
 
-    // Flash juste après le passage au coffre ouvert.
     later(() => {
       root.classList.add("is-star-flashing");
     }, 360);
