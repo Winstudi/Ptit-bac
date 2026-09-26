@@ -2130,3 +2130,67 @@ html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-launch
     grid-template-rows:43px 38px!important;
   }
 }
+
+
+/* =========================================================
+   SALON PRIVE V3.2 — Ajustements joueurs + paramètres
+   ========================================================= */
+
+/* Pseudo : largeur réelle de la carte + centrage strict */
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-player-head {
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-player-head > strong {
+  width:100%!important;
+  max-width:calc(100% - 8px)!important;
+  min-width:0!important;
+  margin:0 auto!important;
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+}
+
+/* Couronne : encore 4px plus haut par rapport à la V3.1 */
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-host-crown-top {
+  top:-25px!important;
+}
+
+/* Tags : +20px en largeur */
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-player-title {
+  width:102px!important;
+  max-width:102px!important;
+}
+
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image {
+  width:102px!important;
+  max-width:102px!important;
+  overflow:visible!important;
+}
+
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image > img {
+  width:102px!important;
+  max-width:102px!important;
+  height:auto!important;
+  object-fit:contain!important;
+}
+
+/* Paramètres : 3px entre chaque bloc, taille des blocs inchangée */
+html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-setting-grid {
+  gap:3px!important;
+}
+
+@media(max-height:720px) and (min-width:346px) {
+  html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] .pl-setting-grid {
+    gap:3px!important;
+  }
+}
