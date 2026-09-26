@@ -2975,3 +2975,87 @@ body:has(.home-mobile) .economy-hud {
   width:135px !important;
 }
 
+
+/* Accueil : modes Classique / Bombe / À venir et accès aux salons. */
+.home-mobile .hm-modes.hm-modes-v3{
+  padding:7px 8px 8px!important;
+}
+.home-mobile .hm-modes-v3::before{bottom:0!important}
+.home-mobile .hm-modes-v3 h1{
+  transform:none!important;margin:0 0 7px!important;line-height:1.1!important;
+  font-size:clamp(.78rem,3.8vw,1rem);gap:8px;
+}
+.home-mobile .hm-modes-v3 .hm-mode-grid{
+  transform:none!important;gap:5px;align-items:stretch!important;
+}
+.home-mobile .hm-modes-v3 .hm-mode-grid>button{
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:104px;min-height:104px!important;
+  padding:4px 3px 15px;border-radius:15px;
+}
+.home-mobile .hm-modes-v3 .hm-mode-grid img,
+.home-mobile .hm-modes-v3 .hm-bomb-icon{
+  display:block;width:65px!important;height:61px!important;max-width:90%!important;
+  margin:0 auto;flex:none;filter:drop-shadow(0 0 5px #a453ff55);
+}
+.home-mobile .hm-modes-v3 .hm-mode-grid b{
+  min-height:17px;margin:1px 0 0;padding:0;font-size:.77rem;line-height:1.1;
+}
+.home-mobile .hm-modes-v3 .hm-mode-grid .hm-chevron{
+  top:-26px;right:0;width:12px;height:12px;
+}
+.home-mobile .hm-modes-v3 .hm-quick-lives{bottom:5px;font-size:.43rem}
+.home-mobile .hm-modes-v3 .hm-quick-lives strong{font-size:inherit}
+.home-mobile .hm-modes-v3 .hm-bomb{
+  border-color:#78ff9d;background:linear-gradient(135deg,#24c954,#0b583d 86%);
+  box-shadow:inset 0 0 14px #78ff9d40,0 0 8px #39e36c22;
+}
+.home-mobile .hm-modes-v3 .hm-coming:disabled{
+  opacity:1;cursor:default;border-color:#b676ff;
+  background:linear-gradient(135deg,#6530c9,#211553 86%);
+}
+.home-mobile .hm-modes-v3 .hm-coming b>span{
+  padding:4px 12px;border:1px solid #9760ff;border-radius:20px;
+  background:#6e39bc55;font-size:.68rem;
+}
+.home-mobile .hm-modes-v3 .hm-room-actions{
+  display:grid;grid-template-columns:minmax(0,42fr) minmax(0,58fr);
+  gap:5px;margin-top:6px;
+}
+.home-mobile .hm-modes-v3 .hm-room-create,
+.home-mobile .hm-modes-v3 .hm-room-join{
+  min-width:0;height:44px;border:1.5px solid #a35cff;border-radius:10px;
+  display:flex;align-items:center;gap:4px;padding:3px 4px;
+  background:linear-gradient(135deg,#382077,#151444);
+}
+.home-mobile .hm-modes-v3 .hm-room-create{
+  justify-content:center;border-color:#4bd4ff;
+  background:linear-gradient(135deg,#0757c9,#0b2457);
+}
+.home-mobile .hm-modes-v3 .hm-room-create img{width:32px;height:32px}
+.home-mobile .hm-modes-v3 .hm-room-create b{font-size:.65rem;white-space:nowrap}
+.home-mobile .hm-modes-v3 .hm-room-join>img{width:20px;height:24px;flex:none}
+.home-mobile .hm-modes-v3 #homePlaqueCode{
+  width:0;min-width:0;flex:1;height:32px;margin:0;padding:0 3px;
+  border:0;border-radius:5px;background:#11123c;color:#fff;
+  font-size:16px;letter-spacing:.01em;box-shadow:none;
+}
+.home-mobile .hm-modes-v3 #homePlaqueCode::placeholder{
+  color:#b59ada;font-size:9px;letter-spacing:0;
+}
+.home-mobile .hm-modes-v3 #homePlaqueJoin{
+  flex:none;min-height:32px;padding:0 5px;border:1px solid #dd9cff;border-radius:7px;
+  background:linear-gradient(#c638ff,#790be1);box-shadow:inset 0 0 5px #efaeff88;
+  font-size:.59rem;font-weight:900;color:#fff;
+}
+@media(max-width:370px){
+  .home-mobile .hm-modes-v3 .hm-room-create img{width:26px;height:28px}
+  .home-mobile .hm-modes-v3 .hm-room-create b{font-size:.57rem}
+  .home-mobile .hm-modes-v3 .hm-room-join>img{display:none}
+  .home-mobile .hm-modes-v3 .hm-mode-grid b{font-size:.69rem}
+}
+@media(max-height:670px){
+  .home-mobile .hm-modes-v3 .hm-mode-grid>button{height:94px;min-height:94px!important}
+  .home-mobile .hm-modes-v3 .hm-mode-grid img,
+  .home-mobile .hm-modes-v3 .hm-bomb-icon{width:55px!important;height:51px!important}
+}

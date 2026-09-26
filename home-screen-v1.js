@@ -406,7 +406,6 @@
 
           saveSession(response.code, response.playerId);
           session.state = response.state;
-          document.getElementById("homeJoinDialog")?.close();
           render();
         });
       });
@@ -595,44 +594,33 @@
           </div>
         </section>
 
-        <section class="hm-modes" aria-labelledby="homeModesTitle">
-          <h1 id="homeModesTitle">
-            <span aria-hidden="true">✦</span>
-            Choisis ton mode de jeu
-            <span aria-hidden="true">✦</span>
-          </h1>
-
+        <section class="hm-modes hm-modes-v3" aria-labelledby="homeModesTitle">
+          <h1 id="homeModesTitle"><span aria-hidden="true">✦</span>Choisis ton mode de jeu<span aria-hidden="true">✦</span></h1>
           <div class="hm-mode-grid">
             <button id="homePlaqueQuick" class="hm-quick" type="button">
               ${img("lightning")}
-              <b>Jouer ${chevronIcon()}</b>
-              <span class="hm-quick-lives" aria-label="${lives} vie(s) restante(s)">
-                <span><strong id="homeQuickLives">${lives}</strong> vie(s) restante(s)</span>
-              </span>
+              <b>Classique ${chevronIcon()}</b>
+              <span class="hm-quick-lives"><span><strong id="homeQuickLives">${lives}</strong> vie(s) restante(s)</span></span>
             </button>
-
-            <button id="homePlaqueCreate" class="hm-create" type="button">
-              ${img("create")}
-              <b>Créer un salon ${chevronIcon()}</b>
+            <button id="homeBomb" class="hm-bomb" type="button" data-soon="Mode Bombe" aria-label="Bombe, bientôt disponible">
+              <svg class="hm-bomb-icon" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="hmBombBody" cx="30%" cy="24%"><stop stop-color="#ad8aff"/><stop offset=".45" stop-color="#6043a4"/><stop offset="1" stop-color="#21133d"/></radialGradient></defs><path d="M61 26Q56 8 78 15" fill="none" stroke="#ffbd57" stroke-width="5"/><path d="m81 3 3 10 11-3-7 9 8 7-12-2-5 12-2-13-12-3 12-3z" fill="#ffde5b" stroke="#ff9026" stroke-width="2"/><path d="m52 23 14 5-4 13-14-5z" fill="#41305d" stroke="#c49cff" stroke-width="2"/><circle cx="47" cy="61" r="32" fill="url(#hmBombBody)" stroke="#c5a4ff" stroke-width="2"/><ellipse cx="34" cy="45" rx="9" ry="5" fill="#eee3ff" opacity=".7" transform="rotate(-35 34 45)"/><path d="M34 65a13 13 0 1 1 26 0q0 8-7 10v6H41v-6q-7-2-7-10" fill="#cbb2ff"/><circle cx="42" cy="64" r="4" fill="#35234f"/><circle cx="53" cy="64" r="4" fill="#35234f"/><path d="m47 70-3 4h6z" fill="#35234f"/></svg>
+              <b>Bombe ${chevronIcon()}</b>
             </button>
-
-            <button id="homeJoinOpen" class="hm-join" type="button">
+            <button class="hm-coming" type="button" disabled aria-label="Nouveau mode à venir">
               ${img("join")}
-              <b>Rejoindre une partie ${chevronIcon()}</b>
+              <b><span>À venir</span></b>
             </button>
           </div>
-
-          <button class="hm-ranked" type="button" data-soon="Mode classé">
-            ${img("scoreboard-trophy")}
-            <span class="hm-ranked-copy">
-              <b>Mode Classé <i class="hm-lock">${lockIcon()}</i></b>
-              <small>Bientôt disponible…</small>
-            </span>
-            <span class="hm-ranked-note">
-              Grimpe dans le classement<br>et deviens le meilleur !
-            </span>
-            <span class="hm-ranked-crown" aria-hidden="true">♔</span>
-          </button>
+          <div class="hm-room-actions">
+            <button id="homePlaqueCreate" class="hm-room-create" type="button">
+              ${img("create")}<b>Créer un salon</b>
+            </button>
+            <div class="hm-room-join" role="group" aria-label="Rejoindre un salon">
+              ${img("join")}
+              <input id="homePlaqueCode" aria-label="Code du salon" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Code du salon…">
+              <button id="homePlaqueJoin" type="button">Rejoindre</button>
+            </div>
+          </div>
         </section>
 
         <section class="hm-bottom" aria-label="Progression et inventaire">
@@ -663,23 +651,6 @@
             <b>Inventaire ${chevronIcon()}</b>
           </button>
         </section>
-
-        <dialog id="homeJoinDialog" class="hm-dialog">
-          <form method="dialog">
-            <button class="hm-close" aria-label="Fermer">×</button>
-          </form>
-          <h2>Rejoindre une partie</h2>
-          <label for="homePlaqueCode">Code du salon</label>
-          <input
-            id="homePlaqueCode"
-            maxlength="5"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            placeholder="ABCDE"
-          >
-          <button id="homePlaqueJoin" type="button">Rejoindre</button>
-        </dialog>
 
         <dialog id="homeDetailDialog" class="hm-dialog">
           <form method="dialog">
@@ -759,11 +730,6 @@
       content.innerHTML = html;
       dialog.showModal();
     };
-
-    document.getElementById("homeJoinOpen")?.addEventListener("click", () => {
-      document.getElementById("homeJoinDialog")?.showModal();
-      setTimeout(() => document.getElementById("homePlaqueCode")?.focus(), 20);
-    });
 
     document.getElementById("homeGemButton")?.addEventListener("click", event => {
       event.stopPropagation();
