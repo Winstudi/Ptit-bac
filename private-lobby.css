@@ -2597,3 +2597,175 @@ html body main.pl-private-v3[data-mode="private"] .pl-room-chat-badge[hidden] {
     min-height:280px!important;
   }
 }
+
+
+/* =========================================================
+   SALON PRIVE — VOCAL WEBRTC V1
+   ========================================================= */
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice {
+  position:relative!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice .pl-voice-status i {
+  background:#6d7898!important;
+  box-shadow:none!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-joining .pl-voice-status i {
+  background:#f0b34b!important;
+  box-shadow:0 0 6px rgba(240,179,75,.42)!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-connected .pl-voice-status i {
+  background:#42d9af!important;
+  box-shadow:0 0 6px rgba(66,217,175,.42)!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-wave {
+  opacity:.28!important;
+  transition:opacity .18s ease!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-connected .pl-v3-wave {
+  opacity:.62!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave {
+  opacity:1!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave i {
+  animation:pl-voice-wave .52s ease-in-out infinite alternate!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave i:nth-child(2) {
+  animation-delay:.08s!important;
+}
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave i:nth-child(3) {
+  animation-delay:.16s!important;
+}
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave i:nth-child(4) {
+  animation-delay:.24s!important;
+}
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice.is-speaking .pl-v3-wave i:nth-child(5) {
+  animation-delay:.32s!important;
+}
+
+@keyframes pl-voice-wave {
+  from { transform:scaleY(.55); }
+  to { transform:scaleY(1.18); }
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is-muted {
+  border-color:rgba(241,93,126,.78)!important;
+  background:rgba(104,31,57,.58)!important;
+  color:#ff819b!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-player.is-voice-speaking .pl-avatar-shell {
+  filter:
+    drop-shadow(0 0 4px rgba(70,238,202,.72))
+    drop-shadow(0 0 10px rgba(70,238,202,.34))!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-player.is-voice-speaking .pl-avatar {
+  border-color:#4be8c7!important;
+  box-shadow:
+    0 0 0 2px rgba(75,232,199,.15),
+    0 0 15px rgba(75,232,199,.34)!important;
+}
+
+.pl-room-voice-settings-overlay {
+  position:fixed!important;
+  z-index:12500!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  background:rgba(2,7,27,.38)!important;
+  backdrop-filter:blur(8px)!important;
+  -webkit-backdrop-filter:blur(8px)!important;
+}
+
+.pl-room-voice-settings-overlay[hidden] {
+  display:none!important;
+}
+
+.pl-room-voice-settings {
+  width:min(100%,320px)!important;
+  padding:10px!important;
+  display:grid!important;
+  gap:8px!important;
+  border:1.25px solid rgba(64,220,205,.72)!important;
+  border-radius:17px!important;
+  background:linear-gradient(
+    150deg,
+    rgba(13,34,76,.78),
+    rgba(8,22,61,.74)
+  )!important;
+  box-shadow:0 0 22px rgba(54,222,208,.10)!important;
+  backdrop-filter:blur(18px)!important;
+  -webkit-backdrop-filter:blur(18px)!important;
+}
+
+.pl-room-voice-settings > header {
+  min-height:36px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  padding:0 3px 5px!important;
+  border-bottom:1px solid rgba(91,115,181,.34)!important;
+}
+
+.pl-room-voice-settings > header strong {
+  color:#fff!important;
+  font-size:13px!important;
+  font-weight:900!important;
+}
+
+#plRoomVoiceSettingsClose {
+  width:29px!important;
+  height:29px!important;
+  min-height:29px!important;
+  padding:0!important;
+  border:1px solid rgba(83,110,188,.48)!important;
+  border-radius:9px!important;
+  background:rgba(13,28,70,.42)!important;
+  color:#d7def7!important;
+  font-size:21px!important;
+}
+
+.pl-room-voice-settings > button:not(#plRoomVoiceSettingsClose) {
+  width:100%!important;
+  min-height:40px!important;
+  padding:0 11px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  border:1px solid rgba(83,110,188,.50)!important;
+  border-radius:11px!important;
+  background:rgba(10,28,72,.46)!important;
+  color:#e8edff!important;
+  font-size:10px!important;
+  font-weight:800!important;
+}
+
+.pl-room-voice-settings > button b {
+  color:#6ce6d0!important;
+  font-size:9px!important;
+}
+
+.pl-room-voice-settings > button.danger {
+  justify-content:center!important;
+  border-color:rgba(240,89,124,.62)!important;
+  color:#ff91a8!important;
+  background:rgba(93,27,49,.38)!important;
+}
+
+.pl-room-voice-settings > button:disabled {
+  opacity:.38!important;
+}

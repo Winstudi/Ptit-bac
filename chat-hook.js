@@ -28,6 +28,78 @@ const ROOM_CHAT_RATE_MAX = 5;
 const ROOM_CHAT_TTL_MS = 3 * 60 * 60 * 1000;
 const roomChats = new Map();
 
+
+const roomVoicePeers = new Map();
+
+function roomVoiceMap(code) {
+  let peers = roomVoicePeers.get(code);
+  if (!peers) {
+    peers = new Map();
+    roomVoicePeers.set(code, peers);
+  }
+  return peers;
+}
+
+function roomVoiceRemove(io, socket, notify = true) {
+  const code = String(socket.data.ptitVoiceCode || "").trim().toUpperCase();
+  const playerId = String(socket.data.ptitVoicePlayerId || "").trim();
+  if (!code || !playerId) return;
+
+  const peers = roomVoicePeers.get(code);
+  if (peers?.get(playerId)?.socketId === socket.id) {
+    peers.delete(playerId);
+    if (!peers.size) roomVoicePeers.delete(code);
+
+    if (notify) {
+      socket.to(code).emit("room:voice:peer-left", { playerId });
+    }
+  }
+
+  delete socket.data.ptitVoiceCode;
+  delete socket.data.ptitVoicePlayerId;
+}
+
+function roomVoiceSafeSignal(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  let raw = "";
+  try {
+    raw = JSON.stringify(value);
+  } catch {
+    return null;
+  }
+
+  if (!raw || raw.length > 30000) return null;
+
+  if (value.description) {
+    const type = String(value.description.type || "");
+    const sdp = String(value.description.sdp || "");
+    if (!["offer", "answer"].includes(type) || !sdp || sdp.length > 28000) {
+      return null;
+    }
+    return { description: { type, sdp } };
+  }
+
+  if (value.candidate) {
+    const c = value.candidate;
+    return {
+      candidate: {
+        candidate: String(c.candidate || "").slice(0, 4096),
+        sdpMid: c.sdpMid == null ? null : String(c.sdpMid).slice(0, 64),
+        sdpMLineIndex: Number.isFinite(Number(c.sdpMLineIndex))
+          ? Number(c.sdpMLineIndex)
+          : null,
+        usernameFragment: c.usernameFragment == null
+          ? null
+          : String(c.usernameFragment).slice(0, 128)
+      }
+    };
+  }
+
+  return null;
+}
+
+
 function cleanRoomChatText(value) {
   return String(value || "")
     .replace(/\u0000/g, "")
@@ -348,6 +420,97 @@ function installChat(io) {
   // Chat éphémère du salon. Il est séparé du chat privé entre amis,
   // ne dépend pas de PostgreSQL et ne persiste aucun message.
   io.on("connection", socket => {
+
+    socket.on("room:voice:join", (payload = {}, cb = () => {}) => {
+      const membership = roomChatMembership(socket, payload);
+      if (!membership) {
+        return cb({ ok: false, error: "Tu n’es plus dans ce salon." });
+      }
+
+      roomVoiceRemove(io, socket, false);
+
+      const peers = roomVoiceMap(membership.code);
+
+      // Retire les sockets morts avant d'envoyer la liste.
+      for (const [playerId, peer] of [...peers.entries()]) {
+        if (!io.sockets.sockets.has(peer.socketId)) {
+          peers.delete(playerId);
+        }
+      }
+
+      const existing = [...peers.values()].map(peer => ({
+        playerId: peer.playerId,
+        name: peer.name
+      }));
+
+      const peer = {
+        socketId: socket.id,
+        playerId: membership.playerId,
+        name: cleanRoomChatName(payload.name)
+      };
+
+      peers.set(membership.playerId, peer);
+      socket.data.ptitVoiceCode = membership.code;
+      socket.data.ptitVoicePlayerId = membership.playerId;
+
+      socket.to(membership.code).emit("room:voice:peer-joined", {
+        playerId: peer.playerId,
+        name: peer.name
+      });
+
+      cb({
+        ok: true,
+        roomCode: membership.code,
+        peers: existing
+      });
+    });
+
+    socket.on("room:voice:leave", (payload = {}, cb = () => {}) => {
+      const membership = roomChatMembership(socket, payload);
+      if (
+        !membership &&
+        !socket.data.ptitVoiceCode
+      ) {
+        return cb({ ok: true });
+      }
+
+      roomVoiceRemove(io, socket, true);
+      cb({ ok: true });
+    });
+
+    socket.on("room:voice:signal", (payload = {}, cb = () => {}) => {
+      const membership = roomChatMembership(socket, payload);
+      if (!membership) {
+        return cb({ ok: false, error: "Tu n’es plus dans ce salon." });
+      }
+
+      if (
+        socket.data.ptitVoiceCode !== membership.code ||
+        socket.data.ptitVoicePlayerId !== membership.playerId
+      ) {
+        return cb({ ok: false, error: "Rejoins d’abord le vocal." });
+      }
+
+      const targetPlayerId = String(payload.targetPlayerId || "").trim();
+      const signal = roomVoiceSafeSignal(payload.signal);
+
+      if (!targetPlayerId || targetPlayerId === membership.playerId || !signal) {
+        return cb({ ok: false, error: "Signal vocal invalide." });
+      }
+
+      const target = roomVoicePeers.get(membership.code)?.get(targetPlayerId);
+      if (!target || !io.sockets.sockets.has(target.socketId)) {
+        return cb({ ok: false, error: "Joueur vocal introuvable." });
+      }
+
+      io.to(target.socketId).emit("room:voice:signal", {
+        fromPlayerId: membership.playerId,
+        signal
+      });
+
+      cb({ ok: true });
+    });
+
     socket.on("room:chat:history", (payload = {}, cb = () => {}) => {
       const membership = roomChatMembership(socket, payload);
       if (!membership) {
@@ -397,6 +560,10 @@ function installChat(io) {
 
       io.to(membership.code).emit("room:chat:message", message);
       cb({ ok: true, message });
+    });
+
+    socket.on("disconnect", () => {
+      roomVoiceRemove(io, socket, true);
     });
   });
 

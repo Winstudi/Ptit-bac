@@ -86,6 +86,22 @@
     nearBottom: true
   };
 
+
+  const roomVoiceState = {
+    joined: false,
+    joining: false,
+    roomCode: "",
+    micEnabled: false,
+    deafened: false,
+    stream: null,
+    peers: new Map(),
+    audios: new Map(),
+    meters: new Map(),
+    audioContext: null,
+    meterTimer: null
+  };
+
+
   const micSvg = `
     <svg class="pl-v3-comms-svg" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3"></rect>
@@ -326,7 +342,7 @@
           ${micSvg}
           <div>
             <strong>Vocal</strong>
-            <small><i aria-hidden="true"></i> Connecté</small>
+            <small class="pl-voice-status"><i aria-hidden="true"></i><span>Appuie pour rejoindre</span></small>
           </div>
           <span class="pl-v3-wave" aria-hidden="true">
             <i></i><i></i><i></i><i></i><i></i>
@@ -334,7 +350,7 @@
         </div>
 
         <div class="pl-v3-voice-actions">
-          <button id="plVoiceMic" class="is-active" type="button" aria-label="Micro">
+          <button id="plVoiceMic" type="button" aria-label="Micro">
             ${micSvg}
           </button>
           <button id="plVoiceHeadphones" type="button" aria-label="Casque">
@@ -359,6 +375,599 @@
     return panel;
   }
 
+
+
+  const ROOM_VOICE_RTC_CONFIG = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  };
+
+  function roomVoicePayload(extra = {}) {
+    const state = currentLobbyState();
+    const user = currentLobbyUser();
+
+    return {
+      code: String(state?.code || session?.code || "").trim(),
+      playerId: String(session?.playerId || "").trim(),
+      name: String(user?.name || "Joueur").trim(),
+      ...extra
+    };
+  }
+
+  function roomVoicePlayerCard(playerId) {
+    const root = document.querySelector(
+      'main.pl-private-v3[data-mode="private"]'
+    );
+    if (!root) return null;
+
+    return [...root.querySelectorAll(".pl-player")].find(
+      card => String(card.dataset.voicePlayerId || "") === String(playerId || "")
+    ) || null;
+  }
+
+  function roomVoiceSetSpeaking(playerId, speaking) {
+    const card = roomVoicePlayerCard(playerId);
+    card?.classList.toggle("is-voice-speaking", !!speaking);
+
+    if (
+      String(playerId || "") === String(session?.playerId || "")
+    ) {
+      document.querySelector(".pl-v3-voice")
+        ?.classList.toggle("is-speaking", !!speaking);
+    }
+  }
+
+  function roomVoiceStopMeter(playerId) {
+    const meter = roomVoiceState.meters.get(String(playerId || ""));
+    if (!meter) return;
+
+    try { meter.source?.disconnect?.(); } catch {}
+    try { meter.analyser?.disconnect?.(); } catch {}
+
+    roomVoiceState.meters.delete(String(playerId || ""));
+    roomVoiceSetSpeaking(playerId, false);
+  }
+
+  async function roomVoiceAudioContext() {
+    if (roomVoiceState.audioContext?.state !== "closed") {
+      try {
+        await roomVoiceState.audioContext?.resume?.();
+      } catch {}
+      return roomVoiceState.audioContext;
+    }
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    roomVoiceState.audioContext = new AudioCtx();
+    try { await roomVoiceState.audioContext.resume(); } catch {}
+    return roomVoiceState.audioContext;
+  }
+
+  async function roomVoiceStartMeter(playerId, stream) {
+    roomVoiceStopMeter(playerId);
+
+    if (!stream?.getAudioTracks?.().length) return;
+
+    const context = await roomVoiceAudioContext();
+    if (!context) return;
+
+    try {
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.65;
+      source.connect(analyser);
+
+      roomVoiceState.meters.set(String(playerId), {
+        source,
+        analyser,
+        data: new Uint8Array(analyser.fftSize)
+      });
+
+      if (!roomVoiceState.meterTimer) {
+        roomVoiceState.meterTimer = setInterval(() => {
+          for (const [id, meter] of roomVoiceState.meters.entries()) {
+            meter.analyser.getByteTimeDomainData(meter.data);
+
+            let total = 0;
+            for (let i = 0; i < meter.data.length; i++) {
+              const value = (meter.data[i] - 128) / 128;
+              total += value * value;
+            }
+
+            const rms = Math.sqrt(total / meter.data.length);
+            const isSelf =
+              String(id) === String(session?.playerId || "");
+            const speaking =
+              rms > 0.045 &&
+              (!isSelf || roomVoiceState.micEnabled);
+
+            roomVoiceSetSpeaking(id, speaking);
+          }
+        }, 120);
+      }
+    } catch {}
+  }
+
+  function updateRoomVoiceUi() {
+    const voice = document.querySelector(".pl-v3-voice");
+    const status = voice?.querySelector(".pl-voice-status span");
+    const mic = document.getElementById("plVoiceMic");
+    const headphones = document.getElementById("plVoiceHeadphones");
+
+    voice?.classList.toggle("is-connected", roomVoiceState.joined);
+    voice?.classList.toggle("is-joining", roomVoiceState.joining);
+    voice?.classList.toggle("is-deafened", roomVoiceState.deafened);
+
+    if (status) {
+      if (roomVoiceState.joining) {
+        status.textContent = "Connexion…";
+      } else if (!roomVoiceState.joined) {
+        status.textContent = "Appuie pour rejoindre";
+      } else {
+        const count = roomVoiceState.peers.size + 1;
+        status.textContent = `${count} connecté${count > 1 ? "s" : ""}`;
+      }
+    }
+
+    mic?.classList.toggle(
+      "is-active",
+      roomVoiceState.joined && roomVoiceState.micEnabled
+    );
+    mic?.classList.toggle(
+      "is-muted",
+      roomVoiceState.joined && !roomVoiceState.micEnabled
+    );
+
+    headphones?.classList.toggle(
+      "is-active",
+      roomVoiceState.joined && !roomVoiceState.deafened
+    );
+    headphones?.classList.toggle(
+      "is-muted",
+      roomVoiceState.joined && roomVoiceState.deafened
+    );
+
+    updateRoomVoiceSettingsUi();
+  }
+
+  function roomVoiceAudioElement(playerId) {
+    const id = String(playerId || "");
+    let audio = roomVoiceState.audios.get(id);
+
+    if (!audio) {
+      audio = document.createElement("audio");
+      audio.autoplay = true;
+      audio.playsInline = true;
+      audio.dataset.voicePlayerId = id;
+      audio.className = "pl-room-voice-audio";
+      audio.style.display = "none";
+      document.body.appendChild(audio);
+      roomVoiceState.audios.set(id, audio);
+    }
+
+    audio.muted = roomVoiceState.deafened;
+    return audio;
+  }
+
+  function roomVoiceRemovePeer(playerId) {
+    const id = String(playerId || "");
+    const peer = roomVoiceState.peers.get(id);
+
+    if (peer) {
+      try { peer.close(); } catch {}
+      roomVoiceState.peers.delete(id);
+    }
+
+    roomVoiceStopMeter(id);
+
+    const audio = roomVoiceState.audios.get(id);
+    if (audio) {
+      try { audio.pause(); } catch {}
+      audio.srcObject = null;
+      audio.remove();
+      roomVoiceState.audios.delete(id);
+    }
+
+    updateRoomVoiceUi();
+  }
+
+  function roomVoiceSendSignal(targetPlayerId, signal) {
+    if (!roomVoiceState.joined) return;
+
+    socket.emit(
+      "room:voice:signal",
+      roomVoicePayload({
+        targetPlayerId: String(targetPlayerId || ""),
+        signal
+      }),
+      () => {}
+    );
+  }
+
+  async function roomVoicePeer(playerId, createOffer = false) {
+    const id = String(playerId || "");
+    if (!id || id === String(session?.playerId || "")) return null;
+
+    let peer = roomVoiceState.peers.get(id);
+    if (peer) return peer;
+
+    peer = new RTCPeerConnection(ROOM_VOICE_RTC_CONFIG);
+    roomVoiceState.peers.set(id, peer);
+
+    for (const track of roomVoiceState.stream?.getAudioTracks?.() || []) {
+      peer.addTrack(track, roomVoiceState.stream);
+    }
+
+    peer.onicecandidate = event => {
+      if (!event.candidate) return;
+      roomVoiceSendSignal(id, {
+        candidate: event.candidate.toJSON
+          ? event.candidate.toJSON()
+          : event.candidate
+      });
+    };
+
+    peer.ontrack = async event => {
+      const stream =
+        event.streams?.[0] ||
+        new MediaStream([event.track]);
+
+      const audio = roomVoiceAudioElement(id);
+      audio.srcObject = stream;
+      audio.muted = roomVoiceState.deafened;
+
+      try { await audio.play(); } catch {}
+
+      roomVoiceStartMeter(id, stream);
+    };
+
+    peer.onconnectionstatechange = () => {
+      if (["failed", "closed"].includes(peer.connectionState)) {
+        roomVoiceRemovePeer(id);
+      }
+    };
+
+    if (createOffer) {
+      const offer = await peer.createOffer({
+        offerToReceiveAudio: true
+      });
+      await peer.setLocalDescription(offer);
+      roomVoiceSendSignal(id, {
+        description: {
+          type: peer.localDescription.type,
+          sdp: peer.localDescription.sdp
+        }
+      });
+    }
+
+    updateRoomVoiceUi();
+    return peer;
+  }
+
+  async function receiveRoomVoiceSignal(payload = {}) {
+    if (!roomVoiceState.joined) return;
+
+    const fromPlayerId = String(payload.fromPlayerId || "");
+    const signal = payload.signal || {};
+    if (!fromPlayerId) return;
+
+    try {
+      const peer = await roomVoicePeer(fromPlayerId, false);
+      if (!peer) return;
+
+      if (signal.description) {
+        await peer.setRemoteDescription(
+          new RTCSessionDescription(signal.description)
+        );
+
+        if (signal.description.type === "offer") {
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          roomVoiceSendSignal(fromPlayerId, {
+            description: {
+              type: peer.localDescription.type,
+              sdp: peer.localDescription.sdp
+            }
+          });
+        }
+      } else if (signal.candidate) {
+        await peer.addIceCandidate(
+          new RTCIceCandidate(signal.candidate)
+        );
+      }
+    } catch (error) {
+      console.warn("[Vocal] signal:", error);
+    }
+  }
+
+  async function joinRoomVoice() {
+    if (roomVoiceState.joined || roomVoiceState.joining) return;
+
+    const state = currentLobbyState();
+    if (!state || state.mode !== "private") {
+      return privateLobbyToast(
+        "Le vocal est disponible uniquement en salon privé."
+      );
+    }
+
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof RTCPeerConnection === "undefined"
+    ) {
+      return privateLobbyToast(
+        "Le chat vocal n’est pas pris en charge sur cet appareil."
+      );
+    }
+
+    roomVoiceState.joining = true;
+    roomVoiceState.roomCode = String(state.code || "");
+    updateRoomVoiceUi();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
+        video: false
+      });
+
+      roomVoiceState.stream = stream;
+      roomVoiceState.micEnabled = true;
+      stream.getAudioTracks().forEach(track => {
+        track.enabled = true;
+      });
+
+      await roomVoiceStartMeter(
+        String(session?.playerId || ""),
+        stream
+      );
+      await roomVoiceAudioContext();
+
+      socket.emit("room:voice:join", roomVoicePayload(), async res => {
+        roomVoiceState.joining = false;
+
+        if (!res?.ok) {
+          stream.getTracks().forEach(track => track.stop());
+          roomVoiceState.stream = null;
+          roomVoiceState.micEnabled = false;
+          updateRoomVoiceUi();
+          return privateLobbyToast(
+            res?.error || "Impossible de rejoindre le vocal."
+          );
+        }
+
+        roomVoiceState.joined = true;
+        roomVoiceState.roomCode = String(res.roomCode || state.code || "");
+
+        for (const remote of res.peers || []) {
+          await roomVoicePeer(remote.playerId, true);
+        }
+
+        updateRoomVoiceUi();
+      });
+    } catch (error) {
+      roomVoiceState.joining = false;
+      roomVoiceState.stream = null;
+      roomVoiceState.micEnabled = false;
+      updateRoomVoiceUi();
+
+      if (
+        error?.name === "NotAllowedError" ||
+        error?.name === "PermissionDeniedError"
+      ) {
+        return privateLobbyToast(
+          "Autorise le micro pour utiliser le chat vocal."
+        );
+      }
+
+      privateLobbyToast("Impossible d’activer le micro.");
+    }
+  }
+
+  function toggleRoomVoiceMic() {
+    if (!roomVoiceState.joined) {
+      return joinRoomVoice();
+    }
+
+    roomVoiceState.micEnabled = !roomVoiceState.micEnabled;
+
+    roomVoiceState.stream?.getAudioTracks?.().forEach(track => {
+      track.enabled = roomVoiceState.micEnabled;
+    });
+
+    if (!roomVoiceState.micEnabled) {
+      roomVoiceSetSpeaking(
+        String(session?.playerId || ""),
+        false
+      );
+    }
+
+    updateRoomVoiceUi();
+  }
+
+  function toggleRoomVoiceHeadphones() {
+    if (!roomVoiceState.joined) {
+      return privateLobbyToast(
+        "Rejoins d’abord le vocal avec le bouton micro."
+      );
+    }
+
+    roomVoiceState.deafened = !roomVoiceState.deafened;
+
+    for (const audio of roomVoiceState.audios.values()) {
+      audio.muted = roomVoiceState.deafened;
+    }
+
+    updateRoomVoiceUi();
+  }
+
+  function leaveRoomVoice({ silent = false } = {}) {
+    if (!roomVoiceState.joined && !roomVoiceState.joining) return;
+
+    try {
+      socket.emit("room:voice:leave", roomVoicePayload(), () => {});
+    } catch {}
+
+    for (const playerId of [...roomVoiceState.peers.keys()]) {
+      roomVoiceRemovePeer(playerId);
+    }
+
+    roomVoiceState.stream?.getTracks?.().forEach(track => {
+      try { track.stop(); } catch {}
+    });
+
+    roomVoiceStopMeter(String(session?.playerId || ""));
+
+    if (roomVoiceState.meterTimer) {
+      clearInterval(roomVoiceState.meterTimer);
+      roomVoiceState.meterTimer = null;
+    }
+
+    try {
+      roomVoiceState.audioContext?.close?.();
+    } catch {}
+
+    roomVoiceState.audioContext = null;
+    roomVoiceState.stream = null;
+    roomVoiceState.joined = false;
+    roomVoiceState.joining = false;
+    roomVoiceState.roomCode = "";
+    roomVoiceState.micEnabled = false;
+    roomVoiceState.deafened = false;
+
+    document.querySelectorAll(".pl-player.is-voice-speaking")
+      .forEach(card => card.classList.remove("is-voice-speaking"));
+
+    closeRoomVoiceSettings();
+    updateRoomVoiceUi();
+
+    if (!silent) {
+      privateLobbyToast("Tu as quitté le vocal.");
+    }
+  }
+
+  function syncRoomVoiceContext() {
+    const state = currentLobbyState();
+    const privateLobby =
+      state?.mode === "private" &&
+      state?.phase === "lobby" &&
+      String(state?.code || "");
+
+    if (
+      roomVoiceState.joined &&
+      (
+        !privateLobby ||
+        String(state.code) !== String(roomVoiceState.roomCode)
+      )
+    ) {
+      leaveRoomVoice({ silent: true });
+      return;
+    }
+
+    updateRoomVoiceUi();
+  }
+
+  function ensureRoomVoiceSettings() {
+    let overlay = document.getElementById("plRoomVoiceSettingsOverlay");
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "plRoomVoiceSettingsOverlay";
+    overlay.className = "pl-room-voice-settings-overlay";
+    overlay.hidden = true;
+
+    overlay.innerHTML = `
+      <section class="pl-room-voice-settings" role="dialog" aria-modal="true" aria-label="Réglages vocaux">
+        <header>
+          <strong>Réglages vocaux</strong>
+          <button id="plRoomVoiceSettingsClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <button id="plRoomVoiceSettingsMic" type="button">
+          <span>Micro</span><b>—</b>
+        </button>
+        <button id="plRoomVoiceSettingsSound" type="button">
+          <span>Son reçu</span><b>—</b>
+        </button>
+        <button id="plRoomVoiceSettingsLeave" class="danger" type="button">
+          Quitter le vocal
+        </button>
+      </section>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", event => {
+      if (event.target === overlay) closeRoomVoiceSettings();
+    });
+
+    overlay.querySelector("#plRoomVoiceSettingsClose")
+      ?.addEventListener("click", closeRoomVoiceSettings);
+
+    overlay.querySelector("#plRoomVoiceSettingsMic")
+      ?.addEventListener("click", toggleRoomVoiceMic);
+
+    overlay.querySelector("#plRoomVoiceSettingsSound")
+      ?.addEventListener("click", toggleRoomVoiceHeadphones);
+
+    overlay.querySelector("#plRoomVoiceSettingsLeave")
+      ?.addEventListener("click", () => leaveRoomVoice());
+
+    return overlay;
+  }
+
+  function updateRoomVoiceSettingsUi() {
+    const overlay = document.getElementById("plRoomVoiceSettingsOverlay");
+    if (!overlay) return;
+
+    const mic = overlay.querySelector("#plRoomVoiceSettingsMic b");
+    const sound = overlay.querySelector("#plRoomVoiceSettingsSound b");
+    const leave = overlay.querySelector("#plRoomVoiceSettingsLeave");
+
+    if (mic) {
+      mic.textContent = roomVoiceState.joined
+        ? (roomVoiceState.micEnabled ? "Activé" : "Coupé")
+        : "Hors ligne";
+    }
+
+    if (sound) {
+      sound.textContent = roomVoiceState.joined
+        ? (roomVoiceState.deafened ? "Coupé" : "Activé")
+        : "Hors ligne";
+    }
+
+    if (leave) leave.disabled = !roomVoiceState.joined;
+  }
+
+  function openRoomVoiceSettings() {
+    const overlay = ensureRoomVoiceSettings();
+    overlay.hidden = false;
+    document.getElementById("plVoiceSettings")
+      ?.classList.add("is-active");
+    updateRoomVoiceSettingsUi();
+  }
+
+  function closeRoomVoiceSettings() {
+    const overlay = document.getElementById("plRoomVoiceSettingsOverlay");
+    if (overlay) overlay.hidden = true;
+    document.getElementById("plVoiceSettings")
+      ?.classList.remove("is-active");
+  }
+
+  function receiveRoomVoicePeerJoined(payload = {}) {
+    if (!roomVoiceState.joined) return;
+    // Le nouveau joueur crée l'offre vers les participants déjà présents.
+    updateRoomVoiceUi();
+  }
+
+  function receiveRoomVoicePeerLeft(payload = {}) {
+    roomVoiceRemovePeer(payload.playerId);
+  }
 
   function roomChatPayload(extra = {}) {
     const state = currentLobbyState();
@@ -929,7 +1538,12 @@
   }
 
   function decoratePlayerCards(root) {
-    root.querySelectorAll(".pl-player").forEach(card => {
+    const players = currentLobbyState()?.players || [];
+
+    root.querySelectorAll(".pl-player").forEach((card, index) => {
+      const playerId = String(players[index]?.id || "");
+      if (playerId) card.dataset.voicePlayerId = playerId;
+
       const avatarShell = card.querySelector(".pl-avatar-shell");
       const titleRow = card.querySelector(".pl-player-title-row");
       const crown = titleRow?.querySelector(".pl-host-crown-inline");
@@ -1150,9 +1764,24 @@
       return;
     }
 
-    if (event.target.closest?.("#plVoiceMic, #plVoiceHeadphones, #plVoiceSettings")) {
+    if (event.target.closest?.("#plVoiceMic")) {
       event.preventDefault();
-      privateLobbyToast("Le chat vocal sera branché à l’étape suivante.");
+      event.stopPropagation();
+      toggleRoomVoiceMic();
+      return;
+    }
+
+    if (event.target.closest?.("#plVoiceHeadphones")) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleRoomVoiceHeadphones();
+      return;
+    }
+
+    if (event.target.closest?.("#plVoiceSettings")) {
+      event.preventDefault();
+      event.stopPropagation();
+      openRoomVoiceSettings();
       return;
     }
 
@@ -1203,6 +1832,7 @@
 
     decoratePrivateLobbyV3();
     syncRoomChatContext();
+    syncRoomVoiceContext();
   }
 
   document.addEventListener(
@@ -1217,6 +1847,14 @@
   if (typeof socket !== "undefined") {
     socket.on("connect", () => setTimeout(refreshAdminState, 120));
     socket.on("room:chat:message", receiveRoomChatMessage);
+    socket.on("room:voice:signal", receiveRoomVoiceSignal);
+    socket.on("room:voice:peer-joined", receiveRoomVoicePeerJoined);
+    socket.on("room:voice:peer-left", receiveRoomVoicePeerLeft);
+    socket.on("disconnect", () => {
+      if (roomVoiceState.joined || roomVoiceState.joining) {
+        leaveRoomVoice({ silent: true });
+      }
+    });
   }
 
   window.addEventListener("online", () => setTimeout(refreshAdminState, 120));
@@ -1225,7 +1863,18 @@
   });
 
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && roomChatState.open) closeRoomChat();
+    if (event.key !== "Escape") return;
+
+    const voiceSettings = document.getElementById(
+      "plRoomVoiceSettingsOverlay"
+    );
+
+    if (voiceSettings && !voiceSettings.hidden) {
+      closeRoomVoiceSettings();
+      return;
+    }
+
+    if (roomChatState.open) closeRoomChat();
   });
 
   setTimeout(refreshAdminState, 250);
