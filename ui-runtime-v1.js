@@ -75,6 +75,14 @@
     decorating: false
   };
 
+  const quickLobbyV3State = {
+    ready:false,
+    starting:false,
+    deadline:0,
+    players:new Map()
+  };
+
+
   const roomChatState = {
     open: false,
     roomCode: "",
@@ -322,7 +330,7 @@
 
   document.addEventListener("click", event => {
     const button = event.target.closest?.(
-      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"]) #lobbyV5Leave'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],.pl-quick-v3) #lobbyV5Leave'
     );
 
     if (!button) return;
@@ -504,7 +512,7 @@
 
   function roomVoicePlayerCard(playerId) {
     const root = document.querySelector(
-      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"])'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],.pl-quick-v3)'
     );
     if (!root) return null;
 
@@ -2163,7 +2171,7 @@
   function upgradeQuickLobbyToV3(root) {
     if (
       !root ||
-      root.dataset.mode !== "quick" ||
+      currentLobbyState()?.mode !== "quick" ||
       root.dataset.quickV3Upgraded === "1"
     ) {
       return;
@@ -2178,6 +2186,19 @@
       "pl-private-v3",
       "pl-quick-v3"
     );
+
+    // Important : tous les anciens scripts Quick d'index.html ciblent
+    // exclusivement [data-mode="quick"]. On change uniquement l'attribut
+    // DOM ; l'état serveur reste state.mode === "quick".
+    root.dataset.mode = "quick-v3";
+
+    root
+      .querySelectorAll(
+        ".quick-search-panel, .quick-ready-bottom-panel"
+      )
+      .forEach(node => node.remove());
+
+    root.classList.remove("quick-ready-bottom-active");
 
     // ---------- Bandeau ----------
     const header = root.querySelector(
@@ -2353,15 +2374,23 @@
           ...list.querySelectorAll(
             ".lobby-v5-empty-player, .pl-empty"
           )
-        ].forEach(slot => {
+        ].forEach(slot => slot.remove());
+
+        const missingSlots = Math.max(
+          0,
+          6 - Number(state.players?.length || 0)
+        );
+
+        for (let index = 0; index < missingSlots; index++) {
+          const slot = document.createElement("div");
           slot.className = "pl-empty";
-          slot.removeAttribute("data-add-bot");
-          slot.removeAttribute("type");
+          slot.setAttribute("aria-label", "Place libre");
           slot.innerHTML = `
             <b aria-hidden="true">＋</b>
             <span>Place libre</span>
           `;
-        });
+          list.appendChild(slot);
+        }
       }
     }
 
@@ -2403,18 +2432,27 @@
       launch.className = "pl-launch";
 
       const ready = document.createElement("button");
-      ready.id = "plQuickReady";
-      ready.className = "selected pl-quick-static";
+      ready.id = "plReady";
       ready.type = "button";
-      ready.tabIndex = -1;
-      ready.setAttribute("aria-disabled", "true");
-      ready.textContent = "✓ Prêt";
+      ready.setAttribute(
+        "aria-pressed",
+        quickLobbyV3State.ready ? "true" : "false"
+      );
+      ready.classList.toggle(
+        "selected",
+        quickLobbyV3State.ready
+      );
+      ready.textContent =
+        quickLobbyV3State.ready ? "Annuler" : "✓ Prêt";
 
       const start = document.createElement("button");
-      start.id = "plQuickAutoStart";
+      start.id = "startBtn";
       start.type = "button";
       start.disabled = true;
-      start.textContent = "▶ Lancer la partie";
+      start.textContent =
+        quickLobbyV3State.starting
+          ? "▶ Lancement…"
+          : "▶ Lancer la partie";
 
       launch.append(ready, start);
 
@@ -2575,7 +2613,8 @@
     const root = document.querySelector(
       'main.lobby-v5.pl-private[data-mode="private"], ' +
       'main.lobby-v5.pl-private.pl-public-mode[data-mode="public"], ' +
-      'main.lobby-v5[data-mode="quick"]'
+      'main.lobby-v5[data-mode="quick"], ' +
+      'main.lobby-v5.pl-quick-v3'
     );
 
     if (!root) return;
@@ -2583,7 +2622,7 @@
     privateLobbyV3State.decorating = true;
 
     try {
-      if (root.dataset.mode === "quick") {
+      if (currentLobbyState()?.mode === "quick") {
         upgradeQuickLobbyToV3(root);
       }
 
@@ -2593,17 +2632,19 @@
       const codeLabel = root.querySelector(".pl-header-code small");
       if (codeLabel) codeLabel.textContent = "Code salon";
 
+      const liveMode = currentLobbyState()?.mode || root.dataset.mode;
+
       const roomTitle = root.querySelector(".pl-title-mode > h1");
       if (roomTitle) {
         roomTitle.textContent =
-          root.dataset.mode === "quick"
+          liveMode === "quick"
             ? "Partie Rapide"
-            : root.dataset.mode === "public"
+            : liveMode === "public"
               ? "Salon Public"
               : "Salon Privé";
       }
 
-      if (root.dataset.mode === "quick") {
+      if (liveMode === "quick") {
         root.querySelector("#plModeToggle")?.remove();
       }
 
@@ -2618,6 +2659,17 @@
       decoratePlayerCards(root);
       syncLobbyTagImages(root);
       decorateBottom(root);
+
+      if (currentLobbyState()?.mode === "quick") {
+        root
+          .querySelectorAll(
+            ".quick-search-panel, .quick-ready-bottom-panel"
+          )
+          .forEach(node => node.remove());
+
+        root.classList.remove("quick-ready-bottom-active");
+        syncQuickLobbyV3ReadyUi();
+      }
     } finally {
       privateLobbyV3State.decorating = false;
     }
@@ -2633,7 +2685,7 @@
     if (privateLobbyV3State.busy) return;
 
     const root = document.querySelector(
-      'main.lobby-v5.pl-private.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"])'
+      'main.lobby-v5.pl-private.pl-private-v3:is([data-mode="private"],[data-mode="public"],.pl-quick-v3)'
     );
     if (!root) return;
 
@@ -2725,7 +2777,7 @@
 
   document.addEventListener("click", async event => {
     const share = event.target.closest?.(
-      'main.pl-quick-v3[data-mode="quick"] #plShare'
+      'main.pl-quick-v3 #plShare'
     );
     if (!share) return;
 
@@ -2820,6 +2872,145 @@
 
     setTimeout(refreshAdminState, 250);
   }, true);
+
+
+
+  function syncQuickLobbyV3ReadyUi() {
+    if (currentLobbyState()?.mode !== "quick") return;
+
+    const root = document.querySelector(
+      "main.lobby-v5.pl-quick-v3"
+    );
+    if (!root) return;
+
+    const ready = root.querySelector("#plReady");
+    if (ready) {
+      ready.classList.toggle(
+        "selected",
+        quickLobbyV3State.ready
+      );
+      ready.setAttribute(
+        "aria-pressed",
+        quickLobbyV3State.ready ? "true" : "false"
+      );
+      ready.disabled = !!quickLobbyV3State.starting;
+      ready.textContent =
+        quickLobbyV3State.ready ? "Annuler" : "✓ Prêt";
+    }
+
+    const start = root.querySelector("#startBtn");
+    if (start) {
+      start.disabled = true;
+      start.textContent =
+        quickLobbyV3State.starting
+          ? "▶ Lancement…"
+          : "▶ Lancer la partie";
+    }
+
+    root
+      .querySelectorAll(
+        ".pl-player-v2[data-lobby-player-profile]"
+      )
+      .forEach(card => {
+        const id = String(
+          card.dataset.lobbyPlayerProfile || ""
+        );
+
+        const status = card.querySelector(".pl-card-status");
+        if (!status) return;
+
+        const playerState = quickLobbyV3State.players.get(id);
+        if (!playerState) {
+          status.lastChild &&
+            (status.lastChild.textContent = " Pas prêt");
+          return;
+        }
+
+        status.lastChild &&
+          (status.lastChild.textContent =
+            playerState.ready ? " Prêt" : " Pas prêt");
+      });
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.(
+      "main.pl-quick-v3 #plReady"
+    );
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (button.disabled || quickLobbyV3State.starting) return;
+
+    const next = !quickLobbyV3State.ready;
+    button.disabled = true;
+
+    socket.timeout(8000).emit(
+      "quick:ready",
+      { ready:next },
+      (error, response) => {
+        button.disabled = false;
+
+        if (error || !response?.ok) {
+          return privateLobbyToast(
+            response?.error ||
+            "Impossible de modifier ton état Prêt."
+          );
+        }
+
+        quickLobbyV3State.ready = !!response.ready;
+        quickLobbyV3State.starting = !!response.starting;
+        quickLobbyV3State.deadline =
+          Number(response.deadline || 0);
+
+        syncQuickLobbyV3ReadyUi();
+      }
+    );
+  }, true);
+
+  try {
+    socket?.on?.("quick:ready-state", payload => {
+      if (currentLobbyState()?.mode !== "quick") return;
+
+      quickLobbyV3State.starting = !!payload?.starting;
+      quickLobbyV3State.deadline =
+        Number(payload?.deadline || 0);
+
+      quickLobbyV3State.players.clear();
+
+      for (const item of payload?.players || []) {
+        const id = String(item?.playerId || "");
+        if (!id) continue;
+
+        quickLobbyV3State.players.set(id, {
+          ready:!!item?.ready
+        });
+
+        if (
+          id === String(session?.playerId || "")
+        ) {
+          quickLobbyV3State.ready = !!item?.ready;
+        }
+      }
+
+      syncQuickLobbyV3ReadyUi();
+    });
+
+    socket?.on?.("quick:matched", () => {
+      quickLobbyV3State.ready = false;
+      quickLobbyV3State.starting = false;
+      quickLobbyV3State.deadline = 0;
+      quickLobbyV3State.players.clear();
+    });
+
+    socket?.on?.("quick:error", () => {
+      quickLobbyV3State.starting = false;
+      syncQuickLobbyV3ReadyUi();
+    });
+  } catch {}
 
   function cleanupCurrentScreen() {
     const hud = document.getElementById("economyHud");
