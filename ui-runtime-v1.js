@@ -220,7 +220,7 @@
         <div class="pl-v3-comms-head">
           ${micSvg}
           <div>
-            <strong>Chat vocal</strong>
+            <strong>Vocal</strong>
             <small><i aria-hidden="true"></i> Connecté</small>
           </div>
           <span class="pl-v3-wave" aria-hidden="true">
@@ -244,7 +244,7 @@
       <button id="plRoomChatOpen" class="pl-v3-textchat" type="button">
         <span class="pl-v3-textchat-title">
           ${chatSvg}
-          <strong>Chat écrit</strong>
+          <strong>Chat</strong>
         </span>
         <span class="pl-v3-textchat-open">
           Ouvrir le chat
@@ -334,26 +334,7 @@
 
   function decorateBottom(root) {
     root.querySelector(".pl-test")?.remove();
-
-    const launch = root.querySelector(":scope > .pl-actions .pl-launch");
-    const startButton = launch?.querySelector("#startBtn");
-    if (!launch) return;
-
-    let hint = launch.querySelector(".pl-launch-hint");
-
-    if (startButton) {
-      if (!hint) {
-        hint = document.createElement("small");
-        hint.className = "pl-launch-hint";
-        launch.appendChild(hint);
-      }
-
-      hint.textContent = startButton.disabled
-        ? "Tous les joueurs doivent être prêts"
-        : "Tout le monde est prêt";
-    } else {
-      hint?.remove();
-    }
+    root.querySelector(".pl-launch-hint")?.remove();
   }
 
   function decoratePrivateLobbyV3() {
