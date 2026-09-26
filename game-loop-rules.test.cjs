@@ -69,3 +69,33 @@ test("hors Quick seul l'hôte peut continuer les résultats", () => {
   assert.equal(canAdvanceScoreboard(room, { isHost:false }), false);
   assert.equal(canAdvanceScoreboard(room, { isHost:true }), true);
 });
+
+const { rematchState, canRestartRoom } = require('./game-loop-rules.js');
+
+test('revanche : seuls les humains connectés votent, avec annulation possible', () => {
+  const host = { id:'h', isHost:true, connected:true, rematchReady:true };
+  const friend = { id:'f', connected:true, rematchReady:false };
+  const room = { mode:'private', phase:'finished', players:[host, friend,
+    { id:'bot', isBot:true, connected:true }, { id:'offline', connected:false }] };
+  assert.deepEqual(rematchState(room), { count:2, readyCount:1, allReady:false });
+  assert.equal(canRestartRoom(room, host), false);
+  friend.rematchReady = true;
+  assert.equal(canRestartRoom(room, host), true);
+  friend.rematchReady = false;
+  assert.equal(canRestartRoom(room, host), false);
+  friend.connected = false;
+  assert.equal(canRestartRoom(room, host), true);
+});
+
+test('revanche : phase, identité, hôte et enregistrement des résultats sont protégés', () => {
+  const host = { id:'h', isHost:true, connected:true, rematchReady:true };
+  const room = { mode:'public', phase:'finished', players:[host] };
+  assert.equal(canRestartRoom(room, host), true);
+  assert.equal(canRestartRoom(room, { ...host }), false);
+  assert.equal(canRestartRoom({ ...room, phase:'round' }, host), false);
+  assert.equal(canRestartRoom({ ...room, mode:'quick' }, host), false);
+  assert.equal(canRestartRoom({ ...room, progressionDistributionPending:true }, host), false);
+  host.isHost = false;
+  assert.equal(canRestartRoom(room, host), false);
+  assert.equal(rematchState({ players:[] }).allReady, false);
+});

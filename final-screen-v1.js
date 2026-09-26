@@ -743,12 +743,17 @@
         '</p>' +
 
         '<div class="fin-actions">' +
-          (
-            user?.isHost && !quick
-              ? '<button id="finReplay" class="fin-primary">↻ Rejouer</button>'
-              : quick
-                ? '<button id="finQuick" class="fin-primary">↻ Rejouer</button>'
-                : '<p>L’hôte peut relancer une partie.</p>'
+          (quick
+            ? '<button id="finQuick" class="fin-primary">↻ Rejouer</button>'
+            : '<p role="status">Revanche · ' + Number(state.rematch?.readyCount || 0) +
+              ' / ' + Number(state.rematch?.count || 0) + ' joueurs partants</p>' +
+              '<button id="finRematchReady" class="fin-primary" aria-pressed="' +
+              (!!user?.rematchReady) + '">' +
+              (user?.rematchReady ? '✓ Partant · Annuler' : '↻ Je rejoue') + '</button>' +
+              (user?.isHost
+                ? '<button id="finReplay" class="fin-secondary"' +
+                  (state.rematch?.allReady ? '' : ' disabled') + '>Retour au même salon</button>'
+                : '<p>L’hôte ramènera le groupe au salon.</p>')
           ) +
 
           '<button id="finHome" class="fin-secondary">⌂ Retour à l’accueil</button>' +
@@ -767,7 +772,7 @@
       ranked
     );
 
-    const leave = () => {
+    const leave = (onLeft, onFailure) => {
       stopFinalSound();
 
       document
@@ -795,6 +800,7 @@
         },
         (err, res) => {
           if (err || !res?.ok) {
+            if (typeof onFailure === "function") onFailure();
             return toast(
               res?.error ||
               "Impossible de quitter le classement pour le moment."
@@ -802,6 +808,7 @@
           }
 
           clearSession();
+          if (typeof onLeft === "function") return onLeft();
 
           if (typeof initWallet === "function") {
             initWallet(() => renderHome());
@@ -814,47 +821,35 @@
 
     document
       .getElementById("finHome")
-      .onclick = leave;
+      .onclick = () => leave();
 
-    const replay =
-      document.getElementById(
-        "finReplay"
-      );
+    const rematchButton = document.getElementById("finRematchReady");
+    if (rematchButton) rematchButton.onclick = () => {
+      if (rematchButton.disabled) return;
+      rematchButton.disabled = true;
+      socket.timeout(8000).emit("game:rematchReady", {
+        code:state.code, playerId:session.playerId, ready:!user?.rematchReady
+      }, (err, res) => {
+        rematchButton.disabled = false;
+        if (err || !res?.ok) toast(res?.error || "Choix non confirmé. Réessaie.");
+      });
+    };
 
-    if (replay) {
-      replay.onclick = () => {
-        if (replay.disabled) return;
-
-        replay.disabled = true;
-
+    const replay = document.getElementById("finReplay");
+    if (replay) replay.onclick = () => {
+      if (replay.disabled) return;
+      replay.disabled = true;
+      socket.timeout(8000).emit("game:restart", {
+        code:state.code, playerId:session.playerId
+      }, (err, res) => {
+        replay.disabled = false;
+        if (err || !res?.ok) return toast(res?.error || "Retour au salon non confirmé. Réessaie.");
         stopFinalSound();
-
-        document
-          .getElementById(
-            "finConfetti"
-          )
-          ?.remove();
-
-        if (
-          finalFxRuntime.confettiTimer
-        ) {
-          clearTimeout(
-            finalFxRuntime.confettiTimer
-          );
-
-          finalFxRuntime.confettiTimer =
-            0;
-        }
-
-        socket.emit(
-          "game:restart",
-          {
-            code:state.code,
-            playerId:session.playerId
-          }
-        );
-      };
-    }
+        document.getElementById("finConfetti")?.remove();
+        clearTimeout(finalFxRuntime.confettiTimer);
+        finalFxRuntime.confettiTimer = 0;
+      });
+    };
 
     const again =
       document.getElementById(
@@ -872,11 +867,10 @@
           icon:user?.avatar || "🙂"
         };
 
-        leave();
-
-        window.startQuickPlay?.(
-          profile
-        );
+        leave(() => {
+          renderHome();
+          window.startQuickPlay?.(profile);
+        }, () => { again.disabled = false; });
       };
     }
   }

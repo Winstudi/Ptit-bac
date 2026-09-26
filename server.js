@@ -16,7 +16,9 @@ const {
   shouldRefundEntryOnLeave,
   isFinalScoreboard,
   nextHostCandidate,
-  canAdvanceScoreboard
+  canAdvanceScoreboard,
+  rematchState,
+  canRestartRoom
 } = require("./game-loop-rules.js");
 const validationEngine = require("./validation-engine-v26.cjs");
 const validationCacheStore = require("./validation-cache-v25.cjs");
@@ -1715,6 +1717,7 @@ function publicPlayer(p) {
     score: p.score,
     isHost: p.isHost,
     isBot: !!p.isBot && !publicBotEngine.isMatchmakingBot(p),
+    rematchReady: !p.isBot && !!p.connected && p.rematchReady === true,
     lobbyReady: !!p.isBot || (p.connected && p.lobbyReady === true),
     submitted: p.submitted,
     avatar: p.avatar || "",
@@ -1783,6 +1786,7 @@ function publicRoom(room, viewerPlayerId = null) {
     progressionEnabled: isEconomyMode(room.mode),
     quickJoinable: isPublicRoomDiscoverable(room),
     phase: room.phase,
+    rematch: rematchState(room),
     players: room.players.map(publicPlayer),
     categories: room.categories,
     categoryCount: room.categoryCount || room.categories.length,
@@ -5049,10 +5053,23 @@ io.on("connection", socket => {
     prepareCategorySelection(room);
   });
 
-  socket.on("game:restart", payload => {
+  socket.on("game:rematchReady", (payload = {}, cb = () => {}) => {
     const { room, player } = requireMember(socket, payload);
-    if (room?.mode === "quick") return socket.emit("toast", "Pour rejouer, lance une nouvelle recherche depuis l’accueil.");
-    if (!room || !player?.isHost) return;
+    if (!room || !player || player.isBot || !player.connected ||
+        room.phase !== "finished" || room.mode === "quick" ||
+        typeof payload.ready !== "boolean") {
+      return cb({ ok:false, error:"Revanche indisponible." });
+    }
+    player.rematchReady = payload.ready;
+    emitRoom(room);
+    cb({ ok:true });
+  });
+
+  socket.on("game:restart", (payload, cb = () => {}) => {
+    const { room, player } = requireMember(socket, payload);
+    if (!canRestartRoom(room, player)) {
+      return cb({ ok:false, error:"Attends que les joueurs connectés choisissent de rejouer et que les résultats soient enregistrés." });
+    }
 
     room.phase = "lobby";
     resetPrivateReady(room);
@@ -5075,6 +5092,7 @@ io.on("connection", socket => {
     room.progressionDistributedAt = null;
     room.gameSessionId = null;
     room.players.forEach(p => {
+      p.rematchReady = false;
       p.score = 0;
       // E3: compteur séparé utilisé par la progression XP.
       p.validAnswerCount = 0;
@@ -5082,6 +5100,7 @@ io.on("connection", socket => {
       p.answers = {};
     });
     emitRoom(room);
+    cb({ ok:true });
   });
 
   socket.on("disconnect", () => {
@@ -5091,6 +5110,7 @@ io.on("connection", socket => {
 
     player.connected = false;
     player.lobbyReady = false;
+    player.rematchReady = false;
 
     if (player.isHost) {
       ptitBacScheduleHostTransfer(room, player);

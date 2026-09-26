@@ -236,3 +236,20 @@ Les quêtes anciennes restent cumulatives ; le chargement de leurs statistiques 
 Les règles récentes de bots de matchmaking priment sur les descriptions historiques ci-dessus :
 un humain avec des bots de matchmaking peut recevoir de l’XP, mais pas de trophées compétitifs.
 Les images et feuilles CSS existantes ne sont pas modifiées par ce correctif.
+
+## Convivialité — revanche, septembre 2026
+
+Dans les salons privés et publics, la fin de partie propose « Je rejoue »
+(annulable) et affiche le nombre d'humains connectés partants. Lorsque tous
+ont accepté, l'hôte peut ramener le groupe au même salon, avec le même code
+et les mêmes paramètres. La prochaine partie conserve la validation « Prêt »
+du salon. Les bots ne votent pas ; une déconnexion annule le vote du joueur.
+Les groupes persistants et les nouveaux modes ne sont pas inclus dans ce lot.
+
+En partie rapide, « Rejouer » recherche de nouveaux adversaires seulement
+après confirmation de sortie du salon précédent. Si la sortie échoue, la
+session reste disponible et le bouton permet de réessayer.
+
+Validation de ce lot : tests ciblés des règles, transitions et protections
+Socket.IO, ainsi que `node ci-check.cjs`. Le parcours réel à plusieurs iPhone
+reste à vérifier après installation. Aucun nouveau fichier source requis.

@@ -17,6 +17,8 @@ const ADMIN_DEFAULT_POLICY = Object.freeze({
 const DEFAULT_ADMIN_ACCOUNT_EMAIL = ""; // Compatibilité : les rôles ne dépendent plus des e-mails.
 
 const EVENT_POLICIES = Object.freeze({
+  "game:rematchReady": Object.freeze({ limit:20, windowMs:10_000, scope:"socket" }),
+  "game:restart": Object.freeze({ limit:10, windowMs:10_000, scope:"socket" }),
   "shop:purchase": Object.freeze({ limit:12, windowMs:60_000, scope:"identity" }),
   "shop:claimAdBag": Object.freeze({ limit:4, windowMs:60_000, scope:"identity" }),
   "shop:claimDaily": Object.freeze({ limit:8, windowMs:60_000, scope:"identity" }),

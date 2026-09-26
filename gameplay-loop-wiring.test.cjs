@@ -406,3 +406,88 @@ test("la validation d'un tirage attend la fin du débit atomique", () => {
   )?.[1] || "";
   assert.match(confirmLetter, /room\.letterRerollPending/);
 });
+
+function finalActionsHarness() {
+  const vm = require('node:vm');
+  const final = source('final-screen-v1.js');
+  const begin = final.indexOf('    const leave =');
+  const end = final.indexOf('\n  window.renderFinished', begin);
+  const actions = final.slice(begin, end).replace(/\n  \}\s*$/, '');
+  const buttons = { finHome:{}, finQuick:{} };
+  const calls = [];
+  let acknowledge;
+  vm.runInNewContext(actions, {
+    document:{ getElementById:id => buttons[id] || null },
+    socket:{ timeout:() => ({ emit:(event, payload, cb) => {
+      calls.push(event); acknowledge = cb;
+    } }) },
+    state:{ code:'ROOM' }, session:{ playerId:'p' },
+    user:{ name:'Alice', avatar:'A' },
+    stopFinalSound:() => {}, finalFxRuntime:{ confettiTimer:0 },
+    clearTimeout:() => {}, clearSession:() => calls.push('clear'),
+    renderHome:() => calls.push('home'), toast:() => calls.push('error'),
+    window:{ startQuickPlay:() => calls.push('search') }
+  });
+  return { buttons, calls, ack:(...args) => acknowledge(...args) };
+}
+
+test('Rejouer Quick attend la sortie confirmée avant de rechercher', () => {
+  const h = finalActionsHarness();
+  h.buttons.finQuick.onclick();
+  h.buttons.finQuick.onclick();
+  assert.deepEqual(h.calls, ['room:leave']);
+  h.ack(null, { ok:true });
+  assert.deepEqual(h.calls, ['room:leave', 'clear', 'home', 'search']);
+});
+
+test('Rejouer Quick conserve la session et permet de réessayer après un échec', () => {
+  for (const result of [[new Error('timeout')], [null, { ok:false }]]) {
+    const h = finalActionsHarness();
+    h.buttons.finQuick.onclick();
+    h.ack(...result);
+    assert.deepEqual(h.calls, ['room:leave', 'error']);
+    assert.equal(h.buttons.finQuick.disabled, false);
+    h.buttons.finQuick.onclick();
+    assert.equal(h.calls.at(-1), 'room:leave');
+  }
+});
+
+test('le serveur conserve le groupe et remet les votes à zéro après la revanche', () => {
+  const vm = require('node:vm');
+  const { canRestartRoom } = require('./game-loop-rules.js');
+  const host = { id:'h', isHost:true, connected:true, score:5 };
+  const friend = { id:'f', connected:true, score:3 };
+  const room = { code:'ABC', mode:'private', phase:'finished', players:[host, friend],
+    categories:[], categoryCount:6, gameSessionId:'previous' };
+  let actor = host;
+  const handlers = {};
+  const server = source('server.js');
+  const begin = server.indexOf('  socket.on("game:rematchReady"');
+  const end = server.indexOf('  socket.on("disconnect"', begin);
+  vm.runInNewContext(server.slice(begin, end), {
+    socket:{ on:(name, handler) => { handlers[name] = handler; } },
+    requireMember:() => ({ room, player:actor }), canRestartRoom,
+    emitRoom:() => {}, resetPrivateReady:r => r.players.forEach(p => { p.lobbyReady = false; }),
+    pickCategories:() => ['Animal']
+  });
+  const call = (name, payload) => {
+    let result;
+    handlers[name](payload, value => { result = value; });
+    return result;
+  };
+  assert.equal(call('game:restart', {}).ok, false);
+  assert.equal(room.phase, 'finished');
+  assert.equal(call('game:rematchReady', { ready:true }).ok, true);
+  actor = friend;
+  assert.equal(call('game:rematchReady', { ready:true }).ok, true);
+  assert.equal(call('game:restart', {}).ok, false);
+  actor = host;
+  assert.equal(call('game:restart', {}).ok, true);
+  assert.equal(room.phase, 'lobby');
+  assert.equal(room.code, 'ABC');
+  assert.equal(room.players.length, 2);
+  assert.equal(room.gameSessionId, null);
+  assert.ok(room.players.every(p => p.score === 0 && p.rematchReady === false && p.lobbyReady === false));
+  assert.equal(call('game:restart', {}).ok, false);
+  assert.equal(call('game:rematchReady', { ready:true }).ok, false);
+});

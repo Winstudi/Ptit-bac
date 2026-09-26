@@ -34,9 +34,27 @@ function canAdvanceScoreboard(room, player) {
   return room.mode === "quick" || player.isHost === true;
 }
 
+function rematchState(room) {
+  const humans = (room?.players || []).filter(p => !p.isBot && p.connected);
+  const readyCount = humans.filter(p => p.rematchReady === true).length;
+  return {
+    count: humans.length,
+    readyCount,
+    allReady: humans.length > 0 && readyCount === humans.length
+  };
+}
+
+function canRestartRoom(room, player) {
+  return !!(room && player?.isHost && room.players?.includes(player) &&
+    player.connected && room.mode !== "quick" && room.phase === "finished" &&
+    !room.progressionDistributionPending && rematchState(room).allReady);
+}
+
 module.exports = {
   shouldRefundEntryOnLeave,
   isFinalScoreboard,
   nextHostCandidate,
-  canAdvanceScoreboard
+  canAdvanceScoreboard,
+  rematchState,
+  canRestartRoom
 };
