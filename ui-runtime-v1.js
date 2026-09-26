@@ -161,6 +161,80 @@
 
   let freshGuestStarting = false;
 
+  function guestModeActive() {
+    return (
+      localStorage.getItem("ptitbac_guest_mode") === "1" &&
+      !String(localStorage.getItem("ptitbac_account_session") || "").trim()
+    );
+  }
+
+  function installGuestAuthExpiryGuard() {
+    if (
+      typeof socket === "undefined" ||
+      socket.__ptbGuestAuthExpiryGuardInstalled
+    ) {
+      return;
+    }
+
+    socket.__ptbGuestAuthExpiryGuardInstalled = true;
+
+    try {
+      const expiredHandlers =
+        typeof socket.listeners === "function"
+          ? [...socket.listeners("auth:expired")]
+          : [];
+
+      if (expiredHandlers.length) {
+        socket.removeAllListeners("auth:expired");
+        socket.on("auth:expired", (...args) => {
+          if (guestModeActive()) return;
+
+          for (const handler of expiredHandlers) {
+            try {
+              handler.apply(socket, args);
+            } catch (error) {
+              console.warn("[Compte] auth:expired:", error);
+            }
+          }
+        });
+      }
+    } catch {}
+
+    try {
+      const connectErrorHandlers =
+        typeof socket.listeners === "function"
+          ? [...socket.listeners("connect_error")]
+          : [];
+
+      if (connectErrorHandlers.length) {
+        socket.removeAllListeners("connect_error");
+        socket.on("connect_error", error => {
+          if (
+            guestModeActive() &&
+            error?.data?.code === "session_expired"
+          ) {
+            try {
+              if (!socket.connected) {
+                setTimeout(() => socket.connect(), 80);
+              }
+            } catch {}
+            return;
+          }
+
+          for (const handler of connectErrorHandlers) {
+            try {
+              handler.call(socket, error);
+            } catch (handlerError) {
+              console.warn("[Compte] connect_error:", handlerError);
+            }
+          }
+        });
+      }
+    } catch {}
+  }
+
+  installGuestAuthExpiryGuard();
+
   function clearGuestTransitionStorage() {
     const keys = [
       "petitbac_walletToken",
@@ -298,9 +372,290 @@
     startFreshGuestSession(button);
   }, true);
 
+  function guestAck(eventName, payload = {}, timeoutMs = 12000) {
+    return new Promise(resolve => {
+      try {
+        if (typeof socket === "undefined" || !socket?.connected) {
+          resolve({
+            ok:false,
+            error:"Connexion au serveur interrompue."
+          });
+          return;
+        }
+
+        socket.timeout(timeoutMs).emit(
+          eventName,
+          payload,
+          (error, response) => {
+            if (error) {
+              resolve({
+                ok:false,
+                error:"Le serveur ne répond pas. Réessaie."
+              });
+              return;
+            }
+
+            resolve(
+              response ||
+              { ok:false, error:"Réponse serveur invalide." }
+            );
+          }
+        );
+      } catch {
+        resolve({
+          ok:false,
+          error:"Connexion au serveur interrompue."
+        });
+      }
+    });
+  }
+
+  function guestProfileMessage(message, kind = "") {
+    const node = document.getElementById("ptbAccountMessage");
+    if (!node) {
+      privateLobbyToast(message);
+      return;
+    }
+
+    node.textContent = String(message || "");
+    node.className =
+      "ptb-account-message" +
+      (kind ? ` is-${kind}` : "");
+  }
+
+  let guestProfileSubmitting = false;
+
+  async function submitFreshGuestProfile(form) {
+    if (guestProfileSubmitting) return;
+    guestProfileSubmitting = true;
+
+    const submitButton = form?.querySelector(
+      'button[type="submit"]'
+    );
+    if (submitButton) submitButton.disabled = true;
+
+    const finish = () => {
+      guestProfileSubmitting = false;
+      if (submitButton?.isConnected) {
+        submitButton.disabled = false;
+      }
+    };
+
+    const name = String(
+      document.getElementById("ptbProfileSetupName")?.value || ""
+    )
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 16);
+
+    const avatar = String(
+      document.getElementById("ptbProfileSetupAvatar")?.value || ""
+    ).trim();
+
+    if (name.length < 2) {
+      guestProfileMessage(
+        "Choisis un pseudo d’au moins 2 caractères.",
+        "error"
+      );
+      finish();
+      return;
+    }
+
+    if (!avatar) {
+      guestProfileMessage("Choisis un avatar.", "error");
+      finish();
+      return;
+    }
+
+    const walletToken = String(
+      (typeof session !== "undefined"
+        ? session?.walletToken
+        : "") ||
+      localStorage.getItem("petitbac_walletToken") ||
+      ""
+    ).trim();
+
+    if (!walletToken || !socket?.connected) {
+      guestProfileMessage(
+        "Connexion au profil en cours. Réessaie dans un instant.",
+        "error"
+      );
+      finish();
+      return;
+    }
+
+    guestProfileMessage("Création de ton profil…");
+
+    const profileResult = await guestAck(
+      "friends:bootstrap",
+      {
+        walletToken,
+        username:name,
+        avatar
+      },
+      12000
+    );
+
+    if (!profileResult?.ok) {
+      guestProfileMessage(
+        profileResult?.error ||
+        "Impossible d’enregistrer ton profil.",
+        "error"
+      );
+      finish();
+      return;
+    }
+
+    // L'avatar de départ est équipé si possible, mais une erreur
+    // d'inventaire ne doit plus empêcher l'accès au jeu.
+    try {
+      await guestAck(
+        "inventory:equip",
+        {
+          walletToken,
+          type:"avatar",
+          id:avatar
+        },
+        8000
+      );
+    } catch {}
+
+    try {
+      if (typeof saveProfile === "function") {
+        saveProfile(name, avatar);
+      } else {
+        localStorage.setItem("petitbac_profile_name", name);
+        localStorage.setItem("petitbac_profile_icon", avatar);
+      }
+    } catch {
+      localStorage.setItem("petitbac_profile_name", name);
+      localStorage.setItem("petitbac_profile_icon", avatar);
+    }
+
+    const friendCode = String(
+      profileResult?.profile?.friendCode || ""
+    ).trim();
+
+    if (friendCode) {
+      localStorage.setItem(
+        "petitbac_friendCode",
+        friendCode
+      );
+    }
+
+    localStorage.removeItem(
+      "ptitbac_profile_setup_pending"
+    );
+    localStorage.setItem("ptitbac_guest_mode", "1");
+    localStorage.removeItem("ptitbac_account_session");
+
+    document.getElementById("ptbAccountGate")?.remove();
+
+    document.dispatchEvent(
+      new CustomEvent("ptitbac:identity-changed", {
+        detail:{
+          reason:"guest-profile",
+          walletToken,
+          guest:true,
+          accountUserId:""
+        }
+      })
+    );
+
+    try {
+      window.PtitBacInventory?.refresh?.();
+    } catch {}
+
+    try {
+      window.PtitBacFriends?.myProfile?.();
+    } catch {}
+
+    guestProfileMessage("Profil créé.", "success");
+    finish();
+
+    try {
+      if (typeof renderHome === "function") {
+        renderHome();
+      }
+    } catch {}
+  }
+
+  // En invité uniquement, le submit historique d'account-v1.js
+  // n'est plus exécuté : ce runtime termine le profil lui-même.
+  document.addEventListener("submit", event => {
+    const form = event.target;
+    if (
+      form?.id !== "ptbProfileSetupForm" ||
+      !guestModeActive()
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    submitFreshGuestProfile(form);
+  }, true);
+
 
   let privateLobbyLeaving = false;
   let lastExitedRoomCode = "";
+
+  function installRoomStateFirewall() {
+    if (
+      typeof socket === "undefined" ||
+      socket.__ptbRoomStateFirewallInstalled ||
+      typeof socket.onevent !== "function"
+    ) {
+      return;
+    }
+
+    const originalOnevent = socket.onevent;
+    socket.__ptbRoomStateFirewallInstalled = true;
+
+    socket.onevent = function(packet) {
+      try {
+        const args = packet?.data;
+        const eventName = args?.[0];
+
+        if (eventName === "room:state") {
+          const state = args?.[1];
+          const incomingCode = String(
+            state?.code || ""
+          ).trim();
+
+          const activeCode = String(
+            typeof session !== "undefined"
+              ? session?.code || ""
+              : ""
+          ).trim();
+
+          if (
+            lastExitedRoomCode &&
+            incomingCode === lastExitedRoomCode &&
+            activeCode !== incomingCode
+          ) {
+            return;
+          }
+
+          // Si le joueur rejoint volontairement à nouveau ce même
+          // code, le blocage est automatiquement retiré.
+          if (
+            lastExitedRoomCode &&
+            activeCode &&
+            incomingCode === activeCode
+          ) {
+            lastExitedRoomCode = "";
+          }
+        }
+      } catch {}
+
+      return originalOnevent.call(this, packet);
+    };
+  }
+
+  installRoomStateFirewall();
 
   function finishPrivateLobbyLeave() {
     try {
