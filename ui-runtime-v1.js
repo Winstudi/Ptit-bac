@@ -339,10 +339,7 @@
         <span class="pl-v3-textchat-title">
           ${chatSvg}
           <strong>Chat</strong>
-        </span>
-        <span class="pl-v3-textchat-open">
-          Ouvrir le chat
-          <b aria-hidden="true">›</b>
+          <b class="pl-v3-textchat-chevron" aria-hidden="true">›</b>
         </span>
       </button>
     `;
@@ -485,7 +482,7 @@
     }
 
     const rounds = [1, 3, 5];
-    const categoryCounts = [6, 7, 8, 9, 10];
+    const categoryCounts = [6, 8, 10];
     const durations = [30, 60, 90];
     const difficulties = ["beginner", "medium", "hard"];
 

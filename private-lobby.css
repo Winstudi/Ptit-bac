@@ -1050,7 +1050,7 @@ html body main.pl-private-v3[data-mode="private"] > .pl-settings {
   position:relative!important;
   grid-column:1!important;
   grid-row:2!important;
-  align-self:center!important;
+  align-self:start!important;
   width:100%!important;
   min-width:0!important;
 
@@ -1260,7 +1260,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card.is-difficu
 html body main.pl-private-v3[data-mode="private"] > .pl-v3-comms {
   grid-column:2!important;
   grid-row:2!important;
-  align-self:center!important;
+  align-self:start!important;
   min-width:0!important;
   width:100%!important;
   height:176px!important;
@@ -1393,15 +1393,16 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions svg {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat {
-  padding:8px!important;
+  padding:8px 10px!important;
   border:1.25px solid rgba(143,79,244,.78)!important;
-  display:grid!important;
-  grid-template-rows:auto 29px!important;
-  gap:5px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
   text-align:left!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-title {
+  width:100%!important;
   display:flex!important;
   align-items:center!important;
   gap:6px!important;
@@ -1419,25 +1420,13 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-title svg {
   stroke-width:1.8!important;
 }
 
-html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-open {
-  height:29px!important;
-  padding:0 8px!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  border:1px solid rgba(91,111,210,.72)!important;
-  border-radius:10px!important;
-  background:rgba(10,27,70,.80)!important;
-  color:#c8d0ec!important;
-  font-size:7.5px!important;
-  line-height:1!important;
-  font-weight:800!important;
-}
-
-html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-open b {
+html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-chevron {
+  margin-left:auto!important;
   color:#91a5ff!important;
   font-size:20px!important;
+  line-height:1!important;
   font-weight:400!important;
+  text-shadow:0 0 5px rgba(107,117,255,.28)!important;
 }
 
 /* ---------------- Joueurs ---------------- */
