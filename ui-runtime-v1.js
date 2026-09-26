@@ -81,7 +81,9 @@
     messages: [],
     unread: 0,
     loading: false,
-    sending: false
+    sending: false,
+    pendingNew: 0,
+    nearBottom: true
   };
 
   const micSvg = `
@@ -423,6 +425,87 @@
     badge.textContent = count > 99 ? "99+" : String(count);
   }
 
+  function roomChatNearBottom(list, threshold = 64) {
+    if (!list) return true;
+    return (
+      list.scrollHeight -
+      list.scrollTop -
+      list.clientHeight
+    ) <= threshold;
+  }
+
+  function resizeRoomChatInput(input) {
+    if (!input) return;
+
+    const minHeight = 38;
+    const maxHeight = 74;
+
+    input.style.height = "0px";
+    const target = Math.max(
+      minHeight,
+      Math.min(maxHeight, input.scrollHeight)
+    );
+    input.style.height = `${target}px`;
+    input.style.overflowY =
+      input.scrollHeight > maxHeight ? "auto" : "hidden";
+  }
+
+  function syncRoomChatViewport() {
+    const overlay = document.getElementById("plRoomChatOverlay");
+    if (!overlay) return;
+
+    const viewport = window.visualViewport;
+    const height = Math.round(
+      viewport?.height || window.innerHeight || 0
+    );
+    const top = Math.round(viewport?.offsetTop || 0);
+
+    if (height > 0) {
+      overlay.style.setProperty(
+        "--pl-room-chat-viewport-height",
+        `${height}px`
+      );
+    }
+    overlay.style.setProperty(
+      "--pl-room-chat-viewport-top",
+      `${top}px`
+    );
+  }
+
+  function updateRoomChatNewMessagesButton() {
+    const button = document.getElementById(
+      "plRoomChatNewMessages"
+    );
+    if (!button) return;
+
+    const count = Math.max(
+      0,
+      Number(roomChatState.pendingNew) || 0
+    );
+
+    button.hidden = count <= 0;
+    button.textContent =
+      count <= 1
+        ? "Nouveau message ↓"
+        : `${count} nouveaux messages ↓`;
+  }
+
+  function scrollRoomChatToBottom(behavior = "auto") {
+    const list = document.getElementById(
+      "plRoomChatMessages"
+    );
+    if (!list) return;
+
+    list.scrollTo({
+      top: list.scrollHeight,
+      behavior
+    });
+
+    roomChatState.nearBottom = true;
+    roomChatState.pendingNew = 0;
+    updateRoomChatNewMessagesButton();
+  }
+
   function ensureRoomChatOverlay() {
     let overlay = document.getElementById("plRoomChatOverlay");
     if (overlay) return overlay;
@@ -444,6 +527,10 @@
         </header>
 
         <div id="plRoomChatMessages" class="pl-room-chat-messages" aria-live="polite"></div>
+
+        <button id="plRoomChatNewMessages" class="pl-room-chat-new" type="button" hidden>
+          Nouveaux messages
+        </button>
 
         <form id="plRoomChatForm" class="pl-room-chat-form">
           <div class="pl-room-chat-input-wrap">
@@ -478,16 +565,51 @@
 
     const input = overlay.querySelector("#plRoomChatInput");
     const counter = overlay.querySelector("#plRoomChatCount");
+    const list = overlay.querySelector("#plRoomChatMessages");
+    const newMessagesButton = overlay.querySelector(
+      "#plRoomChatNewMessages"
+    );
 
     input?.addEventListener("input", () => {
-      if (counter) counter.textContent = `${input.value.length}/200`;
+      if (counter) {
+        counter.textContent = `${input.value.length}/200`;
+      }
+      resizeRoomChatInput(input);
+    });
+
+    input?.addEventListener("focus", () => {
+      syncRoomChatViewport();
+      setTimeout(() => {
+        if (roomChatState.nearBottom) {
+          scrollRoomChatToBottom("auto");
+        }
+      }, 80);
     });
 
     input?.addEventListener("keydown", event => {
-      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing
+      ) {
         event.preventDefault();
-        overlay.querySelector("#plRoomChatForm")?.requestSubmit?.();
+        overlay.querySelector("#plRoomChatForm")
+          ?.requestSubmit?.();
       }
+    });
+
+    list?.addEventListener("scroll", () => {
+      const nearBottom = roomChatNearBottom(list);
+      roomChatState.nearBottom = nearBottom;
+
+      if (nearBottom && roomChatState.pendingNew) {
+        roomChatState.pendingNew = 0;
+        updateRoomChatNewMessagesButton();
+      }
+    }, { passive: true });
+
+    newMessagesButton?.addEventListener("click", () => {
+      scrollRoomChatToBottom("smooth");
     });
 
     overlay.querySelector("#plRoomChatForm")?.addEventListener(
@@ -498,15 +620,44 @@
       }
     );
 
+    if (!overlay.dataset.viewportBound) {
+      overlay.dataset.viewportBound = "1";
+      window.visualViewport?.addEventListener(
+        "resize",
+        syncRoomChatViewport
+      );
+      window.visualViewport?.addEventListener(
+        "scroll",
+        syncRoomChatViewport
+      );
+      window.addEventListener(
+        "resize",
+        syncRoomChatViewport
+      );
+    }
+
+    resizeRoomChatInput(input);
+    syncRoomChatViewport();
+
     return overlay;
   }
 
-  function renderRoomChatMessages() {
+  function renderRoomChatMessages({
+    forceBottom = false,
+    preserveScroll = false
+  } = {}) {
     const overlay = ensureRoomChatOverlay();
     const list = overlay.querySelector("#plRoomChatMessages");
     if (!list) return;
 
+    const previousScrollTop = list.scrollTop;
+    const wasNearBottom =
+      forceBottom ||
+      roomChatState.nearBottom ||
+      roomChatNearBottom(list);
+
     list.replaceChildren();
+    list.classList.remove("is-short");
 
     if (roomChatState.loading) {
       const loading = document.createElement("div");
@@ -522,7 +673,8 @@
       const strong = document.createElement("strong");
       strong.textContent = "Aucun message";
       const span = document.createElement("span");
-      span.textContent = "Écris le premier message du salon.";
+      span.textContent =
+        "Écris le premier message du salon.";
       empty.append(strong, span);
       list.appendChild(empty);
       return;
@@ -530,12 +682,36 @@
 
     const fragment = document.createDocumentFragment();
 
-    roomChatState.messages.forEach(message => {
-      const mine = String(message?.playerId || "") === String(session?.playerId || "");
+    roomChatState.messages.forEach((message, index) => {
+      const mine =
+        String(message?.playerId || "") ===
+        String(session?.playerId || "");
       const identity = roomChatIdentity(message);
+      const previous = roomChatState.messages[index - 1];
+
+      const samePreviousPlayer =
+        !!previous &&
+        String(previous?.playerId || "") ===
+          String(message?.playerId || "");
+
+      const previousTime = new Date(
+        previous?.createdAt || 0
+      ).getTime();
+      const currentTime = new Date(
+        message?.createdAt || 0
+      ).getTime();
+
+      const grouped =
+        samePreviousPlayer &&
+        Number.isFinite(previousTime) &&
+        Number.isFinite(currentTime) &&
+        currentTime - previousTime <= 2 * 60 * 1000;
 
       const row = document.createElement("article");
-      row.className = "pl-room-chat-message " + (mine ? "is-mine" : "is-other");
+      row.className =
+        "pl-room-chat-message " +
+        (mine ? "is-mine" : "is-other") +
+        (grouped ? " is-continuation" : "");
 
       const avatar = document.createElement("div");
       avatar.className = "pl-room-chat-avatar";
@@ -544,20 +720,27 @@
       const body = document.createElement("div");
       body.className = "pl-room-chat-message-body";
 
-      const meta = document.createElement("div");
-      meta.className = "pl-room-chat-meta";
+      if (!grouped) {
+        const meta = document.createElement("div");
+        meta.className = "pl-room-chat-meta";
 
-      const author = document.createElement("strong");
-      author.textContent = mine ? "Moi" : identity.name;
+        const author = document.createElement("strong");
+        author.textContent = mine ? "Moi" : identity.name;
 
-      const time = document.createElement("time");
-      time.textContent = roomChatTime(message?.createdAt);
+        const time = document.createElement("time");
+        time.textContent = roomChatTime(
+          message?.createdAt
+        );
+
+        meta.append(author, time);
+        body.appendChild(meta);
+      }
 
       const bubble = document.createElement("p");
-      bubble.textContent = String(message?.content || "");
-
-      meta.append(author, time);
-      body.append(meta, bubble);
+      bubble.textContent = String(
+        message?.content || ""
+      );
+      body.appendChild(bubble);
 
       if (mine) row.append(body, avatar);
       else row.append(avatar, body);
@@ -566,8 +749,23 @@
     });
 
     list.appendChild(fragment);
+
     requestAnimationFrame(() => {
-      list.scrollTop = list.scrollHeight;
+      list.classList.toggle(
+        "is-short",
+        list.scrollHeight <= list.clientHeight + 6
+      );
+
+      if (wasNearBottom) {
+        list.scrollTop = list.scrollHeight;
+        roomChatState.nearBottom = true;
+        roomChatState.pendingNew = 0;
+        updateRoomChatNewMessagesButton();
+      } else if (preserveScroll) {
+        list.scrollTop = previousScrollTop;
+        roomChatState.nearBottom =
+          roomChatNearBottom(list);
+      }
     });
   }
 
@@ -590,6 +788,8 @@
       roomChatState.unread = 0;
       roomChatState.loading = false;
       roomChatState.sending = false;
+      roomChatState.pendingNew = 0;
+      roomChatState.nearBottom = true;
     }
 
     updateRoomChatBadge();
@@ -612,7 +812,11 @@
     overlay.hidden = false;
     overlay.setAttribute("aria-hidden", "false");
     document.documentElement.classList.add("pl-room-chat-open");
-    renderRoomChatMessages();
+    roomChatState.pendingNew = 0;
+    roomChatState.nearBottom = true;
+    updateRoomChatNewMessagesButton();
+    syncRoomChatViewport();
+    renderRoomChatMessages({ forceBottom: true });
 
     socket.emit("room:chat:history", roomChatPayload(), res => {
       roomChatState.loading = false;
@@ -625,7 +829,7 @@
       roomChatState.messages = Array.isArray(res.messages)
         ? res.messages.slice(-50)
         : [];
-      renderRoomChatMessages();
+      renderRoomChatMessages({ forceBottom: true });
 
       setTimeout(() => {
         overlay.querySelector("#plRoomChatInput")?.focus?.({ preventScroll: true });
@@ -636,6 +840,9 @@
   function closeRoomChat() {
     const overlay = document.getElementById("plRoomChatOverlay");
     roomChatState.open = false;
+    roomChatState.pendingNew = 0;
+    roomChatState.nearBottom = true;
+    updateRoomChatNewMessagesButton();
     document.documentElement.classList.remove("pl-room-chat-open");
 
     if (!overlay) return;
@@ -650,22 +857,30 @@
     const input = overlay.querySelector("#plRoomChatInput");
     const sendButton = overlay.querySelector("#plRoomChatSend");
     const counter = overlay.querySelector("#plRoomChatCount");
+    const form = overlay.querySelector("#plRoomChatForm");
     const content = String(input?.value || "").trim();
     if (!content) return;
 
     roomChatState.sending = true;
     if (sendButton) sendButton.disabled = true;
+    form?.classList.add("is-sending");
 
     socket.emit("room:chat:send", roomChatPayload({ content }), res => {
       roomChatState.sending = false;
       if (sendButton) sendButton.disabled = false;
+      form?.classList.remove("is-sending");
 
       if (!res?.ok) {
         return privateLobbyToast(res?.error || "Impossible d’envoyer le message.");
       }
 
-      if (input) input.value = "";
+      if (input) {
+        input.value = "";
+        resizeRoomChatInput(input);
+      }
       if (counter) counter.textContent = "0/200";
+      roomChatState.nearBottom = true;
+      scrollRoomChatToBottom("smooth");
       input?.focus?.({ preventScroll: true });
     });
   }
@@ -688,7 +903,25 @@
     }
 
     if (roomChatState.open) {
-      renderRoomChatMessages();
+      const list = document.getElementById(
+        "plRoomChatMessages"
+      );
+      const nearBottom =
+        roomChatNearBottom(list) ||
+        String(message?.playerId || "") ===
+          String(session?.playerId || "");
+
+      roomChatState.nearBottom = nearBottom;
+
+      if (!nearBottom) {
+        roomChatState.pendingNew += 1;
+        updateRoomChatNewMessagesButton();
+      }
+
+      renderRoomChatMessages({
+        forceBottom: nearBottom,
+        preserveScroll: !nearBottom
+      });
     } else {
       roomChatState.unread += 1;
       updateRoomChatBadge();
