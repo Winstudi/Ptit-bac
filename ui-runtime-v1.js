@@ -322,7 +322,7 @@
 
   document.addEventListener("click", event => {
     const button = event.target.closest?.(
-      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"]) #lobbyV5Leave'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"]) #lobbyV5Leave'
     );
 
     if (!button) return;
@@ -369,7 +369,7 @@
     ];
   }
 
-  function buildSettingRow(item, hostCanEdit) {
+  function buildSettingRow(item, hostCanEdit, staticArrows = false) {
     const card = document.createElement("article");
     card.className =
       "pl-v3-setting-card" + (item.difficulty ? " is-difficulty" : "");
@@ -382,16 +382,29 @@
     label.className = "pl-v3-setting-label";
     label.textContent = item.label;
 
+    const showArrows = hostCanEdit || staticArrows;
     const stepper = document.createElement("div");
-    stepper.className = "pl-v3-stepper" + (hostCanEdit ? "" : " is-readonly");
+    stepper.className =
+      "pl-v3-stepper" + (showArrows ? "" : " is-readonly");
 
-    if (hostCanEdit) {
+    if (showArrows) {
       const previous = document.createElement("button");
       previous.type = "button";
-      previous.dataset.v3SettingStep = item.key;
-      previous.dataset.dir = "-1";
-      previous.setAttribute("aria-label", `Diminuer ${item.label}`);
       previous.innerHTML = '<span aria-hidden="true">‹</span>';
+
+      if (hostCanEdit) {
+        previous.dataset.v3SettingStep = item.key;
+        previous.dataset.dir = "-1";
+        previous.setAttribute(
+          "aria-label",
+          `Diminuer ${item.label}`
+        );
+      } else {
+        previous.className = "is-static";
+        previous.tabIndex = -1;
+        previous.setAttribute("aria-hidden", "true");
+      }
+
       stepper.appendChild(previous);
     }
 
@@ -399,13 +412,24 @@
     value.textContent = item.value;
     stepper.appendChild(value);
 
-    if (hostCanEdit) {
+    if (showArrows) {
       const next = document.createElement("button");
       next.type = "button";
-      next.dataset.v3SettingStep = item.key;
-      next.dataset.dir = "1";
-      next.setAttribute("aria-label", `Augmenter ${item.label}`);
       next.innerHTML = '<span aria-hidden="true">›</span>';
+
+      if (hostCanEdit) {
+        next.dataset.v3SettingStep = item.key;
+        next.dataset.dir = "1";
+        next.setAttribute(
+          "aria-label",
+          `Augmenter ${item.label}`
+        );
+      } else {
+        next.className = "is-static";
+        next.tabIndex = -1;
+        next.setAttribute("aria-hidden", "true");
+      }
+
       stepper.appendChild(next);
     }
 
@@ -480,7 +504,7 @@
 
   function roomVoicePlayerCard(playerId) {
     const root = document.querySelector(
-      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"])'
+      'main.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"])'
     );
     if (!root) return null;
 
@@ -770,9 +794,9 @@
     if (roomVoiceState.joined || roomVoiceState.joining) return;
 
     const state = currentLobbyState();
-    if (!state || !["private", "public"].includes(state.mode)) {
+    if (!state || !["private", "public", "quick"].includes(state.mode)) {
       return privateLobbyToast(
-        "Le vocal est disponible dans les salons privé et public."
+        "Le vocal est disponible dans les salons privé, public et Partie Rapide."
       );
     }
 
@@ -937,7 +961,7 @@
   function syncRoomVoiceContext() {
     const state = currentLobbyState();
     const voiceLobby =
-      ["private", "public"].includes(state?.mode) &&
+      ["private", "public", "quick"].includes(state?.mode) &&
       state?.phase === "lobby" &&
       String(state?.code || "");
 
@@ -1466,7 +1490,7 @@
 
     if (
       !state ||
-      !["private", "public"].includes(state.mode) ||
+      !["private", "public", "quick"].includes(state.mode) ||
       !code
     ) {
       if (roomChatState.open) closeRoomChat();
@@ -1492,9 +1516,9 @@
 
   function openRoomChat() {
     const state = currentLobbyState();
-    if (!state || !["private", "public"].includes(state.mode)) {
+    if (!state || !["private", "public", "quick"].includes(state.mode)) {
       return privateLobbyToast(
-        "Le chat est disponible dans les salons privé et public."
+        "Le chat est disponible dans les salons privé, public et Partie Rapide."
       );
     }
 
@@ -1504,7 +1528,11 @@
     const subtitle = overlay.querySelector("#plRoomChatSubtitle");
     if (subtitle) {
       subtitle.textContent =
-        state.mode === "public" ? "Salon public" : "Salon privé";
+        state.mode === "quick"
+          ? "Partie rapide"
+          : state.mode === "public"
+            ? "Salon public"
+            : "Salon privé";
     }
 
     roomChatState.open = true;
@@ -1592,7 +1620,7 @@
     const state = currentLobbyState();
     if (
       !state ||
-      !["private", "public"].includes(state.mode) ||
+      !["private", "public", "quick"].includes(state.mode) ||
       String(message?.roomCode || "") !== String(state.code || "")
     ) {
       return;
@@ -2132,6 +2160,287 @@
     }
   }
 
+  function upgradeQuickLobbyToV3(root) {
+    if (
+      !root ||
+      root.dataset.mode !== "quick" ||
+      root.dataset.quickV3Upgraded === "1"
+    ) {
+      return;
+    }
+
+    const state = currentLobbyState();
+    if (!state || state.mode !== "quick") return;
+
+    root.dataset.quickV3Upgraded = "1";
+    root.classList.add(
+      "pl-private",
+      "pl-private-v3",
+      "pl-quick-v3"
+    );
+
+    // ---------- Bandeau ----------
+    const header = root.querySelector(
+      ":scope > .lobby-v5-header, :scope > .pl-header"
+    );
+
+    if (header) {
+      const leave = header.querySelector("#lobbyV5Leave");
+      const copy = header.querySelector("#copyCode");
+
+      if (leave) {
+        leave.className = "";
+        const image = leave.querySelector("img");
+        if (image) image.src = "/back-arrow.png";
+      }
+
+      if (copy) {
+        copy.className = "pl-header-code";
+        copy.setAttribute(
+          "aria-label",
+          "Copier le code du salon"
+        );
+
+        const code = String(state.code || "");
+        copy.innerHTML = `
+          <small>Code salon</small>
+          <strong></strong>
+          <img src="/lobby-copy.png" alt="">
+        `;
+
+        const strong = copy.querySelector("strong");
+        if (strong) strong.textContent = code;
+      }
+
+      const title = document.createElement("div");
+      title.className = "pl-title-mode";
+
+      const h1 = document.createElement("h1");
+      h1.textContent = "Partie Rapide";
+      title.appendChild(h1);
+
+      header.className = "pl-header";
+      header.replaceChildren(
+        ...[leave, title, copy].filter(Boolean)
+      );
+    }
+
+    // ---------- Paramètres ----------
+    const settings = root.querySelector(
+      ":scope > .lobby-v5-settings-panel, :scope > .pl-settings"
+    );
+
+    if (settings) {
+      settings.className = "pl-settings";
+      settings.removeAttribute("id");
+
+      const heading = settings.querySelector(":scope > h2");
+      if (heading) {
+        heading.innerHTML = `
+          <img src="/settings.png" alt="">
+          <span>Paramètres de la partie</span>
+        `;
+      }
+
+      const grid = settings.querySelector(
+        ".lobby-v5-settings-grid, .pl-setting-grid"
+      );
+      if (grid) grid.className = "pl-setting-grid";
+    }
+
+    // ---------- Joueurs ----------
+    const playersSection = root.querySelector(
+      ":scope > .lobby-v5-players-section, :scope > .pl-players"
+    );
+
+    if (playersSection) {
+      playersSection.className = "pl-players";
+
+      const list = playersSection.querySelector(
+        ".lobby-v5-player-list, .pl-grid"
+      );
+
+      if (list) {
+        list.className = "pl-grid";
+
+        const playerCards = [
+          ...list.querySelectorAll(
+            "[data-lobby-player-profile]"
+          )
+        ];
+
+        playerCards.forEach((card, index) => {
+          const player = state.players?.[index] || null;
+          if (!player) return;
+
+          const self =
+            String(player.id || "") ===
+            String(session?.playerId || "");
+
+          const online = !!(player.connected || player.isBot);
+
+          card.className =
+            "pl-player pl-player-v2" +
+            (self ? " is-self" : "");
+
+          card.dataset.lobbyPlayerProfile =
+            String(player.id || "");
+
+          const avatar = card.querySelector(
+            ".lobby-v5-avatar, .pl-avatar"
+          );
+
+          if (avatar) avatar.className = "pl-avatar";
+
+          const shell = document.createElement("div");
+          shell.className = "pl-avatar-shell";
+          if (avatar) shell.appendChild(avatar);
+
+          const oldCopy = card.querySelector(
+            ".lobby-v5-player-copy, .pl-player-copy"
+          );
+
+          const copy = oldCopy || document.createElement("div");
+          copy.className = "pl-player-copy";
+
+          let head = copy.querySelector(
+            ".lobby-v5-player-name-row, .pl-player-head"
+          );
+
+          if (!head) {
+            head = document.createElement("div");
+            copy.prepend(head);
+          }
+
+          head.className = "pl-player-head";
+
+          const name =
+            head.querySelector(":scope > strong") ||
+            document.createElement("strong");
+
+          name.textContent = String(player.name || "Joueur");
+          head.replaceChildren(name);
+
+          let titleRow = copy.querySelector(
+            ".quick-player-title-row, .pl-player-title-row"
+          );
+
+          if (!titleRow) {
+            titleRow = document.createElement("div");
+            copy.appendChild(titleRow);
+          }
+
+          titleRow.className = "pl-player-title-row";
+
+          const status = document.createElement("small");
+          status.className =
+            "pl-status pl-card-status" +
+            (online ? "" : " is-offline");
+
+          const dot = document.createElement("i");
+          dot.setAttribute("aria-hidden", "true");
+          status.appendChild(dot);
+          status.append(
+            document.createTextNode(
+              online ? "Pas prêt" : "Hors ligne"
+            )
+          );
+
+          card.replaceChildren(shell, copy, status);
+        });
+
+        [
+          ...list.querySelectorAll(
+            ".lobby-v5-empty-player, .pl-empty"
+          )
+        ].forEach(slot => {
+          slot.className = "pl-empty";
+          slot.removeAttribute("data-add-bot");
+          slot.removeAttribute("type");
+          slot.innerHTML = `
+            <b aria-hidden="true">＋</b>
+            <span>Place libre</span>
+          `;
+        });
+      }
+    }
+
+    // ---------- Actions ----------
+    const actions = root.querySelector(
+      ":scope > .lobby-v5-actions, :scope > .pl-actions"
+    );
+
+    if (actions) {
+      const invite = actions.querySelector("#inviteFriendsBtn");
+
+      if (invite) {
+        invite.className = "pl-invite";
+        invite.innerHTML = `
+          <img src="/friends.png" alt="">
+          <span>Inviter des amis</span>
+        `;
+      }
+
+      let share = root.querySelector("#plShare");
+      if (!share) {
+        share = document.createElement("button");
+        share.id = "plShare";
+        share.className = "pl-share";
+        share.type = "button";
+        share.setAttribute(
+          "aria-label",
+          "Partager le code du salon"
+        );
+        share.innerHTML = shareSvg;
+      }
+
+      const social = document.createElement("div");
+      social.className = "pl-social";
+      if (invite) social.appendChild(invite);
+      social.appendChild(share);
+
+      const launch = document.createElement("div");
+      launch.className = "pl-launch";
+
+      const ready = document.createElement("button");
+      ready.id = "plQuickReady";
+      ready.className = "selected pl-quick-static";
+      ready.type = "button";
+      ready.tabIndex = -1;
+      ready.setAttribute("aria-disabled", "true");
+      ready.textContent = "✓ Prêt";
+
+      const start = document.createElement("button");
+      start.id = "plQuickAutoStart";
+      start.type = "button";
+      start.disabled = true;
+      start.textContent = "▶ Lancer la partie";
+
+      launch.append(ready, start);
+
+      actions.className = "pl-actions";
+      actions.replaceChildren(social, launch);
+    }
+
+    // Partie Rapide : aucune notion d'hôte visible.
+    root
+      .querySelectorAll(
+        ".pl-host-crown-inline, .pl-host-crown-top"
+      )
+      .forEach(node => node.remove());
+
+    root
+      .querySelectorAll(".is-host")
+      .forEach(node => node.classList.remove("is-host"));
+
+    // Nettoyage des anciens blocs qui appartenaient à l'ancien Quick.
+    root
+      .querySelectorAll(
+        ".lobby-v5-host-card, .lobby-v5-coin-pill"
+      )
+      .forEach(node => node.remove());
+  }
+
   function decoratePlayerCards(root) {
     const players = currentLobbyState()?.players || [];
 
@@ -2142,8 +2451,12 @@
       const avatarShell = card.querySelector(".pl-avatar-shell");
       const titleRow = card.querySelector(".pl-player-title-row");
       const crown = titleRow?.querySelector(".pl-host-crown-inline");
+      const quickMode = currentLobbyState()?.mode === "quick";
 
-      if (avatarShell && crown) {
+      if (quickMode) {
+        crown?.remove();
+        card.classList.remove("is-host");
+      } else if (avatarShell && crown) {
         crown.classList.remove("pl-host-crown-inline");
         crown.classList.add("pl-host-crown-top");
         avatarShell.insertBefore(crown, avatarShell.firstChild);
@@ -2192,9 +2505,13 @@
 
     const state = currentLobbyState();
     const shortcut = settings.querySelector("#lobbySettingsShortcut");
+    const quickMode = state?.mode === "quick";
     const hostCanEdit =
-      !!shortcut ||
-      currentLobbyUser()?.isHost === true;
+      !quickMode &&
+      (
+        !!shortcut ||
+        currentLobbyUser()?.isHost === true
+      );
 
     const items = settingMeta(state);
 
@@ -2230,7 +2547,7 @@
 
     if (
       grid.dataset.v3SettingsSignature === signature &&
-      grid.querySelector("[data-v3-setting-step], .pl-v3-stepper")
+      grid.querySelector(".pl-v3-stepper")
     ) {
       return;
     }
@@ -2240,7 +2557,7 @@
     const fragment = document.createDocumentFragment();
     items.forEach(item => {
       fragment.appendChild(
-        buildSettingRow(item, hostCanEdit)
+        buildSettingRow(item, hostCanEdit, quickMode)
       );
     });
 
@@ -2257,7 +2574,8 @@
 
     const root = document.querySelector(
       'main.lobby-v5.pl-private[data-mode="private"], ' +
-      'main.lobby-v5.pl-private.pl-public-mode[data-mode="public"]'
+      'main.lobby-v5.pl-private.pl-public-mode[data-mode="public"], ' +
+      'main.lobby-v5[data-mode="quick"]'
     );
 
     if (!root) return;
@@ -2265,6 +2583,10 @@
     privateLobbyV3State.decorating = true;
 
     try {
+      if (root.dataset.mode === "quick") {
+        upgradeQuickLobbyToV3(root);
+      }
+
       root.classList.add("pl-private-v3");
       ensurePublicMatchesPrivateStyles();
 
@@ -2274,7 +2596,15 @@
       const roomTitle = root.querySelector(".pl-title-mode > h1");
       if (roomTitle) {
         roomTitle.textContent =
-          root.dataset.mode === "public" ? "Salon Public" : "Salon Privé";
+          root.dataset.mode === "quick"
+            ? "Partie Rapide"
+            : root.dataset.mode === "public"
+              ? "Salon Public"
+              : "Salon Privé";
+      }
+
+      if (root.dataset.mode === "quick") {
+        root.querySelector("#plModeToggle")?.remove();
       }
 
       decorateSettings(root);
@@ -2303,14 +2633,20 @@
     if (privateLobbyV3State.busy) return;
 
     const root = document.querySelector(
-      'main.lobby-v5.pl-private.pl-private-v3:is([data-mode="private"],[data-mode="public"])'
+      'main.lobby-v5.pl-private.pl-private-v3:is([data-mode="private"],[data-mode="public"],[data-mode="quick"])'
     );
     if (!root) return;
 
     const state = currentLobbyState();
     const user = currentLobbyUser();
 
-    if (!state || user?.isHost !== true) {
+    if (!state) return;
+
+    if (state.mode === "quick") {
+      return;
+    }
+
+    if (user?.isHost !== true) {
       return privateLobbyToast("Seul l’hôte peut modifier les paramètres.");
     }
 
@@ -2386,6 +2722,35 @@
       }
     );
   }
+
+  document.addEventListener("click", async event => {
+    const share = event.target.closest?.(
+      'main.pl-quick-v3[data-mode="quick"] #plShare'
+    );
+    if (!share) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const code = String(currentLobbyState()?.code || "").trim();
+    if (!code) return;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title:"P’tit Bac",
+          text:`Rejoins ma Partie Rapide P’tit Bac avec le code ${code}`
+        });
+      } else {
+        await navigator.clipboard.writeText(code);
+        privateLobbyToast("Code copié !");
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        privateLobbyToast(`Code : ${code}`);
+      }
+    }
+  }, true);
 
   document.addEventListener("click", event => {
     const settingButton = event.target.closest?.("[data-v3-setting-step]");
