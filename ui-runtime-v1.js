@@ -1695,25 +1695,59 @@
 
     const state = currentLobbyState();
     const shortcut = settings.querySelector("#lobbySettingsShortcut");
-    const hostCanEdit = !!shortcut || currentLobbyUser()?.isHost === true;
+    const hostCanEdit =
+      !!shortcut ||
+      currentLobbyUser()?.isHost === true;
 
-    shortcut?.remove();
+    const items = settingMeta(state);
 
-    const heading = settings.querySelector(":scope > h2");
-    if (heading) {
-      heading.innerHTML = `
-        <img src="/settings.png" alt="">
-        <span>Paramètres de la partie</span>
-      `;
-    }
+    // IMPORTANT : cleanupCurrentScreen() est aussi appelé par le
+    // MutationObserver global. Ne jamais reconstruire la grille si son
+    // contenu n'a pas réellement changé, sinon on crée une boucle :
+    // mutation -> décoration -> mutation -> décoration...
+    const signature = JSON.stringify({
+      hostCanEdit,
+      items: items.map(item => [
+        item.key,
+        item.value,
+        item.difficulty === true
+      ])
+    });
 
     const grid = settings.querySelector(".pl-setting-grid");
     if (!grid) return;
 
-    grid.innerHTML = "";
-    settingMeta(state).forEach(item => {
-      grid.appendChild(buildSettingRow(item, hostCanEdit));
+    const heading = settings.querySelector(":scope > h2");
+    if (
+      heading &&
+      heading.dataset.v3Decorated !== "1"
+    ) {
+      heading.innerHTML = `
+        <img src="/settings.png" alt="">
+        <span>Paramètres de la partie</span>
+      `;
+      heading.dataset.v3Decorated = "1";
+    }
+
+    shortcut?.remove();
+
+    if (
+      grid.dataset.v3SettingsSignature === signature &&
+      grid.querySelector("[data-v3-setting-step], .pl-v3-stepper")
+    ) {
+      return;
+    }
+
+    grid.dataset.v3SettingsSignature = signature;
+
+    const fragment = document.createDocumentFragment();
+    items.forEach(item => {
+      fragment.appendChild(
+        buildSettingRow(item, hostCanEdit)
+      );
     });
+
+    grid.replaceChildren(fragment);
   }
 
   function decorateBottom(root) {
