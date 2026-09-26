@@ -3059,3 +3059,12 @@ body:has(.home-mobile) .economy-hud {
   .home-mobile .hm-modes-v3 .hm-mode-grid img,
   .home-mobile .hm-modes-v3 .hm-bomb-icon{width:55px!important;height:51px!important}
 }
+
+/* Accueil : remonte le livre et tout le bloc des modes de jeu de 7px. */
+.home-mobile .hm-book{
+  top:-7px !important;
+}
+
+.home-mobile .hm-modes.hm-modes-v3{
+  top:-7px !important;
+}
