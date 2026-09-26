@@ -159,7 +159,148 @@
   }
 
 
+  let freshGuestStarting = false;
+
+  function clearGuestTransitionStorage() {
+    const keys = [
+      "petitbac_walletToken",
+      "petitbac_walletBalance",
+      "petitbac_friendCode",
+      "petitbac_profile_name",
+      "petitbac_profile_icon",
+      "petitbac_inventory_v1",
+      "petitbac_progression_v1",
+      "ptitbac_profile_stats_v1",
+      "petitbac_stats",
+      "petitbac_stats_gamesPlayed",
+      "petitbac_stats_wins",
+      "petitbac_stats_correctAnswers",
+      "petitbac_stats_friendsAdded",
+      "petitbac_gamesPlayed",
+      "petitbac_wins",
+      "petitbac_correctAnswers",
+      "petitbac_friendsAdded"
+    ];
+
+    for (const key of keys) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  function startFreshGuestSession(button) {
+    if (freshGuestStarting) return;
+    freshGuestStarting = true;
+
+    if (button) button.disabled = true;
+
+    // L'invité ne doit jamais réutiliser une ancienne session de compte.
+    localStorage.setItem("ptitbac_guest_mode", "1");
+    localStorage.removeItem("ptitbac_account_session");
+    localStorage.removeItem("ptitbac_profile_setup_pending");
+    clearGuestTransitionStorage();
+
+    try {
+      if (typeof clearSession === "function") clearSession();
+      if (typeof session !== "undefined") {
+        session.walletToken = "";
+        session.walletBalance = 0;
+        session.state = null;
+      }
+    } catch {}
+
+    let finished = false;
+
+    const finish = ok => {
+      if (finished) return;
+      finished = true;
+      freshGuestStarting = false;
+
+      if (!ok) {
+        if (button?.isConnected) button.disabled = false;
+        privateLobbyToast("Impossible de créer la session invitée. Réessaie.");
+        return;
+      }
+
+      // Le portefeuille invité existe réellement avant d'ouvrir la création
+      // du profil. Cela évite « Reconnecte-toi à ton compte ».
+      localStorage.setItem("ptitbac_profile_setup_pending", "1");
+
+      try {
+        window.PtitBacAccount?.resume?.();
+      } catch {}
+    };
+
+    const onWalletReady = () => {
+      clearTimeout(timeout);
+      finish(true);
+    };
+
+    document.addEventListener(
+      "ptitbac:wallet-ready",
+      onWalletReady,
+      { once:true }
+    );
+
+    const timeout = setTimeout(() => {
+      document.removeEventListener(
+        "ptitbac:wallet-ready",
+        onWalletReady
+      );
+      finish(false);
+    }, 12000);
+
+    try {
+      // La reconnexion est indispensable : elle retire aussi l'identité de
+      // compte éventuellement encore attachée à l'ancien socket serveur.
+      if (typeof socket === "undefined") {
+        clearTimeout(timeout);
+        document.removeEventListener(
+          "ptitbac:wallet-ready",
+          onWalletReady
+        );
+        return finish(false);
+      }
+
+      if (socket.connected) socket.disconnect();
+
+      setTimeout(() => {
+        try {
+          socket.connect();
+        } catch {
+          clearTimeout(timeout);
+          document.removeEventListener(
+            "ptitbac:wallet-ready",
+            onWalletReady
+          );
+          finish(false);
+        }
+      }, 0);
+    } catch {
+      clearTimeout(timeout);
+      document.removeEventListener(
+        "ptitbac:wallet-ready",
+        onWalletReady
+      );
+      finish(false);
+    }
+  }
+
+  // Capture avant le listener historique d'account-v1.js : on empêche
+  // l'ancien flux de réutiliser un wallet appartenant à un compte.
+  document.addEventListener("click", event => {
+    const button = event.target.closest?.("#ptbContinueGuest");
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    startFreshGuestSession(button);
+  }, true);
+
+
   let privateLobbyLeaving = false;
+  let lastExitedRoomCode = "";
 
   function finishPrivateLobbyLeave() {
     try {
@@ -203,15 +344,12 @@
     const code = String(state?.code || session?.code || "").trim();
     const playerId = String(session?.playerId || "").trim();
 
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      privateLobbyLeaving = false;
-      finishPrivateLobbyLeave();
-    };
+    lastExitedRoomCode = code;
 
-    const fallback = setTimeout(finish, 3200);
+    // On quitte localement tout de suite : l'interface ne dépend plus du
+    // délai réseau ni de la réponse du serveur.
+    finishPrivateLobbyLeave();
+    privateLobbyLeaving = false;
 
     try {
       if (
@@ -220,22 +358,15 @@
         !code ||
         !playerId
       ) {
-        clearTimeout(fallback);
-        return finish();
+        return;
       }
 
       socket.timeout(2500).emit(
         "room:leave",
         { code, playerId },
-        () => {
-          clearTimeout(fallback);
-          finish();
-        }
+        () => {}
       );
-    } catch {
-      clearTimeout(fallback);
-      finish();
-    }
+    } catch {}
   }
 
   document.addEventListener("click", event => {
@@ -251,6 +382,43 @@
 
     leavePrivateLobbyFromHeader(button);
   }, true);
+
+  // app.js écoute room:state avant ce runtime. Si un ancien état arrive juste
+  // après la sortie, on remet immédiatement l'accueil et on efface cet état.
+  if (typeof socket !== "undefined") {
+    socket.on("room:state", state => {
+      const incomingCode = String(state?.code || "").trim();
+      const activeCode = String(
+        typeof session !== "undefined" ? session?.code || "" : ""
+      ).trim();
+
+      if (!lastExitedRoomCode || incomingCode !== lastExitedRoomCode) {
+        return;
+      }
+
+      // Une vraie reconnexion au même code reste autorisée.
+      if (activeCode === incomingCode) {
+        lastExitedRoomCode = "";
+        return;
+      }
+
+      try {
+        if (typeof session !== "undefined") session.state = null;
+      } catch {}
+
+      queueMicrotask(() => {
+        try {
+          const currentCode = String(
+            typeof session !== "undefined" ? session?.code || "" : ""
+          ).trim();
+
+          if (!currentCode && typeof renderHome === "function") {
+            renderHome();
+          }
+        } catch {}
+      });
+    });
+  }
 
   function settingMeta(state) {
     const difficulty =
