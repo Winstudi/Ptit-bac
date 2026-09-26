@@ -946,74 +946,83 @@ html body main.pl-private-v3[data-mode="private"] > .pl-settings {
   align-self:center!important;
   width:100%!important;
   min-width:0!important;
-  height:174px!important;
-  min-height:174px!important;
-  max-height:174px!important;
+
+  /* Plus compact, comme le visuel de référence. */
+  height:150px!important;
+  min-height:150px!important;
+  max-height:150px!important;
+
   margin:0!important;
-  padding:7px 8px!important;
-  border:1.3px solid rgba(194,70,255,.96)!important;
-  border-radius:12px!important;
+  padding:5px 5px!important;
+
+  /* Coins moins ronds et contour plus "jeu". */
+  border:1.35px solid rgba(199,67,255,.98)!important;
+  border-radius:9px!important;
   overflow:hidden!important;
+
+  /* Quatre accents néon plus visibles dans les coins. */
   background:
-    /* accents coin haut gauche */
-    linear-gradient(90deg,rgba(218,81,255,.98),rgba(94,96,255,.55)) top 5px left 6px/16px 2px no-repeat,
-    linear-gradient(180deg,rgba(218,81,255,.98),rgba(94,96,255,.28)) top 5px left 6px/2px 16px no-repeat,
-    /* accents coin haut droit */
-    linear-gradient(270deg,rgba(218,81,255,.98),rgba(94,96,255,.55)) top 5px right 6px/16px 2px no-repeat,
-    linear-gradient(180deg,rgba(218,81,255,.98),rgba(94,96,255,.28)) top 5px right 6px/2px 16px no-repeat,
-    /* accents coin bas gauche */
-    linear-gradient(90deg,rgba(114,92,255,.70),rgba(218,81,255,.98)) bottom 5px left 6px/16px 2px no-repeat,
-    linear-gradient(0deg,rgba(218,81,255,.98),rgba(94,96,255,.30)) bottom 5px left 6px/2px 16px no-repeat,
-    /* accents coin bas droit */
-    linear-gradient(270deg,rgba(114,92,255,.70),rgba(218,81,255,.98)) bottom 5px right 6px/16px 2px no-repeat,
-    linear-gradient(0deg,rgba(218,81,255,.98),rgba(94,96,255,.30)) bottom 5px right 6px/2px 16px no-repeat,
-    radial-gradient(circle at 17% 4%,rgba(184,64,255,.16),transparent 34%),
-    radial-gradient(circle at 94% 88%,rgba(72,74,225,.09),transparent 36%),
-    linear-gradient(150deg,rgba(19,25,82,.985),rgba(8,28,75,.99))!important;
+    linear-gradient(90deg,#e15cff,rgba(105,93,255,.30)) top 4px left 5px/19px 2px no-repeat,
+    linear-gradient(180deg,#e15cff,rgba(105,93,255,.24)) top 4px left 5px/2px 17px no-repeat,
+
+    linear-gradient(270deg,#e15cff,rgba(105,93,255,.30)) top 4px right 5px/19px 2px no-repeat,
+    linear-gradient(180deg,#e15cff,rgba(105,93,255,.24)) top 4px right 5px/2px 17px no-repeat,
+
+    linear-gradient(90deg,rgba(105,93,255,.30),#e15cff) bottom 4px left 5px/19px 2px no-repeat,
+    linear-gradient(0deg,#e15cff,rgba(105,93,255,.24)) bottom 4px left 5px/2px 17px no-repeat,
+
+    linear-gradient(270deg,rgba(105,93,255,.30),#e15cff) bottom 4px right 5px/19px 2px no-repeat,
+    linear-gradient(0deg,#e15cff,rgba(105,93,255,.24)) bottom 4px right 5px/2px 17px no-repeat,
+
+    radial-gradient(circle at 16% 2%,rgba(182,57,255,.18),transparent 34%),
+    radial-gradient(circle at 95% 86%,rgba(70,73,221,.10),transparent 36%),
+    linear-gradient(150deg,rgba(19,25,82,.99),rgba(8,27,73,.995))!important;
+
   box-shadow:
-    0 0 12px rgba(187,57,255,.20),
-    0 0 2px rgba(209,90,255,.55),
-    inset 0 0 18px rgba(150,65,255,.08),
-    inset 0 0 1px rgba(128,118,255,.38)!important;
+    0 0 11px rgba(187,57,255,.19),
+    0 0 2px rgba(222,80,255,.60),
+    inset 0 0 15px rgba(150,65,255,.075),
+    inset 0 0 1px rgba(134,124,255,.44)!important;
 }
 
+/* Titre + engrenage environ 10% plus petits et légèrement remontés. */
 html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 {
-  min-height:27px!important;
-  height:27px!important;
-  margin:0 0 4px!important;
-  padding:0 0 0 7px!important;
+  min-height:23px!important;
+  height:23px!important;
+  margin:0 0 3px!important;
+  padding:0 0 0 6px!important;
   display:flex!important;
   align-items:center!important;
   justify-content:flex-start!important;
-  gap:6px!important;
+  gap:5px!important;
   color:#fff!important;
-  font-size:11.1px!important;
+  font-size:10px!important;
   line-height:1!important;
   font-weight:950!important;
   text-align:left!important;
   white-space:nowrap!important;
-  transform:none!important;
-  text-shadow:0 0 7px rgba(206,79,255,.17)!important;
+  transform:translateY(-1px)!important;
+  text-shadow:0 0 6px rgba(206,79,255,.15)!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 > img {
-  width:21px!important;
-  height:21px!important;
+  width:19px!important;
+  height:19px!important;
   flex:none!important;
   filter:
-    drop-shadow(0 0 4px rgba(216,76,255,.48))
-    drop-shadow(0 0 7px rgba(102,92,255,.20))!important;
+    drop-shadow(0 0 3px rgba(216,76,255,.42))
+    drop-shadow(0 0 6px rgba(102,92,255,.16))!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 .pl-settings-edit {
   display:none!important;
 }
 
-/* 4 lignes compactes, larges, avec 4px d'espace réel entre les bordures. */
+/* Les quatre lignes prennent presque toute la largeur intérieure. */
 html body main.pl-private-v3[data-mode="private"] .pl-setting-grid {
   width:100%!important;
   height:auto!important;
-  margin:0 auto!important;
+  margin:0!important;
   padding:0!important;
   display:flex!important;
   flex-direction:column!important;
@@ -1025,58 +1034,66 @@ html body main.pl-private-v3[data-mode="private"] .pl-setting-grid {
   transform:none!important;
 }
 
+/* Lignes encore 3px plus fines, avec des coins plus serrés. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card {
-  flex:0 0 27px!important;
+  flex:0 0 24px!important;
   width:100%!important;
-  height:27px!important;
-  min-height:27px!important;
-  max-height:27px!important;
+  height:24px!important;
+  min-height:24px!important;
+  max-height:24px!important;
   margin:0!important;
-  padding:1px 7px!important;
+  padding:1px 5px!important;
+
   display:grid!important;
-  grid-template-columns:20px minmax(0,1fr) 112px!important;
+  grid-template-columns:17px minmax(0,1fr) 105px!important;
   align-items:center!important;
-  gap:6px!important;
-  border:1.1px solid rgba(82,103,206,.88)!important;
-  border-radius:7px!important;
+  gap:5px!important;
+
+  border:1px solid rgba(81,101,203,.92)!important;
+  border-radius:5px!important;
+
   background:
-    radial-gradient(circle at 83% 50%,rgba(79,77,223,.08),transparent 35%),
-    linear-gradient(90deg,rgba(12,31,79,.985),rgba(8,27,70,.94))!important;
+    radial-gradient(circle at 84% 50%,rgba(75,76,220,.065),transparent 36%),
+    linear-gradient(90deg,rgba(12,31,79,.99),rgba(8,27,70,.95))!important;
+
   box-shadow:
-    0 0 6px rgba(70,87,225,.08),
-    inset 0 0 8px rgba(82,94,229,.055),
-    inset 0 1px 0 rgba(126,135,245,.06)!important;
+    0 0 5px rgba(70,87,225,.065),
+    inset 0 0 7px rgba(82,94,229,.045),
+    inset 0 1px 0 rgba(126,135,245,.055)!important;
 }
 
+/* Espace physique visible entre les quatre lignes. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card + .pl-v3-setting-card {
   margin-top:4px!important;
 }
 
+/* Icônes -3px par rapport à la version précédente. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card > img {
-  width:18px!important;
-  height:18px!important;
+  width:15px!important;
+  height:15px!important;
   justify-self:center!important;
-  filter:drop-shadow(0 0 4px rgba(190,70,255,.22))!important;
+  filter:drop-shadow(0 0 3px rgba(190,70,255,.18))!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-label {
   min-width:0!important;
-  color:#bdc7e8!important;
-  font-size:7.8px!important;
+  color:#bec8e8!important;
+  font-size:7.2px!important;
   line-height:1!important;
-  font-weight:760!important;
+  font-weight:750!important;
   text-align:left!important;
   white-space:nowrap!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
 }
 
+/* Flèche | valeur | flèche : mieux réparties sur la droite. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper {
-  width:112px!important;
-  height:25px!important;
+  width:105px!important;
+  height:22px!important;
   margin:0!important;
   display:grid!important;
-  grid-template-columns:24px minmax(0,1fr) 24px!important;
+  grid-template-columns:22px minmax(0,1fr) 22px!important;
   align-items:center!important;
   gap:8px!important;
   justify-self:end!important;
@@ -1086,46 +1103,48 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper.is-readonly {
   grid-template-columns:1fr!important;
 }
 
+/* Plus fines, plus petites et avec un glow beaucoup plus discret. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper button {
-  width:24px!important;
-  min-width:24px!important;
-  height:25px!important;
-  min-height:25px!important;
+  width:22px!important;
+  min-width:22px!important;
+  height:22px!important;
+  min-height:22px!important;
   padding:0!important;
   display:grid!important;
   place-items:center!important;
   border:0!important;
   border-radius:0!important;
   background:transparent!important;
-  color:#728bff!important;
+  color:#788cff!important;
   box-shadow:none!important;
-  font-size:28px!important;
+  font-size:23px!important;
   line-height:.8!important;
-  font-weight:420!important;
+  font-weight:400!important;
   text-shadow:
-    0 0 5px rgba(84,111,255,.82),
-    0 0 10px rgba(109,75,255,.48)!important;
-  filter:drop-shadow(0 0 2px rgba(91,102,255,.40))!important;
+    0 0 3px rgba(84,111,255,.46),
+    0 0 6px rgba(109,75,255,.18)!important;
+  filter:none!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper button:active {
-  transform:scale(.90)!important;
+  transform:scale(.92)!important;
 }
 
+/* Valeurs légèrement plus petites, toujours centrées. */
 html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper strong {
   min-width:0!important;
   color:#fff!important;
-  font-size:11.2px!important;
+  font-size:10.4px!important;
   line-height:1!important;
   font-weight:950!important;
   text-align:center!important;
   white-space:nowrap!important;
-  text-shadow:0 0 5px rgba(255,255,255,.08)!important;
+  text-shadow:0 0 4px rgba(255,255,255,.055)!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card.is-difficulty .pl-v3-stepper strong {
-  color:#55e0bb!important;
-  text-shadow:0 0 7px rgba(63,222,179,.16)!important;
+  color:#55dfba!important;
+  text-shadow:0 0 5px rgba(63,222,179,.11)!important;
 }
 
 
@@ -1790,30 +1809,30 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card {
-    grid-template-columns:18px minmax(0,1fr) 102px!important;
-    padding-inline:5px!important;
+    grid-template-columns:16px minmax(0,1fr) 96px!important;
+    padding-inline:4px!important;
     gap:4px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card > img {
-    width:17px!important;
-    height:17px!important;
+    width:14px!important;
+    height:14px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-label {
-    font-size:7.2px!important;
+    font-size:6.8px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper {
-    width:102px!important;
-    grid-template-columns:22px minmax(0,1fr) 22px!important;
+    width:96px!important;
+    grid-template-columns:20px minmax(0,1fr) 20px!important;
     gap:7px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-stepper button {
-    width:22px!important;
-    min-width:22px!important;
-    font-size:26px!important;
+    width:20px!important;
+    min-width:20px!important;
+    font-size:22px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-comms-head {
@@ -1848,11 +1867,11 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] > .pl-settings {
-    height:166px!important;
-    min-height:166px!important;
-    max-height:166px!important;
-    padding-top:6px!important;
-    padding-bottom:6px!important;
+    height:143px!important;
+    min-height:143px!important;
+    max-height:143px!important;
+    padding-top:4px!important;
+    padding-bottom:4px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] > .pl-v3-comms {
@@ -1861,10 +1880,10 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card {
-    flex-basis:25px!important;
-    height:25px!important;
-    min-height:25px!important;
-    max-height:25px!important;
+    flex-basis:22px!important;
+    height:22px!important;
+    min-height:22px!important;
+    max-height:22px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card + .pl-v3-setting-card {
@@ -1872,9 +1891,9 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] > .pl-settings h2 {
-    height:25px!important;
-    min-height:25px!important;
-    margin-bottom:3px!important;
+    height:21px!important;
+    min-height:21px!important;
+    margin-bottom:2px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button {
