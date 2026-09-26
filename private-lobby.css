@@ -1386,7 +1386,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button.is
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions svg {
   width:18px!important;
-  height:18px!important;
+  height:27px!important;
   fill:none!important;
   stroke:currentColor!important;
   stroke-width:1.8!important;
@@ -1416,7 +1416,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-title {
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat-title svg {
   width:18px!important;
-  height:18px!important;
+  height:27px!important;
   color:#c46fff!important;
   fill:none!important;
   stroke:currentColor!important;
@@ -1573,8 +1573,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-player.is-self {
 html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
   position:relative!important;
   z-index:20!important;
-  width:min(74px,19.55vw)!important;
-  height:min(74px,19.55vw)!important;
+  width:min(92.5px,24.4375vw)!important;
+  height:min(92.5px,24.4375vw)!important;
   flex:none!important;
   display:grid!important;
   place-items:center!important;
@@ -1681,7 +1681,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-player-head > strong {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title-row {
-  min-height:19px!important;
+  min-height:29px!important;
   max-width:100%!important;
   display:flex!important;
   align-items:center!important;
@@ -1690,23 +1690,23 @@ html body main.pl-private-v3[data-mode="private"] .pl-player-title-row {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title {
-  width:122px!important;
-  max-width:122px!important;
-  min-height:18px!important;
-  height:18px!important;
+  width:183px!important;
+  max-width:183px!important;
+  min-height:27px!important;
+  height:27px!important;
   padding:0 4px!important;
-  font-size:8.4px!important;
+  font-size:12.6px!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image {
-  width:122px!important;
-  max-width:122px!important;
+  width:183px!important;
+  max-width:183px!important;
   overflow:visible!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image > img {
-  width:122px!important;
-  max-width:122px!important;
+  width:183px!important;
+  max-width:183px!important;
   height:auto!important;
   object-fit:contain!important;
 }
@@ -1956,8 +1956,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
-    width:min(66px,18.4vw)!important;
-    height:min(66px,18.4vw)!important;
+    width:min(82.5px,23vw)!important;
+    height:min(82.5px,23vw)!important;
   }
 }
 
@@ -2009,8 +2009,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
-    width:58px!important;
-    height:58px!important;
+    width:72.5px!important;
+    height:72.5px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-launch {
@@ -2026,4 +2026,28 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
     height:38px!important;
     min-height:38px!important;
   }
+}
+
+
+/* =========================================================
+   SALON PRIVE V3.12 — agrandissement avatar / tag
+   ========================================================= */
+
+html body main.pl-private-v3[data-mode="private"] .pl-player,
+html body main.pl-private-v3[data-mode="private"] .pl-player-copy,
+html body main.pl-private-v3[data-mode="private"] .pl-player-title-row,
+html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
+  overflow:visible!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image {
+  position:relative!important;
+  z-index:25!important;
+}
+
+html body main.pl-private-v3[data-mode="private"] .pl-player-title.private-tag-image > img {
+  position:relative!important;
+  z-index:25!important;
+  display:block!important;
+  margin:0 auto!important;
 }
