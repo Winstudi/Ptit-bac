@@ -807,7 +807,7 @@ html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] {
 /* Bandeau haut partagé : même langage visuel que Profil / Quêtes / Boutique. */
 html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] {
   padding-top:max(3px,env(safe-area-inset-top))!important;
-  grid-template-rows:48px 204px minmax(0,1fr) 106px!important;
+  grid-template-rows:48px 150px minmax(0,1fr) 106px!important;
 }
 
 html body main.pl-private-v3[data-mode="private"] > .pl-header {
@@ -1263,9 +1263,9 @@ html body main.pl-private-v3[data-mode="private"] > .pl-v3-comms {
   align-self:start!important;
   min-width:0!important;
   width:100%!important;
-  height:176px!important;
+  height:150px!important;
   display:grid!important;
-  grid-template-rows:96px 71px!important;
+  grid-template-rows:96px 45px!important;
   gap:9px!important;
 }
 
@@ -1393,7 +1393,10 @@ html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions svg {
 }
 
 html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat {
-  padding:8px 10px!important;
+  height:45px!important;
+  min-height:45px!important;
+  max-height:45px!important;
+  padding:6px 10px!important;
   border:1.25px solid rgba(143,79,244,.78)!important;
   display:flex!important;
   align-items:center!important;
@@ -1958,7 +1961,7 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
 
 @media(max-height:720px) and (min-width:346px) {
   html body main.lobby-v5.pl-private.pl-private-v3[data-mode="private"] {
-    grid-template-rows:52px 180px minmax(0,1fr) 98px!important;
+    grid-template-rows:52px 143px minmax(0,1fr) 98px!important;
     gap:7px!important;
   }
 
@@ -1971,8 +1974,8 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   }
 
   html body main.pl-private-v3[data-mode="private"] > .pl-v3-comms {
-    height:160px!important;
-    grid-template-rows:87px 66px!important;
+    height:143px!important;
+    grid-template-rows:87px 49px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-v3-setting-card {
@@ -1995,6 +1998,12 @@ html body main.pl-private-v3[data-mode="private"] .pl-wait {
   html body main.pl-private-v3[data-mode="private"] .pl-v3-voice-actions button {
     height:31px!important;
     min-height:31px!important;
+  }
+
+  html body main.pl-private-v3[data-mode="private"] .pl-v3-textchat {
+    height:49px!important;
+    min-height:49px!important;
+    max-height:49px!important;
   }
 
   html body main.pl-private-v3[data-mode="private"] .pl-avatar-shell {
