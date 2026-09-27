@@ -1508,6 +1508,7 @@
       <main
         class="${rootClasses}"
         data-mode="${domMode}"
+        data-lobby-kind="${quickMode ? "quick" : publicMode ? "public" : "private"}"
         ${quickMode ? `data-quick-v3-upgraded="1"` : ""}
       >
         <header class="pl-header">
@@ -1572,7 +1573,7 @@
             >${!quickMode && user?.lobbyReady ? "Annuler" : "✓ Prêt"}</button>
 
             ${quickMode
-              ? `<button id="startBtn" type="button" disabled>▶ Lancer la partie</button>`
+              ? ""
               : user?.isHost
                 ? `<button id="startBtn" type="button" ${allReady ? "" : "disabled"}>▶ Lancer la partie</button>`
                 : `<span class="pl-wait">L’hôte lancera la partie.</span>`}

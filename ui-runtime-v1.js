@@ -2232,7 +2232,10 @@
 
     const state = currentLobbyState();
     const shortcut = settings.querySelector("#lobbySettingsShortcut");
-    const quickMode = state?.mode === "quick";
+    const quickMode =
+      root.classList.contains("pl-quick-v3") ||
+      root.dataset.lobbyKind === "quick" ||
+      state?.mode === "quick";
     const hostCanEdit =
       !quickMode &&
       (
@@ -2284,7 +2287,7 @@
     const fragment = document.createDocumentFragment();
     items.forEach(item => {
       fragment.appendChild(
-        buildSettingRow(item, hostCanEdit, quickMode)
+        buildSettingRow(item, hostCanEdit, false)
       );
     });
 
@@ -2294,6 +2297,13 @@
   function decorateBottom(root) {
     root.querySelector(".pl-test")?.remove();
     root.querySelector(".pl-launch-hint")?.remove();
+
+    if (
+      root.classList.contains("pl-quick-v3") ||
+      root.dataset.lobbyKind === "quick"
+    ) {
+      root.querySelector("#startBtn")?.remove();
+    }
   }
 
   function decoratePrivateLobbyV3() {
@@ -2317,7 +2327,14 @@
       const codeLabel = root.querySelector(".pl-header-code small");
       if (codeLabel) codeLabel.textContent = "Code salon";
 
-      const liveMode = currentLobbyState()?.mode || root.dataset.mode;
+      const liveMode =
+        root.classList.contains("pl-quick-v3") ||
+        root.dataset.lobbyKind === "quick"
+          ? "quick"
+          : root.classList.contains("pl-public-mode") ||
+              root.dataset.lobbyKind === "public"
+            ? "public"
+            : currentLobbyState()?.mode || root.dataset.mode;
 
       const roomTitle = root.querySelector(".pl-title-mode > h1");
       if (roomTitle) {
@@ -2345,7 +2362,11 @@
       syncLobbyTagImages(root);
       decorateBottom(root);
 
-      if (currentLobbyState()?.mode === "quick") {
+      if (
+        root.classList.contains("pl-quick-v3") ||
+        root.dataset.lobbyKind === "quick" ||
+        currentLobbyState()?.mode === "quick"
+      ) {
         root
           .querySelectorAll(
             ".quick-search-panel, .quick-ready-bottom-panel"
@@ -2353,6 +2374,7 @@
           .forEach(node => node.remove());
 
         root.classList.remove("quick-ready-bottom-active");
+        root.querySelector("#startBtn")?.remove();
         syncQuickLobbyV3ReadyUi();
       }
     } finally {
