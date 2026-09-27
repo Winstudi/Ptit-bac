@@ -232,6 +232,7 @@
     }
 
     const self = String(player.id) === String(session.playerId);
+    const quickMode = state.mode === "quick";
     const code = friendCodeFor(player);
     const canSocial = !self && !player.isBot && !!code;
     return `
@@ -239,7 +240,7 @@
         <section class="lobby-v5-profile-modal pl-profile-v2-modal" role="dialog" aria-modal="true" aria-label="Profil de ${escapeHtml(player.name || "Joueur")}">
           <button id="lobbyPlayerProfileClose" class="lobby-v5-profile-close pl-profile-v2-close" type="button" aria-label="Fermer">×</button>
 
-          <div class="pl-profile-v2-card ${player.isHost ? "is-host" : ""} ${self ? "is-self" : ""}">
+          <div class="pl-profile-v2-card ${!quickMode && player.isHost ? "is-host" : ""} ${self ? "is-self" : ""}">
             <div class="pl-profile-v2-avatar-shell">
               <div class="lobby-v5-profile-avatar pl-profile-v2-avatar">${avatarMarkup(player)}</div>
             </div>
@@ -253,7 +254,7 @@
               </div>
               <div class="pl-profile-v2-title-row">
                 ${privateLobbyTagMarkup(player)}
-                ${player.isHost
+                ${!quickMode && player.isHost
                   ? `<img class="pl-host-crown-inline" src="/admin-crown.png" alt="Hôte">`
                   : ""}
               </div>
@@ -327,7 +328,7 @@
   }
 
   function lobbySettingsOverlay(state, user) {
-    if (!lobbySettingsOpen || !user?.isHost) return "";
+    if (!lobbySettingsOpen || !user?.isHost || state.mode === "quick") return "";
 
     const difficulty = difficultyInfo(state.categoryDifficulty);
     const categoryCount = Number(state.categoryCount || state.categories?.length || 6);
@@ -1412,20 +1413,32 @@
   function privateMarkup(state, user) {
     ensurePrivateLobbyV2Styles();
 
+    const quickMode = state.mode === "quick";
+    const publicMode = state.mode === "public";
     const difficulty = difficultyInfo(state.categoryDifficulty);
-    const allReady = state.players.length >= 2 && state.players.every(
-      player => player.isBot || (player.connected && player.lobbyReady)
-    );
+
+    const allReady =
+      !quickMode &&
+      state.players.length >= 2 &&
+      state.players.every(
+        player => player.isBot || (player.connected && player.lobbyReady)
+      );
 
     const cards = state.players.map(player => {
       const self = String(player.id) === String(session.playerId);
-      const ready = player.isBot || (player.connected && player.lobbyReady);
+      const hostVisual = !quickMode && player.isHost;
+      const ready =
+        !quickMode &&
+        (player.isBot || (player.connected && player.lobbyReady));
       const offline = !player.isBot && !player.connected;
-      const canKick = user?.isHost && !player.isHost;
+      const canKick =
+        !quickMode &&
+        user?.isHost &&
+        !player.isHost;
 
       return `
         <article
-          class="pl-player pl-player-v2 ${player.isHost ? "is-host" : ""} ${self ? "is-self" : ""} ${ready ? "is-ready" : ""}"
+          class="pl-player pl-player-v2 ${hostVisual ? "is-host" : ""} ${self ? "is-self" : ""} ${ready ? "is-ready" : ""}"
           data-lobby-player-profile="${escapeHtml(player.id)}"
           role="button"
           tabindex="0"
@@ -1442,7 +1455,7 @@
 
             <div class="pl-player-title-row">
               ${privateLobbyTagMarkup(player)}
-              ${player.isHost
+              ${hostVisual
                 ? `<img class="pl-host-crown-inline" src="/admin-crown.png" alt="Hôte">`
                 : ""}
             </div>
@@ -1472,17 +1485,40 @@
         </div>`
     ).join("");
 
-    const publicMode = state.mode === "public";
+    const rootClasses = [
+      "screen",
+      "lobby-v5",
+      "pl-private",
+      publicMode ? "pl-public-mode" : "",
+      quickMode ? "pl-private-v3" : "",
+      quickMode ? "pl-quick-v3" : ""
+    ].filter(Boolean).join(" ");
+
+    const domMode = quickMode
+      ? "quick-v3"
+      : publicMode
+        ? "public"
+        : "private";
 
     return `
-      <main class="screen lobby-v5 pl-private ${publicMode ? "pl-public-mode" : ""}" data-mode="${publicMode ? "public" : "private"}">
+      <main
+        class="${rootClasses}"
+        data-mode="${domMode}"
+        ${quickMode ? `data-quick-v3-upgraded="1"` : ""}
+      >
         <header class="pl-header">
           <button id="lobbyV5Leave" type="button" aria-label="Quitter le salon">
             <img src="/back-arrow.png" alt="">
           </button>
-          ${roomModeToggleMarkup(state, user)}
+
+          ${quickMode
+            ? `<div class="pl-title-mode">
+                <h1>Partie Rapide</h1>
+              </div>`
+            : roomModeToggleMarkup(state, user)}
+
           <button id="copyCode" class="pl-header-code" type="button" aria-label="Copier le code du salon">
-            <small>Code</small>
+            <small>Code salon</small>
             <strong>${escapeHtml(state.code)}</strong>
             <img src="/lobby-copy.png" alt="">
           </button>
@@ -1492,7 +1528,7 @@
           <h2>
             <img src="/settings.png" alt="">
             <span>Paramètres de la partie</span>
-            ${user?.isHost
+            ${!quickMode && user?.isHost
               ? `<button id="lobbySettingsShortcut" class="pl-settings-edit" type="button" aria-label="Modifier les paramètres"><span>Modifier</span><b aria-hidden="true">›</b></button>`
               : ""}
           </h2>
@@ -1516,6 +1552,7 @@
               <img src="/friends.png" alt="">
               <span>Inviter des amis</span>
             </button>
+
             <button id="plShare" class="pl-share" type="button" aria-label="Partager le code du salon">
               ${privateLobbyShareIcon()}
               <span>Partager</span>
@@ -1525,17 +1562,19 @@
           <div class="pl-launch">
             <button
               id="plReady"
-              class="${user?.lobbyReady ? "selected" : ""}"
+              class="${!quickMode && user?.lobbyReady ? "selected" : ""}"
               type="button"
-              aria-pressed="${!!user?.lobbyReady}"
-            >${user?.lobbyReady ? "Annuler" : "✓ Prêt"}</button>
+              aria-pressed="${!quickMode && !!user?.lobbyReady}"
+            >${!quickMode && user?.lobbyReady ? "Annuler" : "✓ Prêt"}</button>
 
-            ${user?.isHost
-              ? `<button id="startBtn" type="button" ${allReady ? "" : "disabled"}>▶ Lancer la partie</button>`
-              : `<span class="pl-wait">L’hôte lancera la partie.</span>`}
+            ${quickMode
+              ? `<button id="startBtn" type="button" disabled>▶ Lancer la partie</button>`
+              : user?.isHost
+                ? `<button id="startBtn" type="button" ${allReady ? "" : "disabled"}>▶ Lancer la partie</button>`
+                : `<span class="pl-wait">L’hôte lancera la partie.</span>`}
           </div>
 
-          ${user?.isHost && state.mode === "private"
+          ${!quickMode && user?.isHost && state.mode === "private"
             ? `<button class="pl-test" data-add-bot="0" type="button" ${state.players.length >= LOBBY_MAX_PLAYERS ? "disabled" : ""}>Ajouter un bot de test</button>`
             : ""}
         </div>
@@ -1554,127 +1593,11 @@
     const user = me();
     if (!state || state.phase !== "lobby") return render();
 
-    const playerCount = state.players.length;
-    const difficulty = difficultyInfo(state.categoryDifficulty);
-    const categoryCount = Number(state.categoryCount || state.categories?.length || 6);
-    const coins = typeof getCoins === "function" ? getCoins() : 0;
-    const adminDisplay = window.PtitBacAdminDisplayState || {};
-    const coinDisplay =
-      adminDisplay.admin && adminDisplay.infiniteCoins
-        ? "∞"
-        : String(coins);
+    const categoryCount = Number(
+      state.categoryCount || state.categories?.length || 6
+    );
 
-    const players = state.players.map((p, index) => playerRow(p, index, user)).join("");
-    const emptySlots =
-      playerCount < LOBBY_MAX_PLAYERS
-        ? emptyPlayerRow(!!user?.isHost && state.mode !== "quick", 0)
-        : "";
-
-    setScreen(state.mode !== "quick" ? privateMarkup(state, user) : `
-      <main class="screen lobby-v5" data-mode="${state.mode === "quick" ? "quick" : "private"}">
-        <header class="lobby-v5-header">
-          <button id="lobbyV5Leave" class="lobby-v5-back" type="button" aria-label="Quitter le salon">
-            <img src="/lobby-exit.png" alt="">
-          </button>
-
-          <div class="lobby-v5-title">
-            <h1>Salon</h1>
-            <button id="copyCode" class="lobby-v5-code" type="button">
-              <span>Code :</span>
-              <strong>${escapeHtml(state.code)}</strong>
-              <img src="/lobby-copy.png" alt="">
-            </button>
-          </div>
-
-          <div class="lobby-v5-coin-pill">
-            <img src="/coin.png" alt="">
-            <strong>${coinDisplay}</strong>
-          </div>
-        </header>
-
-        ${state.mode !== "quick" ? `<section class="lobby-v5-host-card">
-          <div class="lobby-v5-host-crown"><img src="/admin-crown.png" alt=""></div>
-          <div class="lobby-v5-host-avatar">${avatarMarkup(user || state.players[0])}</div>
-          <div class="lobby-v5-host-copy">
-            <small>Hôte de la partie</small>
-            <strong>${escapeHtml(state.players.find(p => p.isHost)?.name || user?.name || "Joueur")}</strong>
-            ${friendCodeFor(state.players.find(p => p.isHost))
-              ? `<span># ${escapeHtml(friendCodeFor(state.players.find(p => p.isHost)))}</span>`
-              : ""}
-          </div>
-          <button class="lobby-v5-settings-shortcut" id="lobbySettingsShortcut" type="button">
-            <img src="/settings.png" alt="">
-            <span>Paramètres</span>
-          </button>
-        </section>
-
-        ` : ""}
-
-        <section class="lobby-v5-settings-panel" id="lobbySettingsPanel">
-          <h2>
-            <img src="/settings.png" alt="">
-            Paramètres de la partie
-          </h2>
-
-          <div class="lobby-v5-settings-grid">
-            ${settingCard({
-              key: "rounds",
-              label: "Manches",
-              value: state.rounds,
-              icon: "/lightning.png"
-            })}
-            ${settingCard({
-              key: "categoryCount",
-              label: "Catégories",
-              value: categoryCount,
-              icon: "/lobby-categories.png"
-            })}
-            ${settingCard({
-              key: "duration",
-              label: "Temps",
-              value: `${Number(state.duration || 60)}s`,
-              icon: "/lobby-clock.png"
-            })}
-            ${settingCard({
-              key: "categoryDifficulty",
-              label: "Difficulté",
-              value: difficulty.label,
-              icon: difficulty.icon,
-              difficulty: true
-            })}
-          </div>
-        </section>
-
-        <section class="lobby-v5-players-section">
-          <h2>Joueurs <span>(${playerCount}/${LOBBY_MAX_PLAYERS})</span></h2>
-          <div class="lobby-v5-player-list">
-            ${players}
-            ${emptySlots}
-          </div>
-        </section>
-
-        <section class="lobby-v5-actions">
-          <button class="lobby-v5-invite" id="inviteFriendsBtn" type="button">
-            <img src="/friends.png" alt="">
-            <strong>Inviter des amis</strong>
-          </button>
-
-          ${user?.isHost
-            ? `<button class="lobby-v5-start" id="startBtn" type="button" ${playerCount < 2 ? "disabled" : ""}>
-                <span>▶</span>
-                <strong>Lancer la partie</strong>
-              </button>`
-            : `<div class="lobby-v5-wait-host">
-                <span class="spinner small-spinner"></span>
-                En attente de l’hôte…
-              </div>`}
-        </section>
-
-        ${playerProfileModal(state)}
-        ${lobbySettingsOverlay(state, user)}
-        ${lobbyInviteOverlay(state)}
-      </main>
-    `);
+    setScreen(privateMarkup(state, user));
 
     document.getElementById("plShare")?.addEventListener("click", async () => {
       try {
@@ -1682,14 +1605,16 @@
         else document.getElementById("copyCode")?.click();
       } catch (err) { if (err.name !== "AbortError") toast("Partage indisponible. Copie le code du salon."); }
     });
-    document.getElementById("plReady")?.addEventListener("click", event => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      socket.timeout(8000).emit("lobby:setReady", {code:state.code,playerId:session.playerId,ready:!user?.lobbyReady}, (err,res) => {
-        button.disabled = false;
-        if (err || !res?.ok) toast(res?.error || "Connexion interrompue. Réessaie.");
+    if (state.mode !== "quick") {
+      document.getElementById("plReady")?.addEventListener("click", event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        socket.timeout(8000).emit("lobby:setReady", {code:state.code,playerId:session.playerId,ready:!user?.lobbyReady}, (err,res) => {
+          button.disabled = false;
+          if (err || !res?.ok) toast(res?.error || "Connexion interrompue. Réessaie.");
+        });
       });
-    });
+    }
     document.getElementById("plModeToggle")?.addEventListener("click", () => {
       changeRoomMode(state, user);
     });
@@ -1734,6 +1659,7 @@
     });
 
     document.getElementById("lobbySettingsShortcut")?.addEventListener("click", () => {
+      if (state.mode === "quick") return;
       if (!user?.isHost) {
         return toast("Seul l’hôte peut modifier les paramètres.");
       }
@@ -1754,7 +1680,7 @@
     });
 
     const updateInlineSetting = (setting, dir) => {
-      if (!user?.isHost) return;
+      if (state.mode === "quick" || !user?.isHost) return;
 
       if (setting === "categoryDifficulty") {
         const now = Date.now();
@@ -1947,7 +1873,7 @@
       });
     });
 
-    if (user?.isHost) {
+    if (user?.isHost && state.mode !== "quick") {
       document.querySelectorAll("[data-kick-id]").forEach(btn => {
         btn.addEventListener("click", event => {
           event.stopPropagation();
