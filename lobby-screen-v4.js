@@ -1518,7 +1518,7 @@
 
           ${quickMode
             ? `<div class="pl-title-mode">
-                <h1>Partie Rapide</h1>
+                <h1>Partie Classique Rapide</h1>
               </div>`
             : roomModeToggleMarkup(state, user)}
 

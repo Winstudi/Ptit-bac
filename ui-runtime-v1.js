@@ -2340,7 +2340,7 @@
       if (roomTitle) {
         roomTitle.textContent =
           liveMode === "quick"
-            ? "Partie Rapide"
+            ? "Partie Classique Rapide"
             : liveMode === "public"
               ? "Salon Public"
               : "Salon Privé";
