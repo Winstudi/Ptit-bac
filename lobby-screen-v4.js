@@ -1494,8 +1494,12 @@
       quickMode ? "pl-quick-v3" : ""
     ].filter(Boolean).join(" ");
 
+    // Le mode Quick garde sa logique serveur via state.mode === "quick"
+    // et sa classe .pl-quick-v3, mais utilise exactement la même peau
+    // DOM que le salon Privé. Cela évite de maintenir un second jeu de
+    // styles et garde inactifs les anciens scripts [data-mode="quick"].
     const domMode = quickMode
-      ? "quick-v3"
+      ? "private"
       : publicMode
         ? "public"
         : "private";
