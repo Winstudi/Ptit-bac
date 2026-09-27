@@ -28,8 +28,7 @@
 
 /* =========================================================
    CLEAN-01B — taille unique des tags de joueur
-   Les tags texte utilisent le même encombrement visuel
-   que les tags PNG compacts (ex. Game Over).
+   Même empreinte visuelle que les tags PNG compacts.
    ========================================================= */
 
 html body main.pl-private-v3:is(
@@ -38,22 +37,22 @@ html body main.pl-private-v3:is(
   .pl-quick-v3
 ) .pl-player .pl-player-copy .pl-player-title-row
   .pl-player-title:not(.private-tag-image) {
-  width:76px!important;
-  min-width:76px!important;
-  max-width:76px!important;
+  width:64px!important;
+  min-width:64px!important;
+  max-width:64px!important;
 
-  height:18px!important;
-  min-height:18px!important;
-  max-height:18px!important;
+  height:14px!important;
+  min-height:14px!important;
+  max-height:14px!important;
 
   margin:0 auto!important;
-  padding:0 5px!important;
+  padding:0 4px!important;
 
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
 
-  border-radius:8px!important;
+  border-radius:6px!important;
   box-sizing:border-box!important;
 
   overflow:hidden!important;
@@ -77,7 +76,7 @@ html body main.pl-private-v3:is(
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
 
-  font-size:9px!important;
+  font-size:7.5px!important;
   line-height:1!important;
   font-weight:900!important;
   text-align:center!important;
@@ -90,7 +89,7 @@ html body main.pl-private-v3:is(
   [data-mode="public"],
   .pl-quick-v3
 ) .pl-player .pl-player-title-row {
-  min-height:20px!important;
-  height:20px!important;
-  max-height:20px!important;
+  min-height:16px!important;
+  height:16px!important;
+  max-height:16px!important;
 }
