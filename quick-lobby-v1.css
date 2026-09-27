@@ -24,3 +24,73 @@
 .quick-lobby-v1 .lobby-v5-avatar.ptb-has-equipped-frame {
   min-width:clamp(82px,22vw,92px);
 }
+
+
+/* =========================================================
+   CLEAN-01B — taille unique des tags de joueur
+   Les tags texte utilisent le même encombrement visuel
+   que les tags PNG compacts (ex. Game Over).
+   ========================================================= */
+
+html body main.pl-private-v3:is(
+  [data-mode="private"],
+  [data-mode="public"],
+  .pl-quick-v3
+) .pl-player .pl-player-copy .pl-player-title-row
+  .pl-player-title:not(.private-tag-image) {
+  width:76px!important;
+  min-width:76px!important;
+  max-width:76px!important;
+
+  height:18px!important;
+  min-height:18px!important;
+  max-height:18px!important;
+
+  margin:0 auto!important;
+  padding:0 5px!important;
+
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+
+  border-radius:8px!important;
+  box-sizing:border-box!important;
+
+  overflow:hidden!important;
+}
+
+html body main.pl-private-v3:is(
+  [data-mode="private"],
+  [data-mode="public"],
+  .pl-quick-v3
+) .pl-player .pl-player-copy .pl-player-title-row
+  .pl-player-title:not(.private-tag-image) > strong {
+  width:100%!important;
+  max-width:100%!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  display:block!important;
+
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+
+  font-size:9px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  text-align:center!important;
+
+  transform:none!important;
+}
+
+html body main.pl-private-v3:is(
+  [data-mode="private"],
+  [data-mode="public"],
+  .pl-quick-v3
+) .pl-player .pl-player-title-row {
+  min-height:20px!important;
+  height:20px!important;
+  max-height:20px!important;
+}
