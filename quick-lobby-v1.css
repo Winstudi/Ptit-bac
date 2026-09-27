@@ -93,3 +93,24 @@ html body main.pl-private-v3:is(
   height:16px!important;
   max-height:16px!important;
 }
+
+
+/* =========================================================
+   FIX — titre réel de la Partie Classique Rapide
+   index.html applique encore "Salon Privé" via h1::after
+   aux écrans data-mode="private". Ce sélecteur Quick est
+   volontairement plus spécifique pour neutraliser ce vieux patch.
+   ========================================================= */
+
+html body main.lobby-v5.pl-private.pl-private-v3.pl-quick-v3[data-mode="private"][data-lobby-kind="quick"]
+  .pl-title-mode > h1 {
+  font-size:1.05rem!important;
+  line-height:1!important;
+  color:#fff!important;
+}
+
+html body main.lobby-v5.pl-private.pl-private-v3.pl-quick-v3[data-mode="private"][data-lobby-kind="quick"]
+  .pl-title-mode > h1::after {
+  content:none!important;
+  display:none!important;
+}
