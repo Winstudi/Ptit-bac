@@ -212,7 +212,6 @@ function checkCoreFiles() {
     "socket-security.js",
     "letter-wheel-spin.wav",
     "room-mode-rules.js",
-    "game-economy.js",
     "game-loop-rules.js",
     "inventory-service.js",
     "progression-service.js"
@@ -315,7 +314,7 @@ function checkIntegratedBackend() {
 
 function checkIntegratedFrontend() {
   const app = read("app.js");
-  const wheel = read("letter-wheel-v1.js");
+  const wheel = read("partie.js");
   const style = read("style.css");
 
   for (const marker of [
@@ -329,9 +328,7 @@ function checkIntegratedFrontend() {
   const observerModules = [
     "avatar-system-v1.js",
     "progression-client.js",
-    "quick-lobby-v1.js",
-    "lobby-screen-v4.js",
-    "ui-runtime-v1.js"
+    "salons.js"
   ];
 
   for (const name of observerModules) {
